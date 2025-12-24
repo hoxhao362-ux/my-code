@@ -33,3 +33,5 @@ __pycache__/
 *.pyd
 .env
 *.toml
+
+.trae/
