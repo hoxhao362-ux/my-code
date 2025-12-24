@@ -32,3 +32,8 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+*.toml
+
+.trae/
+
+backend/
