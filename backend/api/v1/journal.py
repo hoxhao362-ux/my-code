@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from typing import List, Optional
 import os
-import hashlib
 from datetime import datetime
 from pathlib import Path
 
 from utils.database import db
 from utils.jwt import jwt_util
+from utils.generator import generator
 from model.journal import (
     JournalUploadRequest, 
     JournalUploadResponse, 
@@ -48,7 +48,7 @@ async def upload_journal(
     file_size = len(file_content)
     
     # 生成文件哈希
-    file_hash = hashlib.sha256(file_content).hexdigest()
+    file_hash = generator.generate_file_hash(file_content)
     
     # 计算哈希分桶，使用哈希值的前2位作为桶名
     file_bucket = file_hash[:2]

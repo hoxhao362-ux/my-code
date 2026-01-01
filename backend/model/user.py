@@ -5,7 +5,7 @@ class LoginRequest(BaseModel):
     username: str = Field(..., description="用户名")
     password: str = Field(
         ...,
-        description="密码规则：8-20位，含大小写字母+数字，可使用!@\$%^&*()_+-={}[]:;\"'<>,.?~`等特殊字符，禁止|\\/和中文",
+        description="密码规则：8-20位，含大小写字母+数字，可使用!@#$%^&*()_+-={}[]:;'\"<>,.?~`等特殊字符，禁止|\/和中文",
         min_length=8,
         max_length=20
     )
@@ -26,7 +26,7 @@ class LoginRequest(BaseModel):
             raise ValueError('密码必须包含数字')
         # 检查是否包含禁止字符
         if any(c in '|\/' or ord(c) > 127 for c in v):
-            raise ValueError('密码不能包含|\\/和中文')
+            raise ValueError('密码不能包含|\/和中文')
         return v
 
 class LoginResponse(BaseModel):
@@ -38,7 +38,7 @@ class RegisterRequest(BaseModel):
     username: str = Field(..., description="用户名")
     password: str = Field(
         ...,
-        description="密码规则：8-20位，含大小写字母+数字，可使用!@\$%^&*()_+-={}[]:;\"'<>,.?~`等特殊字符，禁止|\\/和中文",
+        description="密码规则：8-20位，含大小写字母+数字，可使用!@#$%^&*()_+-={}[]:;'\"<>,.?~`等特殊字符，禁止|\/和中文",
         min_length=8,
         max_length=20
     )
@@ -59,7 +59,7 @@ class RegisterRequest(BaseModel):
             raise ValueError('密码必须包含数字')
         # 检查是否包含禁止字符
         if any(c in '|\/' or ord(c) > 127 for c in v):
-            raise ValueError('密码不能包含|\\/和中文')
+            raise ValueError('密码不能包含|\/和中文')
         return v
 
 class RegisterResponse(BaseModel):
