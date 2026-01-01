@@ -1,10 +1,11 @@
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 
 from utils.database import db
 from utils.jwt import jwt_util
+from utils.admin_log import record_admin_log
 
 admin_router = APIRouter(
     prefix="/admin",
@@ -57,7 +58,7 @@ async def get_users(token: str, page: int = 1, page_size: int = 10, role: Option
     }
 
 @admin_router.put("/users/{uid}/role", summary="修改用户角色")
-async def update_user_role(uid: int, token: str, role: str):
+async def update_user_role(uid: int, token: str, role: str, request: Request):
     """修改用户角色，仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -81,6 +82,17 @@ async def update_user_role(uid: int, token: str, role: str):
     await db.execute("UPDATE users SET role = ? WHERE uid = ?", (role, uid))
     await db.commit()
     
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="修改用户角色",
+        operation_object=f"用户ID: {uid}",
+        operation_details=f"将用户角色从 {user['role']} 修改为 {role}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+    
     return {
         "message": "用户角色更新成功",
         "uid": uid,
@@ -88,7 +100,7 @@ async def update_user_role(uid: int, token: str, role: str):
     }
 
 @admin_router.delete("/users/{uid}", summary="删除用户")
-async def delete_user(uid: int, token: str):
+async def delete_user(uid: int, token: str, request: Request):
     """删除用户，仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -110,13 +122,24 @@ async def delete_user(uid: int, token: str):
     await db.execute("DELETE FROM users WHERE uid = ?", (uid,))
     await db.commit()
     
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="删除用户",
+        operation_object=f"用户ID: {uid}",
+        operation_details=f"删除用户 {user['username']} (邮箱: {user['email']})",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+    
     return {
         "message": "用户删除成功",
         "uid": uid
     }
 
 @admin_router.get("/journals/all", summary="获取所有文献列表")
-async def get_all_journals(token: str, page: int = 1, page_size: int = 10, status: Optional[str] = None):
+async def get_all_journals(token: str, page: int = 1, page_size: int = 10, status: Optional[str] = None, request: Request = None):
     """获取所有文献列表，仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -156,14 +179,25 @@ async def get_all_journals(token: str, page: int = 1, page_size: int = 10, statu
     params.extend([page_size, offset])
     journals = await db.fetchall(journals_sql, tuple(params))
     
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="查看所有文献",
+        operation_object=f"页码: {page}, 每页条数: {page_size}, 状态: {status if status else '全部'}",
+        operation_details=f"查询了所有文献，共 {total} 条",
+        ip_address=request.client.host if request and request.client else None,
+        user_agent=request.headers.get("user-agent") if request else None
+    )
+    
     return {
         "total": total,
         "journals": [dict(journal) for journal in journals]
     }
 
 @admin_router.delete("/journals/{jid}", summary="删除文献")
-async def admin_delete_journal(jid: int, token: str):
-    """删除文献，仅限管理员访问"""
+async def admin_delete_journal(jid: int, token: str, request: Request):
+    """删除文献（软删除），仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
     if not user_info:
@@ -175,34 +209,61 @@ async def admin_delete_journal(jid: int, token: str):
     
     # 查询文献
     journal = await db.fetchone(
-        "SELECT file_hash, file_bucket, file_name FROM journals WHERE jid = ?",
+        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
         (jid,)
     )
     
     if not journal:
         raise HTTPException(status_code=404, detail="文献不存在")
     
-    # 获取配置
-    from main import global_config
-    paper_dir = Path(global_config['global']['paper_dir'])
-    
-    # 删除文件
-    file_ext = Path(journal["file_name"]).suffix
-    file_path = paper_dir / journal["file_bucket"] / f"{journal['file_hash']}{file_ext}"
-    if file_path.exists():
-        file_path.unlink()
-    
-    # 删除审核记录
-    await db.execute("DELETE FROM review_records WHERE jid = ?", (jid,))
-    
-    # 删除文献数据
-    await db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
+    # 软删除：将文献状态改为deleted
+    await db.execute(
+        "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
+        (datetime.now().isoformat(), jid)
+    )
     await db.commit()
+    
+    # 将已删除文献信息添加到已删除文献表
+    from utils.database import db_manager
+    deleted_journal_db = db_manager.get_database('deleted_journal')
+    if deleted_journal_db:
+        await deleted_journal_db.execute(
+            """
+            INSERT INTO deleted_journals (
+                original_jid, uid, title, authors, abstract, file_hash, 
+                file_bucket, file_name, file_size, delete_time
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                journal["jid"],
+                journal["uid"],
+                journal["title"],
+                journal["authors"],
+                journal["abstract"],
+                journal["file_hash"],
+                journal["file_bucket"],
+                journal["file_name"],
+                journal["file_size"],
+                datetime.now().isoformat()
+            )
+        )
+        await deleted_journal_db.commit()
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="删除文献",
+        operation_object=f"文献ID: {jid}",
+        operation_details=f"将文献 {journal['title']} 标记为已删除",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
     
     return {"message": "文献删除成功"}
 
 @admin_router.get("/review-records", summary="获取所有审核记录")
-async def get_all_review_records(token: str, page: int = 1, page_size: int = 10):
+async def get_all_review_records(token: str, page: int = 1, page_size: int = 10, request: Request = None):
     """获取所有审核记录，仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -232,13 +293,24 @@ async def get_all_review_records(token: str, page: int = 1, page_size: int = 10)
         (page_size, offset)
     )
     
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="查看审核记录",
+        operation_object=f"页码: {page}, 每页条数: {page_size}",
+        operation_details=f"查询了所有审核记录，共 {total} 条",
+        ip_address=request.client.host if request and request.client else None,
+        user_agent=request.headers.get("user-agent") if request else None
+    )
+    
     return {
         "total": total,
         "records": [dict(record) for record in review_records]
     }
 
 @admin_router.get("/statistics", summary="获取系统统计信息")
-async def get_system_statistics(token: str):
+async def get_system_statistics(token: str, request: Request = None):
     """获取系统统计信息，仅限管理员访问"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -268,6 +340,17 @@ async def get_system_statistics(token: str):
     # 统计审核记录总数
     total_reviews = await db.fetchval("SELECT COUNT(*) FROM review_records")
     
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="查看系统统计",
+        operation_object="系统统计信息",
+        operation_details="查询了系统统计信息",
+        ip_address=request.client.host if request and request.client else None,
+        user_agent=request.headers.get("user-agent") if request else None
+    )
+    
     return {
         "total_users": total_users,
         "user_roles": [dict(role) for role in user_roles],
@@ -275,3 +358,104 @@ async def get_system_statistics(token: str):
         "journal_status": [dict(status) for status in journal_status],
         "total_reviews": total_reviews
     }
+
+
+@admin_router.get("/journals/deleted", summary="获取已删除文献列表")
+async def get_deleted_journals(token: str, page: int = 1, page_size: int = 10, request: Request = None):
+    """获取所有已删除文献列表，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 计算偏移量
+    offset = (page - 1) * page_size
+    
+    # 从主数据库查询已删除文献
+    # 查询文献总数
+    total = await db.fetchval("SELECT COUNT(*) FROM journals WHERE status = 'deleted'")
+    
+    # 查询文献列表
+    journals = await db.fetchall(
+        """
+        SELECT j.jid, j.title, j.authors, j.abstract, j.status, j.file_name, j.file_size, j.create_time, j.update_time, u.username as uploader
+        FROM journals j
+        JOIN users u ON j.uid = u.uid
+        WHERE j.status = 'deleted'
+        ORDER BY j.update_time DESC 
+        LIMIT ? OFFSET ?
+        """,
+        (page_size, offset)
+    )
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="查看已删除文献",
+        operation_object=f"页码: {page}, 每页条数: {page_size}",
+        operation_details=f"查询了已删除文献，共 {total} 条",
+        ip_address=request.client.host if request and request.client else None,
+        user_agent=request.headers.get("user-agent") if request else None
+    )
+    
+    return {
+        "total": total,
+        "journals": [dict(journal) for journal in journals]
+    }
+
+
+@admin_router.delete("/journals/deleted/{jid}", summary="彻底删除文献")
+async def permanently_delete_journal(jid: int, token: str, request: Request):
+    """彻底删除已删除文献，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 查询文献
+    journal = await db.fetchone(
+        "SELECT jid, uid, title, file_hash, file_bucket, file_name FROM journals WHERE jid = ? AND status = 'deleted'",
+        (jid,)
+    )
+    
+    if not journal:
+        raise HTTPException(status_code=404, detail="已删除文献不存在")
+    
+    # 获取配置
+    from main import global_config
+    paper_dir = Path(global_config['global']['paper_dir'])
+    
+    # 删除文件
+    file_ext = Path(journal["file_name"]).suffix
+    file_path = paper_dir / journal["file_bucket"] / f"{journal['file_hash']}{file_ext}"
+    if file_path.exists():
+        file_path.unlink()
+    
+    # 删除审核记录
+    await db.execute("DELETE FROM review_records WHERE jid = ?", (jid,))
+    
+    # 从主表中彻底删除文献
+    await db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
+    await db.commit()
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="彻底删除文献",
+        operation_object=f"文献ID: {jid}",
+        operation_details=f"彻底删除了文献 {journal['title']}",
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return {"message": "文献彻底删除成功"}

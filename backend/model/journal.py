@@ -34,5 +34,5 @@ class JournalListResponse(BaseModel):
 
 class JournalStatusUpdateRequest(BaseModel):
     """文献状态更新请求模型"""
-    status: str = Field(..., description="文献状态", pattern="^(pending|approved|rejected)$")
+    status: str = Field(..., description="文献状态", pattern="^(uploading|pending|reviewing|published|rejected|deleted)$")
     comment: Optional[str] = Field(None, description="审核意见")

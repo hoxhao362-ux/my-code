@@ -147,7 +147,7 @@ async def get_journal_detail(jid: int, token: str):
     # 查询文献
     journal = await db.fetchone(
         """
-        SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
+        SELECT jid, uid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
         WHERE jid = ?
         """,
@@ -158,14 +158,20 @@ async def get_journal_detail(jid: int, token: str):
         raise HTTPException(status_code=404, detail="文献不存在")
     
     # 检查权限
-    if journal["status"] != "approved" and journal["uid"] != user_info["uid"]:
-        raise HTTPException(status_code=403, detail="无权访问此文献")
+    if journal["status"] == "deleted":
+        # 只有作者和管理员可以查看已删除文献
+        if journal["uid"] != user_info["uid"] and user_info["role"] != "admin":
+            raise HTTPException(status_code=403, detail="无权访问此文献")
+    else:
+        # 未删除文献：只有已发表的可以公开访问，其他状态只有作者可以访问
+        if journal["status"] != "published" and journal["uid"] != user_info["uid"]:
+            raise HTTPException(status_code=403, detail="无权访问此文献")
     
     return JournalInfo(**journal)
 
 @journal_router.delete("/{jid}", summary="删除文献")
 async def delete_journal(jid: int, token: str):
-    """删除文献"""
+    """删除文献（软删除）"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
     if not user_info:
@@ -173,7 +179,7 @@ async def delete_journal(jid: int, token: str):
     
     # 查询文献
     journal = await db.fetchone(
-        "SELECT uid, file_hash, file_bucket, file_name FROM journals WHERE jid = ?",
+        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
         (jid,)
     )
     
@@ -184,19 +190,38 @@ async def delete_journal(jid: int, token: str):
     if journal["uid"] != user_info["uid"] and user_info["role"] != "admin":
         raise HTTPException(status_code=403, detail="无权删除此文献")
     
-    # 获取配置
-    from main import global_config
-    paper_dir = Path(global_config['global']['paper_dir'])
-    
-    # 删除文件
-    file_ext = Path(journal["file_name"]).suffix
-    file_path = paper_dir / journal["file_bucket"] / f"{journal['file_hash']}{file_ext}"
-    if file_path.exists():
-        file_path.unlink()
-    
-    # 删除文献数据
-    await db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
+    # 软删除：将文献状态改为deleted
+    await db.execute(
+        "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
+        (datetime.now().isoformat(), jid)
+    )
     await db.commit()
+    
+    # 将已删除文献信息添加到已删除文献表
+    from utils.database import db_manager
+    deleted_journal_db = db_manager.get_database('deleted_journal')
+    if deleted_journal_db:
+        await deleted_journal_db.execute(
+            """
+            INSERT INTO deleted_journals (
+                original_jid, uid, title, authors, abstract, file_hash, 
+                file_bucket, file_name, file_size, delete_time
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                journal["jid"],
+                journal["uid"],
+                journal["title"],
+                journal["authors"],
+                journal["abstract"],
+                journal["file_hash"],
+                journal["file_bucket"],
+                journal["file_name"],
+                journal["file_size"],
+                datetime.now().isoformat()
+            )
+        )
+        await deleted_journal_db.commit()
     
     return {"message": "文献删除成功"}
 
@@ -208,7 +233,7 @@ async def get_public_journals(page: int = 1, page_size: int = 10):
     
     # 查询文献总数
     total = await db.fetchval(
-        "SELECT COUNT(*) FROM journals WHERE status = 'approved'"
+        "SELECT COUNT(*) FROM journals WHERE status = 'published'"
     )
     
     # 查询文献列表
@@ -216,7 +241,7 @@ async def get_public_journals(page: int = 1, page_size: int = 10):
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE status = 'approved' 
+        WHERE status = 'published' 
         ORDER BY create_time DESC 
         LIMIT ? OFFSET ?
         """,

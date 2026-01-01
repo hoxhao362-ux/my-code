@@ -39,3 +39,4 @@ __pycache__/
 uploads/
 
 .db
+.space/

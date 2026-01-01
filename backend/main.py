@@ -60,13 +60,33 @@ async def lifespan(app: FastAPI):
         global_logger.info('config', f'检查配置: {config_name}')
         check_dirs(config)
     
-    # 连接数据库，使用配置中指定的路径
-    from utils.database import db
-    db.db_path = Path(global_config['global']['database_dir']) / 'journal.db'
-    await db.connect()
+    # 数据库初始化
+    from utils.database import db_manager, db
+    database_dir = Path(global_config['global']['database_dir'])
     
-    # 创建表
-    await db.create_tables()
+    # 添加数据库实例到管理器
+    database_config = configs.get('database', {})
+    
+    # 主数据库
+    main_db_path = database_dir / 'journal.db'
+    db_manager.add_database('main', main_db_path)
+    
+    # 管理员日志数据库
+    admin_log_db_path = database_dir / database_config.get('admin_log_db', 'admin_log.db')
+    db_manager.add_database('admin_log', admin_log_db_path)
+    
+    # 已删除文献数据库
+    deleted_journal_db_path = database_dir / database_config.get('deleted_journal_db', 'deleted_journal.db')
+    db_manager.add_database('deleted_journal', deleted_journal_db_path)
+    
+    # 连接并初始化所有数据库
+    await db_manager.connect_all()
+    await db_manager.create_all_tables()
+    
+    # 更新旧的db实例，保持兼容性
+    db.db_path = main_db_path
+    db.conn = db_manager.get_database('main').conn
+    
     global_logger.info('database', "数据库初始化完成")
     
     # Redis连接初始化
@@ -83,12 +103,13 @@ async def lifespan(app: FastAPI):
     yield
     # 关闭事件
     await db.close()
+    await db_manager.close_all()
     await redis_client.close()
     global_logger.info('main', "关闭应用")
 
 # 创建FastAPI应用
 app = FastAPI(
-    title="期刊平台API",
+    title="期刊平台API", 
     description="期刊平台投稿站后端API",
     version="1.0.0",
     lifespan=lifespan
