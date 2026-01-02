@@ -4,7 +4,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from database.adapter.database_adapter import db
+from database import db_manager
+
+# 获取数据库服务实例
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
+deleted_journal_db = db_manager.get_service('deleted_journal')
 from utils.jwt import jwt_util
 from utils.generator import generator
 from model.journal import (
@@ -67,7 +72,7 @@ async def upload_journal(
     create_time = datetime.now().isoformat()
     
     # 插入文献数据
-    await db.execute(
+    await journal_db.execute(
         """
         INSERT INTO journals (uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size, create_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -84,10 +89,9 @@ async def upload_journal(
             create_time
         )
     )
-    await db.commit()
     
     # 获取新上传文献的ID
-    jid = await db.fetchval("SELECT last_insert_rowid()")
+    jid = await journal_db.fetchval("SELECT last_insert_rowid()")
     
     return JournalUploadResponse(
         jid=jid,
@@ -108,13 +112,13 @@ async def get_my_journals(token: str, page: int = 1, page_size: int = 10):
     offset = (page - 1) * page_size
     
     # 查询文献总数
-    total = await db.fetchval(
+    total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM journals WHERE uid = ?",
         (user_info["uid"],)
     )
     
     # 查询文献列表
-    journals = await db.fetchall(
+    journals = await journal_db.fetchall(
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
@@ -145,7 +149,7 @@ async def get_journal_detail(jid: int, token: str):
         raise HTTPException(status_code=401, detail="无效的token")
     
     # 查询文献
-    journal = await db.fetchone(
+    journal = await journal_db.fetchone(
         """
         SELECT jid, uid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
@@ -178,7 +182,7 @@ async def delete_journal(jid: int, token: str):
         raise HTTPException(status_code=401, detail="无效的token")
     
     # 查询文献
-    journal = await db.fetchone(
+    journal = await journal_db.fetchone(
         "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
         (jid,)
     )
@@ -191,37 +195,32 @@ async def delete_journal(jid: int, token: str):
         raise HTTPException(status_code=403, detail="无权删除此文献")
     
     # 软删除：将文献状态改为deleted
-    await db.execute(
+    await journal_db.execute(
         "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
         (datetime.now().isoformat(), jid)
     )
-    await db.commit()
     
     # 将已删除文献信息添加到已删除文献表
-    from utils.database import db_manager
-    deleted_journal_db = db_manager.get_database('deleted_journal')
-    if deleted_journal_db:
-        await deleted_journal_db.execute(
-            """
-            INSERT INTO deleted_journals (
-                original_jid, uid, title, authors, abstract, file_hash, 
-                file_bucket, file_name, file_size, delete_time
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                journal["jid"],
-                journal["uid"],
-                journal["title"],
-                journal["authors"],
-                journal["abstract"],
-                journal["file_hash"],
-                journal["file_bucket"],
-                journal["file_name"],
-                journal["file_size"],
-                datetime.now().isoformat()
-            )
+    await deleted_journal_db.execute(
+        """
+        INSERT INTO deleted_journals (
+            original_jid, uid, title, authors, abstract, file_hash, 
+            file_bucket, file_name, file_size, delete_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            journal["jid"],
+            journal["uid"],
+            journal["title"],
+            journal["authors"],
+            journal["abstract"],
+            journal["file_hash"],
+            journal["file_bucket"],
+            journal["file_name"],
+            journal["file_size"],
+            datetime.now().isoformat()
         )
-        await deleted_journal_db.commit()
+    )
     
     return {"message": "文献删除成功"}
 
@@ -232,12 +231,12 @@ async def get_public_journals(page: int = 1, page_size: int = 10):
     offset = (page - 1) * page_size
     
     # 查询文献总数
-    total = await db.fetchval(
+    total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM journals WHERE status = 'published'"
     )
     
     # 查询文献列表
-    journals = await db.fetchall(
+    journals = await journal_db.fetchall(
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 

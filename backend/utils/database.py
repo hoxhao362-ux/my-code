@@ -3,6 +3,25 @@ import asyncio
 from pathlib import Path
 from typing import Any, List, Dict, Optional, Tuple
 
+"""
+此文件已弃用！
+
+从2024-01-02起，该文件已被新的数据库架构替代。
+请使用新的数据库服务：from database import db_manager
+
+示例：
+    from database import db_manager
+    user_db = db_manager.get_service('user_account')
+    journal_db = db_manager.get_service('journal_submit')
+"""
+
+import warnings
+warnings.warn(
+    "utils.database模块已弃用，请使用新的database模块",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 class Database:
     def __init__(self, db_path: str = "./journal.db"):
         self.db_path = Path(db_path) if isinstance(db_path, str) else db_path

@@ -3,7 +3,12 @@ from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 
-from database.adapter.database_adapter import db
+from database import db_manager
+
+# 获取数据库服务实例
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
+deleted_journal_db = db_manager.get_service('deleted_journal')
 from utils.jwt import jwt_util
 from utils.admin_log import record_admin_log
 
@@ -39,7 +44,7 @@ async def get_users(token: str, page: int = 1, page_size: int = 10, role: Option
     
     # 查询用户总数
     count_sql = f"SELECT COUNT(*) FROM users {where_clause}"
-    total = await db.fetchval(count_sql, tuple(params))
+    total = await user_db.fetchval(count_sql, tuple(params))
     
     # 查询用户列表
     users_sql = f"""
@@ -50,7 +55,7 @@ async def get_users(token: str, page: int = 1, page_size: int = 10, role: Option
     LIMIT ? OFFSET ?
     """
     params.extend([page_size, offset])
-    users = await db.fetchall(users_sql, tuple(params))
+    users = await user_db.fetchall(users_sql, tuple(params))
     
     return {
         "total": total,
@@ -74,13 +79,12 @@ async def update_user_role(uid: int, token: str, role: str, request: Request):
         raise HTTPException(status_code=400, detail="角色无效，只能是user、reviewer或admin")
     
     # 检查用户是否存在
-    user = await db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
+    user = await user_db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     
     # 更新用户角色
-    await db.execute("UPDATE users SET role = ? WHERE uid = ?", (role, uid))
-    await db.commit()
+    await user_db.execute("UPDATE users SET role = ? WHERE uid = ?", (role, uid))
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -112,15 +116,14 @@ async def delete_user(uid: int, token: str, request: Request):
         raise HTTPException(status_code=403, detail="无权访问此接口")
     
     # 检查用户是否存在
-    user = await db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
+    user = await user_db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     
     # 删除用户的文献和审核记录
-    await db.execute("DELETE FROM review_records WHERE reviewer_uid = ?", (uid,))
-    await db.execute("DELETE FROM journals WHERE uid = ?", (uid,))
-    await db.execute("DELETE FROM users WHERE uid = ?", (uid,))
-    await db.commit()
+    await journal_db.execute("DELETE FROM review_records WHERE reviewer_uid = ?", (uid,))
+    await journal_db.execute("DELETE FROM journals WHERE uid = ?", (uid,))
+    await user_db.execute("DELETE FROM users WHERE uid = ?", (uid,))
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -165,7 +168,7 @@ async def get_all_journals(token: str, page: int = 1, page_size: int = 10, statu
     
     # 查询文献总数
     count_sql = f"SELECT COUNT(*) FROM journals {where_clause}"
-    total = await db.fetchval(count_sql, tuple(params))
+    total = await journal_db.fetchval(count_sql, tuple(params))
     
     # 查询文献列表
     journals_sql = f"""
@@ -177,7 +180,7 @@ async def get_all_journals(token: str, page: int = 1, page_size: int = 10, statu
     LIMIT ? OFFSET ?
     """
     params.extend([page_size, offset])
-    journals = await db.fetchall(journals_sql, tuple(params))
+    journals = await journal_db.fetchall(journals_sql, tuple(params))
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -208,7 +211,7 @@ async def admin_delete_journal(jid: int, token: str, request: Request):
         raise HTTPException(status_code=403, detail="无权访问此接口")
     
     # 查询文献
-    journal = await db.fetchone(
+    journal = await journal_db.fetchone(
         "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
         (jid,)
     )
@@ -217,37 +220,32 @@ async def admin_delete_journal(jid: int, token: str, request: Request):
         raise HTTPException(status_code=404, detail="文献不存在")
     
     # 软删除：将文献状态改为deleted
-    await db.execute(
+    await journal_db.execute(
         "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
         (datetime.now().isoformat(), jid)
     )
-    await db.commit()
     
     # 将已删除文献信息添加到已删除文献表
-    from utils.database import db_manager
-    deleted_journal_db = db_manager.get_database('deleted_journal')
-    if deleted_journal_db:
-        await deleted_journal_db.execute(
-            """
-            INSERT INTO deleted_journals (
-                original_jid, uid, title, authors, abstract, file_hash, 
-                file_bucket, file_name, file_size, delete_time
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                journal["jid"],
-                journal["uid"],
-                journal["title"],
-                journal["authors"],
-                journal["abstract"],
-                journal["file_hash"],
-                journal["file_bucket"],
-                journal["file_name"],
-                journal["file_size"],
-                datetime.now().isoformat()
-            )
+    await deleted_journal_db.execute(
+        """
+        INSERT INTO deleted_journals (
+            original_jid, uid, title, authors, abstract, file_hash, 
+            file_bucket, file_name, file_size, delete_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            journal["jid"],
+            journal["uid"],
+            journal["title"],
+            journal["authors"],
+            journal["abstract"],
+            journal["file_hash"],
+            journal["file_bucket"],
+            journal["file_name"],
+            journal["file_size"],
+            datetime.now().isoformat()
         )
-        await deleted_journal_db.commit()
+    )
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -278,10 +276,10 @@ async def get_all_review_records(token: str, page: int = 1, page_size: int = 10,
     offset = (page - 1) * page_size
     
     # 查询审核记录总数
-    total = await db.fetchval("SELECT COUNT(*) FROM review_records")
+    total = await journal_db.fetchval("SELECT COUNT(*) FROM review_records")
     
     # 查询审核记录
-    review_records = await db.fetchall(
+    review_records = await journal_db.fetchall(
         """
         SELECT rr.*, j.title, u.username as reviewer_name
         FROM review_records rr
@@ -322,23 +320,23 @@ async def get_system_statistics(token: str, request: Request = None):
         raise HTTPException(status_code=403, detail="无权访问此接口")
     
     # 统计用户总数
-    total_users = await db.fetchval("SELECT COUNT(*) FROM users")
+    total_users = await user_db.fetchval("SELECT COUNT(*) FROM users")
     
     # 按角色统计用户
-    user_roles = await db.fetchall(
+    user_roles = await user_db.fetchall(
         "SELECT role, COUNT(*) as count FROM users GROUP BY role"
     )
     
     # 统计文献总数
-    total_journals = await db.fetchval("SELECT COUNT(*) FROM journals")
+    total_journals = await journal_db.fetchval("SELECT COUNT(*) FROM journals")
     
     # 按状态统计文献
-    journal_status = await db.fetchall(
+    journal_status = await journal_db.fetchall(
         "SELECT status, COUNT(*) as count FROM journals GROUP BY status"
     )
     
     # 统计审核记录总数
-    total_reviews = await db.fetchval("SELECT COUNT(*) FROM review_records")
+    total_reviews = await journal_db.fetchval("SELECT COUNT(*) FROM review_records")
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -377,10 +375,10 @@ async def get_deleted_journals(token: str, page: int = 1, page_size: int = 10, r
     
     # 从主数据库查询已删除文献
     # 查询文献总数
-    total = await db.fetchval("SELECT COUNT(*) FROM journals WHERE status = 'deleted'")
+    total = await journal_db.fetchval("SELECT COUNT(*) FROM journals WHERE status = 'deleted'")
     
     # 查询文献列表
-    journals = await db.fetchall(
+    journals = await journal_db.fetchall(
         """
         SELECT j.jid, j.title, j.authors, j.abstract, j.status, j.file_name, j.file_size, j.create_time, j.update_time, u.username as uploader
         FROM journals j
@@ -422,7 +420,7 @@ async def permanently_delete_journal(jid: int, token: str, request: Request):
         raise HTTPException(status_code=403, detail="无权访问此接口")
     
     # 查询文献
-    journal = await db.fetchone(
+    journal = await journal_db.fetchone(
         "SELECT jid, uid, title, file_hash, file_bucket, file_name FROM journals WHERE jid = ? AND status = 'deleted'",
         (jid,)
     )
@@ -441,11 +439,10 @@ async def permanently_delete_journal(jid: int, token: str, request: Request):
         file_path.unlink()
     
     # 删除审核记录
-    await db.execute("DELETE FROM review_records WHERE jid = ?", (jid,))
+    await journal_db.execute("DELETE FROM review_records WHERE jid = ?", (jid,))
     
     # 从主表中彻底删除文献
-    await db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
-    await db.commit()
+    await journal_db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
     
     # 记录管理员操作日志
     await record_admin_log(

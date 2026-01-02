@@ -3,11 +3,11 @@
 基于配置文件标准化的数据库配置管理
 """
 import os
-import tomllib
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+from utils.log import global_logger
 from utils.file import load_toml
 
 
@@ -39,12 +39,15 @@ class DatabaseConfig:
             # 加载全局配置
             global_config_path = self.config_dir / "global.toml"
             self.global_config = load_toml(global_config_path)
+            global_logger.info('database', f"加载全局配置文件: {global_config_path}")
                 
             # 加载数据库配置
             database_config_path = self.config_dir / "database.toml"
             self.database_config = load_toml(database_config_path)
+            global_logger.info('database', f"加载数据库配置文件: {database_config_path}")
                     
         except Exception as e:
+            global_logger.error('database', f"加载数据库配置文件失败: {e}")
             raise RuntimeError(f"加载数据库配置文件失败: {e}")
     
     def get_database_config(self) -> Dict[str, DatabaseInfo]:

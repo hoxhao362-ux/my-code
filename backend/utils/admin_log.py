@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Dict, Any, Optional
-from database.adapter.database_adapter import admin_log_db
+from database import db_manager
+
+# 获取管理员日志数据库服务实例
+admin_log_db = db_manager.get_service('admin_log')
 
 async def record_admin_log(
     admin_uid: int,
@@ -42,7 +45,6 @@ async def record_admin_log(
             user_agent
         )
     )
-    await admin_log_db.commit()
 
 
 async def get_admin_logs(

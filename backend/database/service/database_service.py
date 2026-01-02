@@ -4,11 +4,11 @@
 """
 import sqlite3
 import asyncio
-import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from contextlib import asynccontextmanager
 
+from utils.log import global_logger
 from database.config.database_config import DatabaseConfig, DatabaseInfo, db_config
 
 
@@ -69,7 +69,7 @@ class DatabaseService:
     def __init__(self, database_name: str):
         self.database_name = database_name
         self.db_info = db_config.get_database_info(database_name)
-        self.logger = logging.getLogger(f"database.{database_name}")
+        self.logger = global_logger
         self._initialized = False
     
     async def initialize(self):
@@ -86,10 +86,10 @@ class DatabaseService:
                 await self._create_tables(conn.connection)
             
             self._initialized = True
-            self.logger.info(f"数据库 {self.database_name} 初始化完成")
+            global_logger.info('database', f"数据库 {self.database_name} 初始化完成")
             
         except Exception as e:
-            self.logger.error(f"数据库 {self.database_name} 初始化失败: {e}")
+            global_logger.error('database', f"数据库 {self.database_name} 初始化失败: {e}")
             raise RuntimeError(f"数据库 {self.database_name} 初始化失败: {e}")
     
     async def _create_tables(self, connection: sqlite3.Connection):
@@ -99,9 +99,9 @@ class DatabaseService:
         for table_name, sql in sql_statements.items():
             try:
                 connection.execute(sql)
-                self.logger.debug(f"表 {table_name} 创建/验证完成")
+                global_logger.debug('database', f"表 {table_name} 创建/验证完成")
             except sqlite3.Error as e:
-                self.logger.error(f"创建表 {table_name} 失败: {e}")
+                global_logger.error('database', f"创建表 {table_name} 失败: {e}")
                 raise
     
     def _get_table_creation_sql(self) -> Dict[str, str]:
@@ -291,9 +291,9 @@ class DatabaseService:
             for index_sql in indexes:
                 try:
                     await self.execute(index_sql)
-                    self.logger.debug(f"索引创建完成: {index_sql[:50]}...")
+                    global_logger.debug('database', f"索引创建完成: {index_sql[:50]}...")
                 except sqlite3.Error as e:
-                    self.logger.warning(f"索引创建失败: {e}")
+                    global_logger.warning('database', f"索引创建失败: {e}")
     
     def _get_index_creation_sql(self) -> Dict[str, List[str]]:
         """获取索引创建SQL语句"""
@@ -335,7 +335,6 @@ class DatabaseManager:
     
     def __init__(self):
         self.services: Dict[str, DatabaseService] = {}
-        self.logger = logging.getLogger("database.manager")
         self._initialized = False
     
     def get_service(self, database_name: str) -> DatabaseService:
@@ -370,10 +369,10 @@ class DatabaseManager:
             await asyncio.gather(*index_tasks)
             
             self._initialized = True
-            self.logger.info(f"所有数据库初始化完成，共 {len(db_names)} 个数据库")
+            global_logger.info('database', f"所有数据库初始化完成，共 {len(db_names)} 个数据库")
             
         except Exception as e:
-            self.logger.error(f"数据库初始化失败: {e}")
+            global_logger.error('database', f"数据库初始化失败: {e}")
             raise RuntimeError(f"数据库初始化失败: {e}")
     
     async def get_database_info(self, database_name: str) -> DatabaseInfo:
@@ -389,16 +388,3 @@ class DatabaseManager:
 db_manager = DatabaseManager()
 
 
-# 兼容性函数 - 保持现有API不变
-async def get_db_service(database_name: str = 'journal_submit') -> DatabaseService:
-    """获取数据库服务（兼容性函数）"""
-    if not db_manager._initialized:
-        await db_manager.initialize_all()
-    return db_manager.get_service(database_name)
-
-
-# 保留原有的数据库实例用于向后兼容
-from utils.database import Database as LegacyDatabase
-
-# 创建兼容的数据库实例
-legacy_db = LegacyDatabase()

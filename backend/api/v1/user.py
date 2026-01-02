@@ -2,7 +2,11 @@
 from fastapi import APIRouter, HTTPException, Request
 from datetime import datetime
 
-from database.adapter.database_adapter import db
+from database import db_manager
+
+# 获取数据库服务实例
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
 from utils.jwt import jwt_util
 from utils.redis import redis_client
 from utils.generator import generator
@@ -35,7 +39,7 @@ async def register(request: RegisterRequest, req: Request):
         )
     
     # 检查用户名是否已存在
-    existing_user = await db.fetchone(
+    existing_user = await user_db.fetchone(
         "SELECT * FROM users WHERE username = ?",
         (request.username,)
     )
@@ -43,7 +47,7 @@ async def register(request: RegisterRequest, req: Request):
         raise HTTPException(status_code=400, detail="用户名已存在")
     
     # 检查邮箱是否已存在
-    existing_email = await db.fetchone(
+    existing_email = await user_db.fetchone(
         "SELECT * FROM users WHERE email = ?",
         (request.email,)
     )
@@ -60,17 +64,16 @@ async def register(request: RegisterRequest, req: Request):
     create_time = datetime.now().isoformat()
     
     # 插入用户数据
-    await db.execute(
+    await user_db.execute(
         """
         INSERT INTO users (uid_hash, username, password, email, role, create_time)
         VALUES (?, ?, ?, ?, 'user', ?)
         """,
         (uid_hash, request.username, hashed_password, request.email, create_time)
     )
-    await db.commit()
     
     # 获取新注册用户信息
-    new_user = await db.fetchone(
+    new_user = await user_db.fetchone(
         "SELECT uid, username, email, role FROM users WHERE username = ?",
         (request.username,)
     )
@@ -110,7 +113,7 @@ async def login(request: LoginRequest, req: Request):
         )
     
     # 检查用户是否存在
-    user = await db.fetchone(
+    user = await user_db.fetchone(
         "SELECT * FROM users WHERE username = ?",
         (request.username,)
     )
@@ -123,11 +126,10 @@ async def login(request: LoginRequest, req: Request):
     
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
-    await db.execute(
+    await user_db.execute(
         "UPDATE users SET last_login_time = ? WHERE uid = ?",
         (last_login_time, user["uid"])
     )
-    await db.commit()
     
     # 生成token
     token = jwt_util.create_access_token({
@@ -164,7 +166,7 @@ async def get_current_user(token: str):
         user_id = user_info["uid"]
     
     # 从数据库获取最新用户信息
-    user = await db.fetchone(
+    user = await user_db.fetchone(
         "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = ?",
         (user_id,)
     )
