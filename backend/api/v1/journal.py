@@ -1,12 +1,17 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from typing import List, Optional
 import os
-import hashlib
 from datetime import datetime
 from pathlib import Path
 
-from utils.database import db
+from database import db_manager
+
+# 获取数据库服务实例
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
+deleted_journal_db = db_manager.get_service('deleted_journal')
 from utils.jwt import jwt_util
+from utils.generator import generator
 from model.journal import (
     JournalUploadRequest, 
     JournalUploadResponse, 
@@ -48,7 +53,7 @@ async def upload_journal(
     file_size = len(file_content)
     
     # 生成文件哈希
-    file_hash = hashlib.sha256(file_content).hexdigest()
+    file_hash = generator.generate_file_hash(file_content)
     
     # 计算哈希分桶，使用哈希值的前2位作为桶名
     file_bucket = file_hash[:2]
@@ -67,7 +72,7 @@ async def upload_journal(
     create_time = datetime.now().isoformat()
     
     # 插入文献数据
-    await db.execute(
+    await journal_db.execute(
         """
         INSERT INTO journals (uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size, create_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -84,10 +89,9 @@ async def upload_journal(
             create_time
         )
     )
-    await db.commit()
     
     # 获取新上传文献的ID
-    jid = await db.fetchval("SELECT last_insert_rowid()")
+    jid = await journal_db.fetchval("SELECT last_insert_rowid()")
     
     return JournalUploadResponse(
         jid=jid,
@@ -108,13 +112,13 @@ async def get_my_journals(token: str, page: int = 1, page_size: int = 10):
     offset = (page - 1) * page_size
     
     # 查询文献总数
-    total = await db.fetchval(
+    total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM journals WHERE uid = ?",
         (user_info["uid"],)
     )
     
     # 查询文献列表
-    journals = await db.fetchall(
+    journals = await journal_db.fetchall(
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
@@ -145,9 +149,9 @@ async def get_journal_detail(jid: int, token: str):
         raise HTTPException(status_code=401, detail="无效的token")
     
     # 查询文献
-    journal = await db.fetchone(
+    journal = await journal_db.fetchone(
         """
-        SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
+        SELECT jid, uid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
         WHERE jid = ?
         """,
@@ -158,22 +162,28 @@ async def get_journal_detail(jid: int, token: str):
         raise HTTPException(status_code=404, detail="文献不存在")
     
     # 检查权限
-    if journal["status"] != "approved" and journal["uid"] != user_info["uid"]:
-        raise HTTPException(status_code=403, detail="无权访问此文献")
+    if journal["status"] == "deleted":
+        # 只有作者和管理员可以查看已删除文献
+        if journal["uid"] != user_info["uid"] and user_info["role"] != "admin":
+            raise HTTPException(status_code=403, detail="无权访问此文献")
+    else:
+        # 未删除文献：只有已发表的可以公开访问，其他状态只有作者可以访问
+        if journal["status"] != "published" and journal["uid"] != user_info["uid"]:
+            raise HTTPException(status_code=403, detail="无权访问此文献")
     
     return JournalInfo(**journal)
 
 @journal_router.delete("/{jid}", summary="删除文献")
 async def delete_journal(jid: int, token: str):
-    """删除文献"""
+    """删除文献（软删除）"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
     if not user_info:
         raise HTTPException(status_code=401, detail="无效的token")
     
     # 查询文献
-    journal = await db.fetchone(
-        "SELECT uid, file_hash, file_bucket, file_name FROM journals WHERE jid = ?",
+    journal = await journal_db.fetchone(
+        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
         (jid,)
     )
     
@@ -184,19 +194,33 @@ async def delete_journal(jid: int, token: str):
     if journal["uid"] != user_info["uid"] and user_info["role"] != "admin":
         raise HTTPException(status_code=403, detail="无权删除此文献")
     
-    # 获取配置
-    from main import global_config
-    paper_dir = Path(global_config['global']['paper_dir'])
+    # 软删除：将文献状态改为deleted
+    await journal_db.execute(
+        "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
+        (datetime.now().isoformat(), jid)
+    )
     
-    # 删除文件
-    file_ext = Path(journal["file_name"]).suffix
-    file_path = paper_dir / journal["file_bucket"] / f"{journal['file_hash']}{file_ext}"
-    if file_path.exists():
-        file_path.unlink()
-    
-    # 删除文献数据
-    await db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
-    await db.commit()
+    # 将已删除文献信息添加到已删除文献表
+    await deleted_journal_db.execute(
+        """
+        INSERT INTO deleted_journals (
+            original_jid, uid, title, authors, abstract, file_hash, 
+            file_bucket, file_name, file_size, delete_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            journal["jid"],
+            journal["uid"],
+            journal["title"],
+            journal["authors"],
+            journal["abstract"],
+            journal["file_hash"],
+            journal["file_bucket"],
+            journal["file_name"],
+            journal["file_size"],
+            datetime.now().isoformat()
+        )
+    )
     
     return {"message": "文献删除成功"}
 
@@ -207,16 +231,16 @@ async def get_public_journals(page: int = 1, page_size: int = 10):
     offset = (page - 1) * page_size
     
     # 查询文献总数
-    total = await db.fetchval(
-        "SELECT COUNT(*) FROM journals WHERE status = 'approved'"
+    total = await journal_db.fetchval(
+        "SELECT COUNT(*) FROM journals WHERE status = 'published'"
     )
     
     # 查询文献列表
-    journals = await db.fetchall(
+    journals = await journal_db.fetchall(
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE status = 'approved' 
+        WHERE status = 'published' 
         ORDER BY create_time DESC 
         LIMIT ? OFFSET ?
         """,

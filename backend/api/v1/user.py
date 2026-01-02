@@ -1,16 +1,27 @@
+"""用户相关API接口"""
 from fastapi import APIRouter, HTTPException, Request
-import hashlib
 from datetime import datetime
 
-from utils.database import db
+from database import db_manager
+
+# 获取数据库服务实例
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
 from utils.jwt import jwt_util
 from utils.redis import redis_client
+from utils.generator import generator
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
-from dataclasses.user import UserAccount
 
+# 创建用户相关路由
 user_router = APIRouter(
     prefix="/user",
     tags=["用户相关接口"],
+    responses={
+        401: {"description": "未授权"},
+        403: {"description": "禁止访问"},
+        404: {"description": "资源不存在"},
+        429: {"description": "请求频率过高"},
+    },
 )
 
 @user_router.post("/register", summary="用户注册", response_model=RegisterResponse)
@@ -28,7 +39,7 @@ async def register(request: RegisterRequest, req: Request):
         )
     
     # 检查用户名是否已存在
-    existing_user = await db.fetchone(
+    existing_user = await user_db.fetchone(
         "SELECT * FROM users WHERE username = ?",
         (request.username,)
     )
@@ -36,7 +47,7 @@ async def register(request: RegisterRequest, req: Request):
         raise HTTPException(status_code=400, detail="用户名已存在")
     
     # 检查邮箱是否已存在
-    existing_email = await db.fetchone(
+    existing_email = await user_db.fetchone(
         "SELECT * FROM users WHERE email = ?",
         (request.email,)
     )
@@ -44,7 +55,7 @@ async def register(request: RegisterRequest, req: Request):
         raise HTTPException(status_code=400, detail="邮箱已被注册")
     
     # 生成uid_hash
-    uid_hash = hashlib.sha256(f"{request.username}-{datetime.now().isoformat()}".encode()).hexdigest()
+    uid_hash = generator.generate_uid_hash(request.username)
     
     # 密码加密
     hashed_password = jwt_util.hash_password(request.password)
@@ -53,44 +64,31 @@ async def register(request: RegisterRequest, req: Request):
     create_time = datetime.now().isoformat()
     
     # 插入用户数据
-    await db.execute(
+    await user_db.execute(
         """
         INSERT INTO users (uid_hash, username, password, email, role, create_time)
         VALUES (?, ?, ?, ?, 'user', ?)
         """,
         (uid_hash, request.username, hashed_password, request.email, create_time)
     )
-    await db.commit()
     
     # 获取新注册用户信息
-    new_user = await db.fetchone(
+    new_user = await user_db.fetchone(
         "SELECT uid, username, email, role FROM users WHERE username = ?",
         (request.username,)
     )
     
-    # 使用dataclass创建用户对象
-    user_account = UserAccount(
-        uid=new_user["uid"],
-        uid_hash=uid_hash,
-        username=new_user["username"],
-        password=hashed_password,
-        email=new_user["email"],
-        create_time=create_time,
-        last_login_time=None,
-        is_admin=new_user["role"] == "admin"
-    )
-    
     # 生成token
     token = jwt_util.create_access_token({
-        "uid": user_account.uid,
-        "username": user_account.username,
-        "email": user_account.email,
+        "uid": new_user["uid"],
+        "username": new_user["username"],
+        "email": new_user["email"],
         "role": new_user["role"]
     })
     
     # 设置用户在线状态
     await redis_client.set_user_online(
-        user_id=user_account.uid,
+        user_id=new_user["uid"],
         token=token,
         expire_time=3600 * 24 if request.is_remember else 3600
     )
@@ -115,7 +113,7 @@ async def login(request: LoginRequest, req: Request):
         )
     
     # 检查用户是否存在
-    user = await db.fetchone(
+    user = await user_db.fetchone(
         "SELECT * FROM users WHERE username = ?",
         (request.username,)
     )
@@ -128,36 +126,23 @@ async def login(request: LoginRequest, req: Request):
     
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
-    await db.execute(
+    await user_db.execute(
         "UPDATE users SET last_login_time = ? WHERE uid = ?",
         (last_login_time, user["uid"])
-    )
-    await db.commit()
-    
-    # 使用dataclass创建用户对象
-    user_account = UserAccount(
-        uid=user["uid"],
-        uid_hash=user["uid_hash"],
-        username=user["username"],
-        password=user["password"],
-        email=user["email"],
-        create_time=user["create_time"],
-        last_login_time=last_login_time,
-        is_admin=user["role"] == "admin"
     )
     
     # 生成token
     token = jwt_util.create_access_token({
-        "uid": user_account.uid,
-        "username": user_account.username,
-        "email": user_account.email,
+        "uid": user["uid"],
+        "username": user["username"],
+        "email": user["email"],
         "role": user["role"]
     })
     
     # 设置用户在线状态
     expire_time = 3600 * 24 * 30 if request.is_remember else 3600
     await redis_client.set_user_online(
-        user_id=user_account.uid,
+        user_id=user["uid"],
         token=token,
         expire_time=expire_time
     )
@@ -181,7 +166,7 @@ async def get_current_user(token: str):
         user_id = user_info["uid"]
     
     # 从数据库获取最新用户信息
-    user = await db.fetchone(
+    user = await user_db.fetchone(
         "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = ?",
         (user_id,)
     )
