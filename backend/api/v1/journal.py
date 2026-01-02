@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from utils.database import db
+from database.adapter.database_adapter import db
 from utils.jwt import jwt_util
 from utils.generator import generator
 from model.journal import (

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from datetime import datetime
 
-from utils.database import db
+from database.adapter.database_adapter import db
 from utils.jwt import jwt_util
 from model.journal import JournalInfo
 

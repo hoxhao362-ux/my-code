@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 
-from utils.database import db
+from database.adapter.database_adapter import db
 from utils.jwt import jwt_util
 from utils.admin_log import record_admin_log
 

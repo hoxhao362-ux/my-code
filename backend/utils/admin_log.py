@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Dict, Any, Optional
-from utils.database import db_manager
+from database.adapter.database_adapter import admin_log_db
 
 async def record_admin_log(
     admin_uid: int,
@@ -23,10 +23,6 @@ async def record_admin_log(
         ip_address: IP地址（可选）
         user_agent: 用户代理（可选）
     """
-    admin_log_db = db_manager.get_database('admin_log')
-    if not admin_log_db:
-        return
-    
     # 记录日志
     await admin_log_db.execute(
         """
@@ -69,10 +65,6 @@ async def get_admin_logs(
     Returns:
         包含日志总数和日志列表的字典
     """
-    admin_log_db = db_manager.get_database('admin_log')
-    if not admin_log_db:
-        return {"total": 0, "logs": []}
-    
     # 计算偏移量
     offset = (page - 1) * page_size
     
