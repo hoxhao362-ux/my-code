@@ -9,11 +9,13 @@ from typing import Any, Dict, Optional, Union
 from jose import JWTError, jwt  # JWT库，用于生成和验证令牌
 from passlib.context import CryptContext  # 密码加密库
 
+from core.config import config
+
 # 默认配置
-SECRET_KEY = "your-secret-key-change-in-production"  # JWT签名密钥，生产环境必须更换为安全的随机字符串
-ALGORITHM = "HS256"  # JWT加密算法，这里使用HS256（HMAC-SHA256）
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 访问令牌过期时间（分钟）
-REFRESH_TOKEN_EXPIRE_DAYS = 7  # 刷新令牌过期时间（天）
+SECRET_KEY = config.global_.SECRET_KEY  # JWT签名密钥，生产环境必须更换为安全的随机字符串
+ALGORITHM = config.global_.ALGORITHM  # JWT加密算法，这里使用HS256（HMAC-SHA256）
+ACCESS_TOKEN_EXPIRE_MINUTES = config.global_.ACCESS_TOKEN_EXPIRE_MINUTES  # 访问令牌过期时间（分钟）
+REFRESH_TOKEN_EXPIRE_DAYS = config.global_.REFRESH_TOKEN_EXPIRE_DAYS  # 刷新令牌过期时间（天）
 
 # 密码加密上下文
 # schemes: 使用的加密算法，这里使用bcrypt
