@@ -1,0 +1,192 @@
+<script setup>
+import { ref } from 'vue'
+
+// 接收App.vue传递的上下文
+const props = defineProps(['user', 'login', 'navigateTo'])
+
+const username = ref('')
+const password = ref('')
+const error = ref('')
+
+const handleLogin = () => {
+  if (!username.value || !password.value) {
+    error.value = '请输入用户名和密码'
+    return
+  }
+  
+  // 模拟登录逻辑
+  const userData = {
+    username: username.value,
+    role: username.value === 'admin' ? 'admin' : 'user'
+  }
+  
+  // 调用父组件传递的登录方法
+  props.login(userData)
+}
+
+const goToRegister = () => {
+  // 调用父组件传递的导航方法
+  props.navigateTo('register')
+}
+</script>
+
+<template>
+  <div class="login-container">
+    <div class="login-bg"></div>
+    <div class="login-form-wrapper">
+      <div class="login-form">
+        <h2 class="login-title">期刊投稿平台</h2>
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input 
+            type="text" 
+            id="username" 
+            v-model="username" 
+            placeholder="请输入用户名"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input 
+            type="password" 
+            id="password" 
+            v-model="password" 
+            placeholder="请输入密码"
+          />
+        </div>
+        <p v-if="error" class="error-message">{{ error }}</p>
+        <button class="login-btn" @click="handleLogin">登录</button>
+        <div class="register-link">
+          <span>还没有账号？</span>
+          <a href="#" @click.prevent="goToRegister">立即注册</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.login-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.login-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/images/wzmc_20140317155634.jpg') no-repeat center center;
+  background-size: cover;
+  filter: brightness(0.7);
+  animation: bgScale 20s ease-in-out infinite alternate;
+}
+
+@keyframes bgScale {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.login-form-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 400px;
+  z-index: 10;
+}
+
+.login-form {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.login-title {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.error-message {
+  color: #e74c3c;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.register-link a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.register-link a:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+</style>

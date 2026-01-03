@@ -1,7 +1,9 @@
-import { createApp } from 'vue'
+import { createApp, ref } from 'vue'
 import './style.css'
 import App from './App.vue'
 
-createApp(App).mount('#app')
- 
-// 1234
+// 创建应用实例
+const app = createApp(App)
+
+// 挂载应用
+app.mount('#app')
