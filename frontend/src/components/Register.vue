@@ -2,12 +2,12 @@
 import { ref } from 'vue'
 
 // 接收App.vue传递的上下文
-const props = defineProps(['user', 'login', 'navigateTo'])
+const props = defineProps(['user', 'login', 'navigateTo', 'adminCode'])
 
 const username = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const adminCode = ref('')
+const inputAdminCode = ref('')
 const error = ref('')
 
 const handleRegister = () => {
@@ -22,13 +22,15 @@ const handleRegister = () => {
   }
   
   // 模拟管理员辨识密码验证
-  const ADMIN_CODE = 'admin123' // 管理员辨识密码
-  const role = adminCode.value === ADMIN_CODE ? 'admin' : 'user'
+  const role = inputAdminCode.value === props.adminCode ? 'admin' : 'user'
   
   // 模拟注册逻辑
   const userData = {
     username: username.value,
-    role: role
+    role: role,
+    email: '',
+    phone: '',
+    avatar: ''
   }
   
   // 调用父组件传递的登录方法（注册后直接登录）
@@ -78,7 +80,7 @@ const goToLogin = () => {
           <input 
             type="password" 
             id="adminCode" 
-            v-model="adminCode" 
+            v-model="inputAdminCode" 
             placeholder="输入管理员密码成为管理员，留空为普通用户"
           />
         </div>

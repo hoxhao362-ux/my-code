@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 // 接收App.vue传递的上下文
-const props = defineProps(['user', 'navigateTo', 'logout'])
+const props = defineProps(['user', 'navigateTo', 'logout', 'modules'])
 
 // 表单数据
 const formData = ref({
@@ -10,7 +10,8 @@ const formData = ref({
   author: '',
   abstract: '',
   keywords: '',
-  content: ''
+  content: '',
+  module: 'all'
 })
 
 const error = ref('')
@@ -23,8 +24,22 @@ const handleSubmit = () => {
     return
   }
   
-  // 模拟投稿逻辑
-  console.log('投稿信息:', formData.value)
+  // 创建新期刊对象
+  const newJournal = {
+    id: Date.now().toString(),
+    title: formData.value.title,
+    author: formData.value.author,
+    abstract: formData.value.abstract,
+    keywords: formData.value.keywords,
+    content: formData.value.content,
+    module: formData.value.module === 'all' ? '其他' : formData.value.module,
+    status: 'pending', // 初始状态为待审核
+    date: new Date().toISOString(),
+    viewCount: 0
+  }
+  
+  // 调用App.vue提供的addJournal方法
+  props.addJournal(newJournal)
   
   // 显示成功消息
   error.value = ''
@@ -37,7 +52,8 @@ const handleSubmit = () => {
       author: '',
       abstract: '',
       keywords: '',
-      content: ''
+      content: '',
+      module: 'all'
     }
     success.value = ''
     props.navigateTo('home')
@@ -59,6 +75,7 @@ const goBack = () => {
         </div>
         <ul class="navbar-menu">
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">首页</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="toggleDirectory">目录</a></li>
           <li class="nav-item"><a href="#" class="nav-link active">投稿</a></li>
           <li v-if="user?.role === 'admin'" class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('review')">审稿</a></li>
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
@@ -109,6 +126,18 @@ const goBack = () => {
                 v-model="formData.keywords" 
                 placeholder="请输入关键词，用逗号分隔"
               />
+            </div>
+            
+            <div class="form-group">
+              <label for="module">所属模块</label>
+              <select 
+                id="module" 
+                v-model="formData.module"
+                required
+              >
+                <option value="all">其他</option>
+                <option v-for="module in modules" :key="module" :value="module">{{ module }}</option>
+              </select>
             </div>
           </div>
           

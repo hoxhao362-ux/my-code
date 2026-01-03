@@ -2,94 +2,105 @@
 import { ref, computed } from 'vue'
 
 // 接收App.vue传递的上下文
-const props = defineProps(['user', 'navigateTo'])
-
-// 模拟待审稿件数据
-const pendingJournals = ref([
-  { 
-    id: 1, 
-    title: '基于深度学习的医学图像分析', 
-    author: '张三', 
-    date: '2024-01-01', 
-    abstract: '本文提出了一种基于深度学习的医学图像分析方法，能够有效地识别和分类医学图像中的病变区域。',
-    status: '待审核',
-    reviewComment: ''
-  },
-  { 
-    id: 2, 
-    title: '新型药物研发进展', 
-    author: '李四', 
-    date: '2024-01-02', 
-    abstract: '本文综述了近年来新型药物研发的进展，包括小分子药物、生物制品和基因治疗药物等方面。',
-    status: '待审核',
-    reviewComment: ''
-  },
-  { 
-    id: 3, 
-    title: '临床研究方法学探讨', 
-    author: '王五', 
-    date: '2024-01-03', 
-    abstract: '本文探讨了临床研究中的方法学问题，包括研究设计、样本量计算、数据收集和统计分析等方面。',
-    status: '待审核',
-    reviewComment: ''
-  }
-])
-
-// 历史审稿记录
-const reviewHistory = ref([
-  { 
-    id: 4, 
-    title: '公共卫生政策分析', 
-    author: '赵六', 
-    date: '2024-01-04', 
-    abstract: '本文分析了当前公共卫生政策的实施效果和存在的问题，并提出了相应的改进建议。',
-    reviewResult: '已通过',
-    reviewDate: '2026-01-01'
-  },
-  { 
-    id: 5, 
-    title: '医学伦理学研究', 
-    author: '孙七', 
-    date: '2024-01-05', 
-    abstract: '本文探讨了医学伦理学中的几个重要问题，包括知情同意、隐私保护和生命伦理等。',
-    reviewResult: '已通过',
-    reviewDate: '2026-01-02'
-  }
-])
+const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
 
 // 日期查询
 const selectedDate = ref('')
-
+// 时间范围筛选
+const timeRange = ref('all') // 'all', 'today', 'week', 'month', 'year'
+// 模块筛选
+const selectedModule = ref('all')
 // 当前激活的标签页
 const activeTab = ref('pending')
+
+// 通用时间范围筛选函数
+const filterByTimeRange = (journals, dateField = 'date') => {
+  if (timeRange.value === 'all') {
+    return journals
+  }
+  
+  const now = new Date()
+  let startDate
+  
+  // 为每个case创建新的Date对象，避免修改原始now对象
+  switch (timeRange.value) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      break
+    case 'week':
+      startDate = new Date(now)
+      startDate.setDate(startDate.getDate() - 7)
+      break
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+      break
+    case 'year':
+      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+      break
+    default:
+      startDate = null
+  }
+  
+  if (startDate) {
+    return journals.filter(journal => new Date(journal[dateField]) >= startDate)
+  }
+  
+  return journals
+}
+
+// 待审稿件（从真实期刊数据中筛选）
+const pendingJournals = computed(() => {
+  let journals = props.journals.filter(journal => journal.status === '待审核' || journal.status === '审稿中')
+  
+  // 模块筛选
+  if (selectedModule.value !== 'all') {
+    journals = journals.filter(journal => journal.module === selectedModule.value)
+  }
+  
+  // 时间范围筛选
+  journals = filterByTimeRange(journals)
+  
+  return journals
+})
+
+// 历史审稿记录（从真实期刊数据中筛选）
+const reviewHistory = computed(() => {
+  let journals = props.journals.filter(journal => journal.status === '已通过' || journal.status === '未通过')
+  
+  // 模块筛选
+  if (selectedModule.value !== 'all') {
+    journals = journals.filter(journal => journal.module === selectedModule.value)
+  }
+  
+  // 时间范围筛选
+  journals = filterByTimeRange(journals)
+  
+  return journals
+})
 
 const goBack = () => {
   props.navigateTo('home')
 }
 
 const handleReview = (id, action) => {
-  // 模拟审稿逻辑
-  const journalIndex = pendingJournals.value.findIndex(j => j.id === id)
+  // 找到要审核的期刊
+  const journalIndex = props.journals.findIndex(j => j.id === id)
   if (journalIndex !== -1) {
-    const journal = pendingJournals.value[journalIndex]
-    const reviewResult = action === 'approve' ? '已通过' : '已拒绝'
+    const journal = {...props.journals[journalIndex]}
+    const newStatus = action === 'approve' ? '已通过' : '未通过'
     
-    // 记录审核时间（当前日期）
-    const reviewDate = new Date().toISOString().split('T')[0]
+    // 更新期刊状态和审核信息
+    journal.status = newStatus
+    journal.reviewResult = newStatus
+    journal.reviewDate = new Date().toISOString().split('T')[0]
     
-    // 添加到历史记录
-    reviewHistory.value.unshift({
-      ...journal,
-      reviewResult,
-      reviewDate,
-      reviewComment: journal.reviewComment
-    })
-    
-    // 从待审列表中移除
-    pendingJournals.value.splice(journalIndex, 1)
+    // 更新原始期刊数组
+    const updatedJournals = [...props.journals]
+    updatedJournals[journalIndex] = journal
+    props.updateJournals(updatedJournals)
     
     // 显示审核结果
-    alert(`已${reviewResult}稿件：${journal.title}`)
+    alert(`已${newStatus}稿件：${journal.title}`)
   }
 }
 
@@ -100,10 +111,24 @@ const viewJournalDetail = (id) => {
 
 // 过滤后的历史记录
 const filteredHistory = computed(() => {
-  if (!selectedDate.value) {
-    return reviewHistory.value
+  // 先获取所有历史记录，不进行时间范围筛选，只进行模块和日期筛选
+  let journals = props.journals.filter(journal => journal.status === '已通过' || journal.status === '未通过')
+  
+  // 模块筛选
+  if (selectedModule.value !== 'all') {
+    journals = journals.filter(journal => journal.module === selectedModule.value)
   }
-  return reviewHistory.value.filter(item => item.reviewDate === selectedDate.value)
+  
+  // 日期筛选
+  if (selectedDate.value) {
+    journals = journals.filter(item => {
+      // 确保日期格式匹配
+      const itemDate = new Date(item.date).toISOString().split('T')[0]
+      return itemDate === selectedDate.value
+    })
+  }
+  
+  return journals
 })
 </script>
 
@@ -117,10 +142,11 @@ const filteredHistory = computed(() => {
         </div>
         <ul class="navbar-menu">
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">首页</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="toggleDirectory">目录</a></li>
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('submit')">投稿</a></li>
           <li class="nav-item"><a href="#" class="nav-link active">审稿</a></li>
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
-          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="navigateTo('login')">退出登录</a></li>
+          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">退出登录</a></li>
         </ul>
       </div>
     </nav>
@@ -150,6 +176,44 @@ const filteredHistory = computed(() => {
         >
           历史记录
         </button>
+      </div>
+      
+      <!-- 待审稿件筛选控件 -->
+      <div v-if="activeTab === 'pending'" class="filter-section">
+        <div class="filters-container">
+          <div class="module-filter">
+            <label for="module-filter" class="filter-label">模块筛选：</label>
+            <select 
+              id="module-filter" 
+              v-model="selectedModule"
+              class="filter-select"
+            >
+              <option value="all">全部模块</option>
+              <option 
+                v-for="module in modules" 
+                :key="module"
+                :value="module"
+              >
+                {{ module }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="time-range-filter">
+            <label for="time-range-filter" class="filter-label">时间范围：</label>
+            <select 
+              id="time-range-filter" 
+              v-model="timeRange"
+              class="filter-select"
+            >
+              <option value="all">全部时间</option>
+              <option value="today">今日</option>
+              <option value="week">本周</option>
+              <option value="month">本月</option>
+              <option value="year">本年</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- 待审稿件列表 -->
@@ -194,16 +258,34 @@ const filteredHistory = computed(() => {
 
       <!-- 历史记录 -->
       <div v-else class="history-section">
-        <!-- 日期查询 -->
+        <!-- 历史记录筛选 -->
         <div class="history-header">
           <h3 class="history-title">历史审稿记录</h3>
-          <div class="date-filter">
+          <div class="history-filters">
+            <!-- 模块筛选 -->
+            <label for="history-module-filter">模块筛选：</label>
+            <select 
+              id="history-module-filter" 
+              v-model="selectedModule"
+              class="filter-select"
+            >
+              <option value="all">全部模块</option>
+              <option 
+                v-for="module in modules" 
+                :key="module"
+                :value="module"
+              >
+                {{ module }}
+              </option>
+            </select>
+            
+            <!-- 日期查询 -->
             <label for="date-select">按日期查询：</label>
             <input 
               type="date" 
               id="date-select" 
               v-model="selectedDate"
-              max="{{ new Date().toISOString().split('T')[0] }}"
+              :max="new Date().toISOString().split('T')[0]"
             >
             <button class="btn btn-clear" @click="selectedDate = ''">清除</button>
           </div>
@@ -221,8 +303,8 @@ const filteredHistory = computed(() => {
               <p class="journal-meta">
                 作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 
                 审核日期：{{ journal.reviewDate }} | 
-                <span class="review-result" :class="journal.reviewResult.toLowerCase()">
-                  {{ journal.reviewResult }}
+                <span class="review-result" :class="(journal.reviewResult || journal.status).toLowerCase()">
+                  {{ journal.reviewResult || journal.status }}
                 </span>
               </p>
               <p class="journal-abstract">{{ journal.abstract }}</p>
@@ -547,6 +629,53 @@ const filteredHistory = computed(() => {
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
+/* 筛选控件样式 */
+.filter-section {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.filters-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.module-filter,
+.time-range-filter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.filter-select {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+  min-width: 150px;
+}
+
+.filter-select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
 /* 历史记录部分 */
 .history-section {
   background: white;
@@ -558,49 +687,60 @@ const filteredHistory = computed(() => {
 .history-header {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 2px solid #eee;
 }
 
 .history-title {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #2c3e50;
   margin: 0;
 }
 
-.date-filter {
+.history-filters {
   display: flex;
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
-.date-filter label {
+.history-filters label {
   font-weight: 500;
   color: #555;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
-.date-filter input[type="date"] {
-  padding: 0.6rem;
+.history-filters .filter-select,
+.history-filters input[type="date"] {
+  padding: 0.45rem 0.7rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
   outline: none;
   transition: border-color 0.3s ease;
+  min-width: 100px;
 }
 
-.date-filter input[type="date"]:focus {
+.history-filters .filter-select:focus,
+.history-filters input[type="date"]:focus {
   border-color: #3498db;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.history-filters .btn-clear {
+  margin-left: 0.5rem;
 }
 
 .btn-clear {
   background: #95a5a6;
   color: white;
-  padding: 0.6rem 1.2rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
 }
 
 .btn-clear:hover {

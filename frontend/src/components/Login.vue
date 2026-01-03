@@ -17,7 +17,10 @@ const handleLogin = () => {
   // 模拟登录逻辑
   const userData = {
     username: username.value,
-    role: username.value === 'admin' ? 'admin' : 'user'
+    role: username.value === 'admin' ? 'admin' : 'user',
+    email: '',
+    phone: '',
+    avatar: ''
   }
   
   // 调用父组件传递的登录方法
