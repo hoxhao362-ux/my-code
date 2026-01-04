@@ -4,12 +4,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from database import db_manager
-
-# 获取数据库服务实例
-user_db = db_manager.get_service('user_account')
-journal_db = db_manager.get_service('journal_submit')
-deleted_journal_db = db_manager.get_service('deleted_journal')
 from utils.jwt import jwt_util
 from utils.generator import generator
 from model.journal import (
@@ -19,6 +13,13 @@ from model.journal import (
     JournalListResponse,
     JournalStatusUpdateRequest
 )
+
+# 获取数据库服务实例
+from database import db_manager
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
+deleted_journal_db = db_manager.get_service('deleted_journal')
+
 
 journal_router = APIRouter(
     prefix="/journal",

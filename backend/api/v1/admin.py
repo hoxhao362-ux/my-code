@@ -3,20 +3,79 @@ from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 
-from database import db_manager
+from core.config import config
+from utils.jwt import jwt_util
+from utils.admin_log import record_admin_log
+from utils.redis import redis_client
+
+from model.user import LoginRequest, LoginResponse
 
 # 获取数据库服务实例
+from database import db_manager
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
 deleted_journal_db = db_manager.get_service('deleted_journal')
 
-from utils.jwt import jwt_util
-from utils.admin_log import record_admin_log
 
 admin_router = APIRouter(
     prefix="/admin",
     tags=["管理员相关接口"],
+    responses={
+        401: {"description": "未授权"},
+        403: {"description": "禁止访问"},
+        404: {"description": "用户不存在"},
+        401: {"description": "密码错误"},
+        403: {"description": "非管理员账号，无权登录"}
+    }
 )
+
+@admin_router.post("/login", summary="管理员登录")
+async def admin_login(request: LoginRequest):
+    """管理员登录接口"""
+    # 从数据库查询用户
+    user = await user_db.fetchone(
+        "SELECT uid, password, role FROM users WHERE username = ?",
+        (request.username,)
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    
+    # 检查角色是否为管理员
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="非管理员账号，无权登录")
+    
+    # 验证密码
+    if not jwt_util.verify_password(request.password, user["password"]):
+        raise HTTPException(status_code=401, detail="密码错误")
+    
+    # 更新最后登录时间
+    last_login_time = datetime.now().isoformat()
+    await user_db.execute(
+        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        (last_login_time, user["uid"])
+    )
+
+    # 生成JWT token
+    token = jwt_util.create_token({
+        "uid": user["uid"],
+        "username": request.username,
+        "role": user["role"]
+    })
+    
+    # 设置用户在线状态
+    expire_time = 3600 * 24 * 30 if request.is_remember else 3600
+    await redis_client.set_user_online(
+        user_id=user["uid"],
+        token=token,
+        expire_time=expire_time
+    )
+
+    return LoginResponse(
+        login_time=datetime.now(),
+        is_remember=request.is_remember,
+        token=token,
+        message="登录成功"
+    )
 
 @admin_router.get("/users", summary="获取用户列表")
 async def get_users(token: str, page: int = 1, page_size: int = 10, role: Optional[str] = None):
@@ -77,7 +136,7 @@ async def update_user_role(uid: int, token: str, role: str, request: Request):
     
     # 检查角色有效性
     if role not in ["user", "reviewer", "admin"]:
-        raise HTTPException(status_code=400, detail="角色无效，只能是user、reviewer或admin")
+        raise HTTPException(status_code=400, detail="角色无效")
     
     # 检查用户是否存在
     user = await user_db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))

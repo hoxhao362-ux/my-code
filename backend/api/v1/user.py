@@ -96,7 +96,8 @@ async def register(request: RegisterRequest, req: Request):
     
     return RegisterResponse(
         register_time=datetime.now(),
-        token=token
+        token=token,
+        message="注册成功"
     )
 
 @user_router.post("/login", summary="用户登录", response_model=LoginResponse)
@@ -151,7 +152,8 @@ async def login(request: LoginRequest, req: Request):
     return LoginResponse(
         login_time=datetime.now(),
         is_remember=request.is_remember,
-        token=token
+        token=token,
+        message="登录成功"
     )
 
 @user_router.get("/me", summary="获取当前用户信息")

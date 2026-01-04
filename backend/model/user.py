@@ -10,29 +10,12 @@ class LoginRequest(BaseModel):
         max_length=20
     )
     is_remember: bool = Field(False, description="是否记住登录状态")
-    
-    @field_validator('password')
-    @classmethod
-    def validate_password(cls, v):
-        """自定义密码验证"""
-        # 检查是否包含小写字母
-        if not any(c.islower() for c in v):
-            raise ValueError('密码必须包含小写字母')
-        # 检查是否包含大写字母
-        if not any(c.isupper() for c in v):
-            raise ValueError('密码必须包含大写字母')
-        # 检查是否包含数字
-        if not any(c.isdigit() for c in v):
-            raise ValueError('密码必须包含数字')
-        # 检查是否包含禁止字符
-        if any(c in '|\/' or ord(c) > 127 for c in v):
-            raise ValueError('密码不能包含|\/和中文')
-        return v
 
 class LoginResponse(BaseModel):
     login_time: datetime.datetime = Field(default_factory=datetime.datetime.now, description="登录时间")
     is_remember: bool = Field(False, description="是否记住登录状态")
     token: str = Field(..., description="登录凭证")
+    message: str = Field(..., description="登录返回的消息")
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., description="用户名")
@@ -43,25 +26,9 @@ class RegisterRequest(BaseModel):
         max_length=20
     )
     email: EmailStr = Field(..., description="注册邮箱")
-    
-    @field_validator('password')
-    @classmethod
-    def validate_password(cls, v):
-        """自定义密码验证"""
-        # 检查是否包含小写字母
-        if not any(c.islower() for c in v):
-            raise ValueError('密码必须包含小写字母')
-        # 检查是否包含大写字母
-        if not any(c.isupper() for c in v):
-            raise ValueError('密码必须包含大写字母')
-        # 检查是否包含数字
-        if not any(c.isdigit() for c in v):
-            raise ValueError('密码必须包含数字')
-        # 检查是否包含禁止字符
-        if any(c in '|\/' or ord(c) > 127 for c in v):
-            raise ValueError('密码不能包含|\/和中文')
-        return v
+    invite_code: str = Field(None, description="邀请码(选填)")
 
 class RegisterResponse(BaseModel):
     register_time: datetime.datetime = Field(default_factory=datetime.datetime.now, description="注册时间")
     token: str = Field(..., description="登录凭证")
+    message: str = Field(..., description="注册返回的消息")

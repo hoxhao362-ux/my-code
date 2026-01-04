@@ -2,17 +2,23 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from datetime import datetime
 
-from database import db_manager
-
-# 获取数据库服务实例
-journal_db = db_manager.get_service('journal_submit')
 from utils.jwt import jwt_util
 from model.journal import JournalInfo
+from model.user import LoginRequest, LoginResponse
+# 获取数据库服务实例
+from database import db_manager
+journal_db = db_manager.get_service('journal_submit')
 
 review_router = APIRouter(
     prefix="/review",
     tags=["审稿相关接口"],
 )
+
+@review_router.post("/login", summary="审稿人登录")
+async def reviewer_login(request: LoginRequest):
+    """审稿人登录接口"""
+    # TODO: 实现审稿人登录逻辑
+    ...
 
 @review_router.get("/pending", summary="获取待审核文献列表")
 async def get_pending_journals(token: str, page: int = 1, page_size: int = 10):
