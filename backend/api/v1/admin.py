@@ -9,6 +9,7 @@ from database import db_manager
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
 deleted_journal_db = db_manager.get_service('deleted_journal')
+
 from utils.jwt import jwt_util
 from utils.admin_log import record_admin_log
 
