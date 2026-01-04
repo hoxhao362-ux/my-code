@@ -2,15 +2,16 @@
 from fastapi import APIRouter, HTTPException, Request
 from datetime import datetime
 
-from database import db_manager
-
-# 获取数据库服务实例
-user_db = db_manager.get_service('user_account')
-journal_db = db_manager.get_service('journal_submit')
+from core.config import config
 from utils.jwt import jwt_util
 from utils.redis import redis_client
 from utils.generator import generator
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
+
+# 获取数据库服务实例
+from database import db_manager
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
 
 # 创建用户相关路由
 user_router = APIRouter(
