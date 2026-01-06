@@ -2,50 +2,38 @@
 import { ref, computed } from 'vue'
 
 // 接收App.vue传递的上下文
-const props = defineProps(['user', 'navigateTo', 'journalId', 'logout'])
-
-// 模拟稿件数据
-const journalData = [
-  { 
-    id: 1, 
-    title: '基于深度学习的医学图像分析', 
-    author: '张三', 
-    date: '2024-01-01', 
-    status: '待审核',
-    abstract: '本文提出了一种基于深度学习的医学图像分析方法，能够有效地识别和分类医学图像中的病变区域。该方法采用卷积神经网络架构，通过大量的医学图像数据进行训练，取得了较高的识别准确率。本文还探讨了该方法在临床应用中的前景和挑战。',
-    keywords: '深度学习,医学图像,卷积神经网络,病变识别',
-    content: '1. 引言\n医学图像分析是现代医学诊断的重要组成部分，传统的医学图像分析主要依赖于医生的经验和专业知识，存在主观性强、效率低等问题。随着人工智能技术的发展，深度学习在医学图像分析领域展现出了巨大的潜力。\n\n2. 相关工作\n近年来，深度学习在医学图像分析领域取得了一系列重要成果。卷积神经网络（CNN）在图像分类、目标检测等任务中表现出色，被广泛应用于医学图像分析。\n\n3. 方法\n本文提出的方法基于改进的卷积神经网络架构，主要包括以下几个部分：数据预处理、网络架构设计、模型训练和评估。\n\n4. 实验结果\n实验结果表明，本文提出的方法在医学图像分类任务中取得了较高的准确率，优于传统的机器学习方法和其他深度学习方法。\n\n5. 结论\n本文提出了一种基于深度学习的医学图像分析方法，通过实验验证了该方法的有效性。该方法具有较高的识别准确率和良好的泛化能力，有望在临床应用中发挥重要作用。' 
-  },
-  { 
-    id: 2, 
-    title: '新型药物研发进展', 
-    author: '李四', 
-    date: '2024-01-02', 
-    status: '待审核',
-    abstract: '本文综述了近年来新型药物研发的进展，包括小分子药物、生物制品和基因治疗药物等方面。随着科学技术的发展，药物研发的方法和手段不断创新，为重大疾病的治疗带来了新的希望。',
-    keywords: '药物研发,小分子药物,生物制品,基因治疗',
-    content: '1. 引言\n药物研发是医药行业的核心，对于保障人类健康具有重要意义。近年来，随着生命科学和技术的快速发展，药物研发领域发生了深刻的变化。\n\n2. 小分子药物研发\n小分子药物是传统的药物类型，具有分子量小、口服生物利用度高等优点。近年来，计算机辅助药物设计、高通量筛选等技术的应用，加速了小分子药物的研发进程。\n\n3. 生物制品研发\n生物制品包括抗体药物、疫苗、细胞治疗等，具有特异性强、疗效好等优点。近年来，单克隆抗体、CAR-T细胞治疗等生物制品在癌症治疗中取得了突破性进展。\n\n4. 基因治疗药物研发\n基因治疗是一种新兴的治疗手段，通过修复或替换缺陷基因来治疗疾病。近年来，基因编辑技术的发展为基因治疗带来了新的机遇。\n\n5. 结论\n药物研发领域正处于快速发展时期，各种新技术、新方法的应用为药物研发带来了新的活力。未来，随着科学技术的不断进步，将会有更多的创新药物问世，为人类健康事业做出更大的贡献。' 
-  },
-  { 
-    id: 3, 
-    title: '临床研究方法学探讨', 
-    author: '王五', 
-    date: '2024-01-03', 
-    status: '待审核',
-    abstract: '本文探讨了临床研究中的方法学问题，包括研究设计、样本量计算、数据收集和统计分析等方面。科学合理的研究方法是保证临床研究质量的关键。',
-    keywords: '临床研究,研究设计,样本量,统计分析',
-    content: '1. 引言\n临床研究是医学科学发展的重要动力，对于验证医学假设、评价治疗效果具有重要意义。临床研究的质量直接影响研究结果的可靠性和临床应用价值。\n\n2. 研究设计\n研究设计是临床研究的核心，包括随机对照试验、队列研究、病例对照研究等多种类型。不同的研究设计适用于不同的研究问题，研究者需要根据研究目的选择合适的研究设计。\n\n3. 样本量计算\n样本量计算是临床研究设计中的重要环节，直接影响研究的检验效能和结果的可靠性。样本量计算需要考虑研究设计类型、主要终点指标、预期效应大小、检验水准和检验效能等因素。\n\n4. 数据收集\n数据收集是临床研究的重要组成部分，包括研究对象的选择、基线数据的收集、随访数据的记录等。数据收集需要遵循标准化、规范化的原则，确保数据的准确性和完整性。\n\n5. 统计分析\n统计分析是临床研究的重要环节，包括描述性统计分析、推断性统计分析等。统计分析需要根据研究设计类型和数据类型选择合适的统计方法，确保分析结果的可靠性和科学性。\n\n6. 结论\n临床研究方法学是临床研究的重要基础，对于保证研究质量具有关键作用。研究者需要不断学习和掌握新的研究方法和技术，提高临床研究的质量和水平。' 
-  }
-]
+const props = defineProps(['user', 'navigateTo', 'journalId', 'logout', 'journals', 'reviewRecords', 'toggleDirectory'])
 
 // 根据journalId获取当前显示的稿件
 const journal = computed(() => {
-  return journalData.find(item => item.id === props.journalId) || journalData[0]
+  return props.journals.find(item => item.id === props.journalId) || null
+})
+
+// 获取当前稿件的审核记录
+const journalReviewRecords = computed(() => {
+  if (!props.reviewRecords || !props.journalId) return []
+  return props.reviewRecords
+    .filter(record => record.journalId === props.journalId)
+    .sort((a, b) => new Date(a.reviewDate) - new Date(b.reviewDate))
 })
 
 const goBack = () => {
   // 返回上一页
   props.navigateTo('home')
+}
+
+// 切换目录显示
+const toggleDirectory = () => {
+  if (props.toggleDirectory) {
+    props.toggleDirectory()
+  }
+}
+
+// 处理退出登录
+const handleLogout = () => {
+  if (props.logout) {
+    props.logout()
+  }
 }
 </script>
 
@@ -79,26 +67,67 @@ const goBack = () => {
             <span class="meta-item">作者：{{ journal.author }}</span>
             <span class="meta-item">投稿日期：{{ journal.date }}</span>
             <span class="meta-item status" :class="journal.status.toLowerCase()">{{ journal.status }}</span>
+            <span class="meta-item">审稿阶段：{{ journal.reviewStage || '未明确' }}</span>
           </div>
         </div>
 
         <div class="journal-detail-body">
-          <section class="detail-section">
-            <h3 class="section-title">摘要</h3>
-            <p class="section-content">{{ journal.abstract }}</p>
-          </section>
+          <!-- 左侧：论文详情 -->
+          <div class="journal-main-content">
+            <section class="detail-section">
+              <h3 class="section-title">摘要</h3>
+              <p class="section-content">{{ journal.abstract }}</p>
+            </section>
 
-          <section class="detail-section">
-            <h3 class="section-title">关键词</h3>
-            <p class="section-content keywords">{{ journal.keywords }}</p>
-          </section>
+            <section class="detail-section">
+              <h3 class="section-title">关键词</h3>
+              <p class="section-content keywords">{{ journal.keywords }}</p>
+            </section>
 
-          <section class="detail-section">
-            <h3 class="section-title">正文</h3>
-            <div class="section-content content">
-              <pre>{{ journal.content }}</pre>
+            <section class="detail-section">
+              <h3 class="section-title">正文</h3>
+              <div class="section-content content">
+                <pre>{{ journal.content }}</pre>
+              </div>
+            </section>
+          </div>
+          
+          <!-- 右侧：审核记录 -->
+          <div class="journal-sidebar">
+            <div class="review-records-section">
+              <h3 class="section-title">审核记录</h3>
+              
+              <!-- 审核记录列表 -->
+              <div class="review-records-list">
+                <div v-if="journalReviewRecords.length === 0" class="no-records">
+                  <p>暂无审核记录</p>
+                </div>
+                
+                <div 
+                  v-for="record in journalReviewRecords" 
+                  :key="record.id" 
+                  class="review-record-item"
+                >
+                  <div class="record-header">
+                    <div class="record-stage">{{ record.reviewStage }}</div>
+                    <div class="record-result" :class="record.reviewResult.toLowerCase()">
+                      {{ record.reviewResult }}
+                    </div>
+                  </div>
+                  <div class="record-content">
+                    <div class="record-meta">
+                      <div class="reviewer-info">审核人：{{ record.reviewerId }}</div>
+                      <div class="review-date">审核日期：{{ new Date(record.reviewDate).toLocaleDateString() }}</div>
+                    </div>
+                    <div class="review-comments">
+                      <h4>审核建议：</h4>
+                      <p>{{ record.reviewComments }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </main>
@@ -260,15 +289,146 @@ const goBack = () => {
   color: #721c24;
 }
 
-/* 详情内容 */
+/* 详情内容 - 左右分栏布局 */
 .journal-detail-body {
   display: flex;
-  flex-direction: column;
   gap: 2rem;
+  align-items: flex-start;
 }
 
-.detail-section {
+/* 左侧主内容 */
+.journal-main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 右侧边栏 */
+.journal-sidebar {
+  width: 350px;
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+/* 审核记录部分 */
+.review-records-section {
+  width: 100%;
+}
+
+.review-records-section .section-title {
+  margin-bottom: 1.5rem;
+}
+
+.review-records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 审核记录项 */
+.review-record-item {
+  background: white;
+  padding: 1.2rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 记录头部 */
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #eee;
+}
+
+.record-stage {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.record-result {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.record-result.通过 {
+  background: #d4edda;
+  color: #155724;
+}
+
+.record-result.修改后通过 {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.record-result.退回 {
+  background: #cce7ff;
+  color: #004085;
+}
+
+.record-result.驳回 {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* 记录内容 */
+.record-content {
+  font-size: 0.9rem;
+}
+
+.record-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+  color: #666;
+}
+
+.reviewer-info {
+  font-weight: 500;
+}
+
+.review-date {
+  font-size: 0.85rem;
+}
+
+.review-comments h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 600;
+}
+
+.review-comments p {
+  margin: 0;
+  line-height: 1.5;
+  color: #555;
+}
+
+/* 无记录状态 */
+.no-records {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-style: italic;
+  background: white;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+}
+
+/* 详情部分通用样式 */
+.detail-section {
+  margin-bottom: 2rem;
 }
 
 .section-title {
@@ -306,6 +466,18 @@ const goBack = () => {
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.8;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .journal-detail-body {
+    flex-direction: column;
+  }
+  
+  .journal-sidebar {
+    width: 100%;
+    position: static;
+  }
 }
 
 /* 页脚样式 */

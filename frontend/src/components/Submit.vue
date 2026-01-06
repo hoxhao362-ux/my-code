@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 // 接收App.vue传递的上下文
-const props = defineProps(['user', 'navigateTo', 'logout', 'modules'])
+const props = defineProps(['user', 'navigateTo', 'logout', 'modules', 'toggleDirectory', 'addJournal'])
 
 // 表单数据
 const formData = ref({
@@ -33,7 +33,8 @@ const handleSubmit = () => {
     keywords: formData.value.keywords,
     content: formData.value.content,
     module: formData.value.module === 'all' ? '其他' : formData.value.module,
-    status: 'pending', // 初始状态为待审核
+    status: '待审核', // 初始状态为待审核
+    reviewStage: '初审', // 初始审稿阶段为初审
     date: new Date().toISOString(),
     viewCount: 0
   }

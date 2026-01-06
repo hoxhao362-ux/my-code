@@ -10,6 +10,10 @@ const selectedDate = ref('')
 const timeRange = ref('all') // 'all', 'today', 'week', 'month', 'year'
 // 模块筛选
 const selectedModule = ref('all')
+// 状态筛选
+const selectedStatus = ref('all')
+// 信息检索关键词
+const searchKeyword = ref('')
 // 当前激活的标签页
 const activeTab = ref('pending')
 
@@ -48,6 +52,25 @@ const filterByTimeRange = (journals, dateField = 'date') => {
   return journals
 }
 
+// 关键词搜索函数
+const searchByKeyword = (journals, keyword) => {
+  if (!keyword) return journals
+  const lowerKeyword = keyword.toLowerCase()
+  return journals.filter(journal => 
+    journal.title.toLowerCase().includes(lowerKeyword) ||
+    journal.author.toLowerCase().includes(lowerKeyword) ||
+    journal.abstract.toLowerCase().includes(lowerKeyword) ||
+    (journal.keywords && journal.keywords.toLowerCase().includes(lowerKeyword)) ||
+    journal.module.toLowerCase().includes(lowerKeyword)
+  )
+}
+
+// 状态筛选函数
+const filterByStatus = (journals) => {
+  if (selectedStatus.value === 'all') return journals
+  return journals.filter(journal => journal.status === selectedStatus.value)
+}
+
 // 待审稿件（从真实期刊数据中筛选）
 const pendingJournals = computed(() => {
   let journals = props.journals.filter(journal => journal.status === '待审核' || journal.status === '审稿中')
@@ -57,8 +80,14 @@ const pendingJournals = computed(() => {
     journals = journals.filter(journal => journal.module === selectedModule.value)
   }
   
+  // 状态筛选
+  journals = filterByStatus(journals)
+  
   // 时间范围筛选
   journals = filterByTimeRange(journals)
+  
+  // 关键词搜索
+  journals = searchByKeyword(journals, searchKeyword.value)
   
   return journals
 })
@@ -72,8 +101,14 @@ const reviewHistory = computed(() => {
     journals = journals.filter(journal => journal.module === selectedModule.value)
   }
   
+  // 状态筛选
+  journals = filterByStatus(journals)
+  
   // 时间范围筛选
-  journals = filterByTimeRange(journals)
+  journals = filterByTimeRange(journals, 'reviewDate')
+  
+  // 关键词搜索
+  journals = searchByKeyword(journals, searchKeyword.value)
   
   return journals
 })
@@ -87,11 +122,32 @@ const handleReview = (id, action) => {
   const journalIndex = props.journals.findIndex(j => j.id === id)
   if (journalIndex !== -1) {
     const journal = {...props.journals[journalIndex]}
-    const newStatus = action === 'approve' ? '已通过' : '未通过'
     
-    // 更新期刊状态和审核信息
-    journal.status = newStatus
-    journal.reviewResult = newStatus
+    // 初始化审稿阶段（如果不存在）
+    if (!journal.reviewStage) {
+      journal.reviewStage = '初审'
+    }
+    
+    if (action === 'approve') {
+      // 审核通过逻辑
+      if (journal.reviewStage === '初审') {
+        journal.reviewStage = '复审'
+        journal.status = '审稿中'
+      } else if (journal.reviewStage === '复审') {
+        journal.reviewStage = '终审'
+        journal.status = '审稿中'
+      } else {
+        // 终审通过
+        journal.status = '已通过'
+        journal.reviewResult = '已通过'
+      }
+    } else {
+      // 审核拒绝逻辑（任何阶段拒绝都会直接结束）
+      journal.status = '未通过'
+      journal.reviewResult = '未通过'
+    }
+    
+    // 更新审核信息
     journal.reviewDate = new Date().toISOString().split('T')[0]
     
     // 更新原始期刊数组
@@ -100,7 +156,11 @@ const handleReview = (id, action) => {
     props.updateJournals(updatedJournals)
     
     // 显示审核结果
-    alert(`已${newStatus}稿件：${journal.title}`)
+    if (journal.status === '已通过' || journal.status === '未通过') {
+      alert(`已${journal.status}稿件：${journal.title}`)
+    } else {
+      alert(`已将稿件：${journal.title} 推进到${journal.reviewStage}`)
+    }
   }
 }
 
@@ -111,7 +171,7 @@ const viewJournalDetail = (id) => {
 
 // 过滤后的历史记录
 const filteredHistory = computed(() => {
-  // 先获取所有历史记录，不进行时间范围筛选，只进行模块和日期筛选
+  // 先获取所有历史记录
   let journals = props.journals.filter(journal => journal.status === '已通过' || journal.status === '未通过')
   
   // 模块筛选
@@ -119,14 +179,14 @@ const filteredHistory = computed(() => {
     journals = journals.filter(journal => journal.module === selectedModule.value)
   }
   
-  // 日期筛选
-  if (selectedDate.value) {
-    journals = journals.filter(item => {
-      // 确保日期格式匹配
-      const itemDate = new Date(item.date).toISOString().split('T')[0]
-      return itemDate === selectedDate.value
-    })
-  }
+  // 状态筛选
+  journals = filterByStatus(journals)
+  
+  // 时间范围筛选
+  journals = filterByTimeRange(journals, 'reviewDate')
+  
+  // 关键词搜索
+  journals = searchByKeyword(journals, searchKeyword.value)
   
   return journals
 })
@@ -181,37 +241,65 @@ const filteredHistory = computed(() => {
       <!-- 待审稿件筛选控件 -->
       <div v-if="activeTab === 'pending'" class="filter-section">
         <div class="filters-container">
-          <div class="module-filter">
-            <label for="module-filter" class="filter-label">模块筛选：</label>
-            <select 
-              id="module-filter" 
-              v-model="selectedModule"
-              class="filter-select"
-            >
-              <option value="all">全部模块</option>
-              <option 
-                v-for="module in modules" 
-                :key="module"
-                :value="module"
+          <div class="filter-row">
+            <div class="module-filter">
+              <label for="module-filter" class="filter-label">模块筛选：</label>
+              <select 
+                id="module-filter" 
+                v-model="selectedModule"
+                class="filter-select"
               >
-                {{ module }}
-              </option>
-            </select>
+                <option value="all">全部模块</option>
+                <option 
+                  v-for="module in modules" 
+                  :key="module"
+                  :value="module"
+                >
+                  {{ module }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="status-filter">
+              <label for="status-filter" class="filter-label">状态筛选：</label>
+              <select 
+                id="status-filter" 
+                v-model="selectedStatus"
+                class="filter-select"
+              >
+                <option value="all">全部状态</option>
+                <option value="待审核">待审核</option>
+                <option value="审稿中">审稿中</option>
+              </select>
+            </div>
+            
+            <div class="time-range-filter">
+              <label for="time-range-filter" class="filter-label">时间范围：</label>
+              <select 
+                id="time-range-filter" 
+                v-model="timeRange"
+                class="filter-select"
+              >
+                <option value="all">全部时间</option>
+                <option value="today">今日</option>
+                <option value="week">本周</option>
+                <option value="month">本月</option>
+                <option value="year">本年</option>
+              </select>
+            </div>
           </div>
           
-          <div class="time-range-filter">
-            <label for="time-range-filter" class="filter-label">时间范围：</label>
-            <select 
-              id="time-range-filter" 
-              v-model="timeRange"
-              class="filter-select"
-            >
-              <option value="all">全部时间</option>
-              <option value="today">今日</option>
-              <option value="week">本周</option>
-              <option value="month">本月</option>
-              <option value="year">本年</option>
-            </select>
+          <div class="filter-row search-row">
+            <div class="search-filter">
+              <label for="search-keyword" class="filter-label">关键词搜索：</label>
+              <input 
+                type="text" 
+                id="search-keyword" 
+                v-model="searchKeyword"
+                class="search-input"
+                placeholder="输入标题、作者、关键词等..."
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -242,7 +330,9 @@ const filteredHistory = computed(() => {
           </div>
           
           <div class="journal-actions">
-            <div class="journal-status">{{ journal.status }}</div>
+            <div class="journal-status">
+              状态：{{ journal.status }} | 阶段：{{ journal.reviewStage || '初审' }}
+            </div>
             <div class="action-buttons">
               <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">通过</button>
               <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">拒绝</button>
@@ -262,32 +352,73 @@ const filteredHistory = computed(() => {
         <div class="history-header">
           <h3 class="history-title">历史审稿记录</h3>
           <div class="history-filters">
-            <!-- 模块筛选 -->
-            <label for="history-module-filter">模块筛选：</label>
-            <select 
-              id="history-module-filter" 
-              v-model="selectedModule"
-              class="filter-select"
-            >
-              <option value="all">全部模块</option>
-              <option 
-                v-for="module in modules" 
-                :key="module"
-                :value="module"
-              >
-                {{ module }}
-              </option>
-            </select>
-            
-            <!-- 日期查询 -->
-            <label for="date-select">按日期查询：</label>
-            <input 
-              type="date" 
-              id="date-select" 
-              v-model="selectedDate"
-              :max="new Date().toISOString().split('T')[0]"
-            >
-            <button class="btn btn-clear" @click="selectedDate = ''">清除</button>
+            <div class="filter-row">
+              <!-- 模块筛选 -->
+              <div class="filter-item">
+                <label for="history-module-filter">模块筛选：</label>
+                <select 
+                  id="history-module-filter" 
+                  v-model="selectedModule"
+                  class="filter-select"
+                >
+                  <option value="all">全部模块</option>
+                  <option 
+                    v-for="module in modules" 
+                    :key="module"
+                    :value="module"
+                  >
+                    {{ module }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- 状态筛选 -->
+              <div class="filter-item">
+                <label for="history-status-filter">状态筛选：</label>
+                <select 
+                  id="history-status-filter" 
+                  v-model="selectedStatus"
+                  class="filter-select"
+                >
+                  <option value="all">全部状态</option>
+                  <option value="已通过">已通过</option>
+                  <option value="未通过">未通过</option>
+                </select>
+              </div>
+              
+              <!-- 时间范围筛选 -->
+              <div class="filter-item">
+                <label for="history-time-range-filter">时间范围：</label>
+                <select 
+                  id="history-time-range-filter" 
+                  v-model="timeRange"
+                  class="filter-select"
+                >
+                  <option value="all">全部时间</option>
+                  <option value="today">今日</option>
+                  <option value="week">本周</option>
+                  <option value="month">本月</option>
+                  <option value="year">本年</option>
+                </select>
+              </div>
+              
+              <!-- 关键词搜索 -->
+              <div class="filter-item search-item">
+                <label for="history-search-keyword">关键词搜索：</label>
+                <input 
+                  type="text" 
+                  id="history-search-keyword" 
+                  v-model="searchKeyword"
+                  class="search-input"
+                  placeholder="输入标题、作者、关键词等..."
+                >
+              </div>
+              
+              <!-- 清除筛选条件 -->
+              <div class="filter-item">
+                <button class="btn btn-clear" @click="selectedModule = 'all'; selectedStatus = 'all'; timeRange = 'all'; searchKeyword = ''; selectedDate = ''">清除所有筛选</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -303,6 +434,7 @@ const filteredHistory = computed(() => {
               <p class="journal-meta">
                 作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 
                 审核日期：{{ journal.reviewDate }} | 
+                审稿阶段：{{ journal.reviewStage || '未明确' }} |
                 <span class="review-result" :class="(journal.reviewResult || journal.status).toLowerCase()">
                   {{ journal.reviewResult || journal.status }}
                 </span>
@@ -640,24 +772,41 @@ const filteredHistory = computed(() => {
 
 .filters-container {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.module-filter,
-.time-range-filter {
+/* 筛选行样式 */
+.filter-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* 搜索行样式 */
+.filter-row.search-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+/* 筛选项样式 */
+.module-filter,
+.time-range-filter,
+.status-filter,
+.search-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .filter-label {
   font-weight: 500;
   color: #555;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
@@ -668,10 +817,26 @@ const filteredHistory = computed(() => {
   font-size: 0.9rem;
   outline: none;
   transition: border-color 0.3s ease;
-  min-width: 150px;
+  min-width: 140px;
 }
 
 .filter-select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* 搜索输入框样式 */
+.search-input {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+  min-width: 250px;
+}
+
+.search-input:focus {
   border-color: #3498db;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
@@ -702,10 +867,29 @@ const filteredHistory = computed(() => {
 
 .history-filters {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 历史记录筛选行 */
+.history-filters .filter-row {
+  display: flex;
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
   justify-content: flex-start;
+}
+
+/* 历史记录筛选项 */
+.history-filters .filter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.history-filters .filter-item.search-item {
+  flex-grow: 1;
+  max-width: 300px;
 }
 
 .history-filters label {
@@ -716,7 +900,7 @@ const filteredHistory = computed(() => {
 }
 
 .history-filters .filter-select,
-.history-filters input[type="date"] {
+.history-filters input[type="text"] {
   padding: 0.45rem 0.7rem;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -726,14 +910,20 @@ const filteredHistory = computed(() => {
   min-width: 100px;
 }
 
+.history-filters input[type="text"] {
+  min-width: 150px;
+  width: 100%;
+}
+
 .history-filters .filter-select:focus,
-.history-filters input[type="date"]:focus {
+.history-filters input[type="text"]:focus {
   border-color: #3498db;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .history-filters .btn-clear {
   margin-left: 0.5rem;
+  padding: 0.45rem 0.8rem;
 }
 
 .btn-clear {

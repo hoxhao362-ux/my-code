@@ -185,6 +185,20 @@ const closeAvatarModal = () => {
 
 // 保存用户信息
 const saveUserInfo = () => {
+  // 表单验证
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const phoneRegex = /^1[3-9]\d{9}$/
+  
+  if (formData.value.email && !emailRegex.test(formData.value.email)) {
+    alert('请输入有效的邮箱地址')
+    return
+  }
+  
+  if (formData.value.phone && !phoneRegex.test(formData.value.phone)) {
+    alert('请输入有效的手机号')
+    return
+  }
+  
   // 更新用户数据
   const updatedUser = {
     ...props.user,

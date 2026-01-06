@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { encryptPassword } from '../utils/encryption'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'login', 'navigateTo'])
@@ -7,6 +8,18 @@ const props = defineProps(['user', 'login', 'navigateTo'])
 const username = ref('')
 const password = ref('')
 const error = ref('')
+const rememberMe = ref(false)
+
+// 从localStorage加载记住的密码
+onMounted(() => {
+  const savedUsername = localStorage.getItem('rememberedUsername')
+  const savedPassword = localStorage.getItem('rememberedPassword')
+  if (savedUsername && savedPassword) {
+    username.value = savedUsername
+    password.value = savedPassword
+    rememberMe.value = true
+  }
+})
 
 const handleLogin = () => {
   if (!username.value || !password.value) {
@@ -17,10 +30,20 @@ const handleLogin = () => {
   // 模拟登录逻辑
   const userData = {
     username: username.value,
+    password: encryptPassword(password.value), // 加密密码
     role: username.value === 'admin' ? 'admin' : 'user',
     email: '',
     phone: '',
     avatar: ''
+  }
+  
+  // 记住密码功能
+  if (rememberMe.value) {
+    localStorage.setItem('rememberedUsername', username.value)
+    localStorage.setItem('rememberedPassword', password.value)
+  } else {
+    localStorage.removeItem('rememberedUsername')
+    localStorage.removeItem('rememberedPassword')
   }
   
   // 调用父组件传递的登录方法
@@ -56,6 +79,15 @@ const goToRegister = () => {
             v-model="password" 
             placeholder="请输入密码"
           />
+        </div>
+        <!-- 记住密码 -->
+        <div class="remember-me">
+          <input 
+            type="checkbox" 
+            id="rememberMe" 
+            v-model="rememberMe" 
+          />
+          <label for="rememberMe">记住密码</label>
         </div>
         <p v-if="error" class="error-message">{{ error }}</p>
         <button class="login-btn" @click="handleLogin">登录</button>
@@ -153,6 +185,30 @@ const goToRegister = () => {
   color: #e74c3c;
   margin-bottom: 15px;
   font-size: 14px;
+}
+
+/* 记住密码样式 */
+.remember-me {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 8px;
+}
+
+.remember-me input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.remember-me label {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .login-btn {
