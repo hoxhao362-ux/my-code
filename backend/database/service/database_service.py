@@ -300,7 +300,7 @@ class DatabaseService:
                         username TEXT UNIQUE NOT NULL,  -- 用户名，唯一约束
                         password TEXT NOT NULL,  -- 加密后的密码
                         email TEXT UNIQUE NOT NULL,  -- 邮箱地址，唯一约束
-                        role TEXT NOT NULL DEFAULT 'user',  -- 用户角色，默认普通用户
+                        role TEXT NOT NULL DEFAULT 'normal',  -- 用户角色，默认普通用户：admin, reviewer, writer, normal
                         is_verified BOOLEAN NOT NULL DEFAULT 0,  -- 邮箱验证状态
                         verification_code TEXT,  -- 邮箱验证码
                         avatar_path TEXT,  -- 头像文件路径
@@ -413,6 +413,37 @@ class DatabaseService:
                         submitted_at TEXT NOT NULL,  -- 意见提交时间
                         FOREIGN KEY (jid) REFERENCES journals (jid),  -- 外键约束：意见必须关联有效稿件
                         FOREIGN KEY (reviewer_uid) REFERENCES users (uid)  -- 外键约束：评审员必须是有效用户
+                    )
+                    """
+                }
+            case 'invitation_code':
+                """邀请码数据库 - 存储邀请码和使用记录"""
+                return {
+                    'invitation_codes': """
+                    CREATE TABLE IF NOT EXISTS invitation_codes (
+                        code_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 邀请码唯一ID
+                        code TEXT UNIQUE NOT NULL,  -- 邀请码，唯一约束
+                        role TEXT NOT NULL,  -- 邀请码对应的角色
+                        status TEXT NOT NULL DEFAULT 'active',  -- 邀请码状态：active, inactive
+                        max_uses INTEGER NOT NULL DEFAULT 1,  -- 最大使用次数
+                        used_count INTEGER NOT NULL DEFAULT 0,  -- 已使用次数
+                        description TEXT,  -- 邀请码描述
+                        created_by TEXT NOT NULL,  -- 创建者用户名
+                        created_by_uid INTEGER NOT NULL,  -- 创建者用户ID
+                        create_time TEXT NOT NULL,  -- 创建时间
+                        expire_time TEXT,  -- 过期时间
+                        FOREIGN KEY (created_by_uid) REFERENCES users (uid)  -- 外键约束：创建者必须是有效用户
+                    )
+                    """,
+                    'invitation_code_usage': """
+                    CREATE TABLE IF NOT EXISTS invitation_code_usage (
+                        usage_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- 使用记录唯一ID
+                        code TEXT NOT NULL,  -- 邀请码
+                        used_by_uid INTEGER NOT NULL,  -- 使用者用户ID
+                        used_by_username TEXT NOT NULL,  -- 使用者用户名
+                        use_time TEXT NOT NULL,  -- 使用时间
+                        FOREIGN KEY (code) REFERENCES invitation_codes (code),  -- 外键约束：必须关联有效邀请码
+                        FOREIGN KEY (used_by_uid) REFERENCES users (uid)  -- 外键约束：使用者必须是有效用户
                     )
                     """
                 }

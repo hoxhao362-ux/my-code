@@ -7,8 +7,17 @@ from core.config import config
 from utils.jwt import jwt_util
 from utils.admin_log import record_admin_log
 from utils.redis import redis_client
+from utils.invitation import invitation_util
 
 from model.user import LoginRequest, LoginResponse
+from model.invitation import (
+    InvitationCodeCreateRequest,
+    InvitationCodeResponse,
+    InvitationCodeListResponse,
+    InvitationCodeStatusUpdateRequest,
+    InvitationCodeValidateRequest,
+    InvitationCodeValidateResponse
+)
 
 # 获取数据库服务实例
 from database import db_manager
@@ -56,9 +65,10 @@ async def admin_login(request: LoginRequest):
     )
 
     # 生成JWT token
-    token = jwt_util.create_token({
+    token = jwt_util.create_access_token({
         "uid": user["uid"],
         "username": request.username,
+        "email": user["email"],
         "role": user["role"]
     })
     
@@ -135,7 +145,7 @@ async def update_user_role(uid: int, token: str, role: str, request: Request):
         raise HTTPException(status_code=403, detail="无权访问此接口")
     
     # 检查角色有效性
-    if role not in ["user", "reviewer", "admin"]:
+    if role not in ["normal", "writer", "reviewer", "admin"]:
         raise HTTPException(status_code=400, detail="角色无效")
     
     # 检查用户是否存在
@@ -516,3 +526,165 @@ async def permanently_delete_journal(jid: int, token: str, request: Request):
     )
     
     return {"message": "文献彻底删除成功"}
+
+
+# 邀请码管理相关接口
+@admin_router.post("/invitation-codes", summary="创建邀请码", response_model=InvitationCodeResponse)
+async def create_invitation_code(
+    request: InvitationCodeCreateRequest,
+    token: str,
+    req: Request
+):
+    """创建邀请码，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 创建邀请码
+    code = await invitation_util.create_invitation_code(
+        role=request.role,
+        created_by=user_info["username"],
+        created_by_uid=user_info["uid"],
+        description=request.description,
+        max_uses=request.max_uses,
+        expire_time=request.expire_time
+    )
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="创建邀请码",
+        operation_object=f"邀请码: {code}",
+        operation_details=f"创建{request.role}角色邀请码，最大使用次数: {request.max_uses}",
+        ip_address=req.client.host if req.client else None,
+        user_agent=req.headers.get("user-agent")
+    )
+    
+    # 返回邀请码信息
+    return InvitationCodeResponse(
+        code=code,
+        role=request.role,
+        status="active",
+        max_uses=request.max_uses,
+        used_count=0,
+        description=request.description,
+        created_by=user_info["username"],
+        create_time=datetime.now(),
+        expire_time=request.expire_time
+    )
+
+@admin_router.get("/invitation-codes", summary="获取邀请码列表", response_model=InvitationCodeListResponse)
+async def get_invitation_codes(
+    token: str,
+    page: int = 1,
+    page_size: int = 10,
+    status: Optional[str] = None,
+    role: Optional[str] = None,
+    req: Request = None
+):
+    """获取邀请码列表，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 获取邀请码列表
+    result = await invitation_util.get_invitation_codes(
+        page=page,
+        page_size=page_size,
+        status=status,
+        role=role
+    )
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="查看邀请码列表",
+        operation_object=f"页码: {page}, 每页条数: {page_size}",
+        operation_details=f"查询了邀请码列表，共 {result['total']} 条",
+        ip_address=req.client.host if req and req.client else None,
+        user_agent=req.headers.get("user-agent") if req else None
+    )
+    
+    return InvitationCodeListResponse(
+        total=result["total"],
+        codes=[InvitationCodeResponse(**code) for code in result["codes"]]
+    )
+
+@admin_router.put("/invitation-codes/{code}/status", summary="更新邀请码状态")
+async def update_invitation_code_status(
+    code: str,
+    request: InvitationCodeStatusUpdateRequest,
+    token: str,
+    req: Request
+):
+    """更新邀请码状态，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 更新邀请码状态
+    success = await invitation_util.update_code_status(code, request.status)
+    if not success:
+        raise HTTPException(status_code=404, detail="邀请码不存在")
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="更新邀请码状态",
+        operation_object=f"邀请码: {code}",
+        operation_details=f"将邀请码状态更新为: {request.status}",
+        ip_address=req.client.host if req.client else None,
+        user_agent=req.headers.get("user-agent")
+    )
+    
+    return {"message": "邀请码状态更新成功", "code": code, "status": request.status}
+
+@admin_router.get("/invitation-codes/validate/{code}", summary="验证邀请码")
+async def validate_invitation_code(
+    code: str,
+    token: str,
+    req: Request = None
+):
+    """验证邀请码有效性，仅限管理员访问"""
+    # 验证token
+    user_info = jwt_util.get_user_from_token(token)
+    if not user_info:
+        raise HTTPException(status_code=401, detail="无效的token")
+    
+    # 检查权限
+    if user_info["role"] != "admin":
+        raise HTTPException(status_code=403, detail="无权访问此接口")
+    
+    # 验证邀请码
+    result = await invitation_util.validate_invitation_code(code)
+    
+    # 记录管理员操作日志
+    await record_admin_log(
+        admin_uid=user_info["uid"],
+        admin_username=user_info["username"],
+        operation_type="验证邀请码",
+        operation_object=f"邀请码: {code}",
+        operation_details=f"验证邀请码，结果: {result['message']}",
+        ip_address=req.client.host if req and req.client else None,
+        user_agent=req.headers.get("user-agent") if req else None
+    )
+    
+    return InvitationCodeValidateResponse(**result)

@@ -126,6 +126,16 @@ class DatabaseConfig:
             backup_enabled=True
         )
         
+        # 邀请码数据库
+        configs['invitation_code'] = DatabaseInfo(
+            name='invitation_code',
+            file_name=files_config.get('invitation_code_db', 'invitation_code.db'),
+            description='邀请码管理数据库',
+            tables=['invitation_codes', 'invitation_code_usage'],
+            auto_create=True,
+            backup_enabled=True
+        )
+        
         # 为每个数据库添加完整路径
         for db_info in configs.values():
             db_info.db_path = database_dir / db_info.file_name

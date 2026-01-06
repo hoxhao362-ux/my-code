@@ -6,6 +6,7 @@ from core.config import config
 from utils.jwt import jwt_util
 from utils.redis import redis_client
 from utils.generator import generator
+from utils.invitation import invitation_util
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
 
 # 获取数据库服务实例
@@ -55,6 +56,15 @@ async def register(request: RegisterRequest, req: Request):
     if existing_email:
         raise HTTPException(status_code=400, detail="邮箱已被注册")
     
+    # 确定用户角色（基于邀请码）
+    user_role = 'normal'  # 默认角色
+    if request.invite_code:
+        # 验证邀请码
+        validation_result = await invitation_util.validate_invitation_code(request.invite_code)
+        if not validation_result["valid"]:
+            raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
+        user_role = validation_result["role"]
+    
     # 生成uid_hash
     uid_hash = generator.generate_uid_hash(request.username)
     
@@ -68,9 +78,9 @@ async def register(request: RegisterRequest, req: Request):
     await user_db.execute(
         """
         INSERT INTO users (uid_hash, username, password, email, role, create_time)
-        VALUES (?, ?, ?, ?, 'user', ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (uid_hash, request.username, hashed_password, request.email, create_time)
+        (uid_hash, request.username, hashed_password, request.email, user_role, create_time)
     )
     
     # 获取新注册用户信息
@@ -78,6 +88,14 @@ async def register(request: RegisterRequest, req: Request):
         "SELECT uid, username, email, role FROM users WHERE username = ?",
         (request.username,)
     )
+    
+    # 使用邀请码（如果有）
+    if request.invite_code:
+        await invitation_util.use_invitation_code(
+            request.invite_code, 
+            new_user["uid"], 
+            new_user["username"]
+        )
     
     # 生成token
     token = jwt_util.create_access_token({

@@ -490,7 +490,7 @@ def setup_core(app: FastAPI):
     """
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.global_.cors_origins, 
+        allow_origins=config["global.global.cors_origins"], 
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

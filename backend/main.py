@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from utils.log import global_logger
 from core.config import setup_core, config
 from api.v1.user import user_router
-from api.v1.journal import journal_router
+from api.v1.submit import submit_router
 from api.v1.review import review_router
 from api.v1.admin import admin_router
 
@@ -40,13 +40,13 @@ async def lifespan(app: FastAPI):
     from utils.redis import redis_client
     try:
         # 使用新的配置访问方式
-        redis_addr = config.global_.redis_addr
-        redis_password = config.global_.redis_password
-        redis_db = config.global_.redis_db
+        redis_host = config["global.global.redis_host"]
+        redis_password = config["global.global.redis_password"]
+        redis_db = config["global.global.redis_db"]
         
         await redis_client.connect(
-            host=redis_addr,
-            password=redis_password,
+            host=redis_host,
+            password=None,
             db=redis_db
         )
         global_logger.info('redis', "Redis连接初始化完成")
@@ -78,7 +78,7 @@ v1_router = APIRouter(prefix="/api/v1")
 
 # 将所有v1路由注册到v1路由组
 v1_router.include_router(user_router)
-v1_router.include_router(journal_router)
+v1_router.include_router(submit_router)
 v1_router.include_router(review_router)
 v1_router.include_router(admin_router)
 

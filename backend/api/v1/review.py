@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import List, Optional
 from datetime import datetime
 
 from utils.jwt import jwt_util
+from utils.redis import redis_client
 from model.journal import JournalInfo
 from model.user import LoginRequest, LoginResponse
 # 获取数据库服务实例
 from database import db_manager
+user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
 
 review_router = APIRouter(
@@ -14,11 +16,66 @@ review_router = APIRouter(
     tags=["审稿相关接口"],
 )
 
-@review_router.post("/login", summary="审稿人登录")
-async def reviewer_login(request: LoginRequest):
-    """审稿人登录接口"""
-    # TODO: 实现审稿人登录逻辑
-    ...
+@review_router.post("/login", summary="审稿人登录", response_model=LoginResponse)
+async def reviewer_login(request: LoginRequest, req: Request):
+    """审稿人登录接口 - 支持reviewer及以上角色登录"""
+    # 获取客户端IP
+    client_ip = req.client.host
+    
+    # 检查登录频率限制
+    allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=f"登录请求过于频繁，请稍后再试。当前尝试次数：{attempts}/5"
+        )
+    
+    # 检查用户是否存在
+    user = await user_db.fetchone(
+        "SELECT * FROM users WHERE username = ?",
+        (request.username,)
+    )
+    if not user:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    
+    # 验证密码
+    if not jwt_util.verify_password(request.password, user["password"]):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    
+    # 检查用户角色权限（reviewer及以上角色才能登录审核系统）
+    allowed_roles = ["reviewer", "admin"]
+    if user["role"] not in allowed_roles:
+        raise HTTPException(status_code=403, detail="该用户没有审核权限，需要使用reviewer及以上角色的账号登录")
+    
+    # 更新最后登录时间
+    last_login_time = datetime.now().isoformat()
+    await user_db.execute(
+        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        (last_login_time, user["uid"])
+    )
+    
+    # 生成token
+    token = jwt_util.create_access_token({
+        "uid": user["uid"],
+        "username": user["username"],
+        "email": user["email"],
+        "role": user["role"]
+    })
+    
+    # 设置用户在线状态
+    expire_time = 3600 * 24 * 30 if request.is_remember else 3600
+    await redis_client.set_user_online(
+        user_id=user["uid"],
+        token=token,
+        expire_time=expire_time
+    )
+    
+    return LoginResponse(
+        login_time=datetime.now(),
+        is_remember=request.is_remember,
+        token=token,
+        message="审稿人登录成功"
+    )
 
 @review_router.get("/pending", summary="获取待审核文献列表")
 async def get_pending_journals(token: str, page: int = 1, page_size: int = 10):
