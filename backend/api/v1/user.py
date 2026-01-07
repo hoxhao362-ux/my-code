@@ -89,6 +89,9 @@ async def register(request: RegisterRequest, req: Request):
         (request.username,)
     )
     
+    if new_user is None:
+        raise HTTPException(status_code=500, detail="用户数据库查询失败")
+
     # 使用邀请码（如果有）
     if request.invite_code:
         await invitation_util.use_invitation_code(
@@ -122,7 +125,7 @@ async def register(request: RegisterRequest, req: Request):
 async def login(request: LoginRequest, req: Request):
     """用户登录接口"""
     # 获取客户端IP
-    client_ip = req.client.host
+    client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
     allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)

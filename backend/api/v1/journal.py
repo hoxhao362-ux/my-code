@@ -91,3 +91,123 @@ async def get_journal_detail(jid: int, token: str):
             raise HTTPException(status_code=403, detail="无权访问此文献")
     
     return JournalInfo(**journal)
+
+@journal_router.get("/search/title/{keyword}", summary="根据标题搜索文献", response_model=JournalListResponse)  
+async def search_journals(keyword: str, page: int = 1, page_size: int = 10):
+    """根据关键词搜索文献"""
+    # 计算偏移量
+    offset = (page - 1) * page_size
+    
+    # 查询文献总数
+    total = await journal_db.fetchval(
+        """
+        SELECT COUNT(*) FROM journals 
+        WHERE (title LIKE ? OR abstract LIKE ?) 
+        AND status != 'deleted'
+        """,
+        (f"%{keyword}%", f"%{keyword}%")
+    )
+    
+    # 查询文献列表
+    journals = await journal_db.fetchall(
+        """
+        SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
+        FROM journals 
+        WHERE (title LIKE ? OR abstract LIKE ?) 
+        AND status != 'deleted'
+        ORDER BY create_time DESC 
+        LIMIT ? OFFSET ?
+        """,
+        (page_size, offset)
+    )
+    
+    # 转换为响应模型
+    journal_list = [
+        JournalInfo(**journal)
+        for journal in journals
+    ]
+    
+    return JournalListResponse(
+        total=total,
+        journals=journal_list
+    )
+
+@journal_router.get("/search/author/{keyword}", summary="根据作者搜索文献", response_model=JournalListResponse)  
+async def search_journals_by_author(keyword: str, page: int = 1, page_size: int = 10):
+    """根据作者搜索文献"""
+    # 计算偏移量
+    offset = (page - 1) * page_size
+    
+    # 查询文献总数
+    total = await journal_db.fetchval(
+        """
+        SELECT COUNT(*) FROM journals 
+        WHERE authors LIKE ? 
+        AND status != 'deleted'
+        """,
+        (f"%{keyword}%",)
+    )
+    
+    # 查询文献列表
+    journals = await journal_db.fetchall(
+        """
+        SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
+        FROM journals 
+        WHERE authors LIKE ? 
+        AND status != 'deleted'
+        ORDER BY create_time DESC 
+        LIMIT ? OFFSET ?
+        """,
+        (page_size, offset)
+    )
+    
+    # 转换为响应模型
+    journal_list = [
+        JournalInfo(**journal)
+        for journal in journals
+    ]
+    
+    return JournalListResponse(
+        total=total,
+        journals=journal_list
+    )
+
+@journal_router.get("/search/sub/{subject}", summary="根据学科搜索文献", response_model=JournalListResponse)  
+async def search_journals_by_subject(subject: str, page: int = 1, page_size: int = 10):
+    """根据学科搜索文献"""
+    # 计算偏移量
+    offset = (page - 1) * page_size
+    
+    # 查询文献总数
+    total = await journal_db.fetchval(
+        """
+        SELECT COUNT(*) FROM journals 
+        WHERE subject = ? 
+        AND status != 'deleted'
+        """,
+        (subject,)
+    )
+    
+    # 查询文献列表
+    journals = await journal_db.fetchall(
+        """
+        SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
+        FROM journals 
+        WHERE subject = ? 
+        AND status != 'deleted'
+        ORDER BY create_time DESC 
+        LIMIT ? OFFSET ?
+        """,
+        (page_size, offset)
+    )
+    
+    # 转换为响应模型
+    journal_list = [
+        JournalInfo(**journal)
+        for journal in journals
+    ]
+    
+    return JournalListResponse(
+        total=total,
+        journals=journal_list
+    )

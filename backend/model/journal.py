@@ -2,11 +2,17 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
 
+from fastapi import UploadFile
+
 class JournalUploadRequest(BaseModel):
     """文献上传请求模型"""
     title: str = Field(..., description="文献标题")
     authors: str = Field(..., description="文献作者，多个作者用逗号分隔")
     abstract: Optional[str] = Field(None, description="文献摘要")
+    subject: str = Field(..., description="文献主题")
+    file_name: str = Field(..., description="文件名")
+    file_size: int = Field(..., description="文件大小")
+    file: UploadFile = Field(..., description="文献文件")
 
 class JournalUploadResponse(BaseModel):
     """文献上传响应模型"""

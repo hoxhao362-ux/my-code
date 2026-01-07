@@ -20,7 +20,7 @@ review_router = APIRouter(
 async def reviewer_login(request: LoginRequest, req: Request):
     """审稿人登录接口 - 支持reviewer及以上角色登录"""
     # 获取客户端IP
-    client_ip = req.client.host
+    client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
     allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)

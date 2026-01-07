@@ -6,9 +6,12 @@ from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
 
+from core.config import config
+
 from utils.jwt import jwt_util
 from utils.redis import redis_client
 from utils.generator import generator
+
 from model.journal import (
     JournalUploadRequest, 
     JournalUploadResponse, 
@@ -40,7 +43,7 @@ submit_router = APIRouter(
 async def author_login(request: LoginRequest, req: Request):
     """作者登录接口 - 支持writer及以上角色登录"""
     # 获取客户端IP
-    client_ip = req.client.host
+    client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
     allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
@@ -98,13 +101,7 @@ async def author_login(request: LoginRequest, req: Request):
     )
 
 @submit_router.post("/upload", summary="上传文献", response_model=JournalUploadResponse)
-async def upload_journal(
-    token: str,
-    title: str = Form(..., description="文献标题"),
-    authors: str = Form(..., description="文献作者，多个作者用逗号分隔"),
-    abstract: Optional[str] = Form(None, description="文献摘要"),
-    file: UploadFile = File(..., description="文献文件")
-):
+async def upload_journal(request: JournalUploadRequest, token: str = Form(...)):
     """上传文献接口 - 仅限writer及以上角色"""
     # 验证token
     user_info = jwt_util.get_user_from_token(token)
@@ -118,29 +115,30 @@ async def upload_journal(
     
     # 检查文件类型
     allowed_types = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
-    if file.content_type not in allowed_types:
+
+    if request.file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="只支持PDF和Word文档")
     
-    # 获取配置
-    from main import global_config
-    paper_dir = Path(global_config['global']['paper_dir'])
-    
     # 读取文件内容
-    file_content = await file.read()
-    file_size = len(file_content)
+    file_content = await request.file.read()
+    file_size = request.file_size
     
     # 生成文件哈希
     file_hash = generator.generate_file_hash(file_content)
     
     # 计算哈希分桶，使用哈希值的前2位作为桶名
-    file_bucket = file_hash[:2]
+    file_bucket_1 = file_hash[:2]
+    file_bucket_2 = file_hash[2:4]
+    
+    # 获取配置
+    papers_dir = Path(config["global.global.papers_dir"])
     
     # 创建存储目录（基于哈希分桶）
-    bucket_dir = paper_dir / file_bucket
+    bucket_dir = papers_dir / file_bucket_1 / file_bucket_2
     bucket_dir.mkdir(parents=True, exist_ok=True)
     
     # 保存文件
-    file_ext = Path(file.filename).suffix
+    file_ext = Path(request.file_name).suffix
     file_path = bucket_dir / f"{file_hash}{file_ext}"
     with open(file_path, "wb") as f:
         f.write(file_content)
@@ -148,20 +146,26 @@ async def upload_journal(
     # 记录上传时间
     create_time = datetime.now().isoformat()
     
+    # jid 生成
+    jid = generator.generate_jid()
+
     # 插入文献数据
     await journal_db.execute(
         """
-        INSERT INTO journals (uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size, create_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO journals (jid, uid, title, authors, subject, abstract, file_hash, file_bucket, file_name, subject, file_size, create_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
+            jid,
             user_info["uid"],
-            title,
-            authors,
-            abstract,
+            request.title,
+            request.authors,
+            request.subject,
+            request.abstract,
             file_hash,
-            file_bucket,
-            file.filename,
+            f"{file_bucket_1}/{file_bucket_2}",
+            request.file_name,
+            request.subject,
             file_size,
             create_time
         )
@@ -172,7 +176,7 @@ async def upload_journal(
     
     return JournalUploadResponse(
         jid=jid,
-        title=title,
+        title=request.title,
         status="pending",
         upload_time=datetime.now()
     )

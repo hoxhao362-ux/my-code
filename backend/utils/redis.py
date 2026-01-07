@@ -104,7 +104,7 @@ class RedisClient:
     async def set_login_limit(self, ip_address: str, max_attempts: int = 5, expire_time: int = 3600):
         """设置登录次数限制"""
         if not self.client:
-            return False
+            return False, 0
         
         key = f"login:limit:{ip_address}"
         attempts = await self.client.get(key)

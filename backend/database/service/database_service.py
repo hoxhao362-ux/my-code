@@ -319,6 +319,7 @@ class DatabaseService:
                         uid INTEGER NOT NULL,  -- 投稿用户ID，外键关联users表
                         title TEXT NOT NULL,  -- 稿件标题
                         authors TEXT NOT NULL,  -- 作者列表，JSON格式存储
+                        subject TEXT NOT NULL,  -- 学科分类
                         file_hash TEXT UNIQUE NOT NULL,  -- 文件哈希值，唯一约束
                         file_bucket TEXT NOT NULL,  -- 文件存储桶名称
                         file_name TEXT NOT NULL,  -- 原始文件名

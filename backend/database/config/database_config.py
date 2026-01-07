@@ -18,15 +18,15 @@ class DatabaseInfo:
     file_name: str
     db_type: str = "sqlite"
     description: str = ""
-    tables: List[str] = None
+    tables: Optional[List[str]] = None
     auto_create: bool = True
     backup_enabled: bool = True
-
+    db_path: Optional[Path] = None
 
 class DatabaseConfig:
     """数据库配置管理器"""
     
-    def __init__(self, config_dir: Path = None):
+    def __init__(self, config_dir: Optional[Path] = None):
         self.config_dir = config_dir or Path(__file__).parent.parent.parent / "configs"
         self.configs = {}
         self.global_config = {}
@@ -144,14 +144,19 @@ class DatabaseConfig:
     
     def get_database_path(self, database_name: str) -> Path:
         """获取数据库文件路径"""
-        configs = self.get_database_config()
+        configs: dict[str, DatabaseInfo] = self.get_database_config()
         if database_name not in configs:
             raise ValueError(f"未找到数据库配置: {database_name}")
-        return configs[database_name].db_path
+        
+        db_path = configs[database_name].db_path
+        
+        if db_path is None:
+            raise ValueError(f"数据库 {database_name} 配置中未指定路径")
+        return db_path
     
     def get_database_info(self, database_name: str) -> DatabaseInfo:
         """获取数据库详细信息"""
-        configs = self.get_database_config()
+        configs: dict[str, DatabaseInfo] = self.get_database_config()
         if database_name not in configs:
             raise ValueError(f"未找到数据库配置: {database_name}")
         return configs[database_name]

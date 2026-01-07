@@ -44,6 +44,18 @@ class Generator:
     
     @staticmethod
     @numba.jit(nopython=True)
+    def generate_jid() -> str:
+        """根据当前时间戳生成唯一的JID
+        
+        Returns:
+            生成的唯一JID
+        """
+        # 时间戳，保留小数点后3位
+        timestamp = int(datetime.now().timestamp() * 1000)
+        return f"{timestamp}"
+    
+    @staticmethod
+    @numba.jit(nopython=True)
     def generate_verification_code(length: int = 6) -> str:
         """生成验证码
         
