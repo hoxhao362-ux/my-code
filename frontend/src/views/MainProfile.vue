@@ -1,21 +1,29 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { useUserStore } from '../../stores/user'
-import Navigation from '../../components/Navigation.vue'
-import { validateEmail, validatePhone, encryptPassword } from '../../utils/encryption'
+import Navigation from '../components/Navigation.vue'
+import { useUserStore } from '../stores/user'
+import { useDirectoryStore } from '../stores/directory'
+import { validateEmail, validatePhone, encryptPassword } from '../utils/encryption'
 
 const userStore = useUserStore()
+const directoryStore = useDirectoryStore()
+const user = computed(() => userStore.user)
 
 // 编辑模式
 const isEditing = ref(false)
 const isChangingPassword = ref(false)
 
+// 头像弹窗状态
+const showAvatarModal = ref(false)
+const showAvatarActions = ref(false)
+const fileInput = ref(null)
+
 // 表单数据
 const formData = ref({
-  username: userStore.user?.username || '',
-  email: userStore.user?.email || '',
-  phone: userStore.user?.phone || '',
-  avatar: userStore.user?.avatar || ''
+  username: user.value?.username || '',
+  email: user.value?.email || '',
+  phone: user.value?.phone || '',
+  avatar: user.value?.avatar || ''
 })
 
 // 密码更改数据
@@ -31,10 +39,16 @@ const verificationData = ref({
   isVerified: false
 })
 
-// 头像弹窗状态
-const showAvatarModal = ref(false)
-const showAvatarActions = ref(false)
-const fileInput = ref(null)
+// 获取当前用户的投稿记录
+const userJournals = computed(() => {
+  if (!user.value) return []
+  return userStore.journals.filter(journal => journal.author === user.value.username)
+})
+
+// 切换目录显示
+const toggleDirectory = () => {
+  directoryStore.toggleDirectory()
+}
 
 // 进入编辑模式
 const startEditing = () => {
@@ -70,10 +84,10 @@ const cancelEditing = () => {
   isChangingPassword.value = false
   // 重置表单数据
   formData.value = {
-    username: userStore.user?.username || '',
-    email: userStore.user?.email || '',
-    phone: userStore.user?.phone || '',
-    avatar: userStore.user?.avatar || ''
+    username: user.value?.username || '',
+    email: user.value?.email || '',
+    phone: user.value?.phone || '',
+    avatar: user.value?.avatar || ''
   }
   // 重置密码表单
   passwordForm.value = {
@@ -103,6 +117,11 @@ const hideAvatarMenu = () => {
 const viewAvatar = () => {
   showAvatarModal.value = true
   hideAvatarMenu()
+}
+
+// 关闭头像查看弹窗
+const closeAvatarModal = () => {
+  showAvatarModal.value = false
 }
 
 // 触发文件选择
@@ -154,7 +173,7 @@ const verifyPassword = () => {
   const encryptedPassword = encryptPassword(verificationData.value.verifyPassword)
   
   // 验证密码是否正确
-  if (encryptedPassword === userStore.user?.password) {
+  if (encryptedPassword === user.value?.password) {
     verificationData.value.isVerified = true
   } else {
     alert('当前密码不正确')
@@ -162,7 +181,7 @@ const verifyPassword = () => {
   }
 }
 
-// 保存用户信息（需要验证密码）
+// 保存用户信息
 const saveUserInfo = () => {
   // 如果未验证密码，先验证
   if (!verificationData.value.isVerified) {
@@ -224,18 +243,15 @@ const changePassword = () => {
   cancelEditing()
   alert('密码更改成功')
 }
-
-
 </script>
 
 <template>
   <div class="profile-container">
     <!-- 导航栏 -->
     <Navigation 
-      :user="userStore.user"
-      :current-page="'author-profile'"
-      :toggle-directory="() => {}"
-      :navigate-to="() => {}"
+      :user="user"
+      :current-page="'profile'"
+      :toggle-directory="toggleDirectory"
       :logout="userStore.logout"
     />
 
@@ -255,12 +271,12 @@ const changePassword = () => {
                 @click.stop="showAvatarActions = !showAvatarActions"
               >
                 <img 
-                  v-if="userStore.user?.avatar" 
-                  :src="userStore.user.avatar" 
-                  :alt="userStore.user.username"
+                  v-if="user?.avatar" 
+                  :src="user.avatar" 
+                  :alt="user.username"
                   class="avatar-image"
                 />
-                <span v-else>{{ userStore.user?.username?.charAt(0).toUpperCase() || 'U' }}</span>
+                <span v-else>{{ user?.username?.charAt(0).toUpperCase() || 'U' }}</span>
               </div>
               
               <!-- 头像操作菜单 -->
@@ -332,15 +348,15 @@ const changePassword = () => {
           <!-- 查看模式 -->
           <div v-if="!isEditing" class="user-info">
             <div class="user-details">
-              <h2 class="user-name">{{ userStore.user?.username || '未知用户' }}</h2>
+              <h2 class="user-name">{{ user?.username || '未知用户' }}</h2>
               <p class="user-role">
-                {{ userStore.user?.role === 'admin' ? '管理员' : 
-                   userStore.user?.role === 'reviewer' ? '审核员' : 
-                   userStore.user?.role === 'author' ? '作者' : '普通用户' }}
+                {{ user?.role === 'admin' ? '管理员' : 
+                   user?.role === 'reviewer' ? '审核员' : 
+                   user?.role === 'author' ? '作者' : '普通用户' }}
               </p>
               <div class="user-contact">
-                <p v-if="userStore.user?.email"><strong>邮箱：</strong>{{ userStore.user.email }}</p>
-                <p v-if="userStore.user?.phone"><strong>手机号：</strong>{{ userStore.user.phone }}</p>
+                <p v-if="user?.email"><strong>邮箱：</strong>{{ user.email }}</p>
+                <p v-if="user?.phone"><strong>手机号：</strong>{{ user.phone }}</p>
               </div>
             </div>
           </div>
@@ -443,24 +459,57 @@ const changePassword = () => {
               </div>
             </div>
           </div>
-          
-          <!-- 头像查看弹窗 -->
-          <div 
-            v-if="showAvatarModal" 
-            class="avatar-modal" 
-            :class="{ show: showAvatarModal }"
-            @click="closeAvatarModal"
-          >
-            <div class="modal-content" @click.stop>
-              <span class="close-btn" @click="closeAvatarModal">&times;</span>
-              <div v-if="userStore.user?.avatar" class="avatar-preview-container">
-                <img :src="userStore.user?.avatar" :alt="userStore.user?.username" class="full-size-avatar" />
-              </div>
-              <div v-else class="no-avatar-message">
-                <p>您还没有上传头像</p>
+        </div>
+        
+        <!-- 头像查看弹窗 -->
+        <div 
+          v-if="showAvatarModal" 
+          class="avatar-modal" 
+          @click="closeAvatarModal"
+        >
+          <div class="modal-content" @click.stop>
+            <span class="close-btn" @click="closeAvatarModal">&times;</span>
+            <div v-if="user?.avatar" class="avatar-preview-container">
+              <img :src="user?.avatar" :alt="user?.username" class="full-size-avatar" />
+            </div>
+            <div v-else class="no-avatar-message">
+              <p>您还没有上传头像</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 用户投稿记录 -->
+        <div class="journals-section">
+          <h3 class="section-title">我的投稿</h3>
+          <div v-if="userJournals.length > 0" class="journals-list">
+            <div 
+              v-for="journal in userJournals" 
+              :key="journal.id" 
+              class="journal-item"
+            >
+              <div class="journal-info">
+                <h4 class="journal-title" @click="$router.push(`/journal/${journal.id}`)">
+                  {{ journal.title }}
+                </h4>
+                <div class="journal-meta">
+                  <span>投稿日期：{{ journal.date }}</span>
+                  <span>模块：{{ journal.module }}</span>
+                  <span>状态：<span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span></span>
+                  <span>阅读量：{{ journal.viewCount }}</span>
+                </div>
               </div>
             </div>
           </div>
+          <div v-else class="no-journals">
+            <p>暂无投稿记录</p>
+          </div>
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="profile-actions">
+          <button class="btn btn-primary" @click="$router.push('/submit')">
+            去投稿
+          </button>
         </div>
       </div>
     </main>
@@ -506,6 +555,7 @@ const changePassword = () => {
   flex-direction: column;
   align-items: center;
   gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 /* 头像部分 */
@@ -532,7 +582,6 @@ const changePassword = () => {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  z-index: 10;
   font-size: 2.5rem;
   font-weight: bold;
   text-transform: uppercase;
@@ -668,11 +717,16 @@ const changePassword = () => {
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
 }
 
-/* 密码操作区域 */
-.password-action {
-  margin-top: 1.5rem;
-  display: flex;
-  justify-content: center;
+/* 主按钮 */
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
 
 /* 身份验证部分 */
@@ -862,6 +916,119 @@ const changePassword = () => {
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
+/* 投稿记录部分 */
+.journals-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #3498db;
+}
+
+.journals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.journal-item {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.journal-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.journal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.journal-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.journal-title:hover {
+  color: #3498db;
+}
+
+.journal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.journal-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* 期刊状态 */
+.journal-status {
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.journal-status.已通过 {
+  background: #2ecc71;
+  color: white;
+}
+
+.journal-status.审稿中 {
+  background: #3498db;
+  color: white;
+}
+
+.journal-status.未通过 {
+  background: #e74c3c;
+  color: white;
+}
+
+/* 无投稿记录 */
+.no-journals {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  background: white;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+/* 操作按钮 */
+.profile-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
 /* 头像查看弹窗 */
 .avatar-modal {
   position: fixed;
@@ -873,15 +1040,10 @@ const changePassword = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-.avatar-modal.show {
   opacity: 1;
   visibility: visible;
+  transition: all 0.3s ease;
+  z-index: 1000;
 }
 
 .modal-content {
@@ -997,8 +1159,25 @@ const changePassword = () => {
   
   .verification-section,
   .info-edit-section,
-  .password-edit-section {
+  .password-edit-section,
+  .journals-section {
     padding: 1rem;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .profile-actions .btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .journal-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
   }
 }
 </style>

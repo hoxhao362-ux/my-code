@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useDirectoryStore } from './stores/directory'
 
 // 导入所有组件
 import Login from './components/Login.vue'
@@ -17,16 +18,16 @@ const journalId = ref(null) // 当前查看的稿件ID
 // 管理员辨识密码，默认值为'admin123'，存储在localStorage中
 const adminCode = ref(localStorage.getItem('adminCode') || 'admin123')
 // 目录状态
-const showDirectory = ref(false)
+const directoryStore = useDirectoryStore()
+const showDirectory = computed(() => directoryStore.showDirectory)
+// 目录容器引用
+const directoryContainer = ref(null)
 // 目录相关状态
 const sortBy = ref('date') // 'date' 或 'viewCount'
 const timeRange = ref('all') // 'all', 'today', 'week', 'month', 'year'
 const selectedModule = ref('all') // 'all' 或具体模块名称
+const searchKeyword = ref('') // 搜索关键词
 const filteredJournals = ref([])
-
-// 在线阅读相关状态
-const selectedJournal = ref(null)
-const showJournalContent = ref(false)
 
 // 期刊数据管理
 let initialJournals = [
@@ -257,21 +258,29 @@ const navigateTo = (page, id = null) => {
 
 // 切换目录显示
 const toggleDirectory = () => {
-  showDirectory.value = !showDirectory.value
+  // 如果目录即将关闭，保存当前滚动位置
+  if (showDirectory.value && directoryContainer.value) {
+    directoryStore.saveScrollPosition(directoryContainer.value.scrollTop)
+  }
+  directoryStore.toggleDirectory()
 }
 
-// 在线阅读期刊
-const readJournal = (journal) => {
-  selectedJournal.value = journal
-  showJournalContent.value = true
-  showDirectory.value = false // 关闭目录
+// 处理目录滚动事件
+const handleDirectoryScroll = () => {
+  if (directoryContainer.value) {
+    directoryStore.saveScrollPosition(directoryContainer.value.scrollTop)
+  }
 }
 
-// 关闭在线阅读
-const closeJournalContent = () => {
-  showJournalContent.value = false
-  selectedJournal.value = null
-}
+// 监听目录显示状态变化，当目录打开时恢复滚动位置
+watch(showDirectory, (newVal, oldVal) => {
+  if (newVal && !oldVal && directoryContainer.value) {
+    // 目录从隐藏变为显示，恢复滚动位置
+    setTimeout(() => {
+      directoryContainer.value.scrollTop = directoryStore.restoreScrollPosition()
+    }, 0)
+  }
+})
 
 // 目录相关状态
 const selectedStatus = ref('all') // 'all', '已通过', '未通过', '审稿中' 
@@ -314,6 +323,19 @@ const filterAndSortJournals = () => {
     result = result.filter(journal => new Date(journal.date) >= startDate)
   }
   
+  // 信息检索
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.trim().toLowerCase()
+    result = result.filter(journal => {
+      return (
+        journal.title.toLowerCase().includes(keyword) ||
+        journal.abstract.toLowerCase().includes(keyword) ||
+        journal.author.toLowerCase().includes(keyword) ||
+        journal.keywords.some(k => k.toLowerCase().includes(keyword))
+      )
+    })
+  }
+  
   // 排序
   if (sortBy.value === 'date') {
     result.sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -325,7 +347,7 @@ const filterAndSortJournals = () => {
 }
 
 // 监听相关状态变化，重新过滤和排序
-watch([sortBy, timeRange, selectedModule, selectedStatus, journals], () => {
+watch([sortBy, timeRange, selectedModule, selectedStatus, searchKeyword, journals], () => {
   filterAndSortJournals()
 }, { immediate: true, deep: true })
 
@@ -444,22 +466,44 @@ const appContext = computed(() => {
 
 <template>
   <div class="app-container">
-    <!-- 使用动态组件渲染当前页面 -->
-    <component 
-      :is="CurrentComponent" 
-      v-bind="appContext"
-    />
+    <!-- 使用 Vue Router 渲染当前页面 -->
+    <router-view />
     
     <!-- 全局目录功能 -->
-    <section v-if="showDirectory" class="directory-section">
-      <div class="directory-container">
-        <div class="directory-header">
-          <h2 class="section-title">期刊目录</h2>
-          <button class="close-btn" @click="toggleDirectory">×</button>
-        </div>
+<section v-if="showDirectory" class="directory-section">
+  <div 
+    ref="directoryContainer" 
+    class="directory-container"
+    @scroll="handleDirectoryScroll"
+  >
+    <div class="directory-header">
+      <h2 class="section-title">期刊目录</h2>
+      <button class="close-btn" @click="toggleDirectory">×</button>
+    </div>
         
         <!-- 筛选和排序控件 -->
 <div class="filters-container">
+  <!-- 信息检索 -->
+  <div class="filter-group full-width">
+    <label for="search-input">信息检索：</label>
+    <div class="search-input-container">
+      <input 
+        id="search-input" 
+        v-model="searchKeyword"
+        class="search-input"
+        placeholder="输入关键词搜索（标题、摘要、作者、关键词）"
+        type="text"
+      />
+      <button 
+        class="search-clear-btn" 
+        @click="searchKeyword = ''"
+        v-if="searchKeyword"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+  
   <div class="filter-group">
     <label for="status-filter">状态筛选：</label>
     <select 
@@ -528,12 +572,20 @@ const appContext = computed(() => {
   class="journal-directory-item"
 >
   <div class="journal-directory-info">
-    <h3 class="journal-directory-title" @click="() => { incrementJournalView(journal.id); navigateTo('journal', journal.id); }">
+    <h3 class="journal-directory-title" @click="() => { 
+      // 点击标题时，保存滚动位置并关闭目录
+      if (directoryContainer.value) {
+        directoryStore.saveScrollPosition(directoryContainer.value.scrollTop)
+      }
+      directoryStore.closeDirectory()
+      incrementJournalView(journal.id)
+      $router.push(`/journal/${journal.id}`)
+    }">
       {{ journal.title }}
     </h3>
     <p class="journal-directory-meta">
-  作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }} | 状态：
-  <span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span> | 阅读量：{{ journal.viewCount }}
+作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }} | 状态：
+<span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span> | 阅读量：{{ journal.viewCount }}
 </p>
     <p class="journal-directory-abstract">{{ journal.abstract }}</p>
     <div class="journal-directory-keywords">
@@ -547,10 +599,15 @@ const appContext = computed(() => {
     </div>
   </div>
   <div class="journal-directory-actions">
-    <button class="action-btn read-btn" @click="readJournal(journal)">
-      在线阅读
-    </button>
-    <button class="action-btn detail-btn" @click="() => { incrementJournalView(journal.id); navigateTo('journal', journal.id); }">
+    <button class="action-btn detail-btn" @click="() => { 
+      // 点击查看详情按钮时，保存滚动位置并关闭目录
+      if (directoryContainer.value) {
+        directoryStore.saveScrollPosition(directoryContainer.value.scrollTop)
+      }
+      directoryStore.closeDirectory()
+      incrementJournalView(journal.id)
+      $router.push(`/journal/${journal.id}`)
+    }">
       查看详情
     </button>
   </div>
@@ -560,29 +617,6 @@ const appContext = computed(() => {
             <p>暂无符合条件的期刊</p>
           </div>
         </div>
-      </div>
-    </section>
-    
-    <!-- 在线阅读内容 -->
-    <section v-if="showJournalContent && selectedJournal" class="journal-content-section">
-      <div class="journal-content-container">
-        <div class="journal-content-header">
-          <h2 class="section-title">{{ selectedJournal.title }}</h2>
-          <button class="close-btn" @click="closeJournalContent">×</button>
-        </div>
-        <div class="journal-content-meta">
-          <p>作者：{{ selectedJournal.author }} | 投稿日期：{{ selectedJournal.date }} | 模块：{{ selectedJournal.module }} | 阅读量：{{ selectedJournal.viewCount }}</p>
-          <div class="journal-content-keywords">
-            <span 
-              v-for="(keyword, index) in selectedJournal.keywords" 
-              :key="index" 
-              class="keyword-tag"
-            >
-              {{ keyword }}
-            </span>
-          </div>
-        </div>
-        <div class="journal-content-body" v-html="selectedJournal.content"></div>
       </div>
     </section>
   </div>
@@ -617,7 +651,7 @@ body {
   height: 100vh;
   background: white;
   box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 1001;
   overflow-y: auto;
   padding: 2rem;
 }
@@ -681,6 +715,11 @@ body {
   min-width: 150px;
 }
 
+.filter-group.full-width {
+  width: 100%;
+  min-width: 100%;
+}
+
 .filter-group label {
   font-weight: 500;
   color: #555;
@@ -695,6 +734,51 @@ body {
   background: white;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+/* 搜索输入框样式 */
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.search-clear-btn:hover {
+  background: #f5f5f5;
+  color: #333;
 }
 
 .filter-select:focus {
@@ -871,17 +955,6 @@ body {
   text-align: center;
 }
 
-.read-btn {
-  background: #3498db;
-  color: white;
-}
-
-.read-btn:hover {
-  background: #2980b9;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-}
-
 .detail-btn {
   background: #2ecc71;
   color: white;
@@ -891,109 +964,5 @@ body {
   background: #27ae60;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-}
-
-/* 在线阅读内容样式 */
-.journal-content-section {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: white;
-  z-index: 1001;
-  overflow-y: auto;
-  padding: 2rem;
-}
-
-.journal-content-container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.journal-content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #eee;
-}
-
-.journal-content-header .section-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.journal-content-header .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  color: #999;
-  cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.journal-content-header .close-btn:hover {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.journal-content-meta {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.journal-content-meta p {
-  margin: 0 0 1rem 0;
-  color: #555;
-  font-size: 0.9rem;
-}
-
-.journal-content-keywords {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.journal-content-body {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  line-height: 1.8;
-  color: #333;
-}
-
-.journal-content-body h1, .journal-content-body h2, .journal-content-body h3, .journal-content-body h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  color: #2c3e50;
-}
-
-.journal-content-body p {
-  margin-bottom: 1rem;
-  text-align: justify;
-}
-
-.journal-content-body ul, .journal-content-body ol {
-  margin-bottom: 1rem;
-  padding-left: 2rem;
-}
-
-.journal-content-body li {
-  margin-bottom: 0.5rem;
 }
 </style>

@@ -4,6 +4,14 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
     journals: JSON.parse(localStorage.getItem('journals')) || [],
+    // 公告数据
+    announcements: JSON.parse(localStorage.getItem('announcements')) || [
+      { id: 1, title: '2026年期刊投稿平台征稿启事', content: '尊敬的各位作者，2026年期刊投稿平台开始全面征稿，欢迎广大作者踊跃投稿。', date: '2026-01-01' },
+      { id: 2, title: '投稿系统升级通知', content: '为了提供更好的服务，我们将于2026年1月15日进行系统升级维护，期间投稿功能将暂停使用。', date: '2026-01-10' },
+      { id: 3, title: '关于调整审稿周期的通知', content: '自2026年2月1日起，我平台将调整审稿周期，一般稿件的审稿时间将缩短至1-2周。', date: '2026-01-12' }
+    ],
+    // 意见收纳数据（联系我们和意见反馈）
+    feedbackMessages: JSON.parse(localStorage.getItem('feedbackMessages')) || [],
     // 默认审稿阶段
     reviewStages: ['初审', '复审', '终审'],
     modules: JSON.parse(localStorage.getItem('modules')) || [
@@ -32,7 +40,7 @@ export const useUserStore = defineStore('user', {
       return state.journals.filter(journal => journal.status === '审稿中')
     },
     journalReviewRecords: (state) => (journalId) => {
-      return state.reviewRecords.filter(record => record.journalId === journalId)
+      return state.reviewRecords.filter(record => String(record.journalId) === String(journalId))
     },
     userReviewRecords: (state) => {
       if (!state.user) return []
@@ -85,7 +93,7 @@ export const useUserStore = defineStore('user', {
 
     // 更新期刊
     updateJournal(updatedJournal) {
-      const index = this.journals.findIndex(journal => journal.id === updatedJournal.id)
+      const index = this.journals.findIndex(journal => String(journal.id) === String(updatedJournal.id))
       if (index !== -1) {
         this.journals[index] = updatedJournal
         localStorage.setItem('journals', JSON.stringify(this.journals))
@@ -94,10 +102,10 @@ export const useUserStore = defineStore('user', {
 
     // 删除期刊
     deleteJournal(journalId) {
-      this.journals = this.journals.filter(journal => journal.id !== journalId)
+      this.journals = this.journals.filter(journal => String(journal.id) !== String(journalId))
       localStorage.setItem('journals', JSON.stringify(this.journals))
       // 同时删除相关的审稿记录
-      this.reviewRecords = this.reviewRecords.filter(record => record.journalId !== journalId)
+      this.reviewRecords = this.reviewRecords.filter(record => String(record.journalId) !== String(journalId))
       localStorage.setItem('reviewRecords', JSON.stringify(this.reviewRecords))
     },
 
@@ -144,7 +152,7 @@ export const useUserStore = defineStore('user', {
 
     // 更新审稿记录
     updateReviewRecord(updatedRecord) {
-      const index = this.reviewRecords.findIndex(record => record.id === updatedRecord.id)
+      const index = this.reviewRecords.findIndex(record => String(record.id) === String(updatedRecord.id))
       if (index !== -1) {
         this.reviewRecords[index] = updatedRecord
         localStorage.setItem('reviewRecords', JSON.stringify(this.reviewRecords))
@@ -153,7 +161,7 @@ export const useUserStore = defineStore('user', {
 
     // 删除审稿记录
     deleteReviewRecord(recordId) {
-      this.reviewRecords = this.reviewRecords.filter(record => record.id !== recordId)
+      this.reviewRecords = this.reviewRecords.filter(record => String(record.id) !== String(recordId))
       localStorage.setItem('reviewRecords', JSON.stringify(this.reviewRecords))
     },
 
@@ -161,6 +169,50 @@ export const useUserStore = defineStore('user', {
     updateReviewRecords(newRecords) {
       this.reviewRecords = newRecords
       localStorage.setItem('reviewRecords', JSON.stringify(newRecords))
+    },
+    
+    // 设置公告列表
+    setAnnouncements(newAnnouncements) {
+      this.announcements = newAnnouncements
+      localStorage.setItem('announcements', JSON.stringify(newAnnouncements))
+    },
+    
+    // 添加反馈消息
+    addFeedbackMessage(message) {
+      const newMessage = {
+        id: Date.now(),
+        ...message,
+        createdAt: new Date().toISOString(),
+        status: '未处理'
+      }
+      this.feedbackMessages.push(newMessage)
+      localStorage.setItem('feedbackMessages', JSON.stringify(this.feedbackMessages))
+    },
+    
+    // 获取所有反馈消息
+    getFeedbackMessages() {
+      return this.feedbackMessages
+    },
+    
+    // 更新反馈消息状态
+    updateFeedbackMessageStatus(messageId, status) {
+      const message = this.feedbackMessages.find(msg => String(msg.id) === String(messageId))
+      if (message) {
+        message.status = status
+        localStorage.setItem('feedbackMessages', JSON.stringify(this.feedbackMessages))
+      }
+    },
+    
+    // 删除反馈消息
+    deleteFeedbackMessage(messageId) {
+      this.feedbackMessages = this.feedbackMessages.filter(msg => String(msg.id) !== String(messageId))
+      localStorage.setItem('feedbackMessages', JSON.stringify(this.feedbackMessages))
+    },
+    
+    // 批量删除反馈消息
+    deleteMultipleFeedbackMessages(messageIds) {
+      this.feedbackMessages = this.feedbackMessages.filter(msg => !messageIds.includes(String(msg.id)))
+      localStorage.setItem('feedbackMessages', JSON.stringify(this.feedbackMessages))
     }
   }
 })

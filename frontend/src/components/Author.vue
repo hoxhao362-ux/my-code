@@ -318,8 +318,14 @@ const viewJournalDetail = (id) => {
   margin: 0;
   font-size: 0.95rem;
   display: -webkit-box;
+  display: -moz-box;
+  display: box;
   -webkit-line-clamp: 2;
+  -moz-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
   overflow: hidden;
   line-height: 1.5;
 }

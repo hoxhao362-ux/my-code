@@ -27,17 +27,7 @@ onMounted(() => {
 })
 
 // 登录成功后跳转的目标页面
-const targetPage = computed(() => {
-  if (selectedRole.value === 'admin' || username.value === 'admin') {
-    return '/admin/dashboard'
-  } else if (selectedRole.value === 'reviewer' || username.value === 'reviewer') {
-    return '/admin/audit-dashboard'
-  } else if (selectedRole.value === 'author' || username.value === 'author') {
-    return '/admin/author-dashboard'
-  } else {
-    return '/admin/login'
-  }
-})
+
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -51,7 +41,8 @@ const handleLogin = async () => {
   // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断
   let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
              username.value === 'reviewer' ? 'reviewer' : 
-             username.value === 'author' ? 'author' : 'user')
+             username.value === 'author' ? 'author' : 
+             username.value === 'user' ? 'user' : 'user')
   
   // 模拟登录逻辑
   const userData = {
@@ -75,8 +66,16 @@ const handleLogin = async () => {
     localStorage.removeItem('adminRememberedPassword')
   }
   
-  // 跳转到对应的后台页面
-  router.push(targetPage.value)
+  // 根据用户角色跳转到对应的后台页面
+  let redirectPath = '/admin/login'
+  if (userData.role === 'admin') {
+    redirectPath = '/admin/dashboard'
+  } else if (userData.role === 'reviewer') {
+    redirectPath = '/admin/audit-dashboard'
+  } else if (userData.role === 'author') {
+    redirectPath = '/admin/author-dashboard'
+  }
+  router.push(redirectPath)
 }
 
 const goToRegister = () => {
@@ -90,7 +89,7 @@ const goToRegister = () => {
     <div class="admin-login-form-wrapper">
       <div class="admin-login-form">
         <!-- 登录标题 -->
-        <h2 class="admin-login-title">后台管理系统</h2>
+        <h2 class="admin-login-title">后台主页系统</h2>
         
         <div class="admin-form-group">
           <label for="admin-username">用户名</label>
@@ -167,7 +166,7 @@ const goToRegister = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('https://via.placeholder.com/1920x1080');
+  background-image: url('https://picsum.photos/1920/1080');
   background-size: cover;
   background-position: center;
   opacity: 0.3;

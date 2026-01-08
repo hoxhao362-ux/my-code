@@ -709,8 +709,14 @@ const viewJournalDetail = (id) => {
   margin: 0 0 0.75rem 0;
   line-height: 1.5;
   display: -webkit-box;
+  display: -moz-box;
+  display: box;
   -webkit-line-clamp: 3;
+  -moz-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
   overflow: hidden;
 }
 
@@ -965,8 +971,14 @@ const viewJournalDetail = (id) => {
   margin: 0 0 1rem 0;
   line-height: 1.5;
   display: -webkit-box;
+  display: -moz-box;
+  display: box;
   -webkit-line-clamp: 3;
+  -moz-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
   overflow: hidden;
 }
 

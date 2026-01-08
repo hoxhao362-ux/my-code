@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
@@ -10,8 +10,6 @@ const router = useRouter()
 const username = ref('')
 const password = ref('')
 const error = ref('')
-// 角色选择
-const selectedRole = ref('')
 // 记住密码
 const rememberMe = ref(false)
 
@@ -26,30 +24,6 @@ onMounted(() => {
   }
 })
 
-// 点击空白处时隐藏记住密码的下拉菜单
-const handleDocumentClick = (e) => {
-  // 这里可以添加逻辑来处理点击空白处的情况
-  // 例如关闭下拉菜单或其他弹窗
-}
-
-// 添加全局点击事件监听
-onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-})
-
-// 登录成功后跳转的目标页面
-const targetPage = computed(() => {
-  if (selectedRole.value === 'admin') {
-    return '/admin'
-  } else if (selectedRole.value === 'reviewer') {
-    return '/reviewer'
-  } else if (selectedRole.value === 'author') {
-    return '/author'
-  } else {
-    return '/'
-  }
-})
-
 const handleLogin = async () => {
   if (!username.value || !password.value) {
     error.value = '请输入用户名和密码'
@@ -59,9 +33,10 @@ const handleLogin = async () => {
   // 加密密码
   const encryptedPassword = encryptPassword(password.value)
   
-  // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断
-  let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
-             username.value === 'reviewer' ? 'reviewer' : 'user')
+  // 根据用户名自动识别角色
+  let role = username.value === 'admin' ? 'admin' : 
+             username.value === 'reviewer' ? 'reviewer' : 
+             username.value === 'user' ? 'user' : 'author'
   
   // 模拟登录逻辑
   const userData = {
@@ -85,8 +60,8 @@ const handleLogin = async () => {
     localStorage.removeItem('rememberedPassword')
   }
   
-  // 跳转到对应的页面
-  router.push(targetPage.value)
+  // 跳转到首页
+  router.push('/home')
 }
 
 const goToRegister = () => {
@@ -101,12 +76,6 @@ const goToRegister = () => {
       <div class="login-form">
         <!-- 登录标题 -->
         <h2 class="login-title">期刊投稿平台</h2>
-        
-        <!-- 登录入口切换 -->
-        <div class="login-tabs">
-          <button class="tab-btn active">网站主站</button>
-          <button class="tab-btn">作者后台</button>
-        </div>
         
         <div class="form-group">
           <label for="username">用户名</label>
@@ -137,22 +106,6 @@ const goToRegister = () => {
           <label for="rememberMe">记住密码</label>
         </div>
         
-        <!-- 角色选择（仅主站登录显示） -->
-        <div class="form-group">
-          <label for="role">角色</label>
-          <select 
-            id="role" 
-            v-model="selectedRole"
-            class="role-select"
-          >
-            <option value="">请选择角色</option>
-            <option value="admin">管理员</option>
-            <option value="reviewer">审核员</option>
-            <option value="author">作者</option>
-            <option value="user">普通用户</option>
-          </select>
-        </div>
-        
         <p v-if="error" class="error-message">{{ error }}</p>
         <button class="login-btn" @click="handleLogin">登录</button>
         <div class="register-link">
@@ -173,6 +126,7 @@ const goToRegister = () => {
   min-height: 100vh;
   background-color: #f5f5f5;
   position: relative;
+  overflow: hidden;
 }
 
 .login-bg {
@@ -181,11 +135,25 @@ const goToRegister = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('https://via.placeholder.com/1920x1080');
+  background-image: url('/images/wzmc_20140317155634.jpg');
   background-size: cover;
   background-position: center;
-  opacity: 0.5;
+  opacity: 0.8;
   z-index: 0;
+  animation: backgroundAnimation 20s ease infinite;
+}
+
+/* 背景动态效果 */
+@keyframes backgroundAnimation {
+  0% {
+    transform: scale(1) translateX(0);
+  }
+  50% {
+    transform: scale(1.1) translateX(-5%);
+  }
+  100% {
+    transform: scale(1) translateX(0);
+  }
 }
 
 .login-form-wrapper {
@@ -193,145 +161,147 @@ const goToRegister = () => {
   z-index: 1;
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+  padding: 2.5rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 表单淡入效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-title {
   text-align: center;
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-/* 登录入口切换 */
-.login-tabs {
-  display: flex;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 0.75rem;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.3s;
-  color: #666;
-}
-
-.tab-btn.active {
-  border-bottom-color: #4a90e2;
-  color: #4a90e2;
-  font-weight: 500;
+  margin-bottom: 2rem;
+  color: #2c3e50;
+  font-size: 2rem;
+  font-weight: bold;
 }
 
 /* 表单样式 */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   color: #555;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.9rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1rem;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #4a90e2;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  background-color: white;
 }
 
 /* 记住密码样式 */
 .remember-me {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
-  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  gap: 0.75rem;
 }
 
 .remember-me input[type="checkbox"] {
-  width: auto;
+  width: 18px;
+  height: 18px;
   margin: 0;
+  accent-color: #3498db;
 }
 
 .remember-me label {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #666;
   cursor: pointer;
+  transition: color 0.3s ease;
 }
 
-/* 角色选择样式 */
-.role-select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: white;
-  transition: border-color 0.3s;
-}
-
-.role-select:focus {
-  outline: none;
-  border-color: #4a90e2;
+.remember-me label:hover {
+  color: #3498db;
 }
 
 /* 错误消息样式 */
 .error-message {
   color: #e74c3c;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 0.75rem;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(231, 76, 60, 0.2);
 }
 
 /* 登录按钮样式 */
 .login-btn {
   width: 100%;
-  padding: 0.75rem;
-  background-color: #27ae60;
+  padding: 1rem;
+  background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .login-btn:hover {
-  background-color: #229954;
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
 }
 
 /* 注册链接样式 */
 .register-link {
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #666;
 }
 
 .register-link a {
-  color: #4a90e2;
+  color: #3498db;
   text-decoration: none;
-  transition: color 0.3s;
+  transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .register-link a:hover {
-  color: #357abd;
+  color: #2980b9;
+  text-decoration: underline;
 }
 
 /* 响应式设计 */
@@ -339,6 +309,10 @@ const goToRegister = () => {
   .login-form-wrapper {
     padding: 1.5rem;
     margin: 1rem;
+  }
+  
+  .login-title {
+    font-size: 1.6rem;
   }
 }
 </style>
