@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List, Optional
 from datetime import datetime
 
@@ -10,6 +10,8 @@ from model.user import LoginRequest, LoginResponse
 from database import db_manager
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
+
+from api import deps
 
 review_router = APIRouter(
     prefix="/review",
@@ -78,17 +80,12 @@ async def reviewer_login(request: LoginRequest, req: Request):
     )
 
 @review_router.get("/pending", summary="获取待审核文献列表")
-async def get_pending_journals(token: str, page: int = 1, page_size: int = 10):
+async def get_pending_journals(
+    page: int = 1, 
+    page_size: int = 10,
+    current_user: dict = Depends(deps.get_reviewer_user)
+):
     """获取待审核的文献列表，仅限审稿人访问"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查权限
-    if user_info["role"] != "reviewer" and user_info["role"] != "admin":
-        raise HTTPException(status_code=403, detail="无权访问此接口")
-    
     # 计算偏移量
     offset = (page - 1) * page_size
     
@@ -123,20 +120,11 @@ async def get_pending_journals(token: str, page: int = 1, page_size: int = 10):
 @review_router.post("/review/{jid}", summary="审核文献")
 async def review_journal(
     jid: int,
-    token: str,
     result: str,
-    comment: Optional[str] = None
+    comment: Optional[str] = None,
+    current_user: dict = Depends(deps.get_reviewer_user)
 ):
     """审核文献，仅限审稿人访问"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查权限
-    if user_info["role"] != "reviewer" and user_info["role"] != "admin":
-        raise HTTPException(status_code=403, detail="无权访问此接口")
-    
     # 检查结果有效性
     if result not in ["approved", "rejected"]:
         raise HTTPException(status_code=400, detail="审核结果无效，只能是approved或rejected")
@@ -167,7 +155,7 @@ async def review_journal(
         INSERT INTO review_records (jid, reviewer_uid, review_time, result, comment)
         VALUES (?, ?, ?, ?, ?)
         """,
-        (jid, user_info["uid"], review_time, result, comment)
+        (jid, current_user["uid"], review_time, result, comment)
     )
     
     return {
@@ -177,24 +165,19 @@ async def review_journal(
     }
 
 @review_router.get("/history", summary="获取审核历史记录")
-async def get_review_history(token: str, page: int = 1, page_size: int = 10):
+async def get_review_history(
+    page: int = 1, 
+    page_size: int = 10,
+    current_user: dict = Depends(deps.get_reviewer_user)
+):
     """获取当前审稿人的审核历史记录"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查权限
-    if user_info["role"] != "reviewer" and user_info["role"] != "admin":
-        raise HTTPException(status_code=403, detail="无权访问此接口")
-    
     # 计算偏移量
     offset = (page - 1) * page_size
     
     # 查询审核历史记录总数
     total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ?",
-        (user_info["uid"],)
+        (current_user["uid"],)
     )
     
     # 查询审核历史记录
@@ -207,7 +190,7 @@ async def get_review_history(token: str, page: int = 1, page_size: int = 10):
         ORDER BY rr.review_time DESC
         LIMIT ? OFFSET ?
         """,
-        (user_info["uid"], page_size, offset)
+        (current_user["uid"], page_size, offset)
     )
     
     return {
@@ -216,33 +199,24 @@ async def get_review_history(token: str, page: int = 1, page_size: int = 10):
     }
 
 @review_router.get("/statistics", summary="获取审核统计信息")
-async def get_review_statistics(token: str):
+async def get_review_statistics(current_user: dict = Depends(deps.get_reviewer_user)):
     """获取审核统计信息，仅限审稿人访问"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查权限
-    if user_info["role"] != "reviewer" and user_info["role"] != "admin":
-        raise HTTPException(status_code=403, detail="无权访问此接口")
-    
     # 查询总审核数
     total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ?",
-        (user_info["uid"],)
+        (current_user["uid"],)
     )
     
     # 查询通过数
     approved = await journal_db.fetchval(
         "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ? AND result = 'approved'",
-        (user_info["uid"],)
+        (current_user["uid"],)
     )
     
     # 查询拒绝数
     rejected = await journal_db.fetchval(
         "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ? AND result = 'rejected'",
-        (user_info["uid"],)
+        (current_user["uid"],)
     )
     
     return {
@@ -253,17 +227,12 @@ async def get_review_statistics(token: str):
     }
 
 @review_router.get("/rejected", summary="获取被拒绝的文献列表")
-async def get_rejected_journals(token: str, page: int = 1, page_size: int = 10):
+async def get_rejected_journals(
+    page: int = 1, 
+    page_size: int = 10,
+    current_user: dict = Depends(deps.get_reviewer_user)
+):
     """获取被拒绝的文献列表，包含审核意见"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查权限
-    if user_info["role"] != "reviewer" and user_info["role"] != "admin":
-        raise HTTPException(status_code=403, detail="无权访问此接口")
-    
     # 计算偏移量
     offset = (page - 1) * page_size
     

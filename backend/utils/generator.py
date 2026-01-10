@@ -8,7 +8,6 @@ class Generator:
     """生成工具类，用于生成各种唯一标识符和哈希值"""
     
     @staticmethod
-    @numba.jit(nopython=True)
     def generate_uid_hash(username: str, salt: Optional[str] = None) -> str:
         """生成唯一的用户ID哈希
         

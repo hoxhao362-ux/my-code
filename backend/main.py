@@ -35,6 +35,43 @@ async def lifespan(app: FastAPI):
     await db_manager.initialize_all()
     
     global_logger.info('database', "数据库初始化完成")
+
+    # 检查并创建初始管理员
+    try:
+        user_db = db_manager.get_service('user_account')
+        admin_exists = await user_db.fetchone("SELECT 1 FROM users WHERE role = 'admin'")
+        if not admin_exists:
+            global_logger.info('main', "未检测到管理员账号，正在创建初始管理员...")
+            from utils.jwt import jwt_util
+            from utils.generator import generator
+            
+            # 默认管理员配置 (如果没有配置则使用默认值)
+            admin_username = "admin"
+            admin_password = "admin123456" 
+            admin_email = "admin@example.com"
+            
+            # 尝试从配置获取
+            try:
+                admin_username = config["global.admin.default_username"]
+                admin_password = config["global.admin.default_password"]
+                admin_email = config["global.admin.default_email"]
+            except:
+                pass
+
+            uid_hash = generator.generate_uid_hash(admin_username)
+            hashed_password = jwt_util.hash_password(admin_password)
+            create_time = datetime.now().isoformat()
+            
+            await user_db.execute(
+                """
+                INSERT INTO users (uid_hash, username, password, email, role, create_time, is_verified)
+                VALUES (?, ?, ?, ?, ?, ?, 1)
+                """,
+                (uid_hash, admin_username, hashed_password, admin_email, 'admin', create_time)
+            )
+            global_logger.info('main', f"初始管理员创建成功: 用户名={admin_username}")
+    except Exception as e:
+        global_logger.error('main', f"创建初始管理员失败: {e}")
     
     # Redis连接初始化
     from utils.redis import redis_client

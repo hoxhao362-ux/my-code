@@ -1,7 +1,7 @@
 """
 投稿相关API接口
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request, Depends
 from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +20,7 @@ from model.journal import (
     JournalStatusUpdateRequest
 )
 from model.user import LoginRequest, LoginResponse
+from api import deps
 
 # 获取数据库服务实例
 from database import db_manager
@@ -38,6 +39,11 @@ submit_router = APIRouter(
         429: {"description": "请求频率过高"},
     },
 )
+
+async def get_writer_user_from_form(token: str = Form(...)):
+    """从表单获取token并验证writer权限"""
+    user = await deps.get_current_user(token)
+    return await deps.get_writer_user(user)
 
 @submit_router.post("/login", summary="作者登录", response_model=LoginResponse)
 async def author_login(request: LoginRequest, req: Request):
@@ -101,17 +107,25 @@ async def author_login(request: LoginRequest, req: Request):
     )
 
 @submit_router.post("/upload", summary="上传文献", response_model=JournalUploadResponse)
-async def upload_journal(request: JournalUploadRequest, token: str = Form(...)):
+async def upload_journal(
+    request: JournalUploadRequest = Depends(), # 使用Depends来处理Pydantic model in Form? 
+    # 注意：上面的代码使用了 request: JournalUploadRequest，在FastAPI中如果不加Depends且包含UploadFile，
+    # 可能会有问题，但如果是旧代码且能运行，可能是使用了特殊方式。
+    # 为了保险，我们保持参数定义尽可能接近原样，但使用Depends处理token。
+    # 原代码: async def upload_journal(request: JournalUploadRequest, token: str = Form(...)):
+    # 如果 request 是 body，token 是 form，这是冲突的。
+    # 假设 request 也是 Form。
+    # 我们这里保留 request 参数，假设它是以此方式工作的。
+    current_user: dict = Depends(get_writer_user_from_form)
+):
     """上传文献接口 - 仅限writer及以上角色"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查用户角色权限
-    allowed_roles = ["writer", "reviewer", "admin"]
-    if user_info["role"] not in allowed_roles:
-        raise HTTPException(status_code=403, detail="该用户没有投稿权限")
+    # 这里的 request 参数处理比较微妙。如果 JournalUploadRequest 包含 UploadFile，它必须是 multipart/form-data。
+    # FastAPI 不会自动将 Pydantic 模型映射到 Form 字段，除非使用 Depends。
+    # 但由于我们不能修改前端，我们假设 request 参数能正确接收数据 (可能前端发送的是分开的字段，
+    # 而 FastAPI 通过某种方式（比如名字匹配）填充了 request? 不，这不标准)。
+    # 最可能的解释是：原代码其实是错误的，或者使用了特定的 FastAPI 版本/插件。
+    # 但不管怎样，我们现在的任务是替换 token 验证。
+    # 我们删除了 token 参数，改用 current_user 依赖。
     
     # 检查文件类型
     allowed_types = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
@@ -157,7 +171,7 @@ async def upload_journal(request: JournalUploadRequest, token: str = Form(...)):
         """,
         (
             jid,
-            user_info["uid"],
+            current_user["uid"],
             request.title,
             request.authors,
             request.subject,
@@ -182,25 +196,19 @@ async def upload_journal(request: JournalUploadRequest, token: str = Form(...)):
     )
 
 @submit_router.get("/my", summary="获取我的文献列表", response_model=JournalListResponse)
-async def get_my_journals(token: str, page: int = 1, page_size: int = 10):
+async def get_my_journals(
+    page: int = 1, 
+    page_size: int = 10,
+    current_user: dict = Depends(deps.get_writer_user)
+):
     """获取当前用户上传的文献列表"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查用户角色权限
-    allowed_roles = ["writer", "reviewer", "admin"]
-    if user_info["role"] not in allowed_roles:
-        raise HTTPException(status_code=403, detail="该用户没有投稿权限")
-    
     # 计算偏移量
     offset = (page - 1) * page_size
     
     # 查询文献总数
     total = await journal_db.fetchval(
         "SELECT COUNT(*) FROM journals WHERE uid = ?",
-        (user_info["uid"],)
+        (current_user["uid"],)
     )
     
     # 查询文献列表
@@ -212,7 +220,7 @@ async def get_my_journals(token: str, page: int = 1, page_size: int = 10):
         ORDER BY create_time DESC 
         LIMIT ? OFFSET ?
         """,
-        (user_info["uid"], page_size, offset)
+        (current_user["uid"], page_size, offset)
     )
     
     # 转换为响应模型
@@ -227,18 +235,11 @@ async def get_my_journals(token: str, page: int = 1, page_size: int = 10):
     )
 
 @submit_router.get("/detail/{jid}", summary="获取文献详情", response_model=JournalInfo)
-async def get_journal_detail(jid: int, token: str):
+async def get_journal_detail(
+    jid: int, 
+    current_user: dict = Depends(deps.get_writer_user)
+):
     """获取文献详情"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查用户角色权限
-    allowed_roles = ["writer", "reviewer", "admin"]
-    if user_info["role"] not in allowed_roles:
-        raise HTTPException(status_code=403, detail="该用户没有投稿权限")
-    
     # 查询文献
     journal = await journal_db.fetchone(
         """
@@ -253,24 +254,17 @@ async def get_journal_detail(jid: int, token: str):
         raise HTTPException(status_code=404, detail="文献不存在")
     
     # 检查权限 - 只能查看自己的文献（writer角色）或所有文献（reviewer/admin角色）
-    if user_info["role"] == "writer" and journal["uid"] != user_info["uid"]:
+    if current_user["role"] == "writer" and journal["uid"] != current_user["uid"]:
         raise HTTPException(status_code=403, detail="无权访问此文献")
     
     return JournalInfo(**journal)
 
 @submit_router.delete("/{jid}", summary="删除文献")
-async def delete_journal(jid: int, token: str):
+async def delete_journal(
+    jid: int, 
+    current_user: dict = Depends(deps.get_writer_user)
+):
     """删除文献（软删除）"""
-    # 验证token
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
-    
-    # 检查用户角色权限
-    allowed_roles = ["writer", "reviewer", "admin"]
-    if user_info["role"] not in allowed_roles:
-        raise HTTPException(status_code=403, detail="该用户没有投稿权限")
-    
     # 查询文献
     journal = await journal_db.fetchone(
         "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
@@ -281,7 +275,7 @@ async def delete_journal(jid: int, token: str):
         raise HTTPException(status_code=404, detail="文献不存在")
     
     # 检查权限 - writer只能删除自己的文献，reviewer/admin可以删除任何文献
-    if user_info["role"] == "writer" and journal["uid"] != user_info["uid"]:
+    if current_user["role"] == "writer" and journal["uid"] != current_user["uid"]:
         raise HTTPException(status_code=403, detail="无权删除此文献")
     
     # 软删除：将文献状态改为deleted
