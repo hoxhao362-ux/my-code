@@ -70,6 +70,10 @@ class Config:
 
         # 加载其他配置文件
         config_files = [f for f in self.CONFIGS_DIR.glob('*.toml')]
+        if not config_files:
+            global_logger.error('config', '未找到任何配置文件')
+            raise FileNotFoundError('未找到任何配置文件')
+        
         for config_file in config_files:
             config = load_toml(config_file)
             self._configs[config_file.stem] = config
@@ -266,6 +270,32 @@ class Config:
             self._build_flat_configs()
         return self._flat_configs.keys()
     
+    def items(self) -> list[tuple[any, any]]:
+        """
+        获取所有配置项 - 键值对视图
+        
+        功能说明：
+        1. 返回扁平化后的所有配置键值对
+        2. 自动触发扁平化映射构建（如果尚未构建）
+        3. 返回一个列表，每个元素为(key, value)元组
+        
+        用途：
+        - 遍历所有配置项
+        - 快速获取所有配置键值对
+        - 用于配置导出或备份
+        
+        Returns:
+            list[tuple[any, any]]: 所有配置键值对的列表
+            
+        Example:
+            # 遍历所有配置项
+            for key, value in config.items():
+                print(f"{key}: {value}")
+        """
+        if not hasattr(self, '_flat_configs'):
+            self._build_flat_configs()
+        return list(self._flat_configs.items())
+
     def get_config_info(self, key=None):
         """
         获取配置系统信息 - 智能配置管理助手
@@ -460,7 +490,7 @@ def setup_core(app: FastAPI):
     """
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.global_.cors_origins, 
+        allow_origins=config["global.global.cors_origins"], 
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -72,5 +72,9 @@ def test_config_access():
     print(f"访问 '{test_key}' {iterations} 次耗时: {(end_time - start_time)*1000:.2f}ms")
     print()
 
+    print("所有键值对格式化输出:")
+    for key, value in config.items():
+        print(f"{key}: {value}")
+
 if __name__ == '__main__':
     test_config_access()

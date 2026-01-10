@@ -2,6 +2,8 @@ import hashlib
 from datetime import datetime
 from typing import Union, Optional
 
+import numba
+
 class Generator:
     """生成工具类，用于生成各种唯一标识符和哈希值"""
     
@@ -24,6 +26,7 @@ class Generator:
         return hashlib.sha256(hash_input).hexdigest()
     
     @staticmethod
+    @numba.jit(nopython=True)
     def generate_file_hash(file_content: Union[bytes, str]) -> str:
         """生成文件哈希值
         
@@ -39,6 +42,19 @@ class Generator:
         return hashlib.sha256(file_content).hexdigest()
     
     @staticmethod
+    @numba.jit(nopython=True)
+    def generate_jid() -> str:
+        """根据当前时间戳生成唯一的JID
+        
+        Returns:
+            生成的唯一JID
+        """
+        # 时间戳，保留小数点后3位
+        timestamp = int(datetime.now().timestamp() * 1000)
+        return f"{timestamp}"
+    
+    @staticmethod
+    @numba.jit(nopython=True)
     def generate_verification_code(length: int = 6) -> str:
         """生成验证码
         
@@ -56,6 +72,7 @@ class Generator:
         return ''.join(random.choices(characters, k=length))
     
     @staticmethod
+    @numba.jit(nopython=True)
     def generate_random_string(length: int = 16, include_special: bool = False) -> str:
         """生成随机字符串
         

@@ -1,16 +1,19 @@
 """用户相关API接口"""
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from datetime import datetime
 
-from database import db_manager
-
-# 获取数据库服务实例
-user_db = db_manager.get_service('user_account')
-journal_db = db_manager.get_service('journal_submit')
+from core.config import config
 from utils.jwt import jwt_util
 from utils.redis import redis_client
 from utils.generator import generator
-from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
+from utils.invitation import invitation_util
+from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse, RoleUpgradeRequest
+from api import deps
+
+# 获取数据库服务实例
+from database import db_manager
+user_db = db_manager.get_service('user_account')
+journal_db = db_manager.get_service('journal_submit')
 
 # 创建用户相关路由
 user_router = APIRouter(
@@ -54,6 +57,15 @@ async def register(request: RegisterRequest, req: Request):
     if existing_email:
         raise HTTPException(status_code=400, detail="邮箱已被注册")
     
+    # 确定用户角色（基于邀请码）
+    user_role = 'normal'  # 默认角色
+    if request.invite_code:
+        # 验证邀请码
+        validation_result = await invitation_util.validate_invitation_code(request.invite_code)
+        if not validation_result["valid"]:
+            raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
+        user_role = validation_result["role"]
+    
     # 生成uid_hash
     uid_hash = generator.generate_uid_hash(request.username)
     
@@ -67,9 +79,9 @@ async def register(request: RegisterRequest, req: Request):
     await user_db.execute(
         """
         INSERT INTO users (uid_hash, username, password, email, role, create_time)
-        VALUES (?, ?, ?, ?, 'user', ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (uid_hash, request.username, hashed_password, request.email, create_time)
+        (uid_hash, request.username, hashed_password, request.email, user_role, create_time)
     )
     
     # 获取新注册用户信息
@@ -77,6 +89,17 @@ async def register(request: RegisterRequest, req: Request):
         "SELECT uid, username, email, role FROM users WHERE username = ?",
         (request.username,)
     )
+    
+    if new_user is None:
+        raise HTTPException(status_code=500, detail="用户数据库查询失败")
+
+    # 使用邀请码（如果有）
+    if request.invite_code:
+        await invitation_util.use_invitation_code(
+            request.invite_code, 
+            new_user["uid"], 
+            new_user["username"]
+        )
     
     # 生成token
     token = jwt_util.create_access_token({
@@ -95,14 +118,15 @@ async def register(request: RegisterRequest, req: Request):
     
     return RegisterResponse(
         register_time=datetime.now(),
-        token=token
+        token=token,
+        message="注册成功"
     )
 
 @user_router.post("/login", summary="用户登录", response_model=LoginResponse)
 async def login(request: LoginRequest, req: Request):
     """用户登录接口"""
     # 获取客户端IP
-    client_ip = req.client.host
+    client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
     allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
@@ -150,31 +174,28 @@ async def login(request: LoginRequest, req: Request):
     return LoginResponse(
         login_time=datetime.now(),
         is_remember=request.is_remember,
-        token=token
+        token=token,
+        message="登录成功"
     )
 
 @user_router.get("/me", summary="获取当前用户信息")
-async def get_current_user(token: str):
+async def get_current_user_info(current_user: dict = Depends(deps.get_current_user)):
     """获取当前用户信息接口"""
     # 从Redis验证用户在线状态
-    user_id = await redis_client.get_user_by_token(token)
-    if not user_id:
-        # 如果Redis中没有，尝试从token中解析
-        user_info = jwt_util.get_user_from_token(token)
-        if not user_info:
-            raise HTTPException(status_code=401, detail="无效的token")
-        user_id = user_info["uid"]
+    is_online = await redis_client.is_user_online(current_user["uid"])
     
-    # 从数据库获取最新用户信息
+    # 从数据库获取最新用户信息 (已经在deps中获取了，但这里为了保持字段完整性，特别是avatar_hash，可能deps没拿全)
+    # deps中只拿了: uid, username, email, role, is_verified
+    # 这里需要: create_time, last_login_time, avatar_hash
+    # 重新查询一下或者修改deps。修改deps更好，但deps是通用的。
+    # 为了简单，这里直接再查一次或者让deps返回更多字段。
+    # 让我们修改deps返回所有字段? 不，deps只负责鉴权。
+    # 这里我们重新查询完整信息。
+    
     user = await user_db.fetchone(
         "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = ?",
-        (user_id,)
+        (current_user["uid"],)
     )
-    if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
-    
-    # 刷新token过期时间
-    await redis_client.refresh_token_expire(user_id, token)
     
     return {
         "uid": user["uid"],
@@ -184,11 +205,11 @@ async def get_current_user(token: str):
         "create_time": user["create_time"],
         "last_login_time": user["last_login_time"],
         "avatar_hash": user["avatar_hash"],
-        "is_online": await redis_client.is_user_online(user_id)
+        "is_online": is_online
     }
 
 @user_router.post("/logout", summary="用户登出")
-async def logout(token: str):
+async def logout(token: str = Depends(deps.get_token)):
     """用户登出接口"""
     # 从Redis验证用户在线状态
     user_id = await redis_client.get_user_by_token(token)
@@ -197,3 +218,39 @@ async def logout(token: str):
         await redis_client.set_user_offline(user_id, token)
     
     return {"message": "登出成功"}
+
+@user_router.post("/upgrade", summary="用户角色升级")
+async def upgrade_role(
+    request: RoleUpgradeRequest,
+    current_user: dict = Depends(deps.get_current_user)
+):
+    """使用邀请码升级用户角色"""
+    # 验证邀请码
+    validation_result = await invitation_util.validate_invitation_code(request.invite_code)
+    if not validation_result["valid"]:
+        raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
+    
+    new_role = validation_result["role"]
+    
+    # 简单的角色等级比较 (admin > reviewer > writer > normal)
+    role_levels = {"normal": 0, "writer": 1, "reviewer": 2, "admin": 3}
+    current_level = role_levels.get(current_user["role"], 0)
+    new_level = role_levels.get(new_role, 0)
+    
+    if new_level <= current_level:
+        raise HTTPException(status_code=400, detail=f"当前角色已是或高于 {new_role}，无需升级")
+
+    # 更新数据库
+    await user_db.execute(
+        "UPDATE users SET role = ? WHERE uid = ?",
+        (new_role, current_user["uid"])
+    )
+    
+    # 使用邀请码
+    await invitation_util.use_invitation_code(
+        request.invite_code, 
+        current_user["uid"], 
+        current_user["username"]
+    )
+    
+    return {"message": f"成功升级为 {new_role}", "new_role": new_role}
