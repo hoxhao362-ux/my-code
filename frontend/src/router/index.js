@@ -10,6 +10,7 @@ const mainRoutes = [
   { path: '/submit', name: 'main-submit', component: () => import('../views/MainSubmit.vue') },
   { path: '/submission-rules', name: 'main-submission-rules', component: () => import('../views/MainSubmit.vue') },
   { path: '/profile', name: 'main-profile', component: () => import('../views/MainProfile.vue') },
+  { path: '/account-security', name: 'account-security', component: () => import('../views/MainAccountSecurity.vue') },
   // 帮助中心相关路由
   { path: '/faq', name: 'main-faq', component: () => import('../views/MainFaq.vue') },
   { path: '/contact', name: 'main-contact', component: () => import('../views/MainContact.vue') },
@@ -49,13 +50,31 @@ const adminRoutes = [
   { path: '/admin/author-submit', name: 'admin-author-submit', component: () => import('../views/author/Submit.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
   { path: '/admin/author-history', name: 'admin-author-history', component: () => import('../views/author/History.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
   { path: '/admin/author-profile', name: 'admin-author-profile', component: () => import('../views/author/Profile.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  
+  // 稿件管理子路由
+  { path: '/admin/manuscript/my', name: 'admin-manuscript-my', component: () => import('../views/admin/manuscript/MyManuscripts.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  { path: '/admin/manuscript/progress', name: 'admin-manuscript-progress', component: () => import('../views/admin/manuscript/ManuscriptProgress.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  { path: '/admin/manuscript/history', name: 'admin-manuscript-history', component: () => import('../views/admin/manuscript/ManuscriptHistory.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  
   // 个人中心子路由
   { path: '/admin/profile-security', name: 'admin-profile-security', component: () => import('../views/admin/ProfileSecurity.vue'), meta: { requiresAuth: true, roles: ['admin', 'reviewer', 'author'] } },
   { path: '/admin/profile-logs', name: 'admin-profile-logs', component: () => import('../views/admin/ProfileLogs.vue'), meta: { requiresAuth: true, roles: ['admin', 'reviewer', 'author'] } },
+  { path: '/admin/notifications', name: 'admin-notifications', component: () => import('../views/admin/Notifications.vue'), meta: { requiresAuth: true, roles: ['admin', 'reviewer', 'author'] } },
+  { path: '/admin/profile-manuscript-status', name: 'admin-profile-manuscript-status', component: () => import('../views/admin/ProfileManuscriptStatus.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
   { path: '/admin/feedback-management', name: 'admin-feedback-management', component: () => import('../views/admin/AdminFeedbackManagement.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
   
+  // 投稿指南路由
+  { path: '/admin/guide/instructions', name: 'admin-guide-instructions', component: () => import('../views/admin/guide/Instructions.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  { path: '/admin/guide/faq', name: 'admin-guide-faq', component: () => import('../views/admin/guide/FAQ.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  
+  // 帮助中心路由
+  { path: '/admin/help/consultation', name: 'admin-help-consultation', component: () => import('../views/admin/help/Consultation.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  { path: '/admin/help/feedback', name: 'admin-help-feedback', component: () => import('../views/admin/help/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  
   // 公共后台路由
-  { path: '/admin/review-records/:id', name: 'admin-review-records', component: () => import('../views/ReviewRecords.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } }
+  { path: '/admin/review-records/:id', name: 'admin-review-records', component: () => import('../views/ReviewRecords.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } },
+  // 后台稿件详情路由
+  { path: '/admin/journal/:id', name: 'admin-journal-detail', component: () => import('../views/AdminJournalDetail.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin'] } }
 ]
 
 // 创建路由实例
@@ -114,6 +133,8 @@ router.beforeEach((to, from, next) => {
     
     // 权限检查 - 验证是否有权限访问该路由
     if (to.meta.requiresAuth) {
+      // 权限逻辑：高权限角色可以访问低权限角色的路由
+      // 检查当前角色是否包含在允许的角色列表中
       if (to.meta.roles.includes(currentRole)) {
         next()
       } else {
@@ -152,7 +173,7 @@ setInterval(() => {
       // 获取当前路由信息
       const matchedRoute = router.currentRoute.value
       
-      // 检查权限
+      // 检查权限 - 高权限角色可以访问低权限角色的路由
       if (matchedRoute.meta.requiresAuth && !matchedRoute.meta.roles.includes(currentRole)) {
         userStore.logout()
         router.push({ name: 'admin-login' })

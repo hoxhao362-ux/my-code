@@ -1,19 +1,43 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const router = useRouter()
 
-// 待审核稿件
+// 待审核稿件 - 审核员只看到复审阶段，管理员看到初审和终审阶段
 const pendingJournals = computed(() => {
-  return userStore.pendingJournals
+  const isAdmin = userStore.user?.role === 'admin'
+  const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
+  
+  return userStore.pendingJournals.filter(journal => {
+    return allowedStages.includes(journal.reviewStage)
+  })
 })
 
 // 已审核稿件
 const reviewedJournals = computed(() => {
-  return userStore.journals.filter(journal => journal.status !== '审稿中')
+  const isAdmin = userStore.user?.role === 'admin'
+  const username = userStore.user?.username
+  
+  if (isAdmin) {
+    return userStore.journals.filter(journal => journal.status !== '审稿中' && journal.status !== '待审核')
+  } else {
+    return userStore.journals.filter(journal => {
+      // 只显示已通过或未通过的稿件，且审核员参与了复审
+      return (journal.status === '已通过' || journal.status === '未通过') && 
+             journal.reviewHistory && 
+             journal.reviewHistory.some(record => record.stage === '复审' && record.reviewer === username)
+    })
+  }
 })
+
+// 查看稿件详情
+const viewJournalDetail = (id) => {
+  router.push(`/admin/journal/${id}`)
+}
 </script>
 
 <template>
@@ -83,7 +107,7 @@ const reviewedJournals = computed(() => {
             class="journal-item"
           >
             <div class="journal-info">
-              <h4 class="journal-title">{{ journal.title }}</h4>
+              <h4 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }} <span class="view-detail-icon">📋</span></h4>
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
             </div>
             <div class="journal-actions">
@@ -252,7 +276,7 @@ const reviewedJournals = computed(() => {
 .journal-title {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #3498db;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
   cursor: pointer;
@@ -260,8 +284,20 @@ const reviewedJournals = computed(() => {
 }
 
 .journal-title:hover {
-  color: #3498db;
+  color: #2980b9;
   text-decoration: underline;
+}
+
+.view-detail-icon {
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+  color: #7f8c8d;
+  transition: transform 0.3s ease;
+}
+
+.journal-title:hover .view-detail-icon {
+  transform: scale(1.2);
+  color: #2980b9;
 }
 
 .journal-meta {

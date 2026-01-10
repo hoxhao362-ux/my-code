@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
+    users: JSON.parse(localStorage.getItem('users')) || [], // 添加完整用户列表
     journals: JSON.parse(localStorage.getItem('journals')) || [],
     // 公告数据
     announcements: JSON.parse(localStorage.getItem('announcements')) || [
@@ -32,19 +33,31 @@ export const useUserStore = defineStore('user', {
   getters: {
     isAuthenticated: (state) => !!state.user,
     currentRole: (state) => state.user?.role || 'user',
+    // 角色优先级：admin > reviewer > author > user
+    // 检查用户是否具有指定角色的权限（高权限角色包含低权限角色的所有权限）
+    hasRolePermission: (state) => (requiredRole) => {
+      const rolePriority = {
+        admin: 3,
+        reviewer: 2,
+        author: 1,
+        user: 0
+      }
+      const userRole = state.user?.role || 'user'
+      return rolePriority[userRole] >= rolePriority[requiredRole]
+    },
     userJournals: (state) => {
       if (!state.user) return []
       return state.journals.filter(journal => journal.author === state.user.username)
     },
     pendingJournals: (state) => {
-      return state.journals.filter(journal => journal.status === '审稿中')
+      return state.journals.filter(journal => journal.status === '待审核' || journal.status === '审稿中')
     },
     journalReviewRecords: (state) => (journalId) => {
       return state.reviewRecords.filter(record => String(record.journalId) === String(journalId))
     },
     userReviewRecords: (state) => {
       if (!state.user) return []
-      return state.reviewRecords.filter(record => record.reviewerId === state.user.id || record.journalAuthor === state.user.username)
+      return state.reviewRecords.filter(record => record.reviewerId === state.user.username || record.journalAuthor === state.user.username)
     }
   },
 
@@ -89,6 +102,12 @@ export const useUserStore = defineStore('user', {
     addJournal(journal) {
       this.journals.push(journal)
       localStorage.setItem('journals', JSON.stringify(this.journals))
+      
+      // 如果当前用户是普通用户（user），投稿后自动升级为作者（author）
+      if (this.user && this.user.role === 'user') {
+        this.user.role = 'author'
+        localStorage.setItem('user', JSON.stringify(this.user))
+      }
     },
 
     // 更新期刊

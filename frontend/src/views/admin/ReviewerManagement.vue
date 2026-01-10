@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
@@ -47,6 +47,58 @@ const addReviewer = () => {
 const deleteReviewer = (id) => {
   reviewers.value = reviewers.value.filter(reviewer => reviewer.id !== id)
 }
+
+// 编辑审核员相关状态
+const isEditing = ref(false)
+const currentEditReviewer = ref(null)
+const editedReviewer = ref({
+  username: '',
+  email: '',
+  phone: ''
+})
+
+// 开始编辑审核员
+const startEditReviewer = (reviewer) => {
+  isEditing.value = true
+  showAddForm.value = false // 进入编辑模式时关闭新增表单
+  currentEditReviewer.value = reviewer
+  // 复制审核员数据到编辑表单
+  editedReviewer.value = {
+    username: reviewer.username,
+    email: reviewer.email,
+    phone: reviewer.phone
+  }
+}
+
+// 保存编辑的审核员
+const saveEditedReviewer = () => {
+  if (!currentEditReviewer.value) return
+  
+  // 更新审核员数据
+  const index = reviewers.value.findIndex(r => r.id === currentEditReviewer.value.id)
+  if (index !== -1) {
+    reviewers.value[index] = {
+      ...reviewers.value[index],
+      username: editedReviewer.value.username,
+      email: editedReviewer.value.email,
+      phone: editedReviewer.value.phone
+    }
+  }
+  
+  // 重置编辑状态
+  cancelEditReviewer()
+}
+
+// 取消编辑
+const cancelEditReviewer = () => {
+  isEditing.value = false
+  currentEditReviewer.value = null
+  editedReviewer.value = {
+    username: '',
+    email: '',
+    phone: ''
+  }
+}
 </script>
 
 <template>
@@ -73,40 +125,77 @@ const deleteReviewer = (id) => {
       <section v-if="showAddForm" class="add-reviewer-section">
         <div class="form-container">
           <h2>新增审核员</h2>
-          <form @submit.prevent="addReviewer">
-            <div class="form-group">
-              <label for="username">用户名</label>
-              <input 
-                type="text" 
-                id="username" 
-                v-model="newReviewer.username" 
-                placeholder="请输入用户名"
-                required
-              >
-            </div>
-            <div class="form-group">
-              <label for="email">邮箱</label>
-              <input 
-                type="email" 
-                id="email" 
-                v-model="newReviewer.email" 
-                placeholder="请输入邮箱"
-              >
-            </div>
-            <div class="form-group">
-              <label for="phone">手机号</label>
-              <input 
-                type="tel" 
-                id="phone" 
-                v-model="newReviewer.phone" 
-                placeholder="请输入手机号"
-              >
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="submit-btn">添加审核员</button>
-              <button type="button" class="cancel-btn" @click="showAddForm = false">取消</button>
-            </div>
-          </form>
+          <div class="form-group">
+            <label for="new-username">用户名</label>
+            <input 
+              type="text" 
+              id="new-username" 
+              v-model="newReviewer.username" 
+              placeholder="请输入用户名" 
+              required
+            >
+          </div>
+          <div class="form-group">
+            <label for="new-email">邮箱</label>
+            <input 
+              type="email" 
+              id="new-email" 
+              v-model="newReviewer.email" 
+              placeholder="请输入邮箱"
+            >
+          </div>
+          <div class="form-group">
+            <label for="new-phone">手机号</label>
+            <input 
+              type="tel" 
+              id="new-phone" 
+              v-model="newReviewer.phone" 
+              placeholder="请输入手机号"
+            >
+          </div>
+          <div class="form-actions">
+            <button type="button" class="submit-btn" @click="addReviewer">添加审核员</button>
+            <button type="button" class="cancel-btn" @click="showAddForm = false">取消</button>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 编辑审核员表单 -->
+      <section v-if="isEditing" class="add-reviewer-section">
+        <div class="form-container">
+          <h2>编辑审核员</h2>
+          <div class="form-group">
+            <label for="edit-username">用户名</label>
+            <input 
+              type="text" 
+              id="edit-username" 
+              v-model="editedReviewer.username" 
+              placeholder="请输入用户名" 
+              required
+            >
+          </div>
+          <div class="form-group">
+            <label for="edit-email">邮箱</label>
+            <input 
+              type="email" 
+              id="edit-email" 
+              v-model="editedReviewer.email" 
+              placeholder="请输入邮箱"
+            >
+          </div>
+          <div class="form-group">
+            <label for="edit-phone">手机号</label>
+            <input 
+              type="tel" 
+              id="edit-phone" 
+              v-model="editedReviewer.phone" 
+              placeholder="请输入手机号"
+            >
+          </div>
+          <div class="form-actions">
+            <button type="button" class="submit-btn" @click="saveEditedReviewer">保存修改</button>
+            <button type="button" class="cancel-btn" @click="cancelEditReviewer">取消</button>
+          </div>
         </div>
       </section>
 
@@ -132,7 +221,7 @@ const deleteReviewer = (id) => {
                 <td>{{ reviewer.email }}</td>
                 <td>{{ reviewer.phone }}</td>
                 <td>
-                  <button class="action-btn edit-btn">编辑</button>
+                  <button class="action-btn edit-btn" @click="startEditReviewer(reviewer)">编辑</button>
                   <button class="action-btn delete-btn" @click="deleteReviewer(reviewer.id)">删除</button>
                 </td>
               </tr>

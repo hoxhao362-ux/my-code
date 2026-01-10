@@ -38,11 +38,11 @@ const handleLogin = async () => {
   // 加密密码
   const encryptedPassword = encryptPassword(password.value)
   
-  // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断
+  // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断（按权限从高到低：admin＞reviewer＞author＞user）
   let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
              username.value === 'reviewer' ? 'reviewer' : 
              username.value === 'author' ? 'author' : 
-             username.value === 'user' ? 'user' : 'user')
+             'user')
   
   // 模拟登录逻辑
   const userData = {

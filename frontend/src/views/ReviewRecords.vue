@@ -11,26 +11,44 @@ const router = useRouter()
 // 获取期刊ID
 const journalId = computed(() => route.params.id)
 
+// 当前期刊
+const journal = computed(() => {
+  return userStore.journals.find(j => String(j.id) === String(journalId.value))
+})
+
 // 审稿记录
-const reviewRecords = ref([])
+const reviewRecords = computed(() => {
+  // 从期刊的reviewHistory中获取审核记录，并转换为reviewRecords格式
+  if (!journal.value?.reviewHistory) return []
+  
+  return journal.value.reviewHistory.map((record, index) => ({
+    id: index.toString(),
+    journalId: journal.value.id,
+    reviewerId: record.reviewer,
+    reviewStage: record.stage,
+    reviewResult: record.status,
+    reviewComments: record.comment,
+    reviewDate: record.date,
+    journalAuthor: journal.value.author,
+    type: record.type
+  }))
+})
+
 // 当前用户角色
 const currentRole = computed(() => userStore.currentRole)
 // 当前用户名
 const currentUsername = computed(() => userStore.user?.username || '')
 
-// 加载审稿记录
-onMounted(() => {
-  reviewRecords.value = userStore.journalReviewRecords(journalId.value)
-})
-
 // 是否可以查看完整记录（管理员或相关审核人员）
-const canViewFullRecords = (record) => {
-  return currentRole.value === 'admin' || record.reviewerId === currentUsername.value
+const canViewFullRecords = () => {
+  if (currentRole.value === 'admin') return true
+  // 检查是否有任何记录是当前用户审核的
+  return reviewRecords.value.some(record => record.reviewerId === currentUsername.value)
 }
 
 // 是否可以查看半公开记录（投稿人）
-const canViewPartialRecords = (record) => {
-  return reviewRecords.value.some(r => r.journalAuthor === currentUsername.value)
+const canViewPartialRecords = () => {
+  return journal.value?.author === currentUsername.value
 }
 
 // 添加新的审稿记录
@@ -47,20 +65,32 @@ const newRecord = ref({
 
 // 保存新的审稿记录
 const saveReviewRecord = () => {
-  // 设置期刊作者（从期刊数据中获取）
-  const journal = userStore.journals.find(j => j.id === journalId.value)
-  if (journal) {
-    newRecord.value.journalAuthor = journal.author
-  }
+  if (!journal.value) return
+  
+  // 设置期刊作者
+  newRecord.value.journalAuthor = journal.value.author
   
   // 生成唯一ID
   newRecord.value.id = Date.now().toString()
   
-  // 添加到状态管理
-  userStore.addReviewRecord(newRecord.value)
+  // 创建审核记录，使用与journal.reviewHistory相同的格式
+  const newReviewHistoryRecord = {
+    stage: newRecord.value.reviewStage,
+    status: newRecord.value.reviewResult,
+    reviewer: newRecord.value.reviewerId,
+    date: new Date().toISOString().split('T')[0], // 使用与现有记录相同的日期格式
+    comment: newRecord.value.reviewComments,
+    type: '完全保密' // 默认类型
+  }
   
-  // 刷新记录列表
-  reviewRecords.value = userStore.journalReviewRecords(journalId.value)
+  // 添加到期刊的reviewHistory中
+  const updatedJournal = {
+    ...journal.value,
+    reviewHistory: [...(journal.value.reviewHistory || []), newReviewHistoryRecord]
+  }
+  
+  // 更新期刊
+  userStore.updateJournal(updatedJournal)
   
   // 关闭表单
   showAddRecordForm.value = false
@@ -79,13 +109,16 @@ const saveReviewRecord = () => {
 
 // 格式化日期
 const formatDate = (dateString) => {
+  // 检查是否已经是YYYY-MM-DD格式
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString
+  }
+  
   const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: '2-digit'
   })
 }
 
@@ -176,7 +209,7 @@ const goBack = () => {
           <!-- 有记录时显示 -->
           <div v-else class="records-container">
             <!-- 只有管理员或相关人员可以查看完整记录 -->
-            <div v-if="canViewFullRecords(reviewRecords[0])" class="full-records">
+            <div v-if="canViewFullRecords()" class="full-records">
               <div 
                 v-for="record in reviewRecords" 
                 :key="record.id" 
@@ -197,7 +230,7 @@ const goBack = () => {
             </div>
             
             <!-- 投稿人只能查看半公开信息 -->
-            <div v-else-if="canViewPartialRecords(reviewRecords[0])" class="partial-records">
+            <div v-else-if="canViewPartialRecords()" class="partial-records">
               <div 
                 v-for="record in reviewRecords" 
                 :key="record.id" 

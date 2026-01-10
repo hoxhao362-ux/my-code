@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -26,6 +26,115 @@ const showSubmissionMenu = ref(false)
 // 控制帮助中心子菜单的显示状态
 const showHelpMenu = ref(false)
 
+// 控制稿件管理子菜单的显示状态
+const showManuscriptMenu = ref(false)
+
+// 控制投稿指南子菜单的显示状态
+const showGuideMenu = ref(false)
+
+// 控制作者帮助中心子菜单的显示状态
+const showAuthorHelpMenu = ref(false)
+
+// 控制角色切换菜单的显示状态
+const showRoleSwitchMenu = ref(false)
+
+// 角色切换相关
+const rolePriority = {
+  admin: 3,
+  reviewer: 2,
+  author: 1
+}
+
+// 获取当前用户可以切换到的角色列表
+const availableRoles = computed(() => {
+  if (!props.user) return []
+  
+  // 获取用户的原始角色，用于确定可切换的角色范围
+  // 这里假设用户的原始角色是其最高权限角色
+  let originalRole = props.user.originalRole || props.user.role
+  
+  // 确定用户的最高权限优先级
+  let maxPriority = 0
+  
+  switch (originalRole) {
+    case 'admin':
+      maxPriority = rolePriority.admin
+      break
+    case 'reviewer':
+      maxPriority = rolePriority.reviewer
+      break
+    case 'author':
+      maxPriority = rolePriority.author
+      break
+  }
+  
+  // 高权限角色可以切换到低权限角色
+  const roles = []
+  if (maxPriority >= rolePriority.admin) {
+    roles.push({ value: 'admin', label: '管理员后台' })
+  }
+  if (maxPriority >= rolePriority.reviewer) {
+    roles.push({ value: 'reviewer', label: '审核员后台' })
+  }
+  if (maxPriority >= rolePriority.author) {
+    roles.push({ value: 'author', label: '作者后台' })
+  }
+  
+  return roles
+})
+
+// 切换角色
+const switchRole = (role) => {
+  if (!props.user) return
+  
+  // 导入 userStore
+  import('../stores/user').then(({ useUserStore }) => {
+    const userStore = useUserStore()
+    
+    // 保存用户的原始角色（仅在首次切换时保存）
+    const updatedUser = {
+      ...props.user,
+      role
+    }
+    
+    // 如果用户没有原始角色，保存当前角色作为原始角色
+    if (!updatedUser.originalRole) {
+      updatedUser.originalRole = props.user.role
+    }
+    
+    // 更新用户角色
+    userStore.updateUser(updatedUser)
+    
+    // 根据选择的角色跳转到对应后台主页
+    switch (role) {
+      case 'admin':
+        router.push('/admin/dashboard')
+        break
+      case 'reviewer':
+        router.push('/admin/audit-dashboard')
+        break
+      case 'author':
+        router.push('/admin/author-dashboard')
+        break
+    }
+    closeAllMenus()
+  })
+}
+
+// 切换角色切换菜单
+const toggleRoleSwitchMenu = (event) => {
+  event.stopPropagation()
+  showRoleSwitchMenu.value = !showRoleSwitchMenu.value
+  showRoleMenu.value = false
+  showSystemMenu.value = false
+  showProfileMenu.value = false
+  showSubmissionMenu.value = false
+  showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
+}
+
 // 切换角色管理子菜单
 const toggleRoleMenu = (event) => {
   event.stopPropagation()
@@ -34,6 +143,9 @@ const toggleRoleMenu = (event) => {
   showProfileMenu.value = false
   showSubmissionMenu.value = false
   showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
 }
 
 // 切换系统设置子菜单
@@ -44,6 +156,9 @@ const toggleSystemMenu = (event) => {
   showProfileMenu.value = false
   showSubmissionMenu.value = false
   showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
 }
 
 // 切换个人中心子菜单
@@ -54,6 +169,9 @@ const toggleProfileMenu = (event) => {
   showSystemMenu.value = false
   showSubmissionMenu.value = false
   showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
 }
 
 // 切换投稿中心子菜单
@@ -64,6 +182,9 @@ const toggleSubmissionMenu = (event) => {
   showSystemMenu.value = false
   showProfileMenu.value = false
   showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
 }
 
 // 切换帮助中心子菜单
@@ -74,6 +195,48 @@ const toggleHelpMenu = (event) => {
   showSystemMenu.value = false
   showProfileMenu.value = false
   showSubmissionMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
+}
+
+// 切换稿件管理子菜单
+const toggleManuscriptMenu = (event) => {
+  event.stopPropagation()
+  showManuscriptMenu.value = !showManuscriptMenu.value
+  showRoleMenu.value = false
+  showSystemMenu.value = false
+  showProfileMenu.value = false
+  showSubmissionMenu.value = false
+  showHelpMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
+}
+
+// 切换投稿指南子菜单
+const toggleGuideMenu = (event) => {
+  event.stopPropagation()
+  showGuideMenu.value = !showGuideMenu.value
+  showRoleMenu.value = false
+  showSystemMenu.value = false
+  showProfileMenu.value = false
+  showSubmissionMenu.value = false
+  showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showAuthorHelpMenu.value = false
+}
+
+// 切换作者帮助中心子菜单
+const toggleAuthorHelpMenu = (event) => {
+  event.stopPropagation()
+  showAuthorHelpMenu.value = !showAuthorHelpMenu.value
+  showRoleMenu.value = false
+  showSystemMenu.value = false
+  showProfileMenu.value = false
+  showSubmissionMenu.value = false
+  showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
 }
 
 // 关闭所有子菜单
@@ -83,6 +246,10 @@ const closeAllMenus = () => {
   showProfileMenu.value = false
   showSubmissionMenu.value = false
   showHelpMenu.value = false
+  showManuscriptMenu.value = false
+  showGuideMenu.value = false
+  showAuthorHelpMenu.value = false
+  showRoleSwitchMenu.value = false
 }
 
 // 点击页面其他部分关闭子菜单
@@ -328,6 +495,26 @@ const handleLogout = () => {
               后台主页
             </a>
           </li>
+          <!-- 角色切换菜单 -->
+          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
+              <a href="#" class="nav-link">
+                角色切换 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
+              <li v-for="role in availableRoles" :key="role.value">
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: user.role === role.value }"
+                  @click.prevent="switchRole(role.value)"
+                >
+                  {{ role.label }}
+                </a>
+              </li>
+            </ul>
+          </li>
           <li class="nav-item">
             <a 
               href="#" 
@@ -383,20 +570,10 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-logs' }"
-                  @click.prevent="router.push('/admin/profile-logs'); closeAllMenus()"
+                  :class="{ active: currentPage === 'admin-notifications' }"
+                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
                 >
-                  操作记录
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-feedback-management' }"
-                  @click.prevent="router.push('/admin/feedback-management'); closeAllMenus()"
-                >
-                  意见收纳
+                  消息通知
                 </a>
               </li>
             </ul>
@@ -422,6 +599,47 @@ const handleLogout = () => {
               @click.prevent="goToAdminDashboard"
             >
               后台主页
+            </a>
+          </li>
+          <!-- 角色切换菜单 -->
+          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
+              <a href="#" class="nav-link">
+                角色切换 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
+              <li v-for="role in availableRoles" :key="role.value">
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: user.role === role.value }"
+                  @click.prevent="switchRole(role.value)"
+                >
+                  {{ role.label }}
+                </a>
+              </li>
+            </ul>
+          </li>
+          <!-- 审核功能菜单 -->
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'reviewer-pending' || currentPage === 'admin-audit-list' }"
+              @click.prevent="goToAuditList"
+            >
+              审核任务
+            </a>
+          </li>
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'reviewer-history' || currentPage === 'admin-audit-history' }"
+              @click.prevent="goToAuditHistory"
+            >
+              审核记录
             </a>
           </li>
           <!-- 角色管理菜单 -->
@@ -569,10 +787,30 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+                  :class="{ active: currentPage === 'admin-notifications' }"
+                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
+                >
+                  消息通知
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
                   :class="{ active: currentPage === 'admin-profile-logs' }"
                   @click.prevent="router.push('/admin/profile-logs'); closeAllMenus()"
                 >
                   操作记录
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-profile-manuscript-status' }"
+                  @click.prevent="router.push('/admin/profile-manuscript-status'); closeAllMenus()"
+                >
+                  稿件状态查询
                 </a>
               </li>
               <li>
@@ -610,12 +848,89 @@ const handleLogout = () => {
               后台主页
             </a>
           </li>
+          <!-- 角色切换菜单 -->
+          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
+              <a href="#" class="nav-link">
+                角色切换 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
+              <li v-for="role in availableRoles" :key="role.value">
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: user.role === role.value }"
+                  @click.prevent="switchRole(role.value)"
+                >
+                  {{ role.label }}
+                </a>
+              </li>
+            </ul>
+          </li>
+          
+          <!-- 稿件管理菜单 -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleManuscriptMenu">
+              <a 
+                href="#" 
+                class="nav-link"
+                :class="{ active: currentPage.startsWith('admin-manuscript') }"
+              >
+                稿件管理 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showManuscriptMenu">
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-author-submit' }"
+                  @click.prevent="router.push('/admin/author-submit'); closeAllMenus()"
+                >
+                  新增投稿
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-manuscript-my' }"
+                  @click.prevent="router.push('/admin/manuscript/my'); closeAllMenus()"
+                >
+                  我的稿件
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-manuscript-progress' }"
+                  @click.prevent="router.push('/admin/manuscript/progress'); closeAllMenus()"
+                >
+                  稿件进度
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-manuscript-history' }"
+                  @click.prevent="router.push('/admin/manuscript/history'); closeAllMenus()"
+                >
+                  历史投稿
+                </a>
+              </li>
+            </ul>
+          </li>
+          
+          <!-- 个人中心菜单 -->
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleProfileMenu">
               <a 
                 href="#" 
                 class="nav-link"
-                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') }"
+                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' }"
               >
                 个人中心 ▼
               </a>
@@ -645,14 +960,85 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-logs' }"
-                  @click.prevent="router.push('/admin/profile-logs'); closeAllMenus()"
+                  :class="{ active: currentPage === 'admin-notifications' }"
+                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
                 >
-                  操作记录
+                  消息通知
                 </a>
               </li>
             </ul>
           </li>
+          
+          <!-- 投稿指南菜单 -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleGuideMenu">
+              <a 
+                href="#" 
+                class="nav-link"
+                :class="{ active: currentPage.startsWith('admin-guide') }"
+              >
+                投稿指南 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showGuideMenu">
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-guide-instructions' }"
+                  @click.prevent="router.push('/admin/guide/instructions'); closeAllMenus()"
+                >
+                  投稿须知
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-guide-faq' }"
+                  @click.prevent="router.push('/admin/guide/faq'); closeAllMenus()"
+                >
+                  常见问题
+                </a>
+              </li>
+            </ul>
+          </li>
+          
+          <!-- 帮助中心菜单 -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleAuthorHelpMenu">
+              <a 
+                href="#" 
+                class="nav-link"
+                :class="{ active: currentPage.startsWith('admin-help') }"
+              >
+                帮助中心 ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showAuthorHelpMenu">
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-help-consultation' }"
+                  @click.prevent="router.push('/admin/help/consultation'); closeAllMenus()"
+                >
+                  在线咨询
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-help-feedback' }"
+                  @click.prevent="router.push('/admin/help/feedback'); closeAllMenus()"
+                >
+                  意见反馈
+                </a>
+              </li>
+            </ul>
+          </li>
+          
           <li class="nav-item">
             <a 
               href="#" 
@@ -739,10 +1125,13 @@ const handleLogout = () => {
   list-style: none;
   margin: 0;
   padding: 0;
+  min-width: 600px;
+  justify-content: flex-end;
 }
 
 .nav-item {
   margin-left: 0.5rem;
+  flex-shrink: 0;
 }
 
 .nav-link {

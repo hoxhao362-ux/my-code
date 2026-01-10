@@ -73,7 +73,11 @@ const filterByStatus = (journals) => {
 
 // 待审稿件（从真实期刊数据中筛选）
 const pendingJournals = computed(() => {
-  let journals = props.journals.filter(journal => journal.status === '待审核' || journal.status === '审稿中')
+  let journals = props.journals.filter(journal => {
+    const isAdmin = props.user?.role === 'admin'
+    const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
+    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage)
+  })
   
   // 模块筛选
   if (selectedModule.value !== 'all') {

@@ -19,10 +19,15 @@ const stats = computed(() => {
   }
 })
 
-// 待审核稿件
+// 待审核稿件 - 审核员只看到复审阶段，管理员看到初审和终审阶段
 const pendingJournals = computed(() => {
-  return props.journals.filter(journal => journal.status === '审稿中')
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+  const isAdmin = props.user?.role === 'admin'
+  const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
+  
+  return props.journals.filter(journal => {
+    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage)
+  })
+  .sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
 // 退出登录

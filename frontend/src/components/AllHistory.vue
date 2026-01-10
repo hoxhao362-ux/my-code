@@ -59,6 +59,7 @@ const allHistory = computed(() => {
   let journals = props.journals.filter(journal => 
     journal.status === '已通过' || 
     journal.status === '未通过' ||
+    journal.status === '已发表' ||
     (journal.status === '审稿中' && (journal.reviewStage === '复审' || journal.reviewStage === '终审'))
   )
   
@@ -84,7 +85,11 @@ const allHistory = computed(() => {
     } else if (selectedStatus.value === '终审') {
       journals = journals.filter(journal => journal.reviewStage === '终审')
     } else {
-      journals = journals.filter(journal => journal.status === selectedStatus.value)
+      // 处理状态筛选，"已通过"包含"已发表"状态
+      journals = journals.filter(journal => 
+        journal.status === selectedStatus.value || 
+        (selectedStatus.value === '已通过' && journal.status === '已发表')
+      )
     }
   }
   
@@ -117,30 +122,6 @@ const paginatedHistory = computed(() => {
   return allHistory.value.slice(startIndex, endIndex)
 })
 
-// 页码范围
-const pageRange = computed(() => {
-  const range = []
-  const maxVisiblePages = 5
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisiblePages / 2))
-  let end = Math.min(totalPages.value, start + maxVisiblePages - 1)
-  
-  // 调整起始页码以确保显示足够的页码
-  if (end - start + 1 < maxVisiblePages) {
-    start = Math.max(1, end - maxVisiblePages + 1)
-  }
-  
-  for (let i = start; i <= end; i++) {
-    range.push(i)
-  }
-  return range
-})
-
-// 导航到首页
-const goToFirstPage = () => {
-  currentPage.value = 1
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 // 导航到上一页
 const goToPrevPage = () => {
   if (currentPage.value > 1) {
@@ -155,18 +136,6 @@ const goToNextPage = () => {
     currentPage.value++
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-}
-
-// 导航到末页
-const goToLastPage = () => {
-  currentPage.value = totalPages.value
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// 导航到指定页码
-const goToPage = (page) => {
-  currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // 处理退出登录
@@ -317,33 +286,25 @@ onMounted(() => {
         </div>
 
         <!-- 分页控件 -->
-        <div v-if="totalPages > 1" class="pagination">
-          <button class="page-btn" @click="goToFirstPage" :disabled="currentPage === 1">
-            首页
-          </button>
-          <button class="page-btn" @click="goToPrevPage" :disabled="currentPage === 1">
-            上一页
-          </button>
-          
-          <button 
-            v-for="page in pageRange" 
-            :key="page"
-            class="page-btn" 
-            :class="{ active: currentPage === page }"
-            @click="goToPage(page)"
-          >
-            {{ page }}
-          </button>
-          
-          <button class="page-btn" @click="goToNextPage" :disabled="currentPage === totalPages">
-            下一页
-          </button>
-          <button class="page-btn" @click="goToLastPage" :disabled="currentPage === totalPages">
-            末页
-          </button>
-          
+        <div v-if="totalPages > 0" class="pagination">
           <div class="pagination-info">
-            第 {{ currentPage }} / {{ totalPages }} 页，共 {{ allHistory.length }} 篇历史记录
+            共 {{ allHistory.length }} 条记录，第 {{ currentPage }} / {{ totalPages }} 页
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="page-btn" 
+              :disabled="currentPage === 1"
+              @click="goToPrevPage"
+            >
+              上一页
+            </button>
+            <button 
+              class="page-btn" 
+              :disabled="currentPage === totalPages"
+              @click="goToNextPage"
+            >
+              下一页
+            </button>
           </div>
         </div>
     </main>
@@ -593,9 +554,8 @@ onMounted(() => {
 /* 分页样式 */
 .pagination {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
   margin-top: 2rem;
   padding: 1rem;
   background: white;
@@ -603,10 +563,20 @@ onMounted(() => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.pagination-info {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .page-btn {
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1.2rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   background: white;
   color: #3498db;
   font-size: 0.9rem;
@@ -616,27 +586,16 @@ onMounted(() => {
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #3498db;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-}
-
-.page-btn.active {
-  background: #3498db;
-  color: white;
+  background: #f5f7fa;
   border-color: #3498db;
 }
 
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.pagination-info {
-  margin-left: 1rem;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  background: #f8f9fa;
+  border-color: #e9ecef;
+  color: #6c757d;
 }
 
 /* 无历史记录提示 */

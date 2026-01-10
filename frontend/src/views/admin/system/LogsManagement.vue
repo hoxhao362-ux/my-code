@@ -16,6 +16,16 @@ const logTypes = [
 
 // 日志数据
 const logsData = ref([
+  // 最新操作日志（今天）
+  { id: 13, type: 'operation', user: 'admin', action: '登录系统', target: '/admin', time: '2026-01-11 09:30:25', ip: '127.0.0.1', status: 'success' },
+  { id: 14, type: 'operation', user: 'admin', action: '查看用户列表', target: '/admin/users', time: '2026-01-11 09:32:18', ip: '127.0.0.1', status: 'success' },
+  { id: 15, type: 'operation', user: 'admin', action: '更新系统配置', target: '系统设置', time: '2026-01-11 09:35:42', ip: '127.0.0.1', status: 'success' },
+  { id: 16, type: 'operation', user: 'admin', action: '查看审核任务', target: '/admin/audit-list', time: '2026-01-11 09:40:15', ip: '127.0.0.1', status: 'success' },
+  { id: 17, type: 'operation', user: 'reviewer1', action: '审核稿件', target: '稿件ID:20260111001', time: '2026-01-11 09:45:30', ip: '192.168.1.106', status: 'success' },
+  { id: 18, type: 'operation', user: 'author1', action: '提交新稿件', target: '稿件ID:20260111002', time: '2026-01-11 09:50:22', ip: '192.168.1.107', status: 'success' },
+  { id: 19, type: 'operation', user: 'admin', action: '导出操作日志', target: '日志文件', time: '2026-01-11 09:55:10', ip: '127.0.0.1', status: 'success' },
+  { id: 20, type: 'operation', user: 'admin', action: '查看系统日志', target: '/admin/system/logs', time: '2026-01-11 10:00:05', ip: '127.0.0.1', status: 'success' },
+  
   // 操作日志
   { id: 1, type: 'operation', user: 'admin', action: '修改用户角色', target: 'user1', time: '2026-01-08 17:30:45', ip: '127.0.0.1', status: 'success' },
   { id: 2, type: 'operation', user: 'admin', action: '禁用用户', target: 'user2', time: '2026-01-08 17:25:30', ip: '127.0.0.1', status: 'success' },
@@ -94,12 +104,28 @@ const exportLogs = () => {
   alert('日志导出功能已触发！')
 }
 
-// 清空日志
-const clearLogs = () => {
-  if (confirm('确定要清空所有日志吗？此操作不可恢复！')) {
-    logsData.value = []
-    alert('日志已清空！')
-  }
+// 确认模态框状态
+const showConfirmModal = ref(false)
+
+// 打开确认模态框
+const openConfirmModal = () => {
+  showConfirmModal.value = true
+}
+
+// 确认清空日志
+const confirmClearLogs = () => {
+  // 执行清空操作
+  logsData.value = []
+  // 关闭模态框
+  showConfirmModal.value = false
+  // 显示成功提示
+  alert('日志已清空！')
+}
+
+// 取消清空日志
+const cancelClearLogs = () => {
+  // 仅关闭模态框，不执行任何操作
+  showConfirmModal.value = false
 }
 
 // 切换日志类型
@@ -205,7 +231,7 @@ const getStatusClass = (status) => {
           
           <div class="log-actions">
             <button class="btn btn-export" @click="exportLogs">导出日志</button>
-            <button class="btn btn-danger" @click="clearLogs">清空日志</button>
+            <button class="btn btn-danger" @click="openConfirmModal">清空日志</button>
           </div>
         </div>
         
@@ -283,6 +309,23 @@ const getStatusClass = (status) => {
         </div>
       </section>
     </main>
+
+    <!-- 确认清空日志模态框 -->
+    <div class="modal-overlay" v-if="showConfirmModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>确认清空日志</h2>
+          <button class="close-btn" @click="cancelClearLogs">&times;</button>
+        </div>
+        <div class="modal-content">
+          <p>确定要清空所有日志吗？此操作不可恢复！</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cancel" @click="cancelClearLogs">取消</button>
+          <button class="btn btn-danger" @click="confirmClearLogs">确认清空</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 页脚 -->
     <footer class="footer">
@@ -684,6 +727,97 @@ const getStatusClass = (status) => {
   margin: 0;
 }
 
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 500px;
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  border-radius: 8px 8px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #2c3e50;
+}
+
+.modal-content {
+  padding: 1.5rem;
+  font-size: 1rem;
+  color: #495057;
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-cancel {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #7f8c8d;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .content {
@@ -753,6 +887,30 @@ const getStatusClass = (status) => {
   
   .pagination-controls {
     justify-content: center;
+  }
+  
+  /* 响应式模态框 */
+  .modal {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+  }
+  
+  .modal-footer {
+    padding: 1rem;
+    flex-direction: column;
+  }
+  
+  .modal-footer .btn {
+    flex: 1;
+    min-width: auto;
   }
 }
 </style>

@@ -103,6 +103,10 @@ const handleRegister = () => {
     role: role
   }
   
+  // 添加用户到用户列表
+  userStore.users.push(userData)
+  localStorage.setItem('users', JSON.stringify(userStore.users))
+  
   // 调用状态管理的登录方法（实际应该调用注册方法，这里简化处理）
   userStore.login(userData)
   

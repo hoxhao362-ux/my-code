@@ -1,43 +1,63 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
 import { validateEmail, validatePhone, encryptPassword } from '../utils/encryption'
 
+// 邮箱加密函数：保留前2位和后4位，中间用*代替
+const encryptEmail = (email) => {
+  if (!email) return ''
+  const [username, domain] = email.split('@')
+  if (username.length <= 2) return `${username}@${domain}`
+  return `${username.slice(0, 2)}${'*'.repeat(username.length - 2)}@${domain}`
+}
+
+// 手机号加密函数：保留前3位和后4位，中间用*代替
+const encryptPhone = (phone) => {
+  if (!phone) return ''
+  if (phone.length !== 11) return phone
+  return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
+}
+
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
+const router = useRouter()
+const route = useRoute()
 const user = computed(() => userStore.user)
 
-// 编辑模式
-const isEditing = ref(false)
-const isChangingPassword = ref(false)
+// 组件挂载时处理路由参数
+onMounted(() => {
+  // 检查是否有mode参数，如果是安全模式，则跳转到账号安全页面
+  const mode = route.query.mode
+  if (mode === 'security') {
+    // 检查用户是否登录
+    if (!user.value) {
+      // 未登录用户跳转到登录页面
+      router.push('/login')
+      return
+    }
+    
+    // 检查用户角色
+    const userRole = user.value.role || 'user'
+    
+    // 如果是后台角色，跳转到后台账号安全页面
+    if (['admin', 'reviewer', 'author'].includes(userRole)) {
+      router.push('/admin/profile-security')
+    } else {
+      // 普通用户可以在主站添加一个简单的账号安全页面
+      // 或者提示没有权限
+      alert('您没有权限访问账号安全页面，请先登录后台账号')
+      router.push('/profile')
+    }
+  }
+})
 
 // 头像弹窗状态
 const showAvatarModal = ref(false)
 const showAvatarActions = ref(false)
 const fileInput = ref(null)
-
-// 表单数据
-const formData = ref({
-  username: user.value?.username || '',
-  email: user.value?.email || '',
-  phone: user.value?.phone || '',
-  avatar: user.value?.avatar || ''
-})
-
-// 密码更改数据
-const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-// 密码验证数据
-const verificationData = ref({
-  verifyPassword: '',
-  isVerified: false
-})
 
 // 获取当前用户的投稿记录
 const userJournals = computed(() => {
@@ -50,56 +70,12 @@ const toggleDirectory = () => {
   directoryStore.toggleDirectory()
 }
 
-// 进入编辑模式
-const startEditing = () => {
-  isEditing.value = true
-  isChangingPassword.value = false
-  // 重置验证状态
-  verificationData.value = {
-    verifyPassword: '',
-    isVerified: false
-  }
-}
+// 查看信息状态
+const showFullContactInfo = ref(false)
 
-// 进入更改密码模式
-const startChangePassword = () => {
-  isEditing.value = true
-  isChangingPassword.value = true
-  // 重置密码表单
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  }
-  // 重置验证状态
-  verificationData.value = {
-    verifyPassword: '',
-    isVerified: false
-  }
-}
-
-// 取消编辑
-const cancelEditing = () => {
-  isEditing.value = false
-  isChangingPassword.value = false
-  // 重置表单数据
-  formData.value = {
-    username: user.value?.username || '',
-    email: user.value?.email || '',
-    phone: user.value?.phone || '',
-    avatar: user.value?.avatar || ''
-  }
-  // 重置密码表单
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  }
-  // 重置验证状态
-  verificationData.value = {
-    verifyPassword: '',
-    isVerified: false
-  }
+// 切换查看信息状态
+const toggleContactInfo = () => {
+  showFullContactInfo.value = !showFullContactInfo.value
 }
 
 // 显示头像操作菜单
@@ -151,7 +127,6 @@ const handleAvatarUpload = (event) => {
     reader.onload = (e) => {
       const imageUrl = e.target.result
       // 更新用户头像
-      formData.value.avatar = imageUrl
       userStore.updateUser({ avatar: imageUrl })
       alert('头像更新成功')
     }
@@ -162,87 +137,7 @@ const handleAvatarUpload = (event) => {
   }
 }
 
-// 验证当前密码
-const verifyPassword = () => {
-  if (!verificationData.value.verifyPassword) {
-    alert('请输入当前密码')
-    return
-  }
-  
-  // 加密输入的密码进行验证
-  const encryptedPassword = encryptPassword(verificationData.value.verifyPassword)
-  
-  // 验证密码是否正确
-  if (encryptedPassword === user.value?.password) {
-    verificationData.value.isVerified = true
-  } else {
-    alert('当前密码不正确')
-    verificationData.value.isVerified = false
-  }
-}
 
-// 保存用户信息
-const saveUserInfo = () => {
-  // 如果未验证密码，先验证
-  if (!verificationData.value.isVerified) {
-    alert('请先验证当前密码')
-    return
-  }
-  
-  // 验证邮箱格式
-  if (formData.value.email && !validateEmail(formData.value.email)) {
-    alert('请输入有效的邮箱地址')
-    return
-  }
-  
-  // 验证手机号格式
-  if (formData.value.phone && !validatePhone(formData.value.phone)) {
-    alert('请输入有效的手机号')
-    return
-  }
-  
-  // 更新用户数据
-  userStore.updateUser(formData.value)
-  
-  // 退出编辑模式
-  cancelEditing()
-  alert('个人信息更新成功')
-}
-
-// 更改密码
-const changePassword = () => {
-  // 如果未验证密码，先验证
-  if (!verificationData.value.isVerified) {
-    alert('请先验证当前密码')
-    return
-  }
-  
-  // 验证新密码
-  if (!passwordForm.value.newPassword) {
-    alert('请输入新密码')
-    return
-  }
-  
-  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    alert('两次输入的新密码不一致')
-    return
-  }
-  
-  if (passwordForm.value.newPassword.length < 6) {
-    alert('新密码长度不能少于6位')
-    return
-  }
-  
-  // 加密新密码
-  const encryptedNewPassword = encryptPassword(passwordForm.value.newPassword)
-  
-  // 更新用户密码
-  userStore.updateUser({ password: encryptedNewPassword })
-  
-  // 退出编辑模式
-  cancelEditing()
-  alert('密码更改成功')
-}
 </script>
 
 <template>
@@ -312,41 +207,18 @@ const changePassword = () => {
           <div class="user-card-header">
             <h3 class="card-title">个人信息</h3>
             <div class="header-actions">
-              <!-- 查看模式下显示编辑和更改密码按钮 -->
-              <template v-if="!isEditing">
-                <button 
-                  class="btn btn-edit" 
-                  @click="startEditing()"
-                >
-                  编辑信息
-                </button>
-                <button 
-                  class="btn btn-password" 
-                  @click="startChangePassword()"
-                >
-                  更改密码
-                </button>
-              </template>
-              <!-- 编辑模式下显示保存和取消按钮 -->
-              <template v-else>
-                <button 
-                  class="btn btn-save" 
-                  @click="isChangingPassword ? changePassword() : saveUserInfo()"
-                >
-                  保存
-                </button>
-                <button 
-                  class="btn btn-cancel" 
-                  @click="cancelEditing"
-                >
-                  取消
-                </button>
-              </template>
+              <!-- 只显示查看信息按钮 -->
+              <button 
+                class="btn btn-view" 
+                @click="toggleContactInfo"
+              >
+                {{ showFullContactInfo ? '隐藏信息' : '查看信息' }}
+              </button>
             </div>
           </div>
           
-          <!-- 查看模式 -->
-          <div v-if="!isEditing" class="user-info">
+          <!-- 用户信息 -->
+          <div class="user-info">
             <div class="user-details">
               <h2 class="user-name">{{ user?.username || '未知用户' }}</h2>
               <p class="user-role">
@@ -355,107 +227,8 @@ const changePassword = () => {
                    user?.role === 'author' ? '作者' : '普通用户' }}
               </p>
               <div class="user-contact">
-                <p v-if="user?.email"><strong>邮箱：</strong>{{ user.email }}</p>
-                <p v-if="user?.phone"><strong>手机号：</strong>{{ user.phone }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 编辑模式 -->
-          <div v-else class="user-edit-form">
-            <!-- 密码验证部分 -->
-            <div class="verification-section">
-              <h3 class="verification-title">身份验证</h3>
-              <div class="verification-form">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="verify-password">请输入当前密码</label>
-                    <div class="password-input-group">
-                      <input 
-                        type="password" 
-                        id="verify-password" 
-                        v-model="verificationData.verifyPassword"
-                        placeholder="请输入当前密码"
-                      />
-                      <button class="btn btn-verify" @click="verifyPassword">
-                        验证
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="verificationData.isVerified" class="verification-status success">
-                  密码验证成功，可以进行后续操作
-                </div>
-                <div v-else class="verification-status pending">
-                  请先验证当前密码
-                </div>
-              </div>
-            </div>
-            
-            <!-- 个人信息编辑 -->
-            <div v-if="!isChangingPassword" class="info-edit-section">
-              <h3 class="edit-section-title">编辑个人信息</h3>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="username">用户名</label>
-                  <input 
-                    type="text" 
-                    id="username" 
-                    v-model="formData.username"
-                    placeholder="请输入用户名"
-                  />
-                </div>
-                <div class="form-group">
-                  <label for="email">邮箱</label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    v-model="formData.email"
-                    placeholder="请输入邮箱"
-                  />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="phone">手机号</label>
-                  <input 
-                    type="tel" 
-                    id="phone" 
-                    v-model="formData.phone"
-                    placeholder="请输入手机号"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <!-- 更改密码表单 -->
-            <div v-else class="password-edit-section">
-              <h3 class="edit-section-title">更改密码</h3>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="new-password">新密码</label>
-                  <input 
-                    type="password" 
-                    id="new-password" 
-                    v-model="passwordForm.newPassword"
-                    placeholder="请输入新密码"
-                    :disabled="!verificationData.isVerified"
-                  />
-                </div>
-                <div class="form-group">
-                  <label for="confirm-password">确认新密码</label>
-                  <input 
-                    type="password" 
-                    id="confirm-password" 
-                    v-model="passwordForm.confirmPassword"
-                    placeholder="请确认新密码"
-                    :disabled="!verificationData.isVerified"
-                  />
-                </div>
-              </div>
-              <div class="password-requirements">
-                <p class="requirement-item">• 密码长度不能少于6位</p>
-                <p class="requirement-item">• 密码应包含字母和数字</p>
+                <p v-if="user?.email"><strong>邮箱：</strong>{{ showFullContactInfo ? user.email : encryptEmail(user.email) }}</p>
+                <p v-if="user?.phone"><strong>手机号：</strong>{{ showFullContactInfo ? user.phone : encryptPhone(user.phone) }}</p>
               </div>
             </div>
           </div>
@@ -662,6 +435,17 @@ const changePassword = () => {
   text-decoration: none;
   display: inline-block;
   text-align: center;
+}
+
+.btn-view {
+  background: #2ecc71;
+  color: white;
+}
+
+.btn-view:hover {
+  background: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
 }
 
 .btn-edit {

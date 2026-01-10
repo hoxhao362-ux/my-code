@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
@@ -18,7 +18,7 @@ const toggleDirectory = () => {
 // 表单数据
 const formData = ref({
   title: '',
-  author: '',
+  author: userStore.user?.username || '', // 初始化为当前用户的用户名
   abstract: '',
   keywords: '',
   content: '',
@@ -32,10 +32,23 @@ const submitting = ref(false)
 // 获取所有模块
 const modules = computed(() => userStore.modules)
 
+// 组件挂载时初始化作者字段
+onMounted(() => {
+  if (userStore.user) {
+    formData.value.author = userStore.user.username
+  }
+})
+
 const handleSubmit = async () => {
   // 表单验证
-  if (!formData.value.title || !formData.value.author || !formData.value.abstract || !formData.value.content) {
+  if (!formData.value.title || !formData.value.abstract || !formData.value.content) {
     error.value = '请填写完整的投稿信息'
+    return
+  }
+  
+  // 确保用户已登录
+  if (!userStore.user) {
+    error.value = '请先登录后再进行投稿'
     return
   }
   
@@ -48,7 +61,7 @@ const handleSubmit = async () => {
     const newJournal = {
       id: Date.now().toString(),
       title: formData.value.title,
-      author: formData.value.author,
+      author: userStore.user.username, // 自动使用当前登录用户的用户名
       abstract: formData.value.abstract,
       keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
       content: formData.value.content,
@@ -56,7 +69,8 @@ const handleSubmit = async () => {
       status: '待审核', // 初始状态为待审核
       reviewStage: '初审', // 初始审稿阶段为初审
       date: new Date().toISOString().split('T')[0],
-      viewCount: 0
+      viewCount: 0,
+      authorId: userStore.user.username // 使用用户名作为作者ID
     }
     
     // 调用userStore提供的addJournal方法
@@ -65,18 +79,18 @@ const handleSubmit = async () => {
     // 显示成功消息
     success.value = '投稿成功！您的稿件已提交至审核队列'
     
-    // 清空表单并跳转
+    // 清空表单并跳转到个人中心，让用户可以立即看到投稿记录
     setTimeout(() => {
       formData.value = {
         title: '',
-        author: '',
+        author: userStore.user?.username || '', // 重置时保留当前用户名
         abstract: '',
         keywords: '',
         content: '',
         module: 'all'
       }
       success.value = ''
-      router.push('/')
+      router.push('/profile')
     }, 2000)
   } catch (err) {
     error.value = '投稿失败，请稍后重试'
@@ -161,8 +175,12 @@ const goBack = () => {
         <template v-else>
           <h2 class="submit-title">在线投稿</h2>
           
-          <div v-if="error" class="alert error">{{ error }}</div>
-          <div v-if="success" class="alert success">{{ success }}</div>
+          <div v-if="error" class="alert error animate-fade-in">{{ error }}</div>
+          <div v-if="success" class="alert success animate-fade-in">
+            <div class="alert-icon">✓</div>
+            <div class="alert-content">{{ success }}</div>
+            <div class="alert-hint">即将跳转到个人中心查看投稿记录...</div>
+          </div>
           
           <form class="submit-form">
             <div class="form-section">
@@ -300,22 +318,62 @@ const goBack = () => {
 
 /* 提示信息 */
 .alert {
-  padding: 1rem;
-  border-radius: 5px;
+  padding: 1.5rem;
+  border-radius: 8px;
   margin-bottom: 1.5rem;
   font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .alert.error {
-  background: #fee;
+  background: linear-gradient(135deg, #fee, #fdd);
   color: #e74c3c;
   border: 1px solid #fcc;
 }
 
 .alert.success {
-  background: #efe;
+  background: linear-gradient(135deg, #efe, #dfd);
   color: #2ecc71;
   border: 1px solid #cfc;
+}
+
+.alert-icon {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.alert-content {
+  flex: 1;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.alert-hint {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
 }
 
 /* 表单样式 */

@@ -33,19 +33,25 @@ const handleLogin = async () => {
   // 加密密码
   const encryptedPassword = encryptPassword(password.value)
   
-  // 根据用户名自动识别角色
-  let role = username.value === 'admin' ? 'admin' : 
-             username.value === 'reviewer' ? 'reviewer' : 
-             username.value === 'user' ? 'user' : 'author'
+  // 从用户列表中查找用户
+  let userData = userStore.users.find(u => u.username === username.value && u.password === encryptedPassword);
   
-  // 模拟登录逻辑
-  const userData = {
-    username: username.value,
-    password: encryptedPassword,
-    role: role,
-    email: '',
-    phone: '',
-    avatar: ''
+  // 如果用户列表中没有找到，使用默认角色（兼容旧数据）
+  if (!userData) {
+    // 根据用户名自动识别角色
+    let role = username.value === 'admin' ? 'admin' : 
+               username.value === 'reviewer' ? 'reviewer' : 
+               username.value === 'user' ? 'user' : 'author'
+    
+    // 模拟登录逻辑
+    userData = {
+      username: username.value,
+      password: encryptedPassword,
+      role: role,
+      email: '',
+      phone: '',
+      avatar: ''
+    }
   }
   
   // 调用状态管理的登录方法

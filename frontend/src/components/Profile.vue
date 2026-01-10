@@ -14,16 +14,27 @@ const props = defineProps({
   journals: Array
 })
 
-// 编辑模式
-const isEditing = ref(false)
+// 加密函数
+const encryptEmail = (email) => {
+  if (!email) return ''
+  const [username, domain] = email.split('@')
+  if (username.length <= 2) return `${username}@${domain}`
+  return `${username.slice(0, 2)}${'*'.repeat(username.length - 2)}@${domain}`
+}
 
-// 表单数据
-const formData = ref({
-  username: props.user?.username || '',
-  email: props.user?.email || '',
-  phone: props.user?.phone || '',
-  avatar: props.user?.avatar || ''
-})
+const encryptPhone = (phone) => {
+  if (!phone) return ''
+  if (phone.length !== 11) return phone
+  return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
+}
+
+// 查看信息状态
+const showFullContactInfo = ref(false)
+
+// 切换查看信息状态
+const toggleContactInfo = () => {
+  showFullContactInfo.value = !showFullContactInfo.value
+}
 
 // 管理员密码设置
 const adminCodeForm = ref({
@@ -41,21 +52,8 @@ const moduleForm = ref({
 const moduleError = ref('')
 const moduleSuccess = ref('')
 
-// 监听user变化，更新表单数据
-watch(() => props.user, (newUser) => {
-  if (newUser) {
-    formData.value = {
-      username: newUser.username || '',
-      email: newUser.email || '',
-      phone: newUser.phone || '',
-      avatar: newUser.avatar || ''
-    }
-  }
-}, { immediate: true, deep: true })
-
 // 头像弹窗状态
 const showAvatarModal = ref(false)
-const fileInput = ref(null)
 
 // 投稿历史筛选状态
 const selectedModule = ref('all')
@@ -122,97 +120,14 @@ const handleLogout = () => {
   props.navigateTo('login')
 }
 
-// 进入编辑模式
-const startEditing = () => {
-  isEditing.value = true
-}
-
-// 取消编辑
-const cancelEditing = () => {
-  isEditing.value = false
-  // 重置表单数据
-  formData.value = {
-    username: props.user?.username || '',
-    email: props.user?.email || '',
-    phone: props.user?.phone || '',
-    avatar: props.user?.avatar || ''
-  }
-}
-
-// 处理头像上传
-const handleAvatarUpload = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // 创建FileReader读取文件
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      // 将文件转换为Data URL
-      const newAvatar = e.target.result
-      
-      // 更新表单数据
-      formData.value.avatar = newAvatar
-      
-      // 更新用户数据
-      const updatedUser = {
-        ...props.user,
-        avatar: newAvatar
-      }
-      
-      // 使用父组件提供的updateUser方法更新用户数据
-      props.updateUser(updatedUser)
-      
-      // 不需要重新加载页面，数据会通过props响应式更新
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
 // 查看头像
 const viewAvatar = () => {
   showAvatarModal.value = true
 }
 
-// 上传头像
-const uploadAvatar = () => {
-  // 触发文件选择对话框
-  fileInput.value?.click()
-}
-
 // 关闭头像查看弹窗
 const closeAvatarModal = () => {
   showAvatarModal.value = false
-}
-
-// 保存用户信息
-const saveUserInfo = () => {
-  // 表单验证
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const phoneRegex = /^1[3-9]\d{9}$/
-  
-  if (formData.value.email && !emailRegex.test(formData.value.email)) {
-    alert('请输入有效的邮箱地址')
-    return
-  }
-  
-  if (formData.value.phone && !phoneRegex.test(formData.value.phone)) {
-    alert('请输入有效的手机号')
-    return
-  }
-  
-  // 更新用户数据
-  const updatedUser = {
-    ...props.user,
-    username: formData.value.username,
-    email: formData.value.email,
-    phone: formData.value.phone,
-    avatar: formData.value.avatar
-  }
-  
-  // 使用父组件提供的updateUser方法更新用户数据
-  props.updateUser(updatedUser)
-  
-  // 退出编辑模式
-  isEditing.value = false
 }
 
 // 保存管理员辨识密码
@@ -350,77 +265,25 @@ const handleRemoveModule = (moduleName) => {
           
           <div class="user-card-header">
             <h3 class="card-title">个人信息</h3>
-            <button 
-              class="btn btn-edit" 
-              @click="isEditing ? saveUserInfo() : startEditing()"
-            >
-              {{ isEditing ? '保存' : '编辑' }}
-            </button>
-            <button 
-              v-if="isEditing" 
-              class="btn btn-cancel" 
-              @click="cancelEditing"
-            >
-              取消
-            </button>
+            <div class="header-actions">
+              <!-- 只显示查看信息按钮 -->
+              <button 
+                class="btn btn-view" 
+                @click="toggleContactInfo"
+              >
+                {{ showFullContactInfo ? '隐藏信息' : '查看信息' }}
+              </button>
+            </div>
           </div>
           
-          <!-- 查看模式 -->
-          <div v-if="!isEditing" class="user-info">
+          <!-- 用户信息 -->
+          <div class="user-info">
             <div class="user-details">
               <h2 class="user-name">{{ user?.username || '未知用户' }}</h2>
               <p class="user-role">{{ user?.role === 'admin' ? '管理员' : '普通用户' }}</p>
               <div class="user-contact">
-                <p v-if="user?.email"><strong>邮箱：</strong>{{ user.email }}</p>
-                <p v-if="user?.phone"><strong>手机号：</strong>{{ user.phone }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 编辑模式 -->
-          <div v-else class="user-edit-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="username">用户名</label>
-                <input 
-                  type="text" 
-                  id="username" 
-                  v-model="formData.username"
-                  placeholder="请输入用户名"
-                />
-              </div>
-              <div class="form-group">
-                <label for="email">邮箱</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  v-model="formData.email"
-                  placeholder="请输入邮箱"
-                />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="phone">手机号</label>
-                <input 
-                  type="tel" 
-                  id="phone" 
-                  v-model="formData.phone"
-                  placeholder="请输入手机号"
-                />
-              </div>
-              <div class="form-group">
-                <label for="avatar-file">更换头像</label>
-                <div class="avatar-upload-wrapper">
-                  <button 
-                    type="button" 
-                    class="btn btn-secondary avatar-upload-btn"
-                    @click="fileInput?.click()"
-                  >
-                    选择头像图片
-                  </button>
-                  <span class="avatar-upload-hint">支持 JPG、PNG 格式，建议大小不超过 2MB</span>
-                </div>
+                <p v-if="user?.email"><strong>邮箱：</strong>{{ showFullContactInfo ? user.email : encryptEmail(user.email) }}</p>
+                <p v-if="user?.phone"><strong>手机号：</strong>{{ showFullContactInfo ? user.phone : encryptPhone(user.phone) }}</p>
               </div>
             </div>
           </div>
@@ -947,6 +810,25 @@ const handleRemoveModule = (moduleName) => {
   font-weight: 600;
   color: #2c3e50;
   margin: 0;
+}
+
+.btn-view {
+  background: #2ecc71;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 0.5rem;
+}
+
+.btn-view:hover {
+  background: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
 }
 
 .btn-edit {

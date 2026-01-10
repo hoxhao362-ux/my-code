@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const router = useRouter()
 const user = computed(() => userStore.user)
 
 // 筛选相关状态
@@ -54,21 +56,24 @@ const filterByTimeRange = (journals, dateField = 'date') => {
   return journals
 }
 
-// 所有历史记录，包括已通过、未通过以及过初审进入复审/终审的稿件
+// 所有历史记录，包括已通过、未通过以及各审核阶段的稿件
 const allHistory = computed(() => {
-  // 基础筛选：获取所有非审稿中或处于复审/终审阶段的稿件
+  // 基础筛选：获取所有状态的稿件，包括各审核阶段
   let journals = userStore.journals.filter(journal => 
     journal.status === '已通过' || 
     journal.status === '未通过' ||
-    (journal.status === '审稿中' && (journal.reviewStage === '复审' || journal.reviewStage === '终审'))
+    journal.status === '审稿中' ||
+    journal.status === '已发表'
   )
   
-  // 角色筛选：审核人员只能看到自己参与过复审的稿件
+  // 角色筛选：审核人员只能看到自己参与过审核的稿件
   journals = journals.filter(journal => {
-    // 检查是否有该审核人员参与的复审记录
-    return journal.reviewHistory && journal.reviewHistory.some(record => 
-      record.stage === '复审' && record.reviewer === user.value.username
-    )
+    // 检查是否有该审核人员参与的任何审核记录
+    return journal.reviewHistory && journal.reviewHistory.some(record => {
+      const isAdmin = user.value?.role === 'admin';
+      const allowedStages = isAdmin ? ['初审', '终审'] : ['复审'];
+      return allowedStages.includes(record.stage) && record.reviewer === user.value.username;
+    })
   })
   
   // 模块筛选
@@ -78,12 +83,34 @@ const allHistory = computed(() => {
   
   // 稿件状态筛选
   if (selectedStatus.value !== 'all') {
-    if (selectedStatus.value === '复审') {
-      journals = journals.filter(journal => journal.reviewStage === '复审')
+    const isAdmin = user.value?.role === 'admin';
+    if (selectedStatus.value === '初审') {
+      // 只有管理员能看到初审阶段的稿件
+      if (isAdmin) {
+        journals = journals.filter(journal => journal.reviewStage === '初审')
+      } else {
+        journals = []; // 审核员选择初审时，显示空列表
+      }
+    } else if (selectedStatus.value === '复审') {
+      // 只有审核员能看到复审阶段的稿件
+      if (!isAdmin) {
+        journals = journals.filter(journal => journal.reviewStage === '复审')
+      } else {
+        journals = []; // 管理员选择复审时，显示空列表
+      }
     } else if (selectedStatus.value === '终审') {
-      journals = journals.filter(journal => journal.reviewStage === '终审')
+      // 只有管理员能看到终审阶段的稿件
+      if (isAdmin) {
+        journals = journals.filter(journal => journal.reviewStage === '终审')
+      } else {
+        journals = []; // 审核员选择终审时，显示空列表
+      }
     } else {
-      journals = journals.filter(journal => journal.status === selectedStatus.value)
+      // 处理状态筛选，"已通过"包含"已发表"状态
+      journals = journals.filter(journal => 
+        journal.status === selectedStatus.value || 
+        (selectedStatus.value === '已通过' && journal.status === '已发表')
+      )
     }
   }
   
@@ -116,30 +143,6 @@ const paginatedHistory = computed(() => {
   return allHistory.value.slice(startIndex, endIndex)
 })
 
-// 页码范围
-const pageRange = computed(() => {
-  const range = []
-  const maxVisiblePages = 5
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisiblePages / 2))
-  let end = Math.min(totalPages.value, start + maxVisiblePages - 1)
-  
-  // 调整起始页码以确保显示足够的页码
-  if (end - start + 1 < maxVisiblePages) {
-    start = Math.max(1, end - maxVisiblePages + 1)
-  }
-  
-  for (let i = start; i <= end; i++) {
-    range.push(i)
-  }
-  return range
-})
-
-// 导航到首页
-const goToFirstPage = () => {
-  currentPage.value = 1
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 // 导航到上一页
 const goToPrevPage = () => {
   if (currentPage.value > 1) {
@@ -156,16 +159,9 @@ const goToNextPage = () => {
   }
 }
 
-// 导航到末页
-const goToLastPage = () => {
-  currentPage.value = totalPages.value
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// 导航到指定页码
-const goToPage = (page) => {
-  currentPage.value = page
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+// 查看稿件详情
+const viewJournalDetail = (id) => {
+  router.push(`/admin/journal/${id}`)
 }
 </script>
 
@@ -234,8 +230,9 @@ const goToPage = (page) => {
               <option value="all">全部状态</option>
               <option value="已通过">已通过</option>
               <option value="未通过">未通过</option>
-              <option value="复审">复审</option>
-              <option value="终审">终审</option>
+              <option value="初审" v-if="user?.role === 'admin'">初审</option>
+              <option value="复审" v-if="user?.role !== 'admin'">复审</option>
+              <option value="终审" v-if="user?.role === 'admin'">终审</option>
             </select>
           </div>
           
@@ -266,7 +263,7 @@ const goToPage = (page) => {
             class="journal-item"
           >
             <div class="journal-info">
-              <h3 class="journal-title">{{ journal.title }}</h3>
+              <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }} <span class="view-detail-icon">📋</span></h3>
               <p class="journal-meta">
                 作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 
                 审核日期：{{ journal.reviewDate }} | 
@@ -305,35 +302,27 @@ const goToPage = (page) => {
       </section>
 
       <!-- 分页控件 -->
-      <div v-if="totalPages > 1" class="pagination">
-        <button class="page-btn" @click="goToFirstPage" :disabled="currentPage === 1">
-          首页
-        </button>
-        <button class="page-btn" @click="goToPrevPage" :disabled="currentPage === 1">
-          上一页
-        </button>
-        
-        <button 
-          v-for="page in pageRange" 
-          :key="page"
-          class="page-btn" 
-          :class="{ active: currentPage === page }"
-          @click="goToPage(page)"
-        >
-          {{ page }}
-        </button>
-        
-        <button class="page-btn" @click="goToNextPage" :disabled="currentPage === totalPages">
-          下一页
-        </button>
-        <button class="page-btn" @click="goToLastPage" :disabled="currentPage === totalPages">
-          末页
-        </button>
-        
-        <div class="pagination-info">
-          第 {{ currentPage }} / {{ totalPages }} 页，共 {{ allHistory.length }} 篇历史记录
+        <div v-if="totalPages > 0" class="pagination">
+          <div class="pagination-info">
+            共 {{ allHistory.length }} 条记录，第 {{ currentPage }} / {{ totalPages }} 页
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="page-btn" 
+              :disabled="currentPage === 1"
+              @click="goToPrevPage"
+            >
+              上一页
+            </button>
+            <button 
+              class="page-btn" 
+              :disabled="currentPage === totalPages"
+              @click="goToNextPage"
+            >
+              下一页
+            </button>
+          </div>
         </div>
-      </div>
     </main>
 
     <!-- 页脚 -->
@@ -489,9 +478,28 @@ const goToPage = (page) => {
 .journal-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #3498db;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.journal-title:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
+.view-detail-icon {
+  font-size: 1rem;
+  margin-left: 0.5rem;
+  color: #7f8c8d;
+  transition: transform 0.3s ease;
+}
+
+.journal-title:hover .view-detail-icon {
+  transform: scale(1.2);
+  color: #2980b9;
 }
 
 .journal-meta {
@@ -616,9 +624,8 @@ const goToPage = (page) => {
 /* 分页样式 */
 .pagination {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
   margin-top: 2rem;
   padding: 1rem;
   background: white;
@@ -626,10 +633,20 @@ const goToPage = (page) => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.pagination-info {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .page-btn {
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1.2rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   background: white;
   color: #3498db;
   font-size: 0.9rem;
@@ -639,27 +656,16 @@ const goToPage = (page) => {
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #3498db;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-}
-
-.page-btn.active {
-  background: #3498db;
-  color: white;
+  background: #f5f7fa;
   border-color: #3498db;
 }
 
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.pagination-info {
-  margin-left: 1rem;
-  color: #7f8c8d;
-  font-size: 0.9rem;
+  background: #f8f9fa;
+  border-color: #e9ecef;
+  color: #6c757d;
 }
 
 /* 无稿件提示 */

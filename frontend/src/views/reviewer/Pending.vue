@@ -1,9 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const router = useRouter()
 const user = computed(() => userStore.user)
 
 // 筛选相关状态
@@ -11,8 +13,61 @@ const searchQuery = ref('') // 搜索关键词
 const selectedModule = ref('all') // 模块筛选
 const timeRange = ref('all') // 时间范围筛选：'all', 'today', 'week', 'month', 'year'
 
+// 分页相关状态
+const currentPage = ref(1) // 当前页码
+const pageSize = ref(10) // 每页显示数量
+
+// 计算总页数
+const totalPages = computed(() => {
+  return Math.ceil(pendingJournalsFiltered.value.length / pageSize.value)
+})
+
+// 过滤后的待审核稿件列表
+const pendingJournalsFiltered = computed(() => {
+  // 基础筛选：只显示待审核或审稿中且处于审核阶段的稿件
+  // 管理员看到初审和终审阶段的稿件，审核员只看到复审阶段的稿件
+  let journals = userStore.journals.filter(journal => {
+    const isAdmin = user.value?.role === 'admin';
+    const allowedStages = isAdmin ? ['初审', '终审'] : ['复审'];
+    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage);
+  })
+  
+  // 模块筛选
+  if (selectedModule.value !== 'all') {
+    journals = journals.filter(journal => journal.module === selectedModule.value)
+  }
+  
+  // 时间范围筛选
+  journals = filterByTimeRange(journals)
+  
+  // 搜索筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    journals = journals.filter(journal => 
+      journal.title.toLowerCase().includes(query) ||
+      journal.author.toLowerCase().includes(query) ||
+      journal.abstract.toLowerCase().includes(query) ||
+      journal.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    )
+  }
+  
+  return journals
+})
+
+// 分页后的待审核稿件列表
+const pendingJournals = computed(() => {
+  const startIndex = (currentPage.value - 1) * pageSize.value
+  const endIndex = startIndex + pageSize.value
+  return pendingJournalsFiltered.value.slice(startIndex, endIndex)
+})
+
 // 获取所有可用模块
 const modules = computed(() => userStore.modules)
+
+// 监听所有筛选条件变化，重置页码为1
+watch([searchQuery, selectedModule, timeRange], () => {
+  currentPage.value = 1
+}, { deep: true })
 
 // 通用时间范围筛选函数
 const filterByTimeRange = (journals, dateField = 'date') => {
@@ -49,43 +104,62 @@ const filterByTimeRange = (journals, dateField = 'date') => {
   return journals
 }
 
-// 待审核的稿件列表 - 仅显示复审阶段的稿件，并应用筛选条件
-const pendingJournals = computed(() => {
-  // 基础筛选：只显示审稿中且处于复审阶段的稿件
-  let journals = userStore.journals.filter(journal => 
-    journal.status === '审稿中' && journal.reviewStage === '复审'
-  )
-  
-  // 模块筛选
-  if (selectedModule.value !== 'all') {
-    journals = journals.filter(journal => journal.module === selectedModule.value)
+
+
+// 查看稿件详情
+const viewJournalDetail = (id) => {
+  router.push(`/admin/journal/${id}`)
+}
+
+// 分页控制函数
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
   }
-  
-  // 时间范围筛选
-  journals = filterByTimeRange(journals)
-  
-  // 搜索筛选
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    journals = journals.filter(journal => 
-      journal.title.toLowerCase().includes(query) ||
-      journal.author.toLowerCase().includes(query) ||
-      journal.abstract.toLowerCase().includes(query) ||
-      journal.keywords.some(keyword => keyword.toLowerCase().includes(query))
-    )
+}
+
+const goToFirstPage = () => {
+  currentPage.value = 1
+}
+
+const goToLastPage = () => {
+  currentPage.value = totalPages.value
+}
+
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
   }
-  
-  return journals
-})
+}
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
 
 // 处理审稿
 const handleReview = (id, action) => {
-  // 找到要审核的期刊
-  const journalIndex = userStore.journals.findIndex(j => j.id === id)
+  // 找到要审核的期刊，使用String转换确保类型匹配
+  const journalIndex = userStore.journals.findIndex(j => String(j.id) === String(id))
   if (journalIndex !== -1) {
     const journal = {...userStore.journals[journalIndex]}
     let updateMessage = ''
     const today = new Date().toISOString().split('T')[0]
+    
+    // 权限检查：管理员不能处理复审阶段的稿件，审核员只能处理复审阶段的稿件
+    const isAdmin = user.value?.role === 'admin';
+    const isReviewer = user.value?.role === 'reviewer';
+    
+    if (isAdmin && journal.reviewStage === '复审') {
+      alert('管理员不能处理复审阶段的稿件！');
+      return;
+    }
+    
+    if (isReviewer && journal.reviewStage !== '复审') {
+      alert('审核员只能处理复审阶段的稿件！');
+      return;
+    }
     
     // 确保reviewHistory数组存在
     if (!journal.reviewHistory) {
@@ -95,8 +169,47 @@ const handleReview = (id, action) => {
     // 获取当前阶段的审核评论
     const currentStageComment = journal[`${journal.reviewStage.toLowerCase()}Comment`] || ''
     
-    // 审核员处理复审
-    if (journal.reviewStage === '复审') {
+    // 根据当前审核阶段处理
+    if (journal.reviewStage === '初审') {
+      if (action === 'approve') {
+        // 初审通过，进入复审阶段
+        journal.reviewStage = '复审'
+        journal.status = '审稿中'
+        updateMessage = `已通过初审审核，进入复审阶段：${journal.title}`
+        
+        // 添加审核记录
+        journal.reviewHistory.push({
+          stage: '初审',
+          status: '通过',
+          reviewer: user.value.username,
+          date: today,
+          comment: currentStageComment || '初审通过，进入复审阶段',
+          type: '完全保密'
+        })
+        
+        // 清空初审评论，为复审阶段准备
+        delete journal.chuShenComment
+      } else {
+        // 初审拒绝，直接未通过
+        journal.status = '未通过'
+        journal.reviewResult = '未通过'
+        journal.reviewDate = today
+        updateMessage = `已拒绝初审：${journal.title}`
+        
+        // 添加审核记录
+        journal.reviewHistory.push({
+          stage: '初审',
+          status: '未通过',
+          reviewer: user.value.username,
+          date: today,
+          comment: currentStageComment || '初审未通过',
+          type: '完全保密'
+        })
+        
+        // 清空初审评论
+        delete journal.chuShenComment
+      }
+    } else if (journal.reviewStage === '复审') {
       if (action === 'approve') {
         // 复审通过，进入终审阶段
         journal.reviewStage = '终审'
@@ -135,15 +248,80 @@ const handleReview = (id, action) => {
         // 清空复审评论
         delete journal.fuShenComment
       }
-      
-      // 更新期刊
-      userStore.updateJournal(journal)
-      
-      // 显示审核结果
-      alert(updateMessage)
-    } else {
-      alert('您没有权限处理此稿件或此稿件不在您负责的审稿阶段')
-      return
+    } else if (journal.reviewStage === '终审') {
+      if (action === 'approve') {
+        // 终审通过，审核完成
+        journal.status = '已发表'
+        journal.reviewResult = '已通过'
+        journal.reviewDate = today
+        updateMessage = `已通过终审审核，稿件已发表：${journal.title}`
+        
+        // 添加审核记录
+        journal.reviewHistory.push({
+          stage: '终审',
+          status: '通过',
+          reviewer: user.value.username,
+          date: today,
+          comment: currentStageComment || '终审通过，稿件已发表',
+          type: '完全保密'
+        })
+        
+        // 清空终审评论
+        delete journal.zhongShenComment
+      } else {
+        // 终审拒绝，直接未通过
+        journal.status = '未通过'
+        journal.reviewResult = '未通过'
+        journal.reviewDate = today
+        updateMessage = `已拒绝终审：${journal.title}`
+        
+        // 添加审核记录
+        journal.reviewHistory.push({
+          stage: '终审',
+          status: '未通过',
+          reviewer: user.value.username,
+          date: today,
+          comment: currentStageComment || '终审未通过',
+          type: '完全保密'
+        })
+        
+        // 清空终审评论
+        delete journal.zhongShenComment
+      }
+    }
+    
+    // 更新期刊
+    userStore.updateJournal(journal)
+    
+    // 显示审核结果
+    alert(updateMessage)
+    
+    // 自动升级作者角色：只要稿件发布，不管是哪个阶段，只要状态为已发表，就自动升级
+    if (journal.status === '已发表') {
+      // 查找作者在用户列表中的记录
+      const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
+      if (authorIndex !== -1) {
+        const authorUser = userStore.users[authorIndex];
+        if (authorUser.role === 'user') {
+          // 升级作者角色为作者
+          const updatedAuthorUser = {
+            ...authorUser,
+            role: 'author'
+          };
+          
+          // 更新用户列表
+          userStore.users[authorIndex] = updatedAuthorUser;
+          localStorage.setItem('users', JSON.stringify(userStore.users));
+          
+          // 如果当前登录用户就是该作者，同时更新当前登录用户信息
+          if (userStore.user && userStore.user.username === journal.author) {
+            userStore.updateUser({ role: 'author' });
+          }
+          
+          // 提示审核员升级成功
+          alert(`作者 ${journal.author} 已自动升级为作者角色！`);
+        }
+      }
     }
   }
 }
@@ -163,9 +341,12 @@ const handleReview = (id, action) => {
     <!-- 待审核稿件内容 -->
     <main class="content">
       <div class="header">
-        <h1>待审核稿件</h1>
+        <h1>审核任务</h1>
         <div class="review-stats">
-          <span class="stat-item">待复审稿件总数：{{ pendingJournals.length }}</span>
+          <span class="stat-item">待审核稿件总数：{{ pendingJournals.length }}</span>
+          <span v-if="user?.role === 'admin'" class="stat-item">待初审审核：{{ pendingJournals.filter(j => j.reviewStage === '初审').length }}</span>
+          <span v-if="user?.role !== 'admin'" class="stat-item">待复审：{{ pendingJournals.filter(j => j.reviewStage === '复审').length }}</span>
+          <span v-if="user?.role === 'admin'" class="stat-item">待终审审核：{{ pendingJournals.filter(j => j.reviewStage === '终审').length }}</span>
         </div>
       </div>
 
@@ -230,7 +411,7 @@ const handleReview = (id, action) => {
             class="journal-item"
           >
             <div class="journal-info">
-              <h3 class="journal-title">{{ journal.title }}</h3>
+              <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }} <span class="view-detail-icon">📋</span></h3>
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
               <p class="journal-abstract">{{ journal.abstract }}</p>
             </div>
@@ -259,6 +440,57 @@ const handleReview = (id, action) => {
           </div>
           <div v-if="pendingJournals.length === 0" class="no-journals">
             <p>当前没有待审核的稿件</p>
+          </div>
+        </div>
+        
+        <!-- 分页控件 -->
+        <div v-if="totalPages > 1" class="pagination-section">
+          <div class="pagination-info">
+            <span>共 {{ pendingJournalsFiltered.length }} 条记录，第 {{ currentPage }}/{{ totalPages }} 页</span>
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="pagination-btn" 
+              @click="goToFirstPage" 
+              :disabled="currentPage === 1"
+            >
+              首页
+            </button>
+            <button 
+              class="pagination-btn" 
+              @click="goToPreviousPage" 
+              :disabled="currentPage === 1"
+            >
+              上一页
+            </button>
+            
+            <!-- 页码按钮 -->
+            <div class="page-numbers">
+              <button 
+                v-for="page in totalPages" 
+                :key="page"
+                class="page-btn"
+                :class="{ active: page === currentPage }"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+            </div>
+            
+            <button 
+              class="pagination-btn" 
+              @click="goToNextPage" 
+              :disabled="currentPage === totalPages"
+            >
+              下一页
+            </button>
+            <button 
+              class="pagination-btn" 
+              @click="goToLastPage" 
+              :disabled="currentPage === totalPages"
+            >
+              末页
+            </button>
           </div>
         </div>
       </section>
@@ -353,9 +585,28 @@ const handleReview = (id, action) => {
 .journal-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #3498db;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.journal-title:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
+.view-detail-icon {
+  font-size: 1rem;
+  margin-left: 0.5rem;
+  color: #7f8c8d;
+  transition: transform 0.3s ease;
+}
+
+.journal-title:hover .view-detail-icon {
+  transform: scale(1.2);
+  color: #2980b9;
 }
 
 .journal-meta {
@@ -476,6 +727,132 @@ const handleReview = (id, action) => {
   color: #7f8c8d;
   font-size: 1.1rem;
   margin: 0;
+}
+
+/* 分页控件样式 */
+.pagination-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.pagination-info {
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 500;
+  background: #f8f9fa;
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #f8f9fa;
+  padding: 0.4rem;
+  border-radius: 25px;
+}
+
+.pagination-btn {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #3498db;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.page-btn {
+  padding: 0.7rem 1.1rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(.active) {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+}
+
+.page-btn.active {
+  background: #3498db;
+  color: white;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  transform: scale(1.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .pagination-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem;
+  }
+  
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.2rem;
+  }
+  
+  .pagination-btn {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+    min-width: 70px;
+  }
+  
+  .page-btn {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+    min-width: 35px;
+    height: 35px;
+  }
+  
+  .pagination-info {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    text-align: center;
+  }
 }
 
 /* 页脚 */
