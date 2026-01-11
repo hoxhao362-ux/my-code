@@ -30,44 +30,54 @@ const handleLogin = async () => {
     return
   }
   
-  // 加密密码
-  const encryptedPassword = encryptPassword(password.value)
-  
-  // 从用户列表中查找用户
-  let userData = userStore.users.find(u => u.username === username.value && u.password === encryptedPassword);
-  
-  // 如果用户列表中没有找到，使用默认角色（兼容旧数据）
-  if (!userData) {
+  try {
+    // 加密密码
+    const encryptedPassword = encryptPassword(password.value)
+    
+    // 准备登录凭证
+    const credentials = {
+      username: username.value,
+      password: encryptedPassword
+    }
+    
+    // 调用状态管理的登录方法
+    await userStore.login(credentials)
+    
+    // 记住密码功能
+    if (rememberMe.value) {
+      localStorage.setItem('rememberedUsername', username.value)
+      localStorage.setItem('rememberedPassword', password.value)
+    } else {
+      localStorage.removeItem('rememberedUsername')
+      localStorage.removeItem('rememberedPassword')
+    }
+    
+    // 跳转到首页
+    router.push('/home')
+  } catch (err) {
+    console.error('登录失败:', err)
+    // 如果API调用失败，使用模拟登录逻辑
     // 根据用户名自动识别角色
     let role = username.value === 'admin' ? 'admin' : 
                username.value === 'reviewer' ? 'reviewer' : 
                username.value === 'user' ? 'user' : 'author'
     
-    // 模拟登录逻辑
-    userData = {
+    // 创建用户数据
+    const userData = {
       username: username.value,
-      password: encryptedPassword,
       role: role,
       email: '',
       phone: '',
       avatar: ''
     }
+    
+    // 直接设置用户状态
+    userStore.user = userData
+    localStorage.setItem('user', JSON.stringify(userData))
+    
+    // 跳转到首页
+    router.push('/home')
   }
-  
-  // 调用状态管理的登录方法
-  userStore.login(userData)
-  
-  // 记住密码功能
-  if (rememberMe.value) {
-    localStorage.setItem('rememberedUsername', username.value)
-    localStorage.setItem('rememberedPassword', password.value)
-  } else {
-    localStorage.removeItem('rememberedUsername')
-    localStorage.removeItem('rememberedPassword')
-  }
-  
-  // 跳转到首页
-  router.push('/home')
 }
 
 const goToRegister = () => {

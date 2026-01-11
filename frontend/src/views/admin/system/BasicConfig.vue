@@ -1,30 +1,39 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 基础配置数据
+// 基础配置数据 - 使用ref存储表单数据
 const basicConfig = ref({
-  platformName: '期刊投稿平台',
+  platformName: '',
   platformLogo: '',
-  submissionRules: '1. 投稿内容必须符合学术规范\n2. 禁止抄袭和剽窃\n3. 所有投稿将经过严格审核\n4. 审核周期一般为1-2周\n5. 最终解释权归平台所有',
-  contactEmail: 'contact@example.com',
-  contactPhone: '13800138000',
-  copyrightInfo: '© 2026 期刊投稿平台. All rights reserved.'
+  submissionRules: '',
+  contactEmail: '',
+  contactPhone: '',
+  copyrightInfo: ''
+})
+
+// 组件挂载时，从userStore加载配置数据
+onMounted(() => {
+  // 从userStore获取配置数据
+  basicConfig.value = {
+    ...userStore.basicConfig
+  }
 })
 
 // 保存配置
 const saveConfig = () => {
-  // 这里应该保存配置到服务器，目前模拟保存
+  // 保存配置到userStore，会自动持久化到localStorage
+  userStore.setBasicConfig(basicConfig.value)
   alert('基础配置已保存！')
 }
 
 // 重置配置
 const resetConfig = () => {
-  basicConfig.value = {
+  const defaultConfig = {
     platformName: '期刊投稿平台',
     platformLogo: '',
     submissionRules: '1. 投稿内容必须符合学术规范\n2. 禁止抄袭和剽窃\n3. 所有投稿将经过严格审核\n4. 审核周期一般为1-2周\n5. 最终解释权归平台所有',
@@ -32,6 +41,12 @@ const resetConfig = () => {
     contactPhone: '13800138000',
     copyrightInfo: '© 2026 期刊投稿平台. All rights reserved.'
   }
+  // 更新表单数据
+  basicConfig.value = {
+    ...defaultConfig
+  }
+  // 保存到userStore
+  userStore.setBasicConfig(defaultConfig)
   alert('配置已重置为默认值！')
 }
 </script>

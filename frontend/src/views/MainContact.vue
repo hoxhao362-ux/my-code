@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
@@ -13,13 +13,13 @@ const toggleDirectory = () => {
   directoryStore.toggleDirectory()
 }
 
-// 联系信息数据
-const contactInfo = ref({
-  email: 'admin@journal-platform.com',
-  phone: '13800138000',
+// 联系信息数据 - 从userStore获取
+const contactInfo = computed(() => ({
+  email: userStore.basicConfig.contactEmail || 'admin@journal-platform.com',
+  phone: userStore.basicConfig.contactPhone || '13800138000',
   address: '北京市海淀区中关村科技园区',
   workingHours: '周一至周五 9:00-18:00'
-})
+}))
 
 // 表单数据
 const formData = ref({

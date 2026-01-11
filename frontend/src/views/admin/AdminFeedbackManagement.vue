@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 
@@ -26,6 +26,13 @@ const currentMessage = ref(null)
 
 // 状态选项
 const statusOptions = ['未处理', '已处理', '已回复']
+
+// 确认删除模态框
+const showDeleteModal = ref(false)
+// 删除类型：single 或 batch
+const deleteType = ref('single')
+// 当前要删除的单个消息ID
+const currentDeleteMessageId = ref(null)
 
 // 筛选后的消息列表
 const filteredMessages = computed(() => {
@@ -63,23 +70,41 @@ const updateMessageStatus = (messageId, status) => {
   userStore.updateFeedbackMessageStatus(messageId, status)
 }
 
-// 删除消息
-const deleteMessage = (messageId) => {
-  if (confirm('确定要删除这条消息吗？')) {
-    userStore.deleteFeedbackMessage(messageId)
-  }
+// 打开删除确认模态框（单条删除）
+const openDeleteModal = (messageId) => {
+  deleteType.value = 'single'
+  currentDeleteMessageId.value = messageId
+  showDeleteModal.value = true
 }
 
-// 批量删除消息
-const deleteSelectedMessages = () => {
+// 打开删除确认模态框（批量删除）
+const openBatchDeleteModal = () => {
   if (selectedMessages.value.length === 0) {
     alert('请先选择要删除的消息')
     return
   }
-  if (confirm(`确定要删除选中的 ${selectedMessages.value.length} 条消息吗？`)) {
+  deleteType.value = 'batch'
+  showDeleteModal.value = true
+}
+
+// 确认删除
+const confirmDelete = () => {
+  if (deleteType.value === 'single') {
+    // 执行单条删除
+    userStore.deleteFeedbackMessage(currentDeleteMessageId.value)
+  } else {
+    // 执行批量删除
     userStore.deleteMultipleFeedbackMessages(selectedMessages.value)
     selectedMessages.value = []
   }
+  // 关闭模态框
+  showDeleteModal.value = false
+}
+
+// 取消删除
+const cancelDelete = () => {
+  // 仅关闭模态框，不执行任何操作
+  showDeleteModal.value = false
 }
 
 // 切换全选
@@ -113,6 +138,11 @@ const formatDate = (dateString) => {
     minute: '2-digit'
   })
 }
+
+// 组件挂载时加载反馈消息
+onMounted(() => {
+  userStore.loadFeedbackMessages()
+})
 </script>
 
 <template>
@@ -130,7 +160,7 @@ const formatDate = (dateString) => {
       <div class="actions">
         <button 
           class="btn btn-danger" 
-          @click="deleteSelectedMessages"
+          @click="openBatchDeleteModal"
           :disabled="selectedMessages.length === 0"
         >
           批量删除 ({{ selectedMessages.length }})
@@ -230,7 +260,7 @@ const formatDate = (dateString) => {
               </button>
               <button 
                 class="btn btn-danger btn-sm" 
-                @click="deleteMessage(message.id)"
+                @click="openDeleteModal(message.id)"
               >
                 删除
               </button>
@@ -290,6 +320,23 @@ const formatDate = (dateString) => {
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="showDetailModal = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="cancelDelete">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>{{ deleteType === 'single' ? '确认删除' : '批量确认删除' }}</h3>
+          <button class="close-btn" @click="cancelDelete">×</button>
+        </div>
+        <div class="modal-body">
+          <p>{{ deleteType === 'single' ? '确定要删除这条反馈消息吗？' : '确定要删除选中的 ' + selectedMessages.length + ' 条反馈消息吗？' }} 此操作不可恢复！</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="cancelDelete">取消</button>
+          <button class="btn btn-danger" @click="confirmDelete">确认删除</button>
         </div>
       </div>
     </div>

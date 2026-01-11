@@ -1,98 +1,140 @@
 <template>
   <div class="feedback-container">
-    <h2 class="page-title">意见反馈</h2>
     <div class="back-button-container">
       <button class="back-button" @click="goBack">
         <span class="back-arrow">←</span> 返回上一页
       </button>
     </div>
-    <div class="feedback-content">
-      <div class="feedback-form">
-        <h3>意见反馈表单</h3>
-        <form @submit.prevent="submitFeedback">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="feedback-type">反馈类型</label>
-              <select 
-                id="feedback-type" 
-                v-model="form.type" 
-                required
-              >
-                <option value="">请选择反馈类型</option>
-                <option value="system">系统问题</option>
-                <option value="functionality">功能建议</option>
-                <option value="content">内容问题</option>
-                <option value="other">其他问题</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="contact">联系方式</label>
-              <input 
-                type="text" 
-                id="contact" 
-                v-model="form.contact" 
-                placeholder="请留下您的邮箱或电话（可选）"
-              >
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="title">反馈标题</label>
-            <input 
-              type="text" 
-              id="title" 
-              v-model="form.title" 
-              required 
-              placeholder="请输入反馈标题"
-            >
-          </div>
-          <div class="form-group">
-            <label for="content">反馈内容</label>
-            <textarea 
-              id="content" 
-              v-model="form.content" 
-              required 
-              rows="6" 
-              placeholder="请详细描述您的问题或建议"
-            ></textarea>
-          </div>
-          <div class="form-group">
-            <label for="screenshot">上传截图（可选）</label>
-            <div class="file-upload">
-              <input 
-                type="file" 
-                id="screenshot" 
-                accept="image/*" 
-                @change="handleFileUpload"
-                class="file-input"
-              >
-              <label for="screenshot" class="file-label">
-                <span v-if="!form.screenshot">点击选择文件或拖拽文件到此处</span>
-                <span v-else class="file-name">{{ form.screenshot.name }}</span>
-              </label>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="submit-button">提交反馈</button>
-            <button type="reset" class="reset-button" @click="resetForm">重置</button>
-          </div>
-        </form>
+    <div class="feedback-wrapper">
+      <div class="header">
+        <h1>意见反馈</h1>
+        <p class="subtitle">您的反馈对我们非常重要，感谢您的支持与建议</p>
       </div>
+      
+      <section class="feedback-section">
+        <div class="feedback-content">
+          <div v-if="error" class="alert alert-error">{{ error }}</div>
+          <div v-if="success" class="alert alert-success">{{ success }}</div>
+          
+          <form class="feedback-form" @submit.prevent="submitFeedback">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="name">姓名</label>
+                <input 
+                  type="text" 
+                  id="name" 
+                  v-model="form.name" 
+                  class="form-control"
+                  placeholder="请输入您的姓名"
+                  required
+                  :disabled="submitting"
+                >
+              </div>
+              <div class="form-group">
+                <label for="email">邮箱</label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  v-model="form.email" 
+                  class="form-control"
+                  placeholder="请输入您的邮箱"
+                  required
+                  :disabled="submitting"
+                >
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="feedbackType">反馈类型</label>
+                <select 
+                  id="feedbackType" 
+                  v-model="form.feedbackType" 
+                  class="form-control"
+                  required
+                  :disabled="submitting"
+                >
+                  <option value="建议">建议</option>
+                  <option value="bug">bug报告</option>
+                  <option value="投诉">投诉</option>
+                  <option value="其他">其他</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="subject">主题</label>
+                <input 
+                  type="text" 
+                  id="subject" 
+                  v-model="form.subject" 
+                  class="form-control"
+                  placeholder="请输入反馈主题"
+                  required
+                  :disabled="submitting"
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="content">反馈内容</label>
+              <textarea 
+                id="content" 
+                v-model="form.content" 
+                class="form-control textarea-large"
+                rows="10"
+                placeholder="请详细描述您的反馈内容，包括问题发生的场景、操作步骤等"
+                required
+                :disabled="submitting"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="screenshot">上传截图（可选）</label>
+              <div class="file-upload">
+                <input 
+                  type="file" 
+                  id="screenshot" 
+                  accept="image/*" 
+                  @change="handleFileUpload"
+                  class="file-input"
+                  :disabled="submitting"
+                >
+                <label for="screenshot" class="file-label">
+                  <span v-if="!form.screenshot">点击选择文件或拖拽文件到此处</span>
+                  <span v-else class="file-name">{{ form.screenshot.name }}</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" :disabled="submitting">
+                <span v-if="submitting">提交中...</span>
+                <span v-else>提交反馈</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useUserStore } from '../../../stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
+const user = ref(userStore.user)
+
 const form = ref({
-  type: '',
-  contact: '',
-  title: '',
+  name: user.value?.username || '',
+  email: user.value?.email || '',
+  feedbackType: '建议',
+  subject: '',
   content: '',
   screenshot: null
 })
+
+const error = ref('')
+const success = ref('')
+const submitting = ref(false)
 
 const goBack = () => {
   router.back()
@@ -105,17 +147,68 @@ const handleFileUpload = (event) => {
   }
 }
 
+// 验证邮箱格式
+const validateEmail = (email) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return re.test(email)
+}
+
 const submitFeedback = () => {
-  // 这里可以添加提交逻辑，例如调用API
-  alert('反馈已提交，我们将尽快处理！')
-  resetForm()
+  // 表单验证
+  if (!form.value.name || !form.value.email || !form.value.feedbackType || !form.value.subject || !form.value.content) {
+    error.value = '请填写完整的表单信息'
+    return
+  }
+  
+  if (!validateEmail(form.value.email)) {
+    error.value = '请输入有效的邮箱地址'
+    return
+  }
+  
+  submitting.value = true
+  error.value = ''
+  success.value = ''
+  
+  try {
+    // 准备反馈数据
+    const feedbackData = {
+      id: Date.now(),
+      type: '意见反馈',
+      name: form.value.name,
+      email: form.value.email,
+      subject: form.value.subject,
+      content: form.value.content,
+      feedbackType: form.value.feedbackType,
+      // 截图暂时不处理，因为localStorage无法直接存储文件
+      screenshot: form.value.screenshot ? form.value.screenshot.name : null
+    }
+    
+    // 使用userStore添加反馈消息
+    userStore.addFeedbackMessage(feedbackData)
+    
+    submitting.value = false
+    success.value = '感谢您的反馈！我们将认真考虑您的意见和建议。'
+    
+    // 清空表单
+    resetForm()
+    
+    // 5秒后清空成功提示
+    setTimeout(() => {
+      success.value = ''
+    }, 5000)
+  } catch (err) {
+    console.error('反馈提交失败:', err)
+    submitting.value = false
+    error.value = '提交失败，请稍后重试'
+  }
 }
 
 const resetForm = () => {
   form.value = {
-    type: '',
-    contact: '',
-    title: '',
+    name: user.value?.username || '',
+    email: user.value?.email || '',
+    feedbackType: '建议',
+    subject: '',
     content: '',
     screenshot: null
   }
@@ -125,19 +218,21 @@ const resetForm = () => {
     fileInput.value = ''
   }
 }
+
+// 组件挂载时自动填充用户信息
+onMounted(() => {
+  user.value = userStore.user
+  form.value.name = user.value?.username || ''
+  form.value.email = user.value?.email || ''
+})
 </script>
 
 <style scoped>
+/* 主容器样式 */
 .feedback-container {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.page-title {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: #333;
 }
 
 .back-button-container {
@@ -166,61 +261,98 @@ const resetForm = () => {
   font-weight: bold;
 }
 
-.feedback-content {
-  background-color: #fff;
+/* 反馈包裹器样式 */
+.feedback-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 头部样式 */
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #7f8c8d;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* 反馈部分样式 */
+.feedback-section {
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 2rem;
 }
 
-.feedback-form h3 {
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  color: #3498db;
+/* 反馈内容样式 */
+.feedback-content {
+  max-width: 700px;
+  margin: 0 auto;
 }
 
+/* 表单样式 */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 表单行样式 */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-bottom: 1.2rem;
 }
 
+/* 表单组样式 */
 .form-group {
-  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: #555;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.8rem;
+/* 表单控件样式 */
+.form-control {
+  padding: 0.9rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: border-color 0.3s ease;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: white;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-control:focus {
   outline: none;
   border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-.form-group textarea {
+.textarea-large {
   resize: vertical;
-  min-height: 150px;
+  min-height: 200px;
+  font-family: inherit;
 }
 
+/* 文件上传样式 */
 .file-upload {
   position: relative;
   overflow: hidden;
@@ -242,7 +374,7 @@ const resetForm = () => {
   padding: 1rem;
   background-color: #f9f9f9;
   border: 2px dashed #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -259,46 +391,87 @@ const resetForm = () => {
   font-weight: 500;
 }
 
+/* 表单操作按钮样式 */
 .form-actions {
   display: flex;
-  gap: 1rem;
   justify-content: flex-end;
-  margin-top: 1.5rem;
 }
 
-.submit-button {
+/* 按钮样式 */
+.btn {
+  padding: 0.9rem 2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.btn-primary {
   background-color: #3498db;
   color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s ease;
 }
 
-.submit-button:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
-.reset-button {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-  padding: 0.8rem 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s ease;
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.reset-button:hover {
-  background-color: #e0e0e0;
+/* 提示信息样式 */
+.alert {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
+.alert-error {
+  background-color: #fee;
+  color: #e74c3c;
+  border: 1px solid #fcc;
+}
+
+.alert-success {
+  background-color: #efe;
+  color: #2ecc71;
+  border: 1px solid #cfc;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
+  .feedback-container {
+    padding: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.6rem;
+  }
+  
+  .feedback-section {
+    padding: 1.5rem;
+  }
+  
   .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    justify-content: center;
+  }
+  
+  .btn {
+    width: 100%;
   }
 }
 </style>

@@ -6,22 +6,6 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 模拟用户数据
-const users = ref([
-  { id: 1, username: 'admin', role: 'admin', email: 'admin@example.com', phone: '13800138000', status: 'active' },
-  { id: 2, username: 'reviewer1', role: 'reviewer', email: 'reviewer1@example.com', phone: '13800138001', status: 'active' },
-  { id: 3, username: 'author1', role: 'author', email: 'author1@example.com', phone: '13800138002', status: 'active' },
-  { id: 4, username: 'user1', role: 'user', email: 'user1@example.com', phone: '13800138003', status: 'active' },
-  { id: 5, username: 'user2', role: 'user', email: 'user2@example.com', phone: '13800138004', status: 'inactive' },
-  { id: 6, username: 'reviewer2', role: 'reviewer', email: 'reviewer2@example.com', phone: '13800138005', status: 'active' },
-  { id: 7, username: 'author2', role: 'author', email: 'author2@example.com', phone: '13800138006', status: 'active' },
-  { id: 8, username: 'author3', role: 'author', email: 'author3@example.com', phone: '13800138007', status: 'active' },
-  { id: 9, username: 'user3', role: 'user', email: 'user3@example.com', phone: '13800138008', status: 'active' },
-  { id: 10, username: 'reviewer3', role: 'reviewer', email: 'reviewer3@example.com', phone: '13800138009', status: 'active' },
-  { id: 11, username: 'user4', role: 'user', email: 'user4@example.com', phone: '13800138010', status: 'inactive' },
-  { id: 12, username: 'author4', role: 'author', email: 'author4@example.com', phone: '13800138011', status: 'active' }
-])
-
 // 模拟投稿记录数据
 const submissionRecords = ref([
   { id: 1, userId: 3, title: '基于深度学习的医学图像分析', date: '2025-12-30', status: '已通过' },
@@ -51,7 +35,7 @@ const statusFilter = ref('all')
 
 // 计算过滤后的用户列表
 const filteredUsers = computed(() => {
-  return users.value.filter(user => {
+  return userStore.users.filter(user => {
     // 关键词搜索
     const matchesKeyword = !searchKeyword.value || 
       user.username.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
@@ -195,9 +179,10 @@ const executeEdit = () => {
       alert(`已重置用户 ${currentUser.value.username} 的密码为：123456`)
     }
     if (editForm.value.role !== currentUser.value.role) {
-      // 角色变更逻辑
+      // 角色变更逻辑 - 使用userStore更新角色，确保持久化
+      userStore.updateUserRole(currentUser.value.id, editForm.value.role)
+      // 更新当前用户对象，确保模态框显示正确
       currentUser.value.role = editForm.value.role
-      users.value = users.value.map(u => u.id === currentUser.value.id ? currentUser.value : u)
       alert(`已将用户 ${currentUser.value.username} 的角色变更为 ${editForm.value.role === 'admin' ? '管理员' : editForm.value.role === 'reviewer' ? '审核员' : editForm.value.role === 'author' ? '作者' : '普通用户'}`)
     }
     showEditModal.value = false
@@ -207,9 +192,10 @@ const executeEdit = () => {
 // 执行禁用操作
 const executeDisable = () => {
   openConfirmModal(() => {
-    // 禁用用户逻辑
+    // 禁用用户逻辑 - 使用userStore更新状态，确保持久化
+    userStore.updateUserStatus(currentUser.value.id, 'inactive')
+    // 更新当前用户对象，确保模态框显示正确
     currentUser.value.status = 'inactive'
-    users.value = users.value.map(u => u.id === currentUser.value.id ? currentUser.value : u)
     const durationText = disableForm.value.duration === 0 ? '永久' : `${disableForm.value.duration}天`
     alert(`已禁用用户 ${currentUser.value.username}，禁用时长：${durationText}`)
     showDisableModal.value = false
@@ -219,8 +205,8 @@ const executeDisable = () => {
 // 执行删除操作
 const executeDelete = () => {
   openConfirmModal(() => {
-    // 删除用户逻辑
-    users.value = users.value.filter(u => u.id !== currentUser.value.id)
+    // 删除用户逻辑 - 使用userStore删除用户，确保持久化
+    userStore.deleteUser(currentUser.value.id)
     alert(`已删除用户 ${currentUser.value.username}`)
     showDeleteModal.value = false
   }, '确认要删除该用户吗？此操作不可恢复！')
@@ -229,8 +215,10 @@ const executeDelete = () => {
 // 启用用户
 const enableUser = (user) => {
   openConfirmModal(() => {
+    // 启用用户逻辑 - 使用userStore更新状态，确保持久化
+    userStore.updateUserStatus(user.id, 'active')
+    // 更新当前用户对象，确保界面显示正确
     user.status = 'active'
-    users.value = users.value.map(u => u.id === user.id ? user : u)
     alert(`已启用用户 ${user.username}`)
   }, '确认要启用该用户吗？')
 }
@@ -311,19 +299,19 @@ const enableUser = (user) => {
       <section class="stats-section">
         <div class="stats-container">
           <div class="stat-card">
-            <div class="stat-number">{{ users.length }}</div>
+            <div class="stat-number">{{ userStore.users.length }}</div>
             <div class="stat-label">总用户数</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ users.filter(u => u.status === 'active').length }}</div>
+            <div class="stat-number">{{ userStore.users.filter(u => u.status === 'active').length }}</div>
             <div class="stat-label">活跃用户</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ users.filter(u => u.role === 'reviewer').length }}</div>
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'reviewer').length }}</div>
             <div class="stat-label">审核员</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ users.filter(u => u.role === 'author').length }}</div>
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
             <div class="stat-label">作者</div>
           </div>
         </div>

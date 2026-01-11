@@ -88,9 +88,20 @@ const router = createRouter({
 
 // 导航守卫 - 实现权限控制和路由隔离
 router.beforeEach((to, from, next) => {
-  const userStore = useUserStore()
-  const currentUser = userStore.user
-  const currentRole = currentUser?.role || 'user'
+  // 从localStorage直接获取用户信息，避免在路由初始化时使用useUserStore()
+  let currentUser = null
+  let currentRole = 'user'
+  
+  try {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      currentUser = JSON.parse(storedUser)
+      currentRole = currentUser?.role || 'user'
+    }
+  } catch (error) {
+    console.error('解析用户信息失败:', error)
+    localStorage.removeItem('user')
+  }
   
   // 已登录用户访问主站登录页，重定向到首页
   if (to.path === '/login' && currentUser) {
@@ -150,7 +161,8 @@ router.beforeEach((to, from, next) => {
             next({ name: 'admin-author-dashboard' })
             break
           default:
-            userStore.logout()
+            // 清除localStorage中的用户信息
+            localStorage.removeItem('user')
             next({ name: 'admin-login' })
         }
       }
@@ -162,23 +174,30 @@ router.beforeEach((to, from, next) => {
 
 // 看门狗功能 - 定期检查用户权限
 setInterval(() => {
-  const userStore = useUserStore()
-  const currentUser = userStore.user
-  if (currentUser) {
-    const currentPath = window.location.pathname
-    const currentRole = currentUser.role
-    
-    // 检查当前页面是否需要更高权限
-    if (currentPath.startsWith('/admin')) {
-      // 获取当前路由信息
-      const matchedRoute = router.currentRoute.value
+  try {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      const currentUser = JSON.parse(storedUser)
+      const currentRole = currentUser.role || 'user'
+      const currentPath = window.location.pathname
       
-      // 检查权限 - 高权限角色可以访问低权限角色的路由
-      if (matchedRoute.meta.requiresAuth && !matchedRoute.meta.roles.includes(currentRole)) {
-        userStore.logout()
-        router.push({ name: 'admin-login' })
+      // 检查当前页面是否需要更高权限
+      if (currentPath.startsWith('/admin')) {
+        // 获取当前路由信息
+        const matchedRoute = router.currentRoute.value
+        
+        // 检查权限 - 高权限角色可以访问低权限角色的路由
+        if (matchedRoute.meta.requiresAuth && !matchedRoute.meta.roles.includes(currentRole)) {
+          // 清除localStorage中的用户信息并跳转到登录页
+          localStorage.removeItem('user')
+          router.push({ name: 'admin-login' })
+        }
       }
     }
+  } catch (error) {
+    console.error('看门狗检查失败:', error)
+    // 出错时清除用户信息，避免无限循环
+    localStorage.removeItem('user')
   }
 }, 5000) // 每5秒检查一次
 

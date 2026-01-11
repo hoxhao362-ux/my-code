@@ -19,7 +19,8 @@ const formData = ref({
   email: user.value?.email || '',
   feedbackType: '建议',
   subject: '',
-  content: ''
+  content: '',
+  screenshot: null
 })
 
 const error = ref('')
@@ -30,6 +31,14 @@ const submitting = ref(false)
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email)
+}
+
+// 处理文件上传
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    formData.value.screenshot = file
+  }
 }
 
 // 提交反馈表单
@@ -50,15 +59,22 @@ const handleSubmit = () => {
   success.value = ''
   
   try {
-    // 使用store保存反馈消息
-    userStore.addFeedbackMessage({
+    // 准备反馈数据
+    const feedbackMessage = {
+      id: Date.now(),
       type: '意见反馈',
       name: formData.value.name,
       email: formData.value.email,
       subject: formData.value.subject,
       content: formData.value.content,
-      feedbackType: formData.value.feedbackType
-    })
+      feedbackType: formData.value.feedbackType,
+      // 截图暂时只保存文件名，因为localStorage无法直接存储文件
+      screenshot: formData.value.screenshot ? formData.value.screenshot.name : null,
+      createdAt: new Date().toISOString()
+    }
+    
+    // 使用userStore保存反馈消息
+    userStore.addFeedbackMessage(feedbackMessage)
     
     submitting.value = false
     success.value = '感谢您的反馈！我们将认真考虑您的意见和建议。'
@@ -69,7 +85,14 @@ const handleSubmit = () => {
       email: user.value?.email || '',
       feedbackType: '建议',
       subject: '',
-      content: ''
+      content: '',
+      screenshot: null
+    }
+    
+    // 重置文件输入
+    const fileInput = document.getElementById('screenshot')
+    if (fileInput) {
+      fileInput.value = ''
     }
     
     // 5秒后清空成功提示
@@ -77,6 +100,7 @@ const handleSubmit = () => {
       success.value = ''
     }, 5000)
   } catch (err) {
+    console.error('反馈提交失败:', err)
     submitting.value = false
     error.value = '提交失败，请稍后重试'
   }
@@ -173,6 +197,23 @@ const handleSubmit = () => {
                   required
                   :disabled="submitting"
                 ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="screenshot">上传截图（可选）</label>
+                <div class="file-upload">
+                  <input 
+                    type="file" 
+                    id="screenshot" 
+                    accept="image/*" 
+                    @change="handleFileUpload"
+                    class="file-input"
+                    :disabled="submitting"
+                  >
+                  <label for="screenshot" class="file-label">
+                    <span v-if="!formData.screenshot">点击选择文件或拖拽文件到此处</span>
+                    <span v-else class="file-name">{{ formData.screenshot.name }}</span>
+                  </label>
+                </div>
               </div>
               <div class="form-actions">
                 <button type="submit" class="btn btn-primary" :disabled="submitting">
@@ -307,6 +348,45 @@ const handleSubmit = () => {
 .form-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+/* 文件上传样式 */
+.file-upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.file-label {
+  display: block;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #555;
+}
+
+.file-label:hover {
+  border-color: #3498db;
+  background-color: #f0f8ff;
+}
+
+.file-name {
+  color: #3498db;
+  font-weight: 500;
 }
 
 /* 按钮样式 */

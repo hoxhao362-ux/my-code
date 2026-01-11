@@ -6,12 +6,10 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 模拟审核员数据
-const reviewers = ref([
-  { id: 2, username: 'reviewer1', role: 'reviewer', email: 'reviewer1@example.com', phone: '13800138001' },
-  { id: 6, username: 'reviewer2', role: 'reviewer', email: 'reviewer2@example.com', phone: '13800138005' },
-  { id: 7, username: 'reviewer3', role: 'reviewer', email: 'reviewer3@example.com', phone: '13800138006' }
-])
+// 从userStore获取审核员数据 - 筛选角色为reviewer的用户
+const reviewers = computed(() => {
+  return userStore.users.filter(user => user.role === 'reviewer')
+})
 
 // 新增审核员表单
 const showAddForm = ref(false)
@@ -25,9 +23,8 @@ const newReviewer = ref({
 const addReviewer = () => {
   if (!newReviewer.value.username) return
   
-  const id = Math.max(...reviewers.value.map(r => r.id), 0) + 1
-  reviewers.value.push({
-    id,
+  // 使用userStore添加审核员，role固定为reviewer
+  userStore.addUser({
     username: newReviewer.value.username,
     role: 'reviewer',
     email: newReviewer.value.email,
@@ -45,7 +42,8 @@ const addReviewer = () => {
 
 // 删除审核员
 const deleteReviewer = (id) => {
-  reviewers.value = reviewers.value.filter(reviewer => reviewer.id !== id)
+  // 使用userStore删除审核员
+  userStore.deleteUser(id)
 }
 
 // 编辑审核员相关状态
@@ -74,16 +72,12 @@ const startEditReviewer = (reviewer) => {
 const saveEditedReviewer = () => {
   if (!currentEditReviewer.value) return
   
-  // 更新审核员数据
-  const index = reviewers.value.findIndex(r => r.id === currentEditReviewer.value.id)
-  if (index !== -1) {
-    reviewers.value[index] = {
-      ...reviewers.value[index],
-      username: editedReviewer.value.username,
-      email: editedReviewer.value.email,
-      phone: editedReviewer.value.phone
-    }
-  }
+  // 使用userStore更新审核员信息
+  userStore.updateUserInfo(currentEditReviewer.value.id, {
+    username: editedReviewer.value.username,
+    email: editedReviewer.value.email,
+    phone: editedReviewer.value.phone
+  })
   
   // 重置编辑状态
   cancelEditReviewer()

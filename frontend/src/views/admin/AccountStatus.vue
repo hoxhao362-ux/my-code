@@ -1,21 +1,13 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 模拟用户数据
-const users = ref([
-  { id: 1, username: 'admin', role: 'admin', email: 'admin@example.com', phone: '13800138000', status: 'active' },
-  { id: 2, username: 'reviewer1', role: 'reviewer', email: 'reviewer1@example.com', phone: '13800138001', status: 'active' },
-  { id: 3, username: 'author1', role: 'author', email: 'author1@example.com', phone: '13800138002', status: 'active' },
-  { id: 4, username: 'user1', role: 'user', email: 'user1@example.com', phone: '13800138003', status: 'active' },
-  { id: 5, username: 'user2', role: 'user', email: 'user2@example.com', phone: '13800138004', status: 'inactive' },
-  { id: 6, username: 'reviewer2', role: 'reviewer', email: 'reviewer2@example.com', phone: '13800138005', status: 'active' },
-  { id: 7, username: 'reviewer3', role: 'reviewer', email: 'reviewer3@example.com', phone: '13800138006', status: 'active' }
-])
+// 使用userStore中的用户数据
+const users = computed(() => userStore.users)
 
 // 重置密码
 const resetPassword = (id) => {
@@ -27,10 +19,13 @@ const resetPassword = (id) => {
 
 // 切换账号状态
 const toggleUserStatus = (id) => {
-  const user = users.value.find(u => u.id === id)
+  const user = userStore.users.find(u => u.id === id)
   if (user) {
-    user.status = user.status === 'active' ? 'inactive' : 'active'
-    alert(`用户 ${user.username} 的状态已切换为 ${user.status === 'active' ? '启用' : '禁用'}`)
+    // 计算新状态
+    const newStatus = user.status === 'active' ? 'inactive' : 'active'
+    // 使用userStore更新状态，确保持久化
+    userStore.updateUserStatus(id, newStatus)
+    alert(`用户 ${user.username} 的状态已切换为 ${newStatus === 'active' ? '启用' : '禁用'}`)
   }
 }
 </script>

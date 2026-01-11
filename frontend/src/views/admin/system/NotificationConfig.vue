@@ -48,12 +48,8 @@ const notificationConfig = ref({
   }
 })
 
-// 公告数据
-const announcements = ref([
-  { id: 1, title: '2026年期刊投稿平台征稿启事', content: '尊敬的各位作者，2026年期刊投稿平台开始全面征稿，欢迎广大作者踊跃投稿。', date: '2026-01-01' },
-  { id: 2, title: '投稿系统升级通知', content: '为了提供更好的服务，我们将于2026年1月15日进行系统升级维护，期间投稿功能将暂停使用。', date: '2026-01-10' },
-  { id: 3, title: '关于调整审稿周期的通知', content: '自2026年2月1日起，我平台将调整审稿周期，一般稿件的审稿时间将缩短至1-2周。', date: '2026-01-12' }
-])
+// 公告数据 - 从userStore加载，确保数据同步
+const announcements = ref([...userStore.announcements])
 
 // 新公告表单
 const newAnnouncement = ref({
