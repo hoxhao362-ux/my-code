@@ -351,7 +351,7 @@ const handleLogout = () => {
             <a 
               href="#" 
               class="nav-link"
-              @click.prevent="toggleDirectory"
+              @click.prevent="$router.push('/directory')"
             >
               目录
             </a>

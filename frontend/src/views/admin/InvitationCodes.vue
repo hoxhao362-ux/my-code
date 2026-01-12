@@ -1,20 +1,26 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 邀请码数据
+// 本地临时存储邀请码数据
 const invitationCodes = ref({
   admin: 'ADMIN2026',
   reviewer: 'REVIEWER2026'
 })
 
+// 页面加载时从store获取最新邀请码
+onMounted(() => {
+  invitationCodes.value = { ...userStore.invitationCodes }
+})
+
 // 保存配置
 const saveCodes = () => {
-  // 这里应该保存配置到服务器，目前模拟保存
+  // 保存到store，持久化到localStorage
+  userStore.updateAllInvitationCodes(invitationCodes.value)
   alert('邀请码已保存！')
 }
 
@@ -25,7 +31,9 @@ const generateCode = (type) => {
   for (let i = 0; i < 10; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
-  invitationCodes.value[type] = result.toUpperCase()
+  const newCode = result.toUpperCase()
+  // 只更新本地临时数据，不自动保存到store
+  invitationCodes.value[type] = newCode
 }
 </script>
 

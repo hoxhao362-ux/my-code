@@ -35,47 +35,49 @@ const handleLogin = async () => {
     return
   }
   
-  // 加密密码
-  const encryptedPassword = encryptPassword(password.value)
-  
-  // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断（按权限从高到低：admin＞reviewer＞author＞user）
-  let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
-             username.value === 'reviewer' ? 'reviewer' : 
-             username.value === 'author' ? 'author' : 
-             'user')
-  
-  // 模拟登录逻辑
-  const userData = {
-    username: username.value,
-    password: encryptedPassword,
-    role: role,
-    email: '',
-    phone: '',
-    avatar: ''
+  try {
+    // 加密密码
+    const encryptedPassword = encryptPassword(password.value)
+    
+    // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断（按权限从高到低：admin＞reviewer＞author＞user）
+    let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
+               username.value === 'reviewer' ? 'reviewer' : 
+               username.value === 'author' ? 'author' : 
+               'user')
+    
+    // 登录凭证
+    const credentials = {
+      username: username.value,
+      password: encryptedPassword,
+      role: role
+    }
+    
+    // 调用状态管理的登录方法，等待登录完成
+    await userStore.login(credentials)
+    
+    // 记住密码功能（使用独立的localStorage键名）
+    if (rememberMe.value) {
+      localStorage.setItem('adminRememberedUsername', username.value)
+      localStorage.setItem('adminRememberedPassword', password.value)
+    } else {
+      localStorage.removeItem('adminRememberedUsername')
+      localStorage.removeItem('adminRememberedPassword')
+    }
+    
+    // 根据用户角色跳转到对应的后台页面
+    let redirectPath = '/admin/login'
+    if (userStore.currentRole === 'admin') {
+      redirectPath = '/admin/dashboard'
+    } else if (userStore.currentRole === 'reviewer') {
+      redirectPath = '/admin/audit-dashboard'
+    } else if (userStore.currentRole === 'author') {
+      redirectPath = '/admin/author-dashboard'
+    }
+    router.push(redirectPath)
+  } catch (err) {
+    console.error('登录失败:', err)
+    error.value = '登录失败，请稍后重试'
   }
-  
-  // 调用状态管理的登录方法
-  userStore.login(userData)
-  
-  // 记住密码功能（使用独立的localStorage键名）
-  if (rememberMe.value) {
-    localStorage.setItem('adminRememberedUsername', username.value)
-    localStorage.setItem('adminRememberedPassword', password.value)
-  } else {
-    localStorage.removeItem('adminRememberedUsername')
-    localStorage.removeItem('adminRememberedPassword')
-  }
-  
-  // 根据用户角色跳转到对应的后台页面
-  let redirectPath = '/admin/login'
-  if (userData.role === 'admin') {
-    redirectPath = '/admin/dashboard'
-  } else if (userData.role === 'reviewer') {
-    redirectPath = '/admin/audit-dashboard'
-  } else if (userData.role === 'author') {
-    redirectPath = '/admin/author-dashboard'
-  }
-  router.push(redirectPath)
 }
 
 const goToRegister = () => {

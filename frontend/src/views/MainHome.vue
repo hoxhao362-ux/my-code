@@ -2,16 +2,9 @@
 import { ref, computed } from 'vue'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
-import { useDirectoryStore } from '../stores/directory'
 
 const userStore = useUserStore()
-const directoryStore = useDirectoryStore()
 const user = computed(() => userStore.user)
-
-// 切换目录显示
-const toggleDirectory = () => {
-  directoryStore.toggleDirectory()
-}
 
 // 虚拟数据模拟平台统计
 const stats = ref({
@@ -50,7 +43,6 @@ const showSearchResults = ref(false)
     <Navigation 
       :user="user"
       :current-page="'home'"
-      :toggle-directory="toggleDirectory"
       :logout="userStore.logout"
     />
 
@@ -509,6 +501,16 @@ const showSearchResults = ref(false)
   .stat-icon {
     margin-right: 0;
     margin-bottom: 1rem;
+  }
+  
+  /* 目录响应式调整 */
+  .journal-directory-item {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .journal-directory-actions {
+    align-items: stretch;
   }
 }
 </style>

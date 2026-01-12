@@ -22,8 +22,8 @@ export const useUserStore = defineStore('user', {
     },
     // 审稿阶段
     reviewStages: ['初审', '复审', '终审'],
-    // 默认模块列表
-    modules: [
+    // 模块列表 - 从localStorage加载，保留模块状态
+    modules: JSON.parse(localStorage.getItem('modules')) || [
       '医学影像',
       '药物研发',
       '临床研究',
@@ -32,6 +32,11 @@ export const useUserStore = defineStore('user', {
       '人工智能',
       '其他'
     ],
+    // 邀请码设置 - 从localStorage加载，保留邀请码状态
+    invitationCodes: JSON.parse(localStorage.getItem('invitationCodes')) || {
+      admin: 'ADMIN2026',
+      reviewer: 'REVIEWER2026'
+    },
     // 期刊列表（用于首页显示）
     journals: JSON.parse(localStorage.getItem('journals')) || [],
     // 反馈消息列表
@@ -85,18 +90,64 @@ export const useUserStore = defineStore('user', {
     async login(credentials) {
       try {
         const response = await userApi.login(credentials)
-        const userData = {
-          ...response,
-          username: credentials.username,
-          role: response.role || 'user'
+        let userData = null
+        
+        if (!response) {
+          // API请求失败，根据提供的角色或用户名自动判断角色
+          // 角色优先级：1. credentials中提供的role 2. 根据用户名判断 3. 默认角色
+          let role = credentials.role || 
+                    (credentials.username === 'admin' ? 'admin' : 
+                     credentials.username === 'reviewer' ? 'reviewer' : 
+                     credentials.username === 'author' ? 'author' : 
+                     'user')
+          
+          userData = {
+            username: credentials.username,
+            role: role
+          }
+        } else {
+          // API请求成功，使用返回的数据
+          userData = {
+            ...response,
+            username: credentials.username,
+            role: response.role || 'user'
+          }
         }
+        
         this.user = userData
         localStorage.setItem('user', JSON.stringify(userData))
-        return response
+        return userData
       } catch (error) {
         console.error('登录失败:', error)
         throw error
       }
+    },
+    
+    // 添加模块
+    addModule(moduleName) {
+      if (!this.modules.includes(moduleName)) {
+        this.modules.push(moduleName)
+        localStorage.setItem('modules', JSON.stringify(this.modules))
+      }
+    },
+    
+    // 删除模块
+    removeModule(moduleName) {
+      if (moduleName === '其他') return // 不允许删除'其他'模块
+      this.modules = this.modules.filter(module => module !== moduleName)
+      localStorage.setItem('modules', JSON.stringify(this.modules))
+    },
+    
+    // 更新邀请码
+    updateInvitationCode(type, code) {
+      this.invitationCodes[type] = code
+      localStorage.setItem('invitationCodes', JSON.stringify(this.invitationCodes))
+    },
+    
+    // 更新所有邀请码
+    updateAllInvitationCodes(codes) {
+      this.invitationCodes = { ...this.invitationCodes, ...codes }
+      localStorage.setItem('invitationCodes', JSON.stringify(this.invitationCodes))
     },
 
     // 登出
@@ -105,11 +156,11 @@ export const useUserStore = defineStore('user', {
         if (this.user) {
           await userApi.logout()
         }
-        this.user = null
-        localStorage.removeItem('user')
       } catch (error) {
-        console.error('登出失败:', error)
+        console.error('登出API请求失败:', error)
         // 即使API调用失败，也要清除本地用户信息
+      } finally {
+        // 无论API请求是否成功，都要清除本地用户信息
         this.user = null
         localStorage.removeItem('user')
       }

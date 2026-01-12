@@ -5,6 +5,7 @@ import { useUserStore } from '../stores/user'
 const mainRoutes = [
   { path: '/', redirect: '/login' },
   { path: '/home', name: 'main-home', component: () => import('../views/MainHome.vue') },
+  { path: '/directory', name: 'main-directory', component: () => import('../views/MainDirectory.vue') },
   { path: '/journal/:id', name: 'main-journal-detail', component: () => import('../views/MainJournalDetail.vue') },
   { path: '/search', name: 'main-search', component: () => import('../views/MainSearch.vue') },
   { path: '/submit', name: 'main-submit', component: () => import('../views/MainSubmit.vue') },
@@ -101,6 +102,26 @@ router.beforeEach((to, from, next) => {
   } catch (error) {
     console.error('解析用户信息失败:', error)
     localStorage.removeItem('user')
+  }
+  
+  // 根路径处理：未登录用户显示登录页，已登录用户显示对应首页
+  if (to.path === '/') {
+    if (currentUser) {
+      // 已登录用户根据角色跳转到对应首页
+      if (currentRole === 'admin') {
+        next({ name: 'admin-dashboard' })
+      } else if (currentRole === 'reviewer') {
+        next({ name: 'admin-audit-dashboard' })
+      } else if (currentRole === 'author') {
+        next({ name: 'admin-author-dashboard' })
+      } else {
+        next({ name: 'main-home' })
+      }
+    } else {
+      // 未登录用户显示登录页
+      next({ name: 'main-login' })
+    }
+    return
   }
   
   // 已登录用户访问主站登录页，重定向到首页

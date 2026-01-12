@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import { exportLogsToExcel, checkExportPermission } from '../../utils/export'
 
 const userStore = useUserStore()
 const user = ref(userStore.user)
@@ -82,8 +83,8 @@ const paginatedLogs = computed(() => {
 
 // 导出日志
 const exportLogs = () => {
-  // 这里应该实现日志导出功能，目前模拟导出
-  alert('日志导出功能已触发！')
+  // 调用真实的日志导出功能，导出过滤后的日志
+  exportLogsToExcel(filteredLogs.value)
 }
 
 // 清空日志
@@ -196,7 +197,13 @@ const getStatusClass = (status) => {
           </div>
           
           <div class="log-actions">
-            <button class="btn btn-export" @click="exportLogs">导出日志</button>
+            <button 
+              v-if="checkExportPermission(user.role, 'logs')" 
+              class="btn btn-export" 
+              @click="exportLogs"
+            >
+              导出日志
+            </button>
           </div>
         </div>
         

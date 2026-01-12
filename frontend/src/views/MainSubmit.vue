@@ -22,7 +22,7 @@ const formData = ref({
   abstract: '',
   keywords: '',
   content: '',
-  module: 'all'
+  modules: ['all']
 })
 
 const error = ref('')
@@ -65,7 +65,7 @@ const handleSubmit = async () => {
       abstract: formData.value.abstract,
       keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
       content: formData.value.content,
-      module: formData.value.module === 'all' ? '其他' : formData.value.module,
+      module: formData.value.modules.length > 0 && formData.value.modules.includes('all') ? '其他' : formData.value.modules.filter(m => m !== 'all'),
       status: '待审核', // 初始状态为待审核
       reviewStage: '初审', // 初始审稿阶段为初审
       date: new Date().toISOString().split('T')[0],
@@ -87,7 +87,7 @@ const handleSubmit = async () => {
         abstract: '',
         keywords: '',
         content: '',
-        module: 'all'
+        modules: ['all']
       }
       success.value = ''
       router.push('/profile')
@@ -222,16 +222,27 @@ const goBack = () => {
               </div>
               
               <div class="form-group">
-                <label for="module">所属模块</label>
-                <select 
-                  id="module" 
-                  v-model="formData.module"
-                  required
-                  :disabled="submitting"
-                >
-                  <option value="all">其他</option>
-                  <option v-for="module in modules" :key="module" :value="module">{{ module }}</option>
-                </select>
+                <label for="modules">所属模块</label>
+                <div class="module-checkboxes">
+                <label class="module-checkbox">
+                  <input 
+                    type="checkbox" 
+                    v-model="formData.modules" 
+                    value="all" 
+                    :disabled="submitting"
+                  >
+                  <span>全部</span>
+                </label>
+                <label class="module-checkbox" v-for="module in modules" :key="module">
+                  <input 
+                    type="checkbox" 
+                    v-model="formData.modules" 
+                    :value="module" 
+                    :disabled="submitting"
+                  >
+                  <span>{{ module }}</span>
+                </label>
+              </div>
               </div>
             </div>
             
@@ -560,6 +571,51 @@ const goBack = () => {
   font-size: 0.9rem;
 }
 
+/* 模块多选框样式 */
+.module-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.module-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.module-checkbox:hover:not(:has(input:disabled)) {
+  border-color: #3498db;
+  background: #f0f8ff;
+}
+
+.module-checkbox input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.module-checkbox input[type="checkbox"]:checked + span {
+  font-weight: 600;
+  color: #3498db;
+}
+
+.module-checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+.module-checkbox input[type="checkbox"]:disabled + span {
+  color: #999;
+  cursor: not-allowed;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .rules-actions {
@@ -578,6 +634,14 @@ const goBack = () => {
   
   .rules-section {
     padding: 1rem;
+  }
+  
+  .module-checkboxes {
+    flex-direction: column;
+  }
+  
+  .module-checkbox {
+    width: 100%;
   }
 }
 </style>
