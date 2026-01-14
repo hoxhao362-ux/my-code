@@ -76,7 +76,9 @@ const pendingJournals = computed(() => {
   let journals = props.journals.filter(journal => {
     const isAdmin = props.user?.role === 'admin'
     const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
-    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage)
+    // 包含所有待审核状态：待审核、审稿中、待初审、待复审、待终审
+    const isPendingStatus = ['待审核', '审稿中', '待初审', '待复审', '待终审'].includes(journal.status)
+    return isPendingStatus && allowedStages.includes(journal.reviewStage)
   })
   
   // 模块筛选
@@ -274,6 +276,9 @@ const filteredHistory = computed(() => {
                 <option value="all">全部状态</option>
                 <option value="待审核">待审核</option>
                 <option value="审稿中">审稿中</option>
+                <option value="待初审">待初审</option>
+                <option value="待复审">待复审</option>
+                <option value="待终审">待终审</option>
               </select>
             </div>
             

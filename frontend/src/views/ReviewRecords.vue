@@ -21,17 +21,20 @@ const reviewRecords = computed(() => {
   // 从期刊的reviewHistory中获取审核记录，并转换为reviewRecords格式
   if (!journal.value?.reviewHistory) return []
   
-  return journal.value.reviewHistory.map((record, index) => ({
-    id: index.toString(),
-    journalId: journal.value.id,
-    reviewerId: record.reviewer,
-    reviewStage: record.stage,
-    reviewResult: record.status,
-    reviewComments: record.comment,
-    reviewDate: record.date,
-    journalAuthor: journal.value.author,
-    type: record.type
-  }))
+  // 过滤掉修改记录，只显示真正的审核记录
+  return journal.value.reviewHistory
+    .filter(record => record.status !== '修改提交') // 过滤掉修改记录
+    .map((record, index) => ({
+      id: index.toString(),
+      journalId: journal.value.id,
+      reviewerId: record.reviewer,
+      reviewStage: record.stage,
+      reviewResult: record.status,
+      reviewComments: record.comment,
+      reviewDate: record.date,
+      journalAuthor: journal.value.author,
+      type: record.type
+    }))
 })
 
 // 当前用户角色
@@ -61,6 +64,102 @@ const newRecord = ref({
   reviewComments: '',
   reviewDate: new Date().toISOString(),
   journalAuthor: ''
+})
+
+// 稿件编辑功能
+const isEditing = ref(false)
+const originalJournal = ref(null)
+const editedJournal = ref(null)
+const modificationDescription = ref('')
+
+// 初始化编辑状态
+const initializeEdit = () => {
+  if (!journal.value) return
+  
+  // 保存原始稿件内容
+  originalJournal.value = JSON.parse(JSON.stringify(journal.value))
+  editedJournal.value = JSON.parse(JSON.stringify(journal.value))
+  isEditing.value = true
+  modificationDescription.value = ''
+}
+
+// 保存修改
+const saveModifications = () => {
+  if (!journal.value || !editedJournal.value) return
+  
+  // 查找最近一次被拒绝的审核阶段
+  let rejectedStage = '初审' // 默认初审
+  if (journal.value.reviewHistory) {
+    // 遍历审核历史，找到最后一个被拒绝的记录
+    const rejectedRecords = journal.value.reviewHistory.filter(record => 
+      ['未通过', '已拒稿', '退回', '驳回'].includes(record.status)
+    )
+    if (rejectedRecords.length > 0) {
+      // 使用最后一个被拒绝记录的阶段
+      rejectedStage = rejectedRecords[rejectedRecords.length - 1].stage
+    }
+  }
+  
+  // 创建修改记录
+  const modificationRecord = {
+    stage: rejectedStage, // 使用被拒绝的具体阶段
+    status: '修改提交',
+    reviewer: currentUsername.value,
+    date: new Date().toISOString().split('T')[0],
+    comment: modificationDescription.value,
+    type: '完全保密'
+  }
+  
+  // 根据被拒绝的阶段设置相应的待审核状态
+  let newStatus = '待审核' // 默认状态
+  if (rejectedStage === '初审') {
+    newStatus = '待初审'
+  } else if (rejectedStage === '复审') {
+    newStatus = '待复审'
+  } else if (rejectedStage === '终审') {
+    newStatus = '待终审'
+  }
+  
+  // 更新期刊信息
+  const updatedJournal = {
+    ...editedJournal.value,
+    status: newStatus, // 重置为相应阶段的待审核状态
+    reviewHistory: [...(journal.value.reviewHistory || []), modificationRecord]
+  }
+  
+  // 保存到store并获取结果
+  const success = userStore.updateJournal(updatedJournal)
+  
+  if (success) {
+    // 退出编辑模式
+    isEditing.value = false
+    originalJournal.value = null
+    editedJournal.value = null
+    modificationDescription.value = ''
+    
+    // 显示成功提示
+    alert(`修改已成功发送，稿件将重新提交到${rejectedStage}环节进行审稿`)
+  } else {
+    // 显示失败提示
+    alert('发送修改失败，请稍后重试')
+  }
+}
+
+// 取消修改，恢复原始内容
+const cancelEdit = () => {
+  isEditing.value = false
+  originalJournal.value = null
+  editedJournal.value = null
+  modificationDescription.value = ''
+}
+
+// 检查是否可以修改稿件
+const canModify = computed(() => {
+  // 只有稿件作者可以修改
+  if (journal.value?.author !== currentUsername.value) return false
+  
+  // 只有未通过或修改再审状态的稿件可以修改
+  return ['已拒稿', '未通过', '修改再审'].includes(journal.value?.status || '')
 })
 
 // 保存新的审稿记录
@@ -154,6 +253,138 @@ const goBack = () => {
           >
             添加审稿记录
           </button>
+        </div>
+        
+        <!-- 稿件内容显示 -->
+        <div v-if="journal" class="journal-content">
+          <div class="content-header">
+            <h2>稿件详情</h2>
+            <!-- 修改按钮 -->
+            <button 
+              v-if="canModify && !isEditing" 
+              class="modify-btn" 
+              @click="initializeEdit"
+            >
+              修改稿件
+            </button>
+            
+            <!-- 编辑状态下的取消按钮 -->
+            <button 
+              v-if="isEditing" 
+              class="cancel-btn" 
+              @click="cancelEdit"
+            >
+              取消修改
+            </button>
+          </div>
+          
+          <div class="journal-meta">
+            <div class="meta-item">
+              <strong>标题：</strong>
+              <input 
+                v-if="isEditing" 
+                v-model="editedJournal.title" 
+                type="text" 
+                class="meta-input"
+              >
+              <span v-else>{{ journal.title }}</span>
+            </div>
+            <div class="meta-item">
+              <strong>作者：</strong>{{ journal.author }}
+            </div>
+            <div class="meta-item">
+              <strong>模块：</strong>
+              <select 
+                v-if="isEditing" 
+                v-model="editedJournal.module" 
+                class="meta-select"
+              >
+                <option v-for="module in userStore.modules" :key="module" :value="module">
+                  {{ module }}
+                </option>
+              </select>
+              <span v-else>{{ journal.module }}</span>
+            </div>
+            <div class="meta-item">
+              <strong>状态：</strong>
+              <span class="status-badge" :class="journal.status.toLowerCase().replace(/\s/g, '-')">
+                {{ journal.status }}
+              </span>
+            </div>
+            <div class="meta-item">
+              <strong>提交时间：</strong>{{ journal.submitDate }}
+            </div>
+            <div class="meta-item">
+              <strong>关键词：</strong>
+              <input 
+                v-if="isEditing" 
+                v-model="editedJournal.keywords" 
+                type="text" 
+                class="meta-input"
+                placeholder="请输入关键词，用逗号分隔"
+              >
+              <span v-else>{{ journal.keywords || '无' }}</span>
+            </div>
+          </div>
+          
+          <!-- 稿件摘要 -->
+          <div class="journal-abstract">
+            <h3>摘要</h3>
+            <textarea 
+              v-if="isEditing" 
+              v-model="editedJournal.abstract" 
+              class="abstract-textarea"
+              rows="4"
+              placeholder="请输入摘要"
+            ></textarea>
+            <p v-else>{{ journal.abstract || '暂无摘要' }}</p>
+          </div>
+          
+          <!-- 稿件正文 -->
+          <div class="journal-main-content">
+            <h3>正文内容</h3>
+            <textarea 
+              v-if="isEditing" 
+              v-model="editedJournal.content" 
+              class="content-textarea"
+              rows="10"
+              placeholder="请输入正文内容"
+            ></textarea>
+            <div v-else-if="journal.content" class="content-display">
+              {{ journal.content }}
+            </div>
+            <div v-else class="no-content">
+              <p>暂无正文内容</p>
+            </div>
+          </div>
+          
+          <!-- 修改说明 -->
+          <div v-if="isEditing" class="modification-description">
+            <h3>修改说明</h3>
+            <textarea 
+              v-model="modificationDescription" 
+              class="description-textarea"
+              rows="4"
+              placeholder="请简要说明本次修改的内容和原因"
+            ></textarea>
+            
+            <!-- 发送按钮 -->
+            <div class="send-section">
+              <button 
+                class="send-btn" 
+                @click="saveModifications"
+                :disabled="!modificationDescription.trim()"
+              >
+                发送修改
+              </button>
+              <p class="send-info">
+                点击发送后，稿件将重新提交到当前环节进行审稿
+              </p>
+              <p v-if="!modificationDescription.trim()" class="required-info">
+                <span class="required-icon">*</span> 请填写修改说明后再发送
+              </p>
+            </div>
+          </div>
         </div>
         
         <!-- 添加记录表单 -->
@@ -490,6 +721,330 @@ const goBack = () => {
   padding: 1rem;
   border-radius: 4px;
   border-left: 4px solid #4a90e2;
+}
+
+/* 稿件内容样式 */
+.journal-content {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  margin-bottom: 2rem;
+}
+
+.journal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+.journal-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.meta-item strong {
+  font-weight: 600;
+  color: #555;
+  min-width: 60px;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.已投稿 {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.审核中 {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.status-badge.已录用 {
+  background-color: #e8f5e8;
+  color: #388e3c;
+}
+
+.status-badge.已拒稿 {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.status-badge.修改再审 {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.journal-abstract {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f0f8ff;
+  border-radius: 6px;
+  border-left: 4px solid #4a90e2;
+}
+
+.journal-abstract h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.journal-main-content {
+  margin-bottom: 1.5rem;
+}
+
+.journal-main-content h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.content-display {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  min-height: 200px;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.no-content {
+  text-align: center;
+  padding: 2rem;
+  color: #777;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px dashed #ddd;
+}
+
+.no-content p {
+  margin: 0;
+  font-style: italic;
+}
+
+/* 编辑功能样式 */
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.modify-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.modify-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.save-btn, .cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.save-btn {
+  background-color: #27ae60;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #229954;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.cancel-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+/* 编辑输入框样式 */
+.meta-input, .meta-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 0.25rem;
+}
+
+.meta-select {
+  cursor: pointer;
+}
+
+.abstract-textarea, .content-textarea, .description-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.3s ease;
+}
+
+.abstract-textarea:focus, .content-textarea:focus, .description-textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.content-textarea {
+  min-height: 300px;
+}
+
+.description-textarea {
+  margin-top: 1rem;
+}
+
+/* 修改说明部分样式 */
+.modification-description {
+  background-color: #f0f8ff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-top: 1.5rem;
+}
+
+.modification-description h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .content-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .edit-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .save-btn, .cancel-btn, .modify-btn {
+    width: 48%;
+    padding: 0.6rem;
+  }
+  
+  .meta-input, .meta-select {
+  max-width: 100%;
+}
+}
+
+/* 发送按钮样式 */
+.send-section {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.send-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.send-btn:hover {
+  background-color: #d35400;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+}
+
+.send-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.send-info {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.required-info {
+  margin: 0.5rem 0 0 0;
+  color: #e74c3c;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.required-icon {
+  font-weight: bold;
+  font-size: 1.1rem;
 }
 
 /* 响应式设计 */

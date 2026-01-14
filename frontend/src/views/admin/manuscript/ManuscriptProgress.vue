@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 
@@ -11,7 +11,7 @@ const selectedManuscriptId = ref('')
 
 // 稿件列表 - 只显示当前用户的稿件
 const manuscripts = computed(() => {
-  return userStore.journals.filter(journal => journal.author === userStore.user?.username)
+  return userStore.userJournals
 })
 
 // 当前选中稿件的详情
@@ -20,16 +20,17 @@ const currentManuscript = computed(() => {
   return manuscripts.value.find(m => String(m.id) === String(selectedManuscriptId.value))
 })
 
-// 当前稿件的审核记录
-const manuscriptReviewRecords = computed(() => {
-  if (!selectedManuscriptId.value) return []
-  return userStore.reviewRecords.filter(record => String(record.journalId) === String(selectedManuscriptId.value))
-})
-
 // 查看稿件详情
 const viewManuscript = (id) => {
   router.push(`/admin/review-records/${id}`)
 }
+
+// 初始化时，如果有稿件，默认选择第一个
+onMounted(() => {
+  if (manuscripts.value.length > 0) {
+    selectedManuscriptId.value = String(manuscripts.value[0].id)
+  }
+})
 </script>
 
 <template>
@@ -65,49 +66,40 @@ const viewManuscript = (id) => {
         <h3>审核进度</h3>
         <div class="progress-timeline">
           <div 
-            v-for="stage in ['已投稿', '初审', '复审', '终审', '已录用/已拒稿']" 
+            v-for="(stage, index) in ['已投稿', '初审', '复审', '终审', '已发表/已拒稿']" 
             :key="stage"
             class="progress-step"
             :class="{
-              'completed': ['已投稿', '审核中', '已录用', '已拒稿', '修改再审'].includes(currentManuscript.status) || 
-                        (stage === '已投稿' && currentManuscript.status),
-              'current': currentManuscript.status === stage
+              'completed': (
+                // 基础状态：已投稿
+                (['已投稿', '待审核'].includes(currentManuscript.status) && index <= 0) ||
+                // 初审相关状态
+                (['审核中', '审稿中', '待初审'].includes(currentManuscript.status) && index <= 1) ||
+                // 复审相关状态
+                (['修改再审', '复审', '待复审'].includes(currentManuscript.status) && index <= 2) ||
+                // 终审状态
+                (['终审', '待终审'].includes(currentManuscript.status) && index <= 3) ||
+                // 已发表/已通过状态：所有阶段完成
+                (['已发表', '已通过', '通过', '已录用'].includes(currentManuscript.status) && index <= 4) ||
+                // 拒稿状态：根据实际拒绝阶段显示
+                (['已拒稿', '未通过'].includes(currentManuscript.status) && index <= 1)
+              ),
+              'current': (
+                (['已投稿', '待审核'].includes(currentManuscript.status) && index === 0) ||
+                (['审核中', '审稿中', '待初审'].includes(currentManuscript.status) && index === 1) ||
+                (['修改再审', '复审', '待复审'].includes(currentManuscript.status) && index === 2) ||
+                (['终审', '待终审'].includes(currentManuscript.status) && index === 3) ||
+                (['已发表', '已通过', '通过', '已录用'].includes(currentManuscript.status) && index === 4) ||
+                (['已拒稿', '未通过'].includes(currentManuscript.status) && index === 1)
+              ),
+              'rejected': (['已拒稿', '未通过'].includes(currentManuscript.status) && index === 1),
+              'published': (['已发表', '已通过', '通过', '已录用'].includes(currentManuscript.status) && index === 4)
             }"
           >
             <div class="step-dot"></div>
             <div class="step-label">{{ stage }}</div>
           </div>
         </div>
-      </div>
-      
-      <div v-if="manuscriptReviewRecords.length > 0" class="review-records-section">
-        <h3>审核记录</h3>
-        <div class="review-records-list">
-          <div v-for="record in manuscriptReviewRecords" :key="record.id" class="review-record-item">
-            <div class="record-header">
-              <div class="record-meta">
-                <span class="record-stage">{{ record.stage }}</span>
-                <span class="record-date">{{ record.reviewDate }}</span>
-                <span class="reviewer-name">审核人：{{ record.reviewerName || '系统' }}</span>
-              </div>
-              <span class="record-result" :class="record.result.toLowerCase().replace(/\s/g, '-')">
-                {{ record.result }}
-              </span>
-            </div>
-            <div v-if="record.comment" class="record-comment">
-              <h4>审核意见：</h4>
-              <p>{{ record.comment }}</p>
-            </div>
-            <div v-if="record.modificationRequirements" class="record-modifications">
-              <h4>修改要求：</h4>
-              <p>{{ record.modificationRequirements }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div v-else class="no-records">
-        <p>暂无审核记录</p>
       </div>
       
       <div class="action-buttons">
@@ -130,6 +122,7 @@ const viewManuscript = (id) => {
   padding: 2rem;
   background-color: #f5f7fa;
   min-height: 100vh;
+  font-family: inherit;
 }
 
 .page-header {
@@ -143,6 +136,7 @@ const viewManuscript = (id) => {
   font-size: 1.8rem;
   color: #2c3e50;
   margin: 0;
+  font-weight: 600;
 }
 
 .filters-section {
@@ -172,12 +166,13 @@ const viewManuscript = (id) => {
   font-size: 0.95rem;
   transition: all 0.3s ease;
   min-width: 300px;
+  background-color: white;
 }
 
 .filter-control:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #42b883;
+  box-shadow: 0 0 0 3px rgba(66, 184, 131, 0.1);
 }
 
 .manuscript-detail-section {
@@ -197,6 +192,7 @@ const viewManuscript = (id) => {
   margin: 0 0 0.5rem 0;
   color: #2c3e50;
   font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .manuscript-meta {
@@ -255,6 +251,7 @@ const viewManuscript = (id) => {
   margin: 0 0 1.5rem 0;
   color: #2c3e50;
   font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .progress-timeline {
@@ -303,133 +300,54 @@ const viewManuscript = (id) => {
 }
 
 .progress-step.completed .step-dot {
-  background-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+  background-color: #42b883;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.3);
 }
 
 .progress-step.completed .step-label {
-  color: #3498db;
+  color: #42b883;
   font-weight: 500;
 }
 
 .progress-step.current .step-dot {
-  background-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+  background-color: #42b883;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.3);
   transform: scale(1.2);
 }
 
 .progress-step.current .step-label {
-  color: #3498db;
+  color: #42b883;
   font-weight: 600;
 }
 
-.review-records-section {
-  margin-bottom: 2rem;
+/* 拒稿状态样式 */
+.progress-step.rejected .step-dot {
+  background-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3);
 }
 
-.review-records-section h3 {
-  margin: 0 0 1.5rem 0;
-  color: #2c3e50;
-  font-size: 1.2rem;
-}
-
-.review-records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.review-record-item {
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1.5rem;
-  background-color: #f8f9fa;
-  transition: all 0.3s ease;
-}
-
-.review-record-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-.record-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.record-meta {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.record-stage {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.record-date {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.reviewer-name {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.record-result {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.record-result.通过 {
-  background-color: #e8f5e8;
-  color: #388e3c;
-}
-
-.record-result.修改 {
-  background-color: #fff3e0;
-  color: #f57c00;
-}
-
-.record-result.不通过 {
-  background-color: #ffebee;
-  color: #d32f2f;
-}
-
-.record-comment, .record-modifications {
-  margin-bottom: 1rem;
-}
-
-.record-comment h4, .record-modifications h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  color: #2c3e50;
-  font-weight: 600;
-}
-
-.record-comment p, .record-modifications p {
-  margin: 0;
-  line-height: 1.6;
-  color: #555;
-  white-space: pre-wrap;
+.progress-step.rejected .step-dot::after {
   background-color: white;
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
 }
 
-.no-records {
-  text-align: center;
-  padding: 2rem;
-  color: #999;
-  font-size: 1.1rem;
+.progress-step.rejected .step-label {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+/* 已发表状态样式 */
+.progress-step.published .step-dot {
+  background-color: #42b883;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.3);
+}
+
+.progress-step.published .step-dot::after {
+  background-color: white;
+}
+
+.progress-step.published .step-label {
+  color: #42b883;
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -437,6 +355,8 @@ const viewManuscript = (id) => {
   justify-content: center;
   gap: 1rem;
   margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
 }
 
 .empty-state {
@@ -463,14 +383,14 @@ const viewManuscript = (id) => {
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background-color: #42b883;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  background-color: #369f70;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 12px rgba(66, 184, 131, 0.3);
 }
 
 .btn-secondary {
@@ -522,16 +442,6 @@ const viewManuscript = (id) => {
   
   .step-label {
     font-size: 0.75rem;
-  }
-  
-  .record-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .record-meta {
-    gap: 0.5rem;
   }
   
   .action-buttons {
