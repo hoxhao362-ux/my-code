@@ -1,24 +1,121 @@
-from fastapi import HTTPException, Depends, Request
-from utils.rate_limit import rate_limiter
-from utils.jwt import jwt_util
+from typing import Generator, Optional, Dict, Any
+from fastapi import Depends, HTTPException, status, Query, Header, Request
+from fastapi.security import OAuth2PasswordBearer
 
-async def get_current_user(request: Request):
-    """获取当前用户信息"""
-    token = request.query_params.get("token")
-    if not token:
-        # 尝试从Authorization头获取token
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+from utils.jwt import jwt_util
+from utils.redis import redis_client
+from utils.rate_limit import rate_limiter
+from database import db_manager
+
+# --- 认证与权限相关依赖 ---
+
+# 可复用的OAuth2方案（可选，主要用于Swagger UI标准化认证头）
+# 但由于前端使用查询参数，我们将使用自定义依赖。
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/user/login")
+
+async def get_token(
+    token: Optional[str] = Query(None, description="访问令牌"),
+    authorization: Optional[str] = Header(None, description="认证头")
+) -> str:
+    """
+    从查询参数 'token' 或 'Authorization: Bearer <token>' 头中提取令牌。
+    查询参数优先级更高，以支持现有前端。
+    """
+    if token:
+        return token
+    if authorization:
+        scheme, _, param = authorization.partition(" ")
+        if scheme.lower() == "bearer":
+            return param
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="未提供认证令牌",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
+    """
+    从令牌获取当前用户。
+    通过Redis（用于登出/过期）和JWT签名验证令牌。
+    从数据库获取最新用户数据。
+    """
+    # 1. 检查Redis中的会话状态
+    user_id = await redis_client.get_user_by_token(token)
     
-    if not token:
-        raise HTTPException(status_code=401, detail="未提供token")
+    # 2. 如果Redis中不存在，尝试解码JWT（无状态回退，或者Redis键过期但JWT有效？）
+    # 然而，user.py中的现有逻辑优先使用Redis但回退到JWT。
+    # 但如果用户已登出，Redis键会被删除。所以如果不在Redis中，严格来说如果我们强制服务器端登出，这可能是无效会话。
+    # 但user.py第186行说："如果不在Redis中，尝试从令牌解析"。
+    # 为了安全起见，我们将保留此逻辑，但通常如果我们想要安全登出，我们应该要求Redis。
+    # 目前，为了不破坏任何东西，我们将坚持现有的混合方法。
     
-    user_info = jwt_util.get_user_from_token(token)
-    if not user_info:
-        raise HTTPException(status_code=401, detail="无效的token")
+    token_payload = jwt_util.verify_token(token)
+    if not token_payload:
+         raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的令牌或令牌已过期",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user_id:
+        user_id = token_payload.get("uid")
     
-    return user_info
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的令牌凭证",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. 从数据库获取用户
+    user_db = db_manager.get_service('user_account')
+    user = await user_db.fetchone(
+        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = ?",
+        (user_id,)
+    )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    # 在Redis中刷新令牌过期时间
+    await redis_client.refresh_token_expire(user_id, token)
+    
+    return dict(user)
+
+async def get_current_active_user(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    # 如果我们有'is_active'字段，我们会在这里检查。
+    # 现在，只需返回用户。
+    return current_user
+
+async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要管理员权限"
+        )
+    return current_user
+
+async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    if current_user["role"] not in ["reviewer", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要审稿人权限"
+        )
+    return current_user
+
+async def get_writer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    if current_user["role"] not in ["writer", "reviewer", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="需要作者权限"
+        )
+    return current_user
+
+# --- 频率限制相关依赖 ---
 
 async def rate_limit_check(request: Request, limit: int = 100, window_seconds: int = 3600):
     """频率限制依赖项

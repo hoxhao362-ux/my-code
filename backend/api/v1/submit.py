@@ -20,7 +20,7 @@ from model.journal import (
     JournalStatusUpdateRequest
 )
 from model.user import LoginRequest, LoginResponse
-from api import deps
+from core import dependencies as deps
 
 # 获取数据库服务实例
 from database import db_manager

@@ -12,7 +12,7 @@ from model.invitation import (
     InvitationCodeStatusUpdateRequest,
     InvitationCodeValidateResponse
 )
-from api import deps
+from core import dependencies as deps
 
 router = APIRouter(tags=["管理员-邀请码管理"])
 

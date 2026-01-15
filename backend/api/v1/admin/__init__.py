@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from database import db_manager
 from utils.admin_log import record_admin_log
-from api import deps
+from core import dependencies as deps
 
 from .users import router as users_router
 from .journals import router as journals_router

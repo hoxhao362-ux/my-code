@@ -8,7 +8,7 @@ from utils.redis import redis_client
 from utils.generator import generator
 from utils.invitation import invitation_util
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse, RoleUpgradeRequest
-from api import deps
+from core import dependencies as deps
 
 # 获取数据库服务实例
 from database import db_manager

@@ -52,9 +52,9 @@ async def lifespan(app: FastAPI):
             
             # 尝试从配置获取
             try:
-                admin_username = config["global.admin.default_username"]
-                admin_password = config["global.admin.default_password"]
-                admin_email = config["global.admin.default_email"]
+                admin_username = config["admin.admin.default_username"]
+                admin_password = config["admin.admin.default_password"]
+                admin_email = config["admin.admin.default_email"]
             except:
                 pass
 

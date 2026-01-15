@@ -1,4 +1,7 @@
 import hashlib
+import random
+import string
+        
 from datetime import datetime
 from typing import Union, Optional
 
@@ -83,9 +86,6 @@ class Generator:
         Returns:
             生成的随机字符串
         """
-        import random
-        import string
-        
         characters = string.ascii_letters + string.digits
         if include_special:
             characters += string.punctuation

@@ -5,7 +5,7 @@ from datetime import datetime
 
 from utils.admin_log import record_admin_log
 from database import db_manager
-from api import deps
+from core import dependencies as deps
 from core.config import config
 
 journal_db = db_manager.get_service('journal_submit')

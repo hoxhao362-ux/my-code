@@ -7,7 +7,7 @@ from utils.redis import redis_client
 from utils.admin_log import record_admin_log
 from model.user import LoginRequest, LoginResponse
 from database import db_manager
-from api import deps
+from core import dependencies as deps
 
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')

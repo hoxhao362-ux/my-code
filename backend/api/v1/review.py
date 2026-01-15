@@ -11,7 +11,7 @@ from database import db_manager
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
 
-from api import deps
+from core import dependencies as deps
 
 review_router = APIRouter(
     prefix="/review",
