@@ -113,6 +113,8 @@ class JWTUtil:
         Returns:
             str: 哈希后的密码
         """
+        if len(password) > 64:
+            password = password[:64]  # 截断密码到64个字符
         return pwd_context.hash(password)  # 使用bcrypt算法对密码进行哈希
 
     @staticmethod
