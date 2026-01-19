@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
@@ -271,7 +272,7 @@ const viewJournalDetail = (id) => {
                   {{ journal.reviewResult || journal.status }}
                 </span>
               </p>
-              <p class="journal-abstract">{{ journal.abstract }}</p>
+              <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               
               <!-- 显示审稿建议 -->
               <div class="history-comment-section">
@@ -511,8 +512,8 @@ const viewJournalDetail = (id) => {
 .journal-abstract {
   color: #555;
   line-height: 1.6;
-  margin: 0 0 1rem 0;
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.85rem;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;

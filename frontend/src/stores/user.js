@@ -38,7 +38,77 @@ export const useUserStore = defineStore('user', {
       reviewer: 'REVIEWER2026'
     },
     // 期刊列表（用于首页显示）
-    journals: JSON.parse(localStorage.getItem('journals')) || [],
+    journals: JSON.parse(localStorage.getItem('journals')) || [
+      {
+        id: 1,
+        title: '医学影像技术的发展趋势',
+        author: 'author1',
+        module: '医学影像',
+        status: '已发表',
+        submissionDate: '2026-01-10',
+        publicationDate: '2026-01-15',
+        abstract: '本文详细介绍了医学影像技术的最新发展趋势，包括AI辅助诊断、3D打印技术在医学影像中的应用等。',
+        keywords: '医学影像,AI辅助诊断,3D打印',
+        fileUrl: '/vite.svg',
+        reviews: []
+      },
+      {
+        id: 2,
+        title: '基于深度学习的药物研发方法',
+        author: 'author2',
+        module: '药物研发',
+        status: '待审核',
+        submissionDate: '2026-01-12',
+        abstract: '本文探讨了深度学习在药物研发中的应用，包括分子结构预测、药物靶点识别等方面。',
+        keywords: '深度学习,药物研发,分子结构',
+        fileUrl: '/vite.svg',
+        reviews: []
+      },
+      {
+        id: 3,
+        title: '临床研究中的大数据分析方法',
+        author: 'author3',
+        module: '临床研究',
+        status: '审稿中',
+        submissionDate: '2026-01-08',
+        abstract: '本文介绍了临床研究中大数据分析的常用方法和工具，以及如何处理和分析海量临床数据。',
+        keywords: '临床研究,大数据分析,数据处理',
+        fileUrl: '/vite.svg',
+        reviews: [
+          { reviewer: 'reviewer1', status: '已审核', comment: '文章内容详实，方法可行', rating: 4 }
+        ]
+      },
+      {
+        id: 4,
+        title: '公共卫生应急管理体系建设',
+        author: 'author4',
+        module: '公共卫生',
+        status: '已发表',
+        submissionDate: '2026-01-05',
+        publicationDate: '2026-01-10',
+        abstract: '本文分析了当前公共卫生应急管理体系的现状和存在的问题，并提出了相应的改进建议。',
+        keywords: '公共卫生,应急管理,体系建设',
+        fileUrl: '/vite.svg',
+        reviews: [
+          { reviewer: 'reviewer2', status: '已审核', comment: '文章具有重要的现实意义', rating: 5 }
+        ]
+      },
+      {
+        id: 5,
+        title: '生物信息学在基因测序中的应用',
+        author: 'author1',
+        module: '生物信息学',
+        status: '已发表',
+        submissionDate: '2026-01-03',
+        publicationDate: '2026-01-08',
+        abstract: '本文综述了生物信息学在基因测序中的应用，包括序列比对、基因注释、变异检测等方面。',
+        keywords: '生物信息学,基因测序,序列比对',
+        fileUrl: '/vite.svg',
+        reviews: [
+          { reviewer: 'reviewer3', status: '已审核', comment: '文章内容全面，参考文献丰富', rating: 4 }
+        ]
+      }
+    ],
     // 反馈消息列表
     feedbackMessages: [],
     // 用户列表（用于管理员角色管理）
@@ -55,11 +125,8 @@ export const useUserStore = defineStore('user', {
       { id: 10, username: 'reviewer3', role: 'reviewer', email: 'reviewer3@example.com', phone: '13800138009', status: 'active' },
       { id: 11, username: 'user4', role: 'user', email: 'user4@example.com', phone: '13800138010', status: 'inactive' },
       { id: 12, username: 'author4', role: 'author', email: 'author4@example.com', phone: '13800138011', status: 'active' }
-    ],
+    ]
   }),
-  
-  
-
 
   getters: {
     isAuthenticated: (state) => !!state.user,
@@ -116,10 +183,23 @@ export const useUserStore = defineStore('user', {
         
         this.user = userData
         localStorage.setItem('user', JSON.stringify(userData))
+        // 登录时刷新期刊数据，确保从localStorage获取最新数据
+        this.refreshJournals()
         return userData
       } catch (error) {
         console.error('登录失败:', error)
         throw error
+      }
+    },
+    
+    // 刷新期刊数据，从localStorage重新读取
+    refreshJournals() {
+      try {
+        const journalsFromStorage = JSON.parse(localStorage.getItem('journals') || '[]')
+        this.journals = journalsFromStorage
+      } catch (error) {
+        console.error('刷新期刊数据失败:', error)
+        this.journals = []
       }
     },
     
@@ -302,8 +382,8 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 修改用户角色（管理员）
-    async updateUserRole(uid, role) {
+    // 修改用户角色（管理员API）
+    async updateUserRoleApi(uid, role) {
       try {
         const response = await adminApi.updateUserRole(uid, role)
         return response
@@ -313,8 +393,8 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 删除用户（管理员）
-    async deleteUser(uid) {
+    // 删除用户（管理员API）
+    async deleteUserApi(uid) {
       try {
         const response = await adminApi.deleteUser(uid)
         return response

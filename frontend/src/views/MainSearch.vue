@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useUserStore } from '../stores/user'
+import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 
 const userStore = useUserStore()
 
@@ -110,7 +111,7 @@ const filterJournals = () => {
           <div class="result-info">
             <h4 class="result-title">{{ journal.title }}</h4>
             <p class="result-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
-            <p class="result-abstract">{{ journal.abstract }}</p>
+            <p class="result-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             <div class="result-keywords">
               <span 
                 v-for="(keyword, index) in journal.keywords" 

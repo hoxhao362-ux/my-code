@@ -263,8 +263,8 @@ const enableUser = (user) => {
           <!-- 筛选条件 -->
           <div class="filter-container">
             <div class="filter-group">
-              <label>角色筛选</label>
-              <select v-model="roleFilter" class="filter-select">
+              <label for="roleFilter">角色筛选</label>
+              <select id="roleFilter" name="roleFilter" v-model="roleFilter" class="filter-select">
                 <option 
                   v-for="option in roleOptions" 
                   :key="option.value" 
@@ -276,8 +276,8 @@ const enableUser = (user) => {
             </div>
             
             <div class="filter-group">
-              <label>状态筛选</label>
-              <select v-model="statusFilter" class="filter-select">
+              <label for="statusFilter">状态筛选</label>
+              <select id="statusFilter" name="statusFilter" v-model="statusFilter" class="filter-select">
                 <option 
                   v-for="option in statusOptions" 
                   :key="option.value" 
@@ -475,12 +475,12 @@ const enableUser = (user) => {
         <div class="modal-content">
           <div class="edit-form">
             <div class="form-group">
-              <label>用户名</label>
-              <input type="text" :value="currentUser?.username" disabled class="disabled-input">
+              <label for="username">用户名</label>
+              <input type="text" id="username" name="username" :value="currentUser?.username" disabled class="disabled-input">
             </div>
             <div class="form-group">
-              <label>角色</label>
-              <select v-model="editForm.role" class="form-control">
+              <label for="editRole">角色</label>
+              <select id="editRole" name="editRole" v-model="editForm.role" class="form-control">
                 <option value="admin">管理员</option>
                 <option value="reviewer">审核员</option>
                 <option value="author">作者</option>
@@ -511,8 +511,8 @@ const enableUser = (user) => {
           <p class="warning-text">确定要禁用用户 <strong>{{ currentUser?.username }}</strong> 吗？</p>
           <div class="disable-form">
             <div class="form-group">
-              <label>禁用时长</label>
-              <select v-model="disableForm.duration" class="form-control">
+              <label for="disableDuration">禁用时长</label>
+              <select id="disableDuration" name="disableDuration" v-model="disableForm.duration" class="form-control">
                 <option 
                   v-for="duration in disableDurations" 
                   :key="duration.value" 
@@ -523,8 +523,10 @@ const enableUser = (user) => {
               </select>
             </div>
             <div class="form-group">
-              <label>禁用原因</label>
+              <label for="disableReason">禁用原因</label>
               <textarea 
+                id="disableReason" 
+                name="disableReason" 
                 v-model="disableForm.reason" 
                 class="form-control" 
                 rows="3" 
@@ -568,8 +570,8 @@ const enableUser = (user) => {
         <div class="modal-content">
           <p>{{ confirmMessage }}</p>
           <div class="form-group">
-            <label>请输入管理员密码：</label>
-            <input type="password" v-model="adminPassword" class="form-control" placeholder="管理员密码">
+            <label for="adminPassword">请输入管理员密码：</label>
+            <input type="password" id="adminPassword" name="adminPassword" v-model="adminPassword" class="form-control" placeholder="管理员密码">
           </div>
         </div>
         <div class="modal-footer">

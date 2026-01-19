@@ -147,7 +147,7 @@ const goToLogin = () => {
           />
         </div>
         <div class="form-row">
-          <div class="form-group" style="flex: 1;">
+          <div class="form-group form-group-flex">
             <label for="verificationCode">验证码</label>
             <input 
               type="text" 
@@ -156,7 +156,7 @@ const goToLogin = () => {
               placeholder="请输入验证码"
             />
           </div>
-          <div class="form-group" style="margin-left: 10px;">
+          <div class="form-group form-group-button">
             <label>&nbsp;</label>
             <button 
               type="button" 
@@ -271,6 +271,14 @@ const goToLogin = () => {
 .form-row {
   display: flex;
   align-items: flex-end;
+}
+
+.form-group-flex {
+  flex: 1;
+}
+
+.form-group-button {
+  margin-left: 10px;
 }
 
 .code-btn {

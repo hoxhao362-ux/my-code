@@ -171,8 +171,8 @@ onMounted(() => {
     <!-- 筛选区域 -->
     <div class="filters-section">
       <div class="filter-group">
-        <label>类型筛选：</label>
-        <select v-model="filters.type" class="filter-control">
+        <label for="feedback-type-filter">类型筛选：</label>
+        <select id="feedback-type-filter" name="feedback-type" v-model="filters.type" class="filter-control">
           <option value="all">全部类型</option>
           <option value="联系我们">联系我们</option>
           <option value="意见反馈">意见反馈</option>
@@ -180,8 +180,8 @@ onMounted(() => {
       </div>
       
       <div class="filter-group">
-        <label>状态筛选：</label>
-        <select v-model="filters.status" class="filter-control">
+        <label for="feedback-status-filter">状态筛选：</label>
+        <select id="feedback-status-filter" name="feedback-status" v-model="filters.status" class="filter-control">
           <option value="all">全部状态</option>
           <option value="未处理">未处理</option>
           <option value="已处理">已处理</option>
@@ -190,8 +190,11 @@ onMounted(() => {
       </div>
       
       <div class="filter-group search-group">
+        <label for="feedback-search">搜索：</label>
         <input 
           type="text" 
+          id="feedback-search" 
+          name="feedback-search" 
           v-model="filters.search" 
           class="filter-control search-input"
           placeholder="搜索姓名、邮箱、主题或内容..."

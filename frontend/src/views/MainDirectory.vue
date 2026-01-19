@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
+import { stripHtmlTags } from '../utils/helpers'
 
 const router = useRouter()
 
@@ -60,7 +61,7 @@ const filteredJournals = computed(() => {
     result = result.filter(journal => 
       journal.title.toLowerCase().includes(keyword) ||
       journal.author.toLowerCase().includes(keyword) ||
-      journal.abstract.toLowerCase().includes(keyword) ||
+      stripHtmlTags(journal.abstract).toLowerCase().includes(keyword) ||
       journal.keywords.some(k => k.toLowerCase().includes(keyword))
     )
   }
@@ -185,6 +186,8 @@ const viewJournalDetail = (id) => {
             <div class="search-filter">
               <input
                 type="text"
+                id="search-input"
+                name="search-input"
                 v-model="searchKeyword"
                 placeholder="请输入关键词搜索..."
                 class="search-input"
@@ -238,7 +241,7 @@ const viewJournalDetail = (id) => {
                 <p class="journal-directory-meta">
                   作者：{{ journal.author }} | 投稿日期：{{ journal.date }}
                 </p>
-                <p class="journal-directory-abstract">{{ journal.abstract }}</p>
+                <div class="journal-directory-abstract" v-html="journal.abstract"></div>
                 <div class="journal-directory-keywords">
                   <span 
                     v-for="(keyword, index) in journal.keywords" 

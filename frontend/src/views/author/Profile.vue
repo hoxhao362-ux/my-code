@@ -177,7 +177,7 @@ const verifyPassword = () => {
                 type="file" 
                 ref="fileInput"
                 accept="image/*" 
-                style="display: none" 
+                class="hidden-file-input" 
                 @change="handleAvatarUpload"
               />
             </div>
