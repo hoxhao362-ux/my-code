@@ -29,7 +29,9 @@ const pendingJournalsFiltered = computed(() => {
   let journals = userStore.journals.filter(journal => {
     const isAdmin = user.value?.role === 'admin';
     const allowedStages = isAdmin ? ['初审', '终审'] : ['复审'];
-    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage);
+    // 包含所有待审核状态：待审核、审稿中、待初审、待复审、待终审
+    const isPendingStatus = ['待审核', '审稿中', '待初审', '待复审', '待终审'].includes(journal.status);
+    return isPendingStatus && allowedStages.includes(journal.reviewStage);
   })
   
   // 模块筛选

@@ -11,11 +11,14 @@ if (props.user?.role !== 'reviewer' && props.user?.role !== 'admin') {
 
 // 统计数据
 const stats = computed(() => {
+  // 所有待审核状态：待审核、审稿中、待初审、待复审、待终审
+  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审']
+  
   return {
     totalJournals: props.journals.length,
-    pendingJournals: props.journals.filter(journal => journal.status === '审稿中').length,
-    reviewStage1Journals: props.journals.filter(journal => journal.status === '审稿中' && journal.reviewStage === '初审').length,
-    reviewStage2Journals: props.journals.filter(journal => journal.status === '审稿中' && journal.reviewStage === '复审').length
+    pendingJournals: props.journals.filter(journal => pendingStatuses.includes(journal.status)).length,
+    reviewStage1Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && journal.reviewStage === '初审').length,
+    reviewStage2Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && journal.reviewStage === '复审').length
   }
 })
 
@@ -24,8 +27,11 @@ const pendingJournals = computed(() => {
   const isAdmin = props.user?.role === 'admin'
   const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
   
+  // 所有待审核状态：待审核、审稿中、待初审、待复审、待终审
+  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审']
+  
   return props.journals.filter(journal => {
-    return (journal.status === '待审核' || journal.status === '审稿中') && allowedStages.includes(journal.reviewStage)
+    return pendingStatuses.includes(journal.status) && allowedStages.includes(journal.reviewStage)
   })
   .sort((a, b) => new Date(b.date) - new Date(a.date))
 })
