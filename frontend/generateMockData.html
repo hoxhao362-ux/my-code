@@ -55,6 +55,13 @@
         .button:hover {
             background: #2980b9;
         }
+        .button.danger {
+            background: #e74c3c;
+            margin-left: 1rem;
+        }
+        .button.danger:hover {
+            background: #c0392b;
+        }
         .users-list {
             list-style: none;
             padding: 0;
@@ -95,6 +102,7 @@
     
     <h2>生成数据</h2>
     <button class="button" onclick="generateAllData()">生成虚拟数据</button>
+    <button class="button danger" onclick="clearAllData()">清除所有数据</button>
     
     <h2>查看数据</h2>
     <p>数据生成后，可以通过以下方式查看：</p>

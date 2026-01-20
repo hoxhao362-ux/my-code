@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { stripHtmlTags } from '../utils/helpers'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journalId', 'logout', 'journals', 'reviewRecords', 'toggleDirectory'])
@@ -76,7 +77,7 @@ const handleLogout = () => {
           <div class="journal-main-content">
             <section class="detail-section">
               <h3 class="section-title">摘要</h3>
-              <p class="section-content">{{ journal.abstract }}</p>
+              <div class="section-content" v-html="journal.abstract"></div>
             </section>
 
             <section class="detail-section">
@@ -86,9 +87,7 @@ const handleLogout = () => {
 
             <section class="detail-section">
               <h3 class="section-title">正文</h3>
-              <div class="section-content content">
-                <pre>{{ journal.content }}</pre>
-              </div>
+              <div class="section-content content" v-html="journal.content"></div>
             </section>
           </div>
           
@@ -460,12 +459,148 @@ const handleLogout = () => {
   border-radius: 5px;
 }
 
-.section-content pre {
+/* 富文本格式支持 */
+.section-content.content h1,
+.section-content.content h2,
+.section-content.content h3,
+.section-content.content h4,
+.section-content.content h5,
+.section-content.content h6 {
+  margin: 1.5rem 0 1rem 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.section-content.content h1 {
+  font-size: 2rem;
+}
+
+.section-content.content h2 {
+  font-size: 1.75rem;
+}
+
+.section-content.content h3 {
+  font-size: 1.5rem;
+}
+
+.section-content.content h4 {
+  font-size: 1.25rem;
+}
+
+.section-content.content h5 {
+  font-size: 1.1rem;
+}
+
+.section-content.content h6 {
+  font-size: 1rem;
+}
+
+.section-content.content p {
+  margin: 0 0 1rem 0;
+  line-height: 1.6;
+}
+
+.section-content.content ul,
+.section-content.content ol {
+  margin: 0 0 1rem 1.5rem;
+  padding: 0;
+}
+
+.section-content.content ul {
+  list-style-type: disc;
+}
+
+.section-content.content ol {
+  list-style-type: decimal;
+}
+
+.section-content.content li {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+/* 对齐样式 */
+.section-content.content .ql-align-center {
+  text-align: center;
+}
+
+.section-content.content .ql-align-right {
+  text-align: right;
+}
+
+.section-content.content .ql-align-justify {
+  text-align: justify;
+}
+
+.section-content.content .ql-align-left {
+  text-align: left;
+}
+
+/* 缩进样式 */
+.section-content.content .ql-indent-1 {
+  margin-left: 2rem;
+}
+
+.section-content.content .ql-indent-2 {
+  margin-left: 4rem;
+}
+
+.section-content.content .ql-indent-3 {
+  margin-left: 6rem;
+}
+
+.section-content.content pre {
   margin: 0;
   white-space: pre-wrap;
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.8;
+}
+
+/* 链接样式 */
+.section-content.content a {
+  color: #3498db;
+  text-decoration: underline;
+}
+
+.section-content.content a:hover {
+  color: #2980b9;
+}
+
+/* 图片样式 */
+.section-content.content img {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 5px;
+}
+
+/* 代码块样式 */
+.section-content.content pre.ql-syntax {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+/* 块引用样式 */
+.section-content.content blockquote {
+  border-left: 4px solid #3498db;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #666;
+}
+
+/* 水平分隔线样式 */
+.section-content.content hr {
+  border: none;
+  border-top: 2px solid #eee;
+  margin: 2rem 0;
 }
 
 /* 响应式设计 */

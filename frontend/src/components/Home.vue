@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { stripHtmlTags, truncateText } from '../utils/helpers'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'logout', 'journals', 'modules', 'incrementJournalView', 'showDirectory', 'toggleDirectory'])
@@ -98,7 +99,7 @@ const handleSearch = () => {
   searchResults.value = allJournals.value.filter(journal => 
     journal.title.toLowerCase().includes(keyword) ||
     journal.author.toLowerCase().includes(keyword) ||
-    journal.abstract.toLowerCase().includes(keyword) ||
+    stripHtmlTags(journal.abstract).toLowerCase().includes(keyword) ||
     journal.keywords.some(k => k.toLowerCase().includes(keyword))
   )
   showSearchResults.value = true
@@ -238,7 +239,7 @@ const viewJournalDetail = (id) => {
                 <div class="result-info">
                   <h4 class="result-title">{{ journal.title }}</h4>
                   <p class="result-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
-                  <p class="result-abstract">{{ journal.abstract }}</p>
+                  <div class="result-abstract" v-html="truncateHtml(journal.abstract)"></div>
                   <div class="result-keywords">
                     <span 
                       v-for="(keyword, index) in journal.keywords" 

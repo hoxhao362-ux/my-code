@@ -38,28 +38,136 @@ export function exportToPDF(title, content, metadata = {}) {
   
   // 设置内容
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
   
-  // 处理长文本，自动换行
-  const splitText = doc.splitTextToSize(content, 180);
+  // 确保内容不为空
+  let safeContent = content || '暂无内容';
+  
+  // 移除HTML标签，只保留纯文本
+  safeContent = safeContent.replace(/<[^>]*>/g, '');
+  
+  // 确保标题不含特殊字符，用于文件名
+  const safeFilename = title.replace(/[^a-zA-Z0-9一-龥_-]/g, '') || 'journal';
+  
+  // 处理长文本，自动换行 - 使用jsPDF内置的自动换行机制
+  const splitText = doc.splitTextToSize(safeContent, 180);
   doc.text(splitText, 14, yPosition);
   
-  // 导出文件 - 浏览器会自动弹出保存对话框
-  doc.save(`${title}.pdf`);
+  // 导出文件 - 使用blob方式确保浏览器能正确处理中文文件名和触发保存对话框
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${safeFilename}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  // 清理创建的元素和URL
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
-// 导出期刊内容为PDF
-export function exportJournalToPDF(journal) {
-  // 准备元数据
-  const metadata = {
-    '期刊ID': journal.id,
-    '作者': journal.author || '未知',
-    '提交日期': journal.submitDate || '未知',
-    '状态': journal.status || '未知',
-  };
+// 直接使用jsPDF和html2canvas，不使用html2pdf.js封装
+import html2canvas from 'html2canvas';
+
+// 导出期刊内容为PDF（支持富文本）
+export async function exportJournalToPDF(journal) {
+  // 确保journal对象有效
+  if (!journal) {
+    alert('期刊数据无效，无法导出PDF');
+    return;
+  }
   
-  // 调用PDF导出函数
-  exportToPDF(journal.title, journal.content, metadata);
+  try {
+    // 创建一个可见的临时元素，用于渲染
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.top = '0';
+    tempContainer.style.left = '0';
+    tempContainer.style.width = '800px'; // 固定宽度，确保内容完整
+    tempContainer.style.height = 'auto';
+    tempContainer.style.background = 'white';
+    tempContainer.style.color = 'black';
+    tempContainer.style.padding = '20px';
+    tempContainer.style.zIndex = '-1'; // 放在最底层，不影响用户操作
+    tempContainer.style.opacity = '0.99'; // 接近透明但可渲染
+    tempContainer.style.boxShadow = 'none';
+    
+    // 设置HTML内容
+    tempContainer.innerHTML = `
+      <div id="pdf-content" style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h1 style="text-align: center; font-size: 24px; margin-bottom: 20px;">${journal.title || 'Untitled Journal'}</h1>
+        
+        <div style="background: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px;">
+          <p><strong>Journal ID:</strong> ${journal.id || 'Unknown'}</p>
+          <p><strong>Author:</strong> ${journal.author || 'Unknown'}</p>
+          <p><strong>Date:</strong> ${journal.date || 'Unknown'}</p>
+          <p><strong>Status:</strong> ${journal.status || 'Unknown'}</p>
+        </div>
+        
+        <h2 style="font-size: 18px; margin: 20px 0 10px 0; color: #333;">Abstract</h2>
+        <div style="margin: 10px 0;">${journal.abstract || 'No abstract available'}</div>
+        
+        <h2 style="font-size: 18px; margin: 20px 0 10px 0; color: #333;">Keywords</h2>
+        <div style="color: #0066cc; margin: 10px 0;">${Array.isArray(journal.keywords) ? journal.keywords.join(', ') : journal.keywords || 'No keywords'}</div>
+        
+        <h2 style="font-size: 18px; margin: 20px 0 10px 0; color: #333;">Content</h2>
+        <div style="margin: 10px 0;">${journal.content || 'No content available'}</div>
+      </div>
+    `;
+    
+    // 添加到文档
+    document.body.appendChild(tempContainer);
+    
+    // 等待DOM渲染完成
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 获取要导出的元素
+    const element = tempContainer.querySelector('#pdf-content');
+    
+    // 使用html2canvas捕获元素
+    const canvas = await html2canvas(element, {
+      scale: 2, // 提高清晰度
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false
+    });
+    
+    // 将canvas转换为图片数据
+    const imgData = canvas.toDataURL('image/png');
+    
+    // 创建PDF文档
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // 计算PDF尺寸和图片尺寸
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 10;
+    
+    // 添加图片到PDF
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    
+    // 保存PDF
+    pdf.save(`${journal.title || 'journal'}.pdf`);
+    
+    // 清理临时元素
+    setTimeout(() => {
+      document.body.removeChild(tempContainer);
+    }, 500);
+    
+  } catch (error) {
+    console.error('PDF导出错误:', error);
+    alert('PDF导出失败: ' + error.message);
+    // 确保清理临时元素
+    const tempElements = document.querySelectorAll('div[style*="z-index: -1"]');
+    tempElements.forEach(el => el.remove());
+  }
 }
 
 // 导出操作日志为Excel

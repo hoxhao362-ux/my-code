@@ -24,9 +24,19 @@ function getRandomModule() {
 }
 
 // 生成随机状态
-const statuses = ['已通过', '审稿中', '未通过'];
+const statuses = ['已通过', '已发表', '审稿中', '未通过'];
 function getRandomStatus() {
-  return statuses[Math.floor(Math.random() * statuses.length)];
+  // 增加已通过和已发表的概率，确保期刊目录有足够数据显示
+  const weights = [0.4, 0.3, 0.2, 0.1]; // 权重：已通过40%，已发表30%，审稿中20%，未通过10%
+  const random = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < statuses.length; i++) {
+    cumulative += weights[i];
+    if (random < cumulative) {
+      return statuses[i];
+    }
+  }
+  return statuses[0]; // 默认返回已通过
 }
 
 // 生成随机作者
@@ -139,13 +149,20 @@ function generateReviewRecords(journals) {
   return records;
 }
 
+// 清除所有生成的数据
+function clearAllData() {
+  if (confirm('确定要清除所有虚拟数据吗？')) {
+    // 清除相关数据
+    localStorage.removeItem('journals');
+    localStorage.removeItem('reviewRecords');
+    console.log('虚拟数据已清除！');
+    alert('虚拟数据已清除！');
+  }
+}
+
 // 执行数据生成
 function generateAllData() {
   console.log('开始生成虚拟数据...');
-  
-  // 生成用户数据
-  const users = generateUsers();
-  console.log('生成了 4 个虚拟账号');
   
   // 生成期刊数据
   const journals = generateJournals(50);
@@ -157,13 +174,21 @@ function generateAllData() {
   
   // 合并现有数据（如果有）
   const existingJournals = JSON.parse(localStorage.getItem('journals') || '[]');
-  const existingUsers = JSON.parse(localStorage.getItem('user') ? '["' + localStorage.getItem('user') + '"]' : '[]');
   const existingReviewRecords = JSON.parse(localStorage.getItem('reviewRecords') || '[]');
   
   // 合并并去重
-  const allJournals = [...existingJournals, ...journals];
-  const allUsers = [...existingUsers, ...users];
-  const allReviewRecords = [...existingReviewRecords, ...reviewRecords];
+  // 使用Set和map确保id唯一
+  const journalMap = new Map();
+  [...existingJournals, ...journals].forEach(journal => {
+    journalMap.set(journal.id, journal);
+  });
+  const allJournals = Array.from(journalMap.values());
+  
+  const reviewRecordMap = new Map();
+  [...existingReviewRecords, ...reviewRecords].forEach(record => {
+    reviewRecordMap.set(record.id, record);
+  });
+  const allReviewRecords = Array.from(reviewRecordMap.values());
   
   // 保存到localStorage
   localStorage.setItem('journals', JSON.stringify(allJournals));
@@ -171,11 +196,14 @@ function generateAllData() {
   
   console.log('虚拟数据生成完成！');
   console.log('\n虚拟账号：');
-  console.log('1. 管理员：用户名 admin，密码 admin123');
-  console.log('2. 审核员：用户名 reviewer，密码 reviewer123');
-  console.log('3. 作者：用户名 author，密码 author123');
-  console.log('4. 普通用户：用户名 user，密码 user123');
+  console.log('1. 管理员：用户名 admin，密码任意');
+  console.log('2. 审核员：用户名 reviewer，密码任意');
+  console.log('3. 作者：用户名 author，密码任意');
+  console.log('4. 普通用户：任意用户名，密码任意');
   console.log('\n数据已保存到 localStorage 中，刷新页面即可使用。');
+  
+  // 显示成功提示
+  alert('虚拟数据生成成功！请刷新前端应用页面查看生成的期刊。');
 }
 
 // 如果在浏览器环境中运行

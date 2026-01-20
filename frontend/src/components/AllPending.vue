@@ -1,9 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Navigation from './Navigation.vue'
+import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
+
+// 创建router实例
+const router = useRouter()
 
 // 日期查询
 const selectedDate = ref('')
@@ -134,7 +139,7 @@ const handleLogout = () => {
 // 查看稿件详情
 const viewJournalDetail = (id) => {
   // 跳转到稿件详情页
-  props.navigateTo('journal', id)
+  router.push(`/journal/${id}`)
 }
 
 // 组件挂载时滚动到页面顶部
@@ -289,9 +294,9 @@ const handleReview = (id, action) => {
     <!-- 审稿内容 -->
     <main class="review-content">
       <div class="review-header">
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="header-flex">
           <button class="btn btn-back" @click="navigateTo('review')">返回审稿页面</button>
-          <h2 class="review-title">所有待审稿件</h2>
+          <h2 class="review-title">所有待审稿记录</h2>
         </div>
         <div class="review-stats">
           <span class="stat-item">待审稿件总数：{{ pendingJournals.length }}</span>
@@ -372,7 +377,7 @@ const handleReview = (id, action) => {
             <div class="journal-info">
               <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
-              <p class="journal-abstract">{{ journal.abstract }}</p>
+              <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             
             <!-- 审稿建议文本框 -->
@@ -534,7 +539,7 @@ const handleReview = (id, action) => {
   color: #555;
   line-height: 1.6;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;

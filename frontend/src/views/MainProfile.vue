@@ -198,7 +198,7 @@ const handleAvatarUpload = (event) => {
                 type="file" 
                 ref="fileInput"
                 accept="image/*" 
-                style="display: none" 
+                class="hidden-file-input" 
                 @change="handleAvatarUpload"
               />
             </div>
@@ -446,6 +446,11 @@ const handleAvatarUpload = (event) => {
   background: #27ae60;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+}
+
+/* 隐藏文件输入控件 */
+.hidden-file-input {
+  display: none;
 }
 
 .btn-edit {

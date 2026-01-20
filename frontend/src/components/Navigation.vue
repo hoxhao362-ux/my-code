@@ -985,8 +985,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-                  :class="{ active: currentPage === 'admin-guide-instructions' }"
-                  @click.prevent="router.push('/admin/guide/instructions'); closeAllMenus()"
+                  :class="{ active: currentPage === 'admin-submission-rules' }"
+                  @click.prevent="router.push('/admin/submission-rules'); closeAllMenus()"
                 >
                   投稿须知
                 </a>

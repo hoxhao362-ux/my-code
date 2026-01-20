@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
@@ -415,7 +416,7 @@ const handleReview = (id, action) => {
             <div class="journal-info">
               <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }} <span class="view-detail-icon">📋</span></h3>
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
-              <p class="journal-abstract">{{ journal.abstract }}</p>
+              <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             
             <!-- 审稿建议文本框 -->
@@ -621,7 +622,7 @@ const handleReview = (id, action) => {
   color: #555;
   line-height: 1.6;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;

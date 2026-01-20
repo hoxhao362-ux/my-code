@@ -1,8 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
+
+// 创建router实例
+const router = useRouter()
 
 // 日期查询
 const selectedDate = ref('')
@@ -172,7 +177,7 @@ const handleReview = (id, action) => {
 
 const viewJournalDetail = (id) => {
   // 跳转到稿件详情页
-  props.navigateTo('journal', id)
+  router.push(`/journal/${id}`)
 }
 
 // 过滤后的历史记录
@@ -323,7 +328,7 @@ const filteredHistory = computed(() => {
           <div class="journal-info">
             <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
             <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
-            <p class="journal-abstract">{{ journal.abstract }}</p>
+            <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
           </div>
           
           <!-- 审稿建议文本框 -->
@@ -448,7 +453,7 @@ const filteredHistory = computed(() => {
                   {{ journal.reviewResult || journal.status }}
                 </span>
               </p>
-              <p class="journal-abstract">{{ journal.abstract }}</p>
+              <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               
               <!-- 显示审稿建议 -->
               <div class="history-comment-section">
@@ -627,7 +632,7 @@ const filteredHistory = computed(() => {
   color: #555;
   line-height: 1.6;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;

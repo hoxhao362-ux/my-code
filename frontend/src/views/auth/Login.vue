@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
@@ -13,6 +13,16 @@ const error = ref('')
 // 记住密码
 const rememberMe = ref(false)
 
+// 背景图片轮播
+const backgroundImages = [
+  '/images/24.jpg',
+  '/images/26.jpg',
+  '/images/wzmc_20140317155634.jpg',
+  '/images/wzmc_20140317160144.jpg'
+]
+const currentImageIndex = ref(0)
+let imageInterval = null
+
 // 从localStorage加载记住的密码
 onMounted(() => {
   const savedUsername = localStorage.getItem('rememberedUsername')
@@ -21,6 +31,18 @@ onMounted(() => {
     username.value = savedUsername
     password.value = savedPassword
     rememberMe.value = true
+  }
+  
+  // 启动背景图片轮播，每5秒切换一次
+  imageInterval = setInterval(() => {
+    currentImageIndex.value = (currentImageIndex.value + 1) % backgroundImages.length
+  }, 5000)
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (imageInterval) {
+    clearInterval(imageInterval)
   }
 })
 
@@ -87,7 +109,7 @@ const goToRegister = () => {
 
 <template>
   <div class="login-container">
-    <div class="login-bg"></div>
+    <div class="login-bg" :style="{ backgroundImage: `url(${backgroundImages[currentImageIndex]})` }"></div>
     <div class="login-form-wrapper">
       <div class="login-form">
         <!-- 登录标题 -->
@@ -151,12 +173,11 @@ const goToRegister = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/images/wzmc_20140317155634.jpg');
   background-size: cover;
   background-position: center;
-  opacity: 0.8;
   z-index: 0;
-  animation: backgroundAnimation 20s ease infinite;
+  transition: background-image 1s ease-in-out;
+  animation: backgroundAnimation 30s ease-in-out infinite;
 }
 
 /* 背景动态效果 */

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { truncateHtml } from '../utils/helpers.js'
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
@@ -107,7 +108,7 @@ const viewJournalDetail = (id) => {
               <div class="journal-info">
                 <h4 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h4>
                 <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
-                <p class="journal-abstract">{{ journal.abstract }}</p>
+                <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               </div>
               <div class="journal-status">
                 <span class="status-tag" :class="journal.status.toLowerCase()">
@@ -316,7 +317,7 @@ const viewJournalDetail = (id) => {
 .journal-abstract {
   color: #555;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   display: -webkit-box;
   display: -moz-box;
   display: box;

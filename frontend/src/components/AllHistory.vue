@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Navigation from './Navigation.vue'
+import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
@@ -169,7 +171,7 @@ onMounted(() => {
     <!-- 审稿内容 -->
     <main class="review-content">
       <div class="review-header">
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="header-flex">
           <button class="btn btn-back" @click="navigateTo('review')">返回审稿页面</button>
           <h2 class="review-title">所有历史审稿记录</h2>
         </div>
@@ -256,7 +258,7 @@ onMounted(() => {
                   {{ journal.reviewResult || journal.status }}
                 </span>
               </p>
-              <p class="journal-abstract">{{ journal.abstract }}</p>
+              <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               
               <!-- 显示审稿建议 -->
             <div class="history-comment-section">
@@ -349,6 +351,13 @@ onMounted(() => {
   font-weight: bold;
   color: #2c3e50;
   margin: 0;
+}
+
+/* 头部flex布局 */
+.header-flex {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .review-stats {
@@ -477,8 +486,8 @@ onMounted(() => {
 .journal-abstract {
   color: #555;
   line-height: 1.6;
-  margin: 0 0 1rem 0;
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.85rem;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;

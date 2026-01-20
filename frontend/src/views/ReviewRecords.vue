@@ -1,4 +1,5 @@
 <script setup>
+import { stripHtmlTags } from '../utils/helpers'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
@@ -79,8 +80,319 @@ const initializeEdit = () => {
   // 保存原始稿件内容
   originalJournal.value = JSON.parse(JSON.stringify(journal.value))
   editedJournal.value = JSON.parse(JSON.stringify(journal.value))
+  // 确保attachments数组存在
+  if (!editedJournal.value.attachments) {
+    editedJournal.value.attachments = []
+  }
+  // 确保attachments中的每个对象都有正确的size属性
+  editedJournal.value.attachments = editedJournal.value.attachments.map(attachment => {
+    // 如果size为0或undefined，设置一个默认值
+    if (!attachment.size || attachment.size === 0) {
+      // 尝试从file对象获取大小
+      if (attachment.file) {
+        attachment.size = attachment.file.size
+      } else {
+        // 否则设置为0
+        attachment.size = 0
+      }
+    }
+    return attachment
+  })
   isEditing.value = true
   modificationDescription.value = ''
+}
+
+// 触发文件上传
+const triggerFileUpload = () => {
+  document.getElementById('attachment-upload').click()
+}
+
+// 附件上传处理
+const handleFileUpload = (event) => {
+  // 阻止事件冒泡和默认行为，防止表单提交
+  event.stopPropagation()
+  event.preventDefault()
+  
+  const file = event.target.files[0]
+  if (file) {
+    // 检查文件大小（限制10MB）
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('文件大小不能超过10MB')
+      return
+    }
+    
+    // 检查文件类型
+    const allowedTypes = ['.doc', '.docx', '.pdf', '.txt']
+    const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
+    if (!allowedTypes.includes(fileExtension)) {
+      alert('只支持上传.doc, .docx, .pdf, .txt文件')
+      return
+    }
+    
+    // 添加到附件列表
+    const attachment = {
+      id: Date.now().toString(),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      // 先使用文件名作为临时URL，后续会被实际URL替换
+      url: file.name,
+      file: file // 保存原始文件对象，用于预览
+    }
+    
+    editedJournal.value.attachments.push(attachment)
+    
+    // 清空文件输入
+    event.target.value = ''
+  }
+}
+
+// 删除附件
+const removeAttachment = (attachmentId) => {
+  // 从附件列表中移除
+  const index = editedJournal.value.attachments.findIndex(att => att.id === attachmentId)
+  if (index !== -1) {
+    editedJournal.value.attachments.splice(index, 1)
+  }
+}
+
+// 预览附件
+const previewAttachment = (attachment) => {
+  const fileExtension = `.${attachment.name.split('.').pop().toLowerCase()}`
+  const previewableExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.doc', '.docx']
+  
+  if (previewableExtensions.includes(fileExtension)) {
+    // 创建一个新的预览窗口
+    const previewWindow = window.open('', '_blank', 'width=1000,height=800')
+    if (previewWindow) {
+      // 显示加载状态
+      previewWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>预览：${attachment.name}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body, html {
+              height: 100%;
+              overflow: hidden;
+              font-family: Arial, sans-serif;
+              background-color: #f5f5f5;
+            }
+            .preview-header {
+              padding: 15px 20px;
+              background: #ffffff;
+              border-bottom: 1px solid #e0e0e0;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .preview-title {
+              font-weight: bold;
+              color: #2c3e50;
+              font-size: 16px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 60%;
+            }
+            .header-actions {
+              display: flex;
+              gap: 10px;
+              align-items: center;
+            }
+            .btn {
+              padding: 8px 16px;
+              border: none;
+              border-radius: 4px;
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              text-decoration: none;
+              transition: all 0.3s ease;
+              display: inline-block;
+              text-align: center;
+            }
+            .btn-primary {
+              background: #3498db;
+              color: white;
+            }
+            .btn-primary:hover {
+              background: #2980b9;
+            }
+            .btn-secondary {
+              background: #95a5a6;
+              color: white;
+            }
+            .btn-secondary:hover {
+              background: #7f8c8d;
+            }
+            .preview-container {
+              height: calc(100% - 60px);
+              width: 100%;
+              background: white;
+              overflow: auto;
+              position: relative;
+            }
+            .preview-content {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              flex-direction: column;
+              padding: 20px;
+            }
+            .loading {
+              font-size: 18px;
+              color: #666;
+              text-align: center;
+            }
+            .error {
+              font-size: 18px;
+              color: #e74c3c;
+              text-align: center;
+              padding: 20px;
+            }
+            iframe {
+              width: 100%;
+              height: 100%;
+              border: none;
+              background: white;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100%;
+            }
+            pre {
+              width: 100%;
+              height: 100%;
+              overflow: auto;
+              padding: 20px;
+              margin: 0;
+              font-family: monospace;
+              font-size: 14px;
+              background: white;
+              border: 1px solid #eee;
+            }
+            object {
+              width: 100%;
+              height: 100%;
+              background: white;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="preview-header">
+            <div class="preview-title">${attachment.name}</div>
+            <div class="header-actions">
+              <a href="${attachment.url}" download="${attachment.name}" class="btn btn-primary">下载</a>
+              <button class="btn btn-secondary" onclick="window.close()">关闭</button>
+            </div>
+          </div>
+          <div class="preview-container">
+            <div class="preview-content">
+              <div class="loading">正在加载预览...</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `)
+      previewWindow.document.close()
+      
+      // 定义更新预览内容的函数
+      const updatePreviewContent = (content) => {
+        // 根据文件类型构建预览HTML
+        let previewContent = ''
+        if (fileExtension === '.pdf') {
+          previewContent = `<object data="${content}" type="application/pdf" width="100%" height="100%">
+                            <p>您的浏览器不支持PDF预览。<a href="${content}" download="${attachment.name}">点击下载</a></p>
+                          </object>`
+        } else if (['.jpg', '.jpeg', '.png', '.gif'].includes(fileExtension)) {
+          previewContent = `<img src="${content}" alt="${attachment.name}">`
+        } else if (fileExtension === '.txt') {
+          previewContent = `<pre>${content}</pre>`
+        } else {
+          // 对于文档类型，使用iframe尝试预览
+          previewContent = `<iframe src="${content}" width="100%" height="100%"></iframe>`
+        }
+        
+        // 更新预览窗口内容
+        const previewContainer = previewWindow.document.querySelector('.preview-content')
+        if (previewContainer) {
+          previewContainer.innerHTML = previewContent
+        }
+      }
+      
+      // 定义显示错误信息的函数
+      const showError = (message) => {
+        const previewContainer = previewWindow.document.querySelector('.preview-content')
+        if (previewContainer) {
+          previewContainer.innerHTML = `<div class="error">${message}<br><a href="${attachment.url}" download="${attachment.name}">点击下载文件</a></div>`
+        }
+      }
+      
+      // 定义读取文件内容的函数
+      const readFileContent = (blob) => {
+        const reader = new FileReader()
+        
+        reader.onload = (e) => {
+          const content = e.target.result
+          updatePreviewContent(content)
+        }
+        
+        reader.onerror = () => {
+          showError('读取文件失败')
+        }
+        
+        // 根据文件类型选择读取方式
+        if (fileExtension === '.txt') {
+          reader.readAsText(blob)
+        } else {
+          reader.readAsDataURL(blob)
+        }
+      }
+      
+      // 检查attachment对象中是否有file属性
+      if (attachment.file) {
+        // 直接使用本地文件
+        readFileContent(attachment.file)
+      } else if (attachment.url) {
+        // 检查URL是否是Blod URL
+        if (attachment.url.startsWith('blob:')) {
+          // Blob URL可能已经失效，显示友好提示
+          showError('预览链接已失效，您可以重新上传文件或直接下载')
+        } else {
+          // 从服务器获取文件
+          fetch(attachment.url)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok')
+              }
+              return response.blob()
+            })
+            .then(blob => {
+              readFileContent(blob)
+            })
+            .catch(error => {
+              console.error('Error fetching file:', error)
+              showError('获取文件失败，您可以重新上传文件或直接下载')
+            })
+        }
+      } else {
+        showError('文件信息不完整，您可以重新上传文件')
+      }
+    }
+  } else {
+    // 不支持预览的文件类型，直接下载
+    window.open(attachment.url, '_blank')
+  }
 }
 
 // 保存修改
@@ -337,7 +649,8 @@ const goBack = () => {
               rows="4"
               placeholder="请输入摘要"
             ></textarea>
-            <p v-else>{{ journal.abstract || '暂无摘要' }}</p>
+            <div v-else-if="journal.abstract" v-html="journal.abstract"></div>
+            <p v-else>暂无摘要</p>
           </div>
           
           <!-- 稿件正文 -->
@@ -355,6 +668,68 @@ const goBack = () => {
             </div>
             <div v-else class="no-content">
               <p>暂无正文内容</p>
+            </div>
+          </div>
+          
+          <!-- 附件上传 -->
+          <div class="journal-attachments">
+            <h3>附件</h3>
+            
+            <!-- 编辑状态下显示上传按钮 -->
+            <div v-if="isEditing" class="attachment-upload-section">
+              <input 
+                type="file" 
+                id="attachment-upload" 
+                style="display: none;" 
+                @change="handleFileUpload"
+              >
+              <button 
+                type="button" 
+                class="upload-btn" 
+                @click="triggerFileUpload"
+              >
+                上传附件
+              </button>
+              <p class="upload-hint">支持.doc, .docx, .pdf, .txt格式，单个文件不超过10MB</p>
+            </div>
+            
+            <!-- 附件列表 -->
+            <div class="attachments-list">
+              <div 
+                v-for="attachment in (isEditing ? (editedJournal.attachments || []) : (journal.attachments || []))" 
+                :key="attachment.id" 
+                class="attachment-item"
+              >
+                <div class="attachment-info">
+                  <span class="attachment-name">{{ attachment.name }}</span>
+                  <span class="attachment-size">({{ (attachment.size / 1024 / 1024).toFixed(2) }} MB)</span>
+                </div>
+                <div class="attachment-actions">
+                  <!-- 预览按钮 -->
+                  <button 
+                    type="button" 
+                    class="preview-btn" 
+                    @click="previewAttachment(attachment)"
+                  >
+                    预览
+                  </button>
+                  
+                  <!-- 编辑状态下显示删除按钮 -->
+                  <button 
+                    v-if="isEditing" 
+                    type="button" 
+                    class="delete-btn" 
+                    @click="removeAttachment(attachment.id)"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 无附件提示 -->
+              <div v-if="(!isEditing && (!journal.attachments || journal.attachments.length === 0)) || (isEditing && (!editedJournal.attachments || editedJournal.attachments.length === 0))" class="no-attachments">
+                <p>暂无附件</p>
+              </div>
             </div>
           </div>
           
@@ -506,12 +881,13 @@ const goBack = () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 2rem 0;
 }
 
 .review-records-content {
   flex: 1;
-  padding: 2rem;
-  background-color: #f5f5f5;
+  padding: 0 2rem;
 }
 
 .review-records-wrapper {
@@ -521,6 +897,7 @@ const goBack = () => {
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 2rem;
+  margin-top: 80px; /* 为固定导航栏留出空间 */
 }
 
 .page-header {
@@ -949,6 +1326,135 @@ const goBack = () => {
 
 .description-textarea {
   margin-top: 1rem;
+}
+
+/* 附件样式 */
+.journal-attachments {
+  margin-top: 1.5rem;
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.journal-attachments h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.attachment-upload-section {
+  margin-bottom: 1.5rem;
+}
+
+.upload-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.upload-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.upload-hint {
+  margin: 0.5rem 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.attachments-list {
+  margin-top: 1rem;
+}
+
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.attachment-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.attachment-name {
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-size {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.preview-btn, .delete-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.preview-btn {
+  background-color: #27ae60;
+  color: white;
+}
+
+.preview-btn:hover {
+  background-color: #229954;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #c0392b;
+}
+
+.no-attachments {
+  text-align: center;
+  padding: 1.5rem;
+  color: #666;
+  font-style: italic;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px dashed #ddd;
 }
 
 /* 修改说明部分样式 */
