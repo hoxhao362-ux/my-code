@@ -43,7 +43,7 @@ async def register(request: RegisterRequest, req: Request):
     
     # 检查用户名是否已存在
     existing_user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM users WHERE username = $1",
         (request.username,)
     )
     if existing_user:
@@ -51,7 +51,7 @@ async def register(request: RegisterRequest, req: Request):
     
     # 检查邮箱是否已存在
     existing_email = await user_db.fetchone(
-        "SELECT * FROM users WHERE email = ?",
+        "SELECT * FROM users WHERE email = $1",
         (request.email,)
     )
     if existing_email:
@@ -79,14 +79,14 @@ async def register(request: RegisterRequest, req: Request):
     await user_db.execute(
         """
         INSERT INTO users (uid_hash, username, password, email, role, create_time)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6)
         """,
         (uid_hash, request.username, hashed_password, request.email, user_role, create_time)
     )
     
     # 获取新注册用户信息
     new_user = await user_db.fetchone(
-        "SELECT uid, username, email, role FROM users WHERE username = ?",
+        "SELECT uid, username, email, role FROM users WHERE username = $1",
         (request.username,)
     )
     
@@ -138,7 +138,7 @@ async def login(request: LoginRequest, req: Request):
     
     # 检查用户是否存在
     user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM users WHERE username = $1",
         (request.username,)
     )
     if not user:
@@ -151,7 +151,7 @@ async def login(request: LoginRequest, req: Request):
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
     await user_db.execute(
-        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        "UPDATE users SET last_login_time = $1 WHERE uid = $2",
         (last_login_time, user["uid"])
     )
     
@@ -193,7 +193,7 @@ async def get_current_user_info(current_user: dict = Depends(deps.get_current_us
     # 这里我们重新查询完整信息。
     
     user = await user_db.fetchone(
-        "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = ?",
+        "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = $1",
         (current_user["uid"],)
     )
     
@@ -242,7 +242,7 @@ async def upgrade_role(
 
     # 更新数据库
     await user_db.execute(
-        "UPDATE users SET role = ? WHERE uid = ?",
+        "UPDATE users SET role = $1 WHERE uid = $2",
         (new_role, current_user["uid"])
     )
     

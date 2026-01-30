@@ -61,7 +61,7 @@ class InvitationCodeUtil:
             INSERT INTO invitation_codes (
                 code, role, status, max_uses, used_count, description,
                 created_by, created_by_uid, create_time, expire_time
-            ) VALUES (?, ?, 'active', ?, 0, ?, ?, ?, ?, ?)
+            ) VALUES ($1, $2, 'active', $3, 0, $4, $5, $6, $7, $8)
             """,
             (code, role, max_uses, description, created_by, created_by_uid, create_time, expire_time_str)
         )
@@ -84,7 +84,7 @@ class InvitationCodeUtil:
             """
             SELECT code, role, status, max_uses, used_count, expire_time
             FROM invitation_codes 
-            WHERE code = ?
+            WHERE code = $1
             """,
             (code,)
         )
@@ -132,7 +132,7 @@ class InvitationCodeUtil:
         
         # 更新使用次数
         await invitation_db.execute(
-            "UPDATE invitation_codes SET used_count = used_count + 1 WHERE code = ?",
+            "UPDATE invitation_codes SET used_count = used_count + 1 WHERE code = $1",
             (code,)
         )
         
@@ -142,20 +142,20 @@ class InvitationCodeUtil:
             """
             INSERT INTO invitation_code_usage (
                 code, used_by_uid, used_by_username, use_time
-            ) VALUES (?, ?, ?, ?)
+            ) VALUES ($1, $2, $3, $4)
             """,
             (code, used_by_uid, used_by_username, use_time)
         )
         
         # 检查是否达到最大使用次数，如果是则更新状态
         invitation = await invitation_db.fetchone(
-            "SELECT used_count, max_uses FROM invitation_codes WHERE code = ?",
+            "SELECT used_count, max_uses FROM invitation_codes WHERE code = $1",
             (code,)
         )
         
         if invitation["used_count"] >= invitation["max_uses"]:
             await invitation_db.execute(
-                "UPDATE invitation_codes SET status = 'inactive' WHERE code = ?",
+                "UPDATE invitation_codes SET status = 'inactive' WHERE code = $1",
                 (code,)
             )
         
@@ -173,12 +173,13 @@ class InvitationCodeUtil:
         Returns:
             bool: 是否更新成功
         """
-        result = await invitation_db.execute(
-            "UPDATE invitation_codes SET status = ? WHERE code = ?",
+        status_str = await invitation_db.execute(
+            "UPDATE invitation_codes SET status = $1 WHERE code = $2",
             (status, code)
         )
         
-        return result.rowcount > 0
+        # 解析 asyncpg 的状态字符串，例如 "UPDATE 1"
+        return "UPDATE 1" in status_str
     
     @staticmethod
     async def get_invitation_codes(
@@ -206,11 +207,11 @@ class InvitationCodeUtil:
         params = []
         
         if status:
-            where_clause += " AND status = ?"
+            where_clause += f" AND status = ${len(params) + 1}"
             params.append(status)
         
         if role:
-            where_clause += " AND role = ?"
+            where_clause += f" AND role = ${len(params) + 1}"
             params.append(role)
         
         # 查询总数
@@ -218,13 +219,16 @@ class InvitationCodeUtil:
         total = await invitation_db.fetchval(count_sql, tuple(params))
         
         # 查询列表
+        limit_idx = len(params) + 1
+        offset_idx = limit_idx + 1
+        
         list_sql = f"""
             SELECT code, role, status, max_uses, used_count, description,
                    created_by, create_time, expire_time
             FROM invitation_codes
             {where_clause}
             ORDER BY create_time DESC
-            LIMIT ? OFFSET ?
+            LIMIT ${limit_idx} OFFSET ${offset_idx}
         """
         params.extend([page_size, offset])
         

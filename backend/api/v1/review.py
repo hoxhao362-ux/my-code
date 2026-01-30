@@ -34,7 +34,7 @@ async def reviewer_login(request: LoginRequest, req: Request):
     
     # 检查用户是否存在
     user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM users WHERE username = $1",
         (request.username,)
     )
     if not user:
@@ -52,7 +52,7 @@ async def reviewer_login(request: LoginRequest, req: Request):
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
     await user_db.execute(
-        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        "UPDATE users SET last_login_time = $1 WHERE uid = $2",
         (last_login_time, user["uid"])
     )
     
@@ -101,7 +101,7 @@ async def get_pending_journals(
         FROM journals 
         WHERE status = 'pending' 
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $1 OFFSET $2
         """,
         (page_size, offset)
     )
@@ -131,7 +131,7 @@ async def review_journal(
     
     # 查询文献是否存在
     journal = await journal_db.fetchone(
-        "SELECT * FROM journals WHERE jid = ?",
+        "SELECT * FROM journals WHERE jid = $1",
         (jid,)
     )
     if not journal:
@@ -144,7 +144,7 @@ async def review_journal(
     # 更新文献状态
     update_time = datetime.now().isoformat()
     await journal_db.execute(
-        "UPDATE journals SET status = ?, update_time = ? WHERE jid = ?",
+        "UPDATE journals SET status = $1, update_time = $2 WHERE jid = $3",
         (result, update_time, jid)
     )
     
@@ -153,7 +153,7 @@ async def review_journal(
     await journal_db.execute(
         """
         INSERT INTO review_records (jid, reviewer_uid, review_time, result, comment)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
         """,
         (jid, current_user["uid"], review_time, result, comment)
     )
@@ -176,7 +176,7 @@ async def get_review_history(
     
     # 查询审核历史记录总数
     total = await journal_db.fetchval(
-        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ?",
+        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = $1",
         (current_user["uid"],)
     )
     
@@ -186,9 +186,9 @@ async def get_review_history(
         SELECT rr.*, j.title, j.authors, j.status
         FROM review_records rr
         JOIN journals j ON rr.jid = j.jid
-        WHERE rr.reviewer_uid = ?
+        WHERE rr.reviewer_uid = $1
         ORDER BY rr.review_time DESC
-        LIMIT ? OFFSET ?
+        LIMIT $2 OFFSET $3
         """,
         (current_user["uid"], page_size, offset)
     )
@@ -203,19 +203,19 @@ async def get_review_statistics(current_user: dict = Depends(deps.get_reviewer_u
     """获取审核统计信息，仅限审稿人访问"""
     # 查询总审核数
     total = await journal_db.fetchval(
-        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ?",
+        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = $1",
         (current_user["uid"],)
     )
     
     # 查询通过数
     approved = await journal_db.fetchval(
-        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ? AND result = 'approved'",
+        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = $1 AND result = 'approved'",
         (current_user["uid"],)
     )
     
     # 查询拒绝数
     rejected = await journal_db.fetchval(
-        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = ? AND result = 'rejected'",
+        "SELECT COUNT(*) FROM review_records WHERE reviewer_uid = $1 AND result = 'rejected'",
         (current_user["uid"],)
     )
     
@@ -249,7 +249,7 @@ async def get_rejected_journals(
         JOIN review_records rr ON j.jid = rr.jid
         WHERE j.status = 'rejected'
         ORDER BY j.update_time DESC
-        LIMIT ? OFFSET ?
+        LIMIT $1 OFFSET $2
         """,
         (page_size, offset)
     )

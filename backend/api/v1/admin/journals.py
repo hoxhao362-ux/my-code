@@ -30,7 +30,7 @@ async def get_all_journals(
     params = []
     
     if status:
-        where_clause += " AND status = ?"
+        where_clause += " AND status = $1"
         params.append(status)
     
     # 查询文献总数
@@ -38,13 +38,16 @@ async def get_all_journals(
     total = await journal_db.fetchval(count_sql, tuple(params))
     
     # 查询文献列表
+    limit_idx = len(params) + 1
+    offset_idx = limit_idx + 1
+    
     journals_sql = f"""
     SELECT j.jid, j.title, j.authors, j.abstract, j.status, j.file_name, j.file_size, j.create_time, j.update_time, u.username as uploader
     FROM journals j
     JOIN users u ON j.uid = u.uid
     {where_clause}
     ORDER BY j.create_time DESC 
-    LIMIT ? OFFSET ?
+    LIMIT ${limit_idx} OFFSET ${offset_idx}
     """
     params.extend([page_size, offset])
     journals = await journal_db.fetchall(journals_sql, tuple(params))
@@ -74,7 +77,7 @@ async def admin_delete_journal(
     """删除文献（软删除），仅限管理员访问"""
     # 查询文献
     journal = await journal_db.fetchone(
-        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
+        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = $1",
         (jid,)
     )
     
@@ -83,7 +86,7 @@ async def admin_delete_journal(
     
     # 软删除：将文献状态改为deleted
     await journal_db.execute(
-        "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
+        "UPDATE journals SET status = 'deleted', update_time = $1 WHERE jid = $2",
         (datetime.now().isoformat(), jid)
     )
     
@@ -93,7 +96,7 @@ async def admin_delete_journal(
         INSERT INTO deleted_journals (
             original_jid, uid, title, authors, abstract, file_hash, 
             file_bucket, file_name, file_size, delete_time
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         """,
         (
             journal["jid"],
@@ -144,7 +147,7 @@ async def get_all_review_records(
         JOIN journals j ON rr.jid = j.jid
         JOIN users u ON rr.reviewer_uid = u.uid
         ORDER BY rr.review_time DESC
-        LIMIT ? OFFSET ?
+        LIMIT $1 OFFSET $2
         """,
         (page_size, offset)
     )
@@ -188,7 +191,7 @@ async def get_deleted_journals(
         JOIN users u ON j.uid = u.uid
         WHERE j.status = 'deleted'
         ORDER BY j.update_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $1 OFFSET $2
         """,
         (page_size, offset)
     )
@@ -218,7 +221,7 @@ async def permanently_delete_journal(
     """彻底删除已删除文献，仅限管理员访问"""
     # 查询文献
     journal = await journal_db.fetchone(
-        "SELECT jid, uid, title, file_hash, file_bucket, file_name FROM journals WHERE jid = ? AND status = 'deleted'",
+        "SELECT jid, uid, title, file_hash, file_bucket, file_name FROM journals WHERE jid = $1 AND status = 'deleted'",
         (jid,)
     )
     
@@ -235,10 +238,10 @@ async def permanently_delete_journal(
         file_path.unlink()
     
     # 删除审核记录
-    await journal_db.execute("DELETE FROM review_records WHERE jid = ?", (jid,))
+    await journal_db.execute("DELETE FROM review_records WHERE jid = $1", (jid,))
     
     # 从主表中彻底删除文献
-    await journal_db.execute("DELETE FROM journals WHERE jid = ?", (jid,))
+    await journal_db.execute("DELETE FROM journals WHERE jid = $1", (jid,))
     
     # 记录管理员操作日志
     await record_admin_log(

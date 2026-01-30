@@ -4,7 +4,8 @@
 配置系统测试文件
 演示优化后的配置访问方法
 """
-
+import sys
+print(sys.argv[0])
 from core.config import config
 
 def test_config_access():

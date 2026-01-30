@@ -11,6 +11,12 @@ from contextlib import asynccontextmanager
 
 from utils.log import global_logger
 from core.config import setup_core, config
+from core.service_manager import service_manager
+
+# 显式导入单例，触发它们向 service_manager 注册
+from database.service.database_service import db_manager
+from utils.redis import redis_client
+
 from api.v1.user import user_router
 from api.v1.submit import submit_router
 from api.v1.review import review_router
@@ -27,15 +33,15 @@ async def lifespan(app: FastAPI):
     # 检查并创建配置中声明的目录路径
     config.check_dirs()
     
-    # 数据库初始化 - 使用新的标准化架构
-    from database.service.database_service import db_manager
-    global_logger.info('database', "开始初始化标准化数据库架构")
+    # 启动所有已注册的第三方服务
+    # 逻辑：service_manager.start_all() 会触发每个服务单例内部定义的定制化 start() 计划
+    try:
+        await service_manager.start_all()
+    except Exception as e:
+        global_logger.error('main', f"第三方服务集群启动失败: {e}")
+        # 根据业务需求决定是否终止应用启动
+        # raise e
     
-    # 初始化所有数据库服务
-    await db_manager.initialize_all()
-    
-    global_logger.info('database', "数据库初始化完成")
-
     # 检查并创建初始管理员
     try:
         user_db = db_manager.get_service('user_account')
@@ -44,28 +50,24 @@ async def lifespan(app: FastAPI):
             global_logger.info('main', "未检测到管理员账号，正在创建初始管理员...")
             from utils.jwt import jwt_util
             from utils.generator import generator
-            
-            # 默认管理员配置 (如果没有配置则使用默认值)
-            admin_username = "admin"
-            admin_password = "admin123456" 
-            admin_email = "admin@example.com"
-            
+
             # 尝试从配置获取
             try:
                 admin_username = config["admin.admin.default_username"]
                 admin_password = config["admin.admin.default_password"]
                 admin_email = config["admin.admin.default_email"]
             except:
-                pass
+                raise ValueError("管理员配置缺失必要字段")
 
             uid_hash = generator.generate_uid_hash(admin_username)
             hashed_password = jwt_util.hash_password(admin_password)
             create_time = datetime.now().isoformat()
             
+            # 使用 PostgreSQL 的 $1, $2... 占位符
             await user_db.execute(
                 """
                 INSERT INTO users (uid_hash, username, password, email, role, create_time, is_verified)
-                VALUES (?, ?, ?, ?, ?, ?, 1)
+                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
                 """,
                 (uid_hash, admin_username, hashed_password, admin_email, 'admin', create_time)
             )
@@ -73,28 +75,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         global_logger.error('main', f"创建初始管理员失败: {e}")
     
-    # Redis连接初始化
-    from utils.redis import redis_client
-    try:
-        # 使用新的配置访问方式
-        redis_host = config["global.global.redis_host"]
-        redis_password = config["global.global.redis_password"]
-        redis_db = config["global.global.redis_db"]
-        
-        await redis_client.connect(
-            host=redis_host,
-            password=None,
-            db=redis_db
-        )
-        global_logger.info('redis', "Redis连接初始化完成")
-    except AttributeError as e:
-        global_logger.error('redis', f"Redis配置不存在或不完整: {e}")
-    
     global_logger.info('main', "初始化检查完成")
+    
     yield
+    
     # 关闭事件
-    await redis_client.close()
-    global_logger.info('main', "关闭应用")
+    global_logger.info('main', "正在关闭应用...")
+    
+    # 安全关闭所有第三方服务（调用每个单例内部定义的 stop() 计划）
+    await service_manager.stop_all()
+    
+    global_logger.info('main', "应用已完全关闭")
 
 # 创建FastAPI应用
 app = FastAPI(

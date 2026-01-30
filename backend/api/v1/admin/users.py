@@ -20,7 +20,7 @@ async def admin_login(request: LoginRequest):
     """管理员登录接口"""
     # 从数据库查询用户
     user = await user_db.fetchone(
-        "SELECT uid, password, role, email FROM users WHERE username = ?",
+        "SELECT uid, password, role, email FROM users WHERE username = $1",
         (request.username,)
     )
     if not user:
@@ -37,7 +37,7 @@ async def admin_login(request: LoginRequest):
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
     await user_db.execute(
-        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        "UPDATE users SET last_login_time = $1 WHERE uid = $2",
         (last_login_time, user["uid"])
     )
 
@@ -80,7 +80,7 @@ async def get_users(
     params = []
     
     if role:
-        where_clause += " AND role = ?"
+        where_clause += f" AND role = ${len(params) + 1}"
         params.append(role)
     
     # 查询用户总数
@@ -88,12 +88,15 @@ async def get_users(
     total = await user_db.fetchval(count_sql, tuple(params))
     
     # 查询用户列表
+    limit_idx = len(params) + 1
+    offset_idx = limit_idx + 1
+    
     users_sql = f"""
     SELECT uid, username, email, role, is_verified, create_time, last_login_time
     FROM users 
     {where_clause}
     ORDER BY create_time DESC 
-    LIMIT ? OFFSET ?
+    LIMIT ${limit_idx} OFFSET ${offset_idx}
     """
     params.extend([page_size, offset])
     users = await user_db.fetchall(users_sql, tuple(params))
@@ -116,12 +119,12 @@ async def update_user_role(
         raise HTTPException(status_code=400, detail="角色无效")
     
     # 检查用户是否存在
-    user = await user_db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
+    user = await user_db.fetchone("SELECT * FROM users WHERE uid = $1", (uid,))
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     
     # 更新用户角色
-    await user_db.execute("UPDATE users SET role = ? WHERE uid = ?", (role, uid))
+    await user_db.execute("UPDATE users SET role = $1 WHERE uid = $2", (role, uid))
     
     # 记录管理员操作日志
     await record_admin_log(
@@ -148,14 +151,14 @@ async def delete_user(
 ):
     """删除用户，仅限管理员访问"""
     # 检查用户是否存在
-    user = await user_db.fetchone("SELECT * FROM users WHERE uid = ?", (uid,))
+    user = await user_db.fetchone("SELECT * FROM users WHERE uid = $1", (uid,))
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     
     # 删除用户的文献和审核记录
-    await journal_db.execute("DELETE FROM review_records WHERE reviewer_uid = ?", (uid,))
-    await journal_db.execute("DELETE FROM journals WHERE uid = ?", (uid,))
-    await user_db.execute("DELETE FROM users WHERE uid = ?", (uid,))
+    await journal_db.execute("DELETE FROM review_records WHERE reviewer_uid = $1", (uid,))
+    await journal_db.execute("DELETE FROM journals WHERE uid = $1", (uid,))
+    await user_db.execute("DELETE FROM users WHERE uid = $1", (uid,))
     
     # 记录管理员操作日志
     await record_admin_log(

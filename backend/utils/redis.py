@@ -1,18 +1,103 @@
-import redis.asyncio as redis
+import asyncio
 from typing import Any, Dict, Optional, Union
 from datetime import datetime, timedelta
 
-class RedisClient:
-    """Redis客户端类，用于处理Redis连接和操作"""
+import redis.asyncio as redis
+
+from core.config import config
+from core.service_manager import BaseManagedService
+from utils.log import global_logger
+
+class RedisClient(BaseManagedService):
+    """Redis 客户端类，用于处理 Redis 连接和操作。
+    
+    继承自 BaseManagedService，实现定制化的 Redis 启动和就绪检查计划。
+    """
     def __init__(self):
+        # 初始化父类，注册服务名为 'redis'
+        super().__init__("redis")
         self.client: Optional[redis.Redis] = None
     
-    async def connect(self, host: str = "localhost:6379", password: Optional[str] = None, db: int = 0):
+    async def start(self):
+        """
+        定制化启动计划：
+        1. 从配置读取 redis-server 路径和参数
+        2. 启动 Redis 进程
+        3. 尝试连接并进行 PING 检查
+        """
+        global_logger.info("Redis", "执行 Redis 定制化启动计划...")
+        
+        # 1. 获取配置
+        exe_path = config["global.global.redis_service_path"]
+        args = await self._check_args(config["global.global.redis_service_args"])
+        
+        # 2. 启动进程
+        cmd_parts = [f'"{exe_path}"']
+        for k, v in args.items():
+            cmd_parts.append(f'{k} "{v}"')
+            
+        start_cmd = " ".join(cmd_parts)
+        global_logger.info("Redis", f"正在启动 Redis: {start_cmd}")
+        
+        try:
+            # 创建进程
+            await self._create_process(start_cmd)
+            
+            # 3. 就绪检查与连接
+            host = config["global.global.redis_host"]
+            port = config["global.global.redis_port"]
+            password = config.get("global.global.redis_password")
+            db = config.get("global.global.redis_db", 0)
+            
+            # 处理 TOML 中的 nan 值
+            if password is None or (isinstance(password, float) and password != password):
+                password = None
+
+            retry_count = 0
+            max_retries = 30
+            while retry_count < max_retries:
+                try:
+                    await self.connect(
+                        host=host,
+                        port=port,
+                        password=password,
+                        db=db
+                    )
+                    global_logger.info("Redis", "Redis 服务就绪并连接成功")
+                    return
+                except Exception:
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        raise
+                    await asyncio.sleep(1)
+                    
+        except Exception as e:
+            global_logger.error("Redis", f"定制启动计划执行失败: {e}")
+            raise
+
+    async def stop(self):
+        """
+        定制化关闭计划：
+        终止进程并关闭客户端连接
+        """
+        global_logger.info("Redis", "正在执行 Redis 安全关闭计划...")
+        try:
+            # 关闭连接
+            await self.close()
+            
+            # 终止进程
+            if self.process and self.process.returncode is None:
+                self.process.terminate()
+                await self.process.wait()
+                global_logger.info("Redis", "Redis 进程已终止")
+        except Exception as e:
+            global_logger.error("Redis", f"关闭 Redis 失败: {e}")
+
+    async def connect(self, host: str, port: int, password: Optional[str] = None, db: int = 0):
         """连接到Redis服务器"""
-        host, port = host.split(":") if ":" in host else (host, "6379")
         self.client = redis.Redis(
             host=host,
-            port=int(port),
+            port=port,
             password=password,
             db=db,
             decode_responses=True

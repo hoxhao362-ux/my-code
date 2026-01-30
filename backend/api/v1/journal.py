@@ -43,7 +43,7 @@ async def get_public_journals(page: int = 1, page_size: int = 10):
         FROM journals 
         WHERE status = 'published' 
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $1 OFFSET $2
         """,
         (page_size, offset)
     )
@@ -72,7 +72,7 @@ async def get_journal_detail(jid: int, token: str):
         """
         SELECT jid, uid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE jid = ?
+        WHERE jid = $1
         """,
         (jid,)
     )
@@ -102,7 +102,7 @@ async def search_journals(keyword: str, page: int = 1, page_size: int = 10):
     total = await journal_db.fetchval(
         """
         SELECT COUNT(*) FROM journals 
-        WHERE (title LIKE ? OR abstract LIKE ?) 
+        WHERE (title LIKE $1 OR abstract LIKE $2) 
         AND status != 'deleted'
         """,
         (f"%{keyword}%", f"%{keyword}%")
@@ -113,12 +113,12 @@ async def search_journals(keyword: str, page: int = 1, page_size: int = 10):
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE (title LIKE ? OR abstract LIKE ?) 
+        WHERE (title LIKE $1 OR abstract LIKE $2) 
         AND status != 'deleted'
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $3 OFFSET $4
         """,
-        (page_size, offset)
+        (f"%{keyword}%", f"%{keyword}%", page_size, offset)
     )
     
     # 转换为响应模型
@@ -142,7 +142,7 @@ async def search_journals_by_author(keyword: str, page: int = 1, page_size: int 
     total = await journal_db.fetchval(
         """
         SELECT COUNT(*) FROM journals 
-        WHERE authors LIKE ? 
+        WHERE authors LIKE $1 
         AND status != 'deleted'
         """,
         (f"%{keyword}%",)
@@ -153,12 +153,12 @@ async def search_journals_by_author(keyword: str, page: int = 1, page_size: int 
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE authors LIKE ? 
+        WHERE authors LIKE $1 
         AND status != 'deleted'
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $2 OFFSET $3
         """,
-        (page_size, offset)
+        (f"%{keyword}%", page_size, offset)
     )
     
     # 转换为响应模型
@@ -182,7 +182,7 @@ async def search_journals_by_subject(subject: str, page: int = 1, page_size: int
     total = await journal_db.fetchval(
         """
         SELECT COUNT(*) FROM journals 
-        WHERE subject = ? 
+        WHERE subject = $1 
         AND status != 'deleted'
         """,
         (subject,)
@@ -193,12 +193,12 @@ async def search_journals_by_subject(subject: str, page: int = 1, page_size: int
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE subject = ? 
+        WHERE subject = $1 
         AND status != 'deleted'
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $2 OFFSET $3
         """,
-        (page_size, offset)
+        (subject, page_size, offset)
     )
     
     # 转换为响应模型
