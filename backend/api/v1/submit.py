@@ -61,7 +61,7 @@ async def author_login(request: LoginRequest, req: Request):
     
     # 检查用户是否存在
     user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = ?",
+        "SELECT * FROM users WHERE username = $1",
         (request.username,)
     )
     if not user:
@@ -79,7 +79,7 @@ async def author_login(request: LoginRequest, req: Request):
     # 更新最后登录时间
     last_login_time = datetime.now().isoformat()
     await user_db.execute(
-        "UPDATE users SET last_login_time = ? WHERE uid = ?",
+        "UPDATE users SET last_login_time = $1 WHERE uid = $2",
         (last_login_time, user["uid"])
     )
     
@@ -164,13 +164,14 @@ async def upload_journal(
     jid = generator.generate_jid()
 
     # 插入文献数据
+    # 注意：jid 是由生成器生成的毫秒时间戳字符串，在 PostgreSQL 中会被存为 BIGINT
     await journal_db.execute(
         """
-        INSERT INTO journals (jid, uid, title, authors, subject, abstract, file_hash, file_bucket, file_name, subject, file_size, create_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO journals (jid, uid, title, authors, subject, abstract, file_hash, file_bucket, file_name, file_size, create_time)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         """,
         (
-            jid,
+            int(jid), # 转换为整数
             current_user["uid"],
             request.title,
             request.authors,
@@ -179,17 +180,13 @@ async def upload_journal(
             file_hash,
             f"{file_bucket_1}/{file_bucket_2}",
             request.file_name,
-            request.subject,
             file_size,
             create_time
         )
     )
     
-    # 获取新上传文献的ID
-    jid = await journal_db.fetchval("SELECT last_insert_rowid()")
-    
     return JournalUploadResponse(
-        jid=jid,
+        jid=int(jid),
         title=request.title,
         status="pending",
         upload_time=datetime.now()
@@ -207,7 +204,7 @@ async def get_my_journals(
     
     # 查询文献总数
     total = await journal_db.fetchval(
-        "SELECT COUNT(*) FROM journals WHERE uid = ?",
+        "SELECT COUNT(*) FROM journals WHERE uid = $1",
         (current_user["uid"],)
     )
     
@@ -216,9 +213,9 @@ async def get_my_journals(
         """
         SELECT jid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE uid = ? 
+        WHERE uid = $1 
         ORDER BY create_time DESC 
-        LIMIT ? OFFSET ?
+        LIMIT $2 OFFSET $3
         """,
         (current_user["uid"], page_size, offset)
     )
@@ -245,7 +242,7 @@ async def get_journal_detail(
         """
         SELECT jid, uid, title, authors, abstract, status, file_name, file_size, create_time, update_time
         FROM journals 
-        WHERE jid = ?
+        WHERE jid = $1
         """,
         (jid,)
     )
@@ -267,7 +264,7 @@ async def delete_journal(
     """删除文献（软删除）"""
     # 查询文献
     journal = await journal_db.fetchone(
-        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = ?",
+        "SELECT jid, uid, title, authors, abstract, file_hash, file_bucket, file_name, file_size FROM journals WHERE jid = $1",
         (jid,)
     )
     
@@ -280,7 +277,7 @@ async def delete_journal(
     
     # 软删除：将文献状态改为deleted
     await journal_db.execute(
-        "UPDATE journals SET status = 'deleted', update_time = ? WHERE jid = ?",
+        "UPDATE journals SET status = 'deleted', update_time = $1 WHERE jid = $2",
         (datetime.now().isoformat(), jid)
     )
     
@@ -290,7 +287,7 @@ async def delete_journal(
         INSERT INTO deleted_journals (
             original_jid, uid, title, authors, abstract, file_hash, 
             file_bucket, file_name, file_size, delete_time
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         """,
         (
             journal["jid"],

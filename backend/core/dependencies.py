@@ -70,7 +70,7 @@ async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
     # 3. 从数据库获取用户
     user_db = db_manager.get_service('user_account')
     user = await user_db.fetchone(
-        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = ?",
+        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = $1",
         (user_id,)
     )
     

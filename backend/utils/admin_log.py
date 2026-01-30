@@ -32,7 +32,7 @@ async def record_admin_log(
         INSERT INTO admin_logs (
             admin_uid, admin_username, operation_time, operation_type, 
             operation_object, operation_details, ip_address, user_agent
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         """,
         (
             admin_uid,
@@ -75,15 +75,15 @@ async def get_admin_logs(
     params = []
     
     if operation_type:
-        where_clause += " AND operation_type = ?"
+        where_clause += f" AND operation_type = ${len(params) + 1}"
         params.append(operation_type)
     
     if start_time:
-        where_clause += " AND operation_time >= ?"
+        where_clause += f" AND operation_time >= ${len(params) + 1}"
         params.append(start_time)
     
     if end_time:
-        where_clause += " AND operation_time <= ?"
+        where_clause += f" AND operation_time <= ${len(params) + 1}"
         params.append(end_time)
     
     # 查询日志总数
@@ -91,13 +91,16 @@ async def get_admin_logs(
     total = await admin_log_db.fetchval(count_sql, tuple(params))
     
     # 查询日志列表
+    limit_idx = len(params) + 1
+    offset_idx = limit_idx + 1
+    
     logs_sql = f"""
     SELECT log_id, admin_uid, admin_username, operation_time, operation_type,
            operation_object, operation_details, ip_address, user_agent
     FROM admin_logs
     {where_clause}
     ORDER BY operation_time DESC
-    LIMIT ? OFFSET ?
+    LIMIT ${limit_idx} OFFSET ${offset_idx}
     """
     params.extend([page_size, offset])
     logs = await admin_log_db.fetchall(logs_sql, tuple(params))
