@@ -226,9 +226,9 @@ const handleAvatarUpload = (event) => {
                    user?.role === 'reviewer' ? '审核员' : 
                    user?.role === 'author' ? '作者' : '普通用户' }}
               </p>
-              <div class="user-contact">
-                <p v-if="user?.email"><strong>邮箱：</strong>{{ showFullContactInfo ? user.email : encryptEmail(user.email) }}</p>
-                <p v-if="user?.phone"><strong>手机号：</strong>{{ showFullContactInfo ? user.phone : encryptPhone(user.phone) }}</p>
+              <div class="user-contact" v-if="showFullContactInfo">
+                <p v-if="user?.email"><strong>邮箱：</strong>{{ encryptEmail(user.email) }}</p>
+                <p v-if="user?.phone"><strong>手机号：</strong>{{ encryptPhone(user.phone) }}</p>
               </div>
             </div>
           </div>

@@ -9,6 +9,21 @@ const user = ref(userStore.user)
 // 使用userStore中的用户数据
 const users = computed(() => userStore.users)
 
+// 邮箱加密函数
+const encryptEmail = (email) => {
+  if (!email) return ''
+  const [username, domain] = email.split('@')
+  if (username.length <= 2) return `${username}@${domain}`
+  return `${username.slice(0, 2)}${'*'.repeat(username.length - 2)}@${domain}`
+}
+
+// 手机号加密函数
+const encryptPhone = (phone) => {
+  if (!phone) return ''
+  if (phone.length !== 11) return phone
+  return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
+}
+
 // 重置密码
 const resetPassword = (id) => {
   if (confirm('确定要重置该用户的密码吗？')) {
@@ -65,8 +80,8 @@ const toggleUserStatus = (id) => {
                 <td>{{ user.id }}</td>
                 <td>{{ user.username }}</td>
                 <td>{{ user.role }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.phone }}</td>
+                <td>{{ encryptEmail(user.email) }}</td>
+                <td>{{ encryptPhone(user.phone) }}</td>
                 <td>
                   <span class="status-badge" :class="user.status">
                     {{ user.status === 'active' ? '启用' : '禁用' }}
