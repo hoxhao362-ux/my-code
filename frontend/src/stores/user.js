@@ -168,9 +168,15 @@ export const useUserStore = defineStore('user', {
                      credentials.username === 'author' ? 'author' : 
                      'user')
           
+          // 从用户列表中查找完整用户信息
+          const fullUserInfo = this.users.find(u => u.username === credentials.username)
+          
           userData = {
             username: credentials.username,
-            role: role
+            role: role,
+            // 添加完整的用户信息
+            email: fullUserInfo?.email || `${credentials.username}@example.com`,
+            phone: fullUserInfo?.phone || '13800138000'
           }
         } else {
           // API请求成功，使用返回的数据

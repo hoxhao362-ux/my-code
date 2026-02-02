@@ -6,6 +6,21 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+// 邮箱加密函数
+const encryptEmail = (email) => {
+  if (!email) return ''
+  const [username, domain] = email.split('@')
+  if (username.length <= 2) return `${username}@${domain}`
+  return `${username.slice(0, 2)}${'*'.repeat(username.length - 2)}@${domain}`
+}
+
+// 手机号加密函数
+const encryptPhone = (phone) => {
+  if (!phone) return ''
+  if (phone.length !== 11) return phone
+  return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
+}
+
 // 模拟投稿记录数据
 const submissionRecords = ref([
   { id: 1, userId: 3, title: '基于深度学习的医学图像分析', date: '2025-12-30', status: '已通过' },
@@ -343,8 +358,8 @@ const enableUser = (user) => {
                        user.role === 'author' ? '作者' : '普通用户' }}
                   </span>
                 </td>
-                <td class="user-email">{{ user.email }}</td>
-                <td class="user-phone">{{ user.phone }}</td>
+                <td class="user-email">{{ encryptEmail(user.email) }}</td>
+                <td class="user-phone">{{ encryptPhone(user.phone) }}</td>
                 <td>
                   <span class="status-badge" :class="user.status">
                     {{ user.status === 'active' ? '启用' : '禁用' }}

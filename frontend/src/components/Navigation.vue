@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../composables/useI18n'
 
 const router = useRouter()
+const { t, currentLang, setLang } = useI18n()
 
 const props = defineProps({
   user: Object,
@@ -10,6 +12,10 @@ const props = defineProps({
   toggleDirectory: Function,
   logout: Function
 })
+
+const toggleLang = () => {
+  setLang(currentLang.value === 'en' ? 'zh' : 'en')
+}
 
 // 控制角色管理子菜单的显示状态
 const showRoleMenu = ref(false)
@@ -71,13 +77,13 @@ const availableRoles = computed(() => {
   // 高权限角色可以切换到低权限角色
   const roles = []
   if (maxPriority >= rolePriority.admin) {
-    roles.push({ value: 'admin', label: '管理员后台' })
+    roles.push({ value: 'admin', label: t('nav.roles.admin') })
   }
   if (maxPriority >= rolePriority.reviewer) {
-    roles.push({ value: 'reviewer', label: '审核员后台' })
+    roles.push({ value: 'reviewer', label: t('nav.roles.reviewer') })
   }
   if (maxPriority >= rolePriority.author) {
-    roles.push({ value: 'author', label: '作者后台' })
+    roles.push({ value: 'author', label: t('nav.roles.author') })
   }
   
   return roles
@@ -306,7 +312,7 @@ const handleAdminLogin = () => {
       router.push('/admin/login')
     } else {
       // 普通用户，显示权限不足提示
-      alert('权限不足，无法登录后台')
+      alert(t('nav.permissionDenied'))
     }
   } else {
     // 未登录用户，跳转到后台登录页
@@ -332,7 +338,7 @@ const handleLogout = () => {
   <nav class="navbar">
     <div class="navbar-container">
       <div class="navbar-logo">
-        <h1>期刊投稿平台</h1>
+        <h1>{{ t('nav.logo') }}</h1>
       </div>
       <ul class="navbar-menu">
         <!-- 主站导航 -->
@@ -344,7 +350,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'home' }"
               @click.prevent="goToHome"
             >
-              首页
+              {{ t('nav.home') }}
             </a>
           </li>
           <li class="nav-item">
@@ -353,7 +359,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="$router.push('/directory')"
             >
-              目录
+              {{ t('nav.directory') }}
             </a>
           </li>
           <!-- 普通用户、作者和管理员都可以投稿 -->
@@ -364,7 +370,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'submit' }"
               >
-                投稿中心 ▼
+                {{ t('nav.submissionCenter') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showSubmissionMenu">
@@ -375,7 +381,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'submission-rules' }"
                   @click.prevent="router.push('/submission-rules'); closeAllMenus()"
                 >
-                  投稿须知
+                  {{ t('nav.submissionRules') }}
                 </a>
               </li>
               <li>
@@ -385,7 +391,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'submit' }"
                   @click.prevent="goToSubmit(); closeAllMenus()"
                 >
-                  在线投稿
+                  {{ t('nav.onlineSubmission') }}
                 </a>
               </li>
             </ul>
@@ -399,7 +405,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'profile' }"
               >
-                个人中心 ▼
+                {{ t('nav.profile') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showProfileMenu">
@@ -410,7 +416,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'profile' }"
                   @click.prevent="router.push('/profile'); closeAllMenus()"
                 >
-                  个人信息
+                  {{ t('nav.profileInfo') }}
                 </a>
               </li>
               <li>
@@ -420,7 +426,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'account-security' }"
                   @click.prevent="router.push('/account-security'); closeAllMenus()"
                 >
-                  账号安全
+                  {{ t('nav.accountSecurity') }}
                 </a>
               </li>
             </ul>
@@ -434,7 +440,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'help' }"
               >
-                帮助中心 ▼
+                {{ t('nav.helpCenter') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showHelpMenu">
@@ -445,7 +451,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'faq' }"
                   @click.prevent="router.push('/faq'); closeAllMenus()"
                 >
-                  常见问题
+                  {{ t('nav.faq') }}
                 </a>
               </li>
               <li>
@@ -455,7 +461,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'contact' }"
                   @click.prevent="router.push('/contact'); closeAllMenus()"
                 >
-                  联系我们
+                  {{ t('nav.contact') }}
                 </a>
               </li>
               <li>
@@ -465,7 +471,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'feedback' }"
                   @click.prevent="router.push('/feedback'); closeAllMenus()"
                 >
-                  意见反馈
+                  {{ t('nav.feedback') }}
                 </a>
               </li>
             </ul>
@@ -478,7 +484,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="handleAdminLogin"
             >
-              登录后台
+              {{ t('nav.adminLogin') }}
             </a>
           </li>
         </template>
@@ -492,14 +498,14 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'reviewer-dashboard' || currentPage === 'admin-audit-dashboard' }"
               @click.prevent="goToAdminDashboard"
             >
-              后台主页
+              {{ t('nav.dashboard') }}
             </a>
           </li>
           <!-- 角色切换菜单 -->
           <li v-if="availableRoles.length > 1" class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
               <a href="#" class="nav-link">
-                角色切换 ▼
+                {{ t('nav.roleSwitch') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
@@ -522,7 +528,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'reviewer-pending' || currentPage === 'admin-audit-list' }"
               @click.prevent="goToAuditList"
             >
-              审核任务
+              {{ t('nav.tasks') }}
             </a>
           </li>
           <li class="nav-item">
@@ -532,7 +538,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'reviewer-history' || currentPage === 'admin-audit-history' }"
               @click.prevent="goToAuditHistory"
             >
-              审核记录
+              {{ t('nav.history') }}
             </a>
           </li>
           <li class="nav-item dropdown">
@@ -542,7 +548,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') }"
               >
-                个人中心 ▼
+                {{ t('nav.profile') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showProfileMenu">
@@ -553,7 +559,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
                   @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
                 >
-                  个人信息
+                  {{ t('nav.profileInfo') }}
                 </a>
               </li>
               <li>
@@ -563,7 +569,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-profile-security' }"
                   @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
                 >
-                  账号安全
+                  {{ t('nav.accountSecurity') }}
                 </a>
               </li>
               <li>
@@ -573,7 +579,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-notifications' }"
                   @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
                 >
-                  消息通知
+                  {{ t('nav.messages') }}
                 </a>
               </li>
             </ul>
@@ -584,7 +590,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="goToHome"
             >
-              返回主站
+              {{ t('nav.returnMain') }}
             </a>
           </li>
         </template>
@@ -598,14 +604,14 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'admin-dashboard' }"
               @click.prevent="goToAdminDashboard"
             >
-              后台主页
+              {{ t('nav.dashboard') }}
             </a>
           </li>
           <!-- 角色切换菜单 -->
           <li v-if="availableRoles.length > 1" class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
               <a href="#" class="nav-link">
-                角色切换 ▼
+                {{ t('nav.roleSwitch') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
@@ -629,7 +635,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'reviewer-pending' || currentPage === 'admin-audit-list' }"
               @click.prevent="goToAuditList"
             >
-              审核任务
+              {{ t('nav.tasks') }}
             </a>
           </li>
           <li class="nav-item">
@@ -639,7 +645,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'reviewer-history' || currentPage === 'admin-audit-history' }"
               @click.prevent="goToAuditHistory"
             >
-              审核记录
+              {{ t('nav.history') }}
             </a>
           </li>
           <!-- 角色管理菜单 -->
@@ -650,7 +656,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage.startsWith('admin-users') }"
               >
-                角色管理 ▼
+                {{ t('nav.roleManagement') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showRoleMenu">
@@ -661,7 +667,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-users' }"
                   @click.prevent="router.push('/admin/users'); closeAllMenus()"
                 >
-                  用户列表
+                  {{ t('nav.userList') }}
                 </a>
               </li>
               <li>
@@ -671,7 +677,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-reviewer-management' }"
                   @click.prevent="router.push('/admin/reviewer-management'); closeAllMenus()"
                 >
-                  审核员管理
+                  {{ t('nav.reviewerManagement') }}
                 </a>
               </li>
               <li>
@@ -681,7 +687,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-account-status' }"
                   @click.prevent="router.push('/admin/account-status'); closeAllMenus()"
                 >
-                  账号状态
+                  {{ t('nav.accountStatus') }}
                 </a>
               </li>
             </ul>
@@ -695,7 +701,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage.startsWith('admin-system') }"
               >
-                系统设置 ▼
+                {{ t('nav.systemSettings') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showSystemMenu">
@@ -706,7 +712,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-system-basic' }"
                   @click.prevent="router.push('/admin/system/basic'); closeAllMenus()"
                 >
-                  基础配置
+                  {{ t('nav.basicConfig') }}
                 </a>
               </li>
               <li>
@@ -716,7 +722,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-system-notification' }"
                   @click.prevent="router.push('/admin/system/notification'); closeAllMenus()"
                 >
-                  通知设置
+                  {{ t('nav.notificationSettings') }}
                 </a>
               </li>
               <li>
@@ -726,7 +732,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-system-logs' }"
                   @click.prevent="router.push('/admin/system/logs'); closeAllMenus()"
                 >
-                  日志管理
+                  {{ t('nav.logManagement') }}
                 </a>
               </li>
               <li class="dropdown-divider"></li>
@@ -737,7 +743,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-system-modules' || currentPage === 'admin-modules' }"
                   @click.prevent="router.push('/admin/system/modules'); closeAllMenus()"
                 >
-                  模块管理
+                  {{ t('nav.moduleManagement') }}
                 </a>
               </li>
               <li>
@@ -747,7 +753,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-system-invitation-codes' }"
                   @click.prevent="router.push('/admin/system/invitation-codes'); closeAllMenus()"
                 >
-                  邀请码管理
+                  {{ t('nav.inviteCodeManagement') }}
                 </a>
               </li>
             </ul>
@@ -759,7 +765,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') }"
               >
-                个人中心 ▼
+                {{ t('nav.profile') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showProfileMenu">
@@ -770,7 +776,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
                   @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
                 >
-                  个人信息
+                  {{ t('nav.profileInfo') }}
                 </a>
               </li>
               <li>
@@ -780,7 +786,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-profile-security' }"
                   @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
                 >
-                  账号安全
+                  {{ t('nav.accountSecurity') }}
                 </a>
               </li>
               <li>
@@ -790,7 +796,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-notifications' }"
                   @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
                 >
-                  消息通知
+                  {{ t('nav.messages') }}
                 </a>
               </li>
               <li>
@@ -800,7 +806,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-profile-logs' }"
                   @click.prevent="router.push('/admin/profile-logs'); closeAllMenus()"
                 >
-                  操作记录
+                  {{ t('nav.operationLogs') }}
                 </a>
               </li>
               <li>
@@ -810,7 +816,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-profile-manuscript-status' }"
                   @click.prevent="router.push('/admin/profile-manuscript-status'); closeAllMenus()"
                 >
-                  稿件状态查询
+                  {{ t('nav.manuscriptStatus') }}
                 </a>
               </li>
               <li>
@@ -820,7 +826,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-feedback-management' }"
                   @click.prevent="router.push('/admin/feedback-management'); closeAllMenus()"
                 >
-                  意见收纳
+                  {{ t('nav.feedbackManagement') }}
                 </a>
               </li>
             </ul>
@@ -831,7 +837,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="goToHome"
             >
-              返回主站
+              {{ t('nav.returnMain') }}
             </a>
           </li>
         </template>
@@ -845,14 +851,14 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' }"
               @click.prevent="goToAdminDashboard"
             >
-              后台主页
+              {{ t('nav.dashboard') }}
             </a>
           </li>
           <!-- 角色切换菜单 -->
           <li v-if="availableRoles.length > 1" class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
               <a href="#" class="nav-link">
-                角色切换 ▼
+                {{ t('nav.roleSwitch') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
@@ -877,7 +883,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage.startsWith('admin-manuscript') }"
               >
-                稿件管理 ▼
+                {{ t('nav.manuscriptManagement') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showManuscriptMenu">
@@ -888,7 +894,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-author-submit' }"
                   @click.prevent="router.push('/admin/author-submit'); closeAllMenus()"
                 >
-                  新增投稿
+                  {{ t('nav.newSubmission') }}
                 </a>
               </li>
               <li>
@@ -898,7 +904,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-manuscript-my' }"
                   @click.prevent="router.push('/admin/manuscript/my'); closeAllMenus()"
                 >
-                  我的稿件
+                  {{ t('nav.myManuscripts') }}
                 </a>
               </li>
               <li>
@@ -908,7 +914,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-manuscript-progress' }"
                   @click.prevent="router.push('/admin/manuscript/progress'); closeAllMenus()"
                 >
-                  稿件进度
+                  {{ t('nav.manuscriptProgress') }}
                 </a>
               </li>
               <li>
@@ -918,7 +924,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-manuscript-history' }"
                   @click.prevent="router.push('/admin/manuscript/history'); closeAllMenus()"
                 >
-                  历史投稿
+                  {{ t('nav.historySubmission') }}
                 </a>
               </li>
             </ul>
@@ -932,7 +938,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' }"
               >
-                个人中心 ▼
+                {{ t('nav.profile') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showProfileMenu">
@@ -943,7 +949,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
                   @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
                 >
-                  个人信息
+                  {{ t('nav.profileInfo') }}
                 </a>
               </li>
               <li>
@@ -953,7 +959,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-profile-security' }"
                   @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
                 >
-                  账号安全
+                  {{ t('nav.accountSecurity') }}
                 </a>
               </li>
               <li>
@@ -963,7 +969,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-notifications' }"
                   @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
                 >
-                  消息通知
+                  {{ t('nav.messages') }}
                 </a>
               </li>
             </ul>
@@ -977,7 +983,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage.startsWith('admin-guide') }"
               >
-                投稿指南 ▼
+                {{ t('nav.submissionGuide') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showGuideMenu">
@@ -988,7 +994,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-submission-rules' }"
                   @click.prevent="router.push('/admin/submission-rules'); closeAllMenus()"
                 >
-                  投稿须知
+                  {{ t('nav.submissionRules') }}
                 </a>
               </li>
               <li>
@@ -998,7 +1004,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-guide-faq' }"
                   @click.prevent="router.push('/admin/guide/faq'); closeAllMenus()"
                 >
-                  常见问题
+                  {{ t('nav.faq') }}
                 </a>
               </li>
             </ul>
@@ -1012,7 +1018,7 @@ const handleLogout = () => {
                 class="nav-link"
                 :class="{ active: currentPage.startsWith('admin-help') }"
               >
-                帮助中心 ▼
+                {{ t('nav.helpCenter') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showAuthorHelpMenu">
@@ -1023,7 +1029,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-help-consultation' }"
                   @click.prevent="router.push('/admin/help/consultation'); closeAllMenus()"
                 >
-                  在线咨询
+                  {{ t('nav.onlineConsultation') }}
                 </a>
               </li>
               <li>
@@ -1033,7 +1039,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'admin-help-feedback' }"
                   @click.prevent="router.push('/admin/help/feedback'); closeAllMenus()"
                 >
-                  意见反馈
+                  {{ t('nav.feedback') }}
                 </a>
               </li>
             </ul>
@@ -1045,7 +1051,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="goToHome"
             >
-              返回主站
+              {{ t('nav.returnMain') }}
             </a>
           </li>
         </template>
@@ -1058,7 +1064,7 @@ const handleLogout = () => {
               class="nav-link logout"
               @click.prevent="handleLogout"
             >
-              退出登录
+              {{ t('nav.logout') }}
             </a>
           </li>
         </template>
@@ -1070,7 +1076,7 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="router.push('/login')"
             >
-              登录
+              {{ t('nav.login') }}
             </a>
           </li>
           <li class="nav-item">
@@ -1079,10 +1085,17 @@ const handleLogout = () => {
               class="nav-link"
               @click.prevent="router.push('/register')"
             >
-              注册
+              {{ t('nav.register') }}
             </a>
           </li>
         </template>
+        
+        <!-- Language Switcher -->
+        <li class="nav-item">
+          <a href="#" class="nav-link" @click.prevent="toggleLang">
+            {{ currentLang === 'en' ? '中文' : 'En' }}
+          </a>
+        </li>
       </ul>
     </div>
   </nav>

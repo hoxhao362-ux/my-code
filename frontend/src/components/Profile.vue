@@ -281,9 +281,9 @@ const handleRemoveModule = (moduleName) => {
             <div class="user-details">
               <h2 class="user-name">{{ user?.username || '未知用户' }}</h2>
               <p class="user-role">{{ user?.role === 'admin' ? '管理员' : '普通用户' }}</p>
-              <div class="user-contact">
-                <p v-if="user?.email"><strong>邮箱：</strong>{{ showFullContactInfo ? user.email : encryptEmail(user.email) }}</p>
-                <p v-if="user?.phone"><strong>手机号：</strong>{{ showFullContactInfo ? user.phone : encryptPhone(user.phone) }}</p>
+              <div class="user-contact" v-if="showFullContactInfo">
+                <p v-if="user?.email"><strong>邮箱：</strong>{{ encryptEmail(user.email) }}</p>
+                <p v-if="user?.phone"><strong>手机号：</strong>{{ encryptPhone(user.phone) }}</p>
               </div>
             </div>
           </div>

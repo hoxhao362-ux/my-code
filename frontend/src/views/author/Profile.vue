@@ -205,9 +205,9 @@ const verifyPassword = () => {
                    userStore.user?.role === 'reviewer' ? '审核员' : 
                    userStore.user?.role === 'author' ? '作者' : '普通用户' }}
               </p>
-              <div class="user-contact">
-                <p v-if="userStore.user?.email"><strong>邮箱：</strong>{{ showFullContactInfo ? userStore.user.email : encryptEmail(userStore.user.email) }}</p>
-                <p v-if="userStore.user?.phone"><strong>手机号：</strong>{{ showFullContactInfo ? userStore.user.phone : encryptPhone(userStore.user.phone) }}</p>
+              <div class="user-contact" v-if="showFullContactInfo">
+                <p v-if="userStore.user?.email"><strong>邮箱：</strong>{{ encryptEmail(userStore.user.email) }}</p>
+                <p v-if="userStore.user?.phone"><strong>手机号：</strong>{{ encryptPhone(userStore.user.phone) }}</p>
               </div>
             </div>
           </div>
