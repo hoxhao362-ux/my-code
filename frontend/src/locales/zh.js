@@ -194,9 +194,11 @@ export default {
     dashboard: '后台主页',
     roleSwitch: '角色切换',
     roles: {
-      admin: '管理员后台',
-      reviewer: '审核员后台',
-      author: '作者后台'
+      admin: '编辑工作台',
+      associate_editor: '副编辑工作台',
+      ea_ae: '助理/顾问编辑工作台',
+      reviewer: '审核员工作台',
+      author: '作者工作台'
     },
     tasks: '审核任务',
     history: '审核记录',
@@ -219,5 +221,127 @@ export default {
     submissionGuide: '投稿指南',
     onlineConsultation: '在线咨询',
     permissionDenied: '权限不足，无法登录后台'
+  },
+  submission: {
+    login: {
+      title: '请输入以下信息',
+      username: '用户名',
+      password: '密码',
+      btn: {
+        author: '作者登录',
+        reviewer: '审稿人登录',
+        editor: '总编辑登录'
+      },
+      orcid: {
+        label: '或通过以下方式登录',
+        help: '什么是 ORCID?',
+        info: 'ORCID 提供了一个持久的数字标识符，将您与其他研究人员区分开来。'
+      },
+      link: {
+        sendDetails: '发送登录详情',
+        register: '立即注册',
+        help: '登录帮助'
+      },
+      error: {
+        required: '用户名和密码为必填项',
+        failed: '登录失败，请检查您的凭据。'
+      }
+    }
+  },
+  review: {
+    title: '同行评审',
+    dimensions: {
+      novelty: '创新性 (Novelty)',
+      scientificMerit: '科学价值 (Scientific Merit)',
+      relevance: '临床/公共卫生意义 (Clinical/Public Health Relevance)',
+      clarity: '表达与规范性 (Clarity & Compliance)',
+      rigour: '方法学完整性 (Methodological Rigour)',
+    },
+    levels: {
+      excellent: '优秀 (Excellent)',
+      good: '良好 (Good)',
+      fair: '一般 (Fair)',
+      poor: '较差 (Poor)',
+    },
+    actions: {
+      accept: '直接接受 (Accept as is)',
+      reviseMinor: '小修 (Revise - Minor)',
+      reviseMajor: '大修 (Revise - Major)',
+      reject: '拒稿 (Reject)',
+    },
+    rules: {
+      title: '核心审稿规则',
+      priority: '创新性为最高优先级维度。',
+      screening: '编辑初筛（1-3工作日）：70-80%退稿率。',
+      peerReview: '同行评审（2-4周）：2-3位审稿人。',
+      rejection: '退稿标准：创新性不足、致命缺陷、学术不端。',
+      resubmission: '重投限制：拒稿后6个月内不可重投。',
+    },
+    screening: {
+      title: '初筛与分配',
+      searchPlaceholder: '搜索标题或作者...',
+      allModules: '所有模块',
+      noJournals: '暂无待初筛稿件。',
+      actions: {
+        assign: '分配审稿人',
+        reject: '拒稿',
+        confirm: '确认'
+      },
+      assignReviewer: '分配审稿人',
+      errors: {
+        selectReviewer: '请至少选择一位审稿人。'
+      },
+      success: {
+        assigned: '审稿人分配成功。'
+      },
+      confirmReject: '确定要拒绝该稿件吗？此操作不可撤销。'
+    },
+    manuscriptProgress: {
+      title: '稿件进度',
+      select: '选择稿件',
+      placeholder: '请选择稿件',
+      auditProgress: '审核进度',
+      details: '查看详情',
+      stages: {
+        submitted: '已投稿',
+        initial: '初审',
+        peer: '复审',
+        final: '终审',
+        published: '已发表/已拒稿'
+      }
+    },
+    dashboard: {
+      title: '工作台',
+      welcome: '欢迎，{name}',
+      stats: {
+        totalJournals: '总投稿量',
+        pendingJournals: '待审核',
+        totalUsers: '总用户',
+        recentSubmissions: '近期投稿'
+      },
+      recentJournals: {
+        title: '近期投稿',
+        author: '作者',
+        date: '日期',
+        status: '状态'
+      }
+    },
+    comparison: {
+      title: '与国内核心期刊差异',
+      scoring: '打分体系：等级 + 详细评语（无数值打分）',
+      efficiency: '退稿效率：初筛最快1天，无冗余',
+      priority: '优先级：创新性 > 方法学',
+      response: '修回要求：必须逐条回应意见',
+    },
+    placeholders: {
+      comment: '请输入详细的评审意见...',
+      confidential: '给编辑的保密意见...',
+    },
+    errors: {
+      noveltyRequired: '必须评价创新性',
+      commentRequired: '评审意见为必填项',
+      allDimensionsRequired: '请评价所有维度',
+      decisionRequired: '请选择推荐意见',
+    }
   }
 }

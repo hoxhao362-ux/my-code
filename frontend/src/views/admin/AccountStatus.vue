@@ -6,6 +6,13 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
 // 使用userStore中的用户数据
 const users = computed(() => userStore.users)
 
@@ -49,6 +56,7 @@ const toggleUserStatus = (id) => {
   <div class="admin-account-status-container">
     <!-- 导航栏 -->
     <Navigation 
+      v-if="!embedded"
       :user="user"
       :current-page="'admin-account-status'"
       :toggle-directory="() => {}"
@@ -56,9 +64,9 @@ const toggleUserStatus = (id) => {
     />
 
     <!-- 账号状态管理内容 -->
-    <main class="content">
+    <main class="content" :class="{ 'embedded-content': embedded }">
       <div class="header">
-        <h1>账号状态管理</h1>
+        <h1>Account Status Management</h1>
       </div>
 
       <section class="account-status-section">
@@ -67,12 +75,12 @@ const toggleUserStatus = (id) => {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>用户名</th>
-                <th>角色</th>
-                <th>邮箱</th>
-                <th>手机号</th>
-                <th>状态</th>
-                <th>操作</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -84,7 +92,7 @@ const toggleUserStatus = (id) => {
                 <td>{{ encryptPhone(user.phone) }}</td>
                 <td>
                   <span class="status-badge" :class="user.status">
-                    {{ user.status === 'active' ? '启用' : '禁用' }}
+                    {{ user.status === 'active' ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
                 <td>
@@ -92,13 +100,13 @@ const toggleUserStatus = (id) => {
                     class="action-btn status-btn" 
                     @click="toggleUserStatus(user.id)"
                   >
-                    {{ user.status === 'active' ? '禁用' : '启用' }}
+                    {{ user.status === 'active' ? 'Disable' : 'Enable' }}
                   </button>
                   <button 
                     class="action-btn reset-btn" 
                     @click="resetPassword(user.id)"
                   >
-                    重置密码
+                    Reset Password
                   </button>
                 </td>
               </tr>
@@ -109,7 +117,7 @@ const toggleUserStatus = (id) => {
     </main>
 
     <!-- 页脚 -->
-    <footer class="footer">
+    <footer class="footer" v-if="!embedded">
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
       </div>
@@ -131,6 +139,10 @@ const toggleUserStatus = (id) => {
   margin: 80px auto 0;
   padding: 2rem;
   width: 100%;
+}
+
+.content.embedded-content {
+  margin-top: 0;
 }
 
 .header {

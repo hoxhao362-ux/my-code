@@ -4,10 +4,16 @@ import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import StepNavigation from './StepNavigation.vue'
 import { useErrorScroll } from '../../composables/useErrorScroll'
+// Import SparkMD5 for integrity check (Assuming it is available or we use a simple mock)
+// import SparkMD5 from 'spark-md5' 
 
 const store = useSubmissionStore()
 const { t } = useI18n()
 const { scrollToError } = useErrorScroll()
+
+const uploadError = ref('')
+const uploadProgress = ref(0)
+const isUploading = ref(false)
 
 onMounted(() => {
   if (store.steps[1].status === 'error') {
@@ -28,24 +34,100 @@ const bulkType = ref('')
 const fileInput = ref(null)
 const dragOver = ref(false)
 
+// Valid Extensions
+const allowedExtensions = ['pdf', 'doc', 'docx']
+const maxFileSize = 100 * 1024 * 1024 // 100MB
+
+const validateFile = (file) => {
+  const ext = file.name.split('.').pop().toLowerCase()
+  if (!allowedExtensions.includes(ext)) {
+    return 'Invalid file format. Only PDF, DOC, DOCX are supported.'
+  }
+  if (file.size > maxFileSize) {
+    return 'File size exceeds 100MB limit.'
+  }
+  return null
+}
+
+const calculateMD5 = (file) => {
+  return new Promise((resolve) => {
+    // Mock MD5 calculation for frontend-only requirement
+    // In real app, use SparkMD5 to read file chunks
+    setTimeout(() => {
+      resolve(`mock-md5-${file.name}-${file.size}`)
+    }, 500)
+  })
+}
+
+const simulateUpload = async (fileObj) => {
+  isUploading.value = true
+  uploadProgress.value = 0
+  
+  const totalSteps = 10
+  for(let i = 1; i <= totalSteps; i++) {
+    await new Promise(r => setTimeout(r, 200)) // Simulate network delay
+    uploadProgress.value = i * 10
+  }
+  
+  // Integrity Check
+  const clientMD5 = await calculateMD5(fileObj.fileObj)
+  // Mock Server MD5 (should match)
+  const serverMD5 = `mock-md5-${fileObj.name}-${fileObj.size}`
+  
+  if (clientMD5 !== serverMD5) {
+    throw new Error('File upload incomplete. Please re-upload the manuscript.')
+  }
+  
+  isUploading.value = false
+  uploadProgress.value = 0
+  return true
+}
+
 const triggerUpload = () => {
   fileInput.value.click()
 }
 
-const processFiles = (fileList) => {
-  Array.from(fileList).forEach(file => {
-    // Generate a simple ID
+const processFiles = async (fileList) => {
+  uploadError.value = ''
+  
+  for (const file of Array.from(fileList)) {
+    // 1. Format & Size Validation
+    const error = validateFile(file)
+    if (error) {
+      uploadError.value = error
+      return
+    }
+
+    // 2. Prepare File Object
     const id = Date.now() + Math.random().toString(36).substr(2, 9)
-    store.formData.files.push({
+    const newFile = {
       id,
       name: file.name,
-      type: '', // Default empty, user must select
+      type: '', 
       description: '',
       size: file.size,
-      fileObj: file, // Keep raw file for upload
-      url: URL.createObjectURL(file) // For preview/download
-    })
-  })
+      fileObj: file,
+      url: URL.createObjectURL(file),
+      uploadStatus: 'pending' // pending, uploading, success, error
+    }
+    
+    // 3. Add to store immediately (optimistic)
+    store.formData.files.push(newFile)
+    
+    // 4. Simulate Upload & Integrity Check
+    try {
+      newFile.uploadStatus = 'uploading'
+      await simulateUpload(newFile)
+      newFile.uploadStatus = 'success'
+      // alert('Manuscript uploaded successfully') // Optional: too many alerts if multiple files
+    } catch (e) {
+      newFile.uploadStatus = 'error'
+      uploadError.value = e.message
+      // Remove failed file or keep it with error state?
+      // For now, let's keep it but mark as error
+      alert(`Upload failed: ${e.message}`)
+    }
+  }
 }
 
 const handleFileChange = (e) => {
@@ -109,6 +191,11 @@ const onDropItem = (dropIdx) => {
 <template>
   <div class="step-container">
     <h2 class="step-title">{{ t('attachFiles.title') }}</h2>
+    
+    <!-- Upload Error Message -->
+    <div v-if="uploadError" class="error-msg" style="margin-bottom: 1rem;">
+      {{ uploadError }}
+    </div>
 
     <!-- Upload Area -->
     <div 
@@ -122,6 +209,7 @@ const onDropItem = (dropIdx) => {
       <div class="upload-content">
         <div class="upload-icon">☁️</div>
         <p>{{ t('attachFiles.dragDrop') }}</p>
+        <p class="upload-hint">Supported Formats: PDF, DOC, DOCX only (Max 100MB)</p>
         <button class="btn-browse">{{ t('attachFiles.browse') }}</button>
       </div>
       <input 
@@ -129,8 +217,15 @@ const onDropItem = (dropIdx) => {
         ref="fileInput" 
         multiple 
         style="display: none" 
+        accept=".pdf,.doc,.docx"
         @change="handleFileChange"
       >
+    </div>
+    
+    <!-- Global Progress (Optional visualization) -->
+    <div v-if="isUploading" class="upload-progress-bar">
+       <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+       <span class="progress-text">Uploading: {{ uploadProgress }}%</span>
     </div>
 
     <!-- File List -->
@@ -165,6 +260,9 @@ const onDropItem = (dropIdx) => {
           <div class="col-name" :title="file.name">
             <span class="drag-handle">☰</span>
             {{ file.name }}
+            <span v-if="file.uploadStatus === 'uploading'" class="status-uploading"> (Uploading...)</span>
+            <span v-if="file.uploadStatus === 'success'" class="status-success"> ✅</span>
+            <span v-if="file.uploadStatus === 'error'" class="status-error"> ❌ Error</span>
           </div>
           <div class="col-type">
             <select v-model="file.type" class="form-select sm">
@@ -242,6 +340,41 @@ const onDropItem = (dropIdx) => {
   border-radius: 4px;
   cursor: pointer;
 }
+
+.upload-hint {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+.upload-progress-bar {
+  margin-top: 1rem;
+  height: 20px;
+  background-color: #f3f3f3;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: #333;
+  line-height: 20px;
+}
+
+.status-uploading { color: #3498db; font-size: 0.8rem; font-style: italic; }
+.status-success { color: #2ecc71; font-size: 0.8rem; }
+.status-error { color: #e74c3c; font-size: 0.8rem; }
 
 .file-list-section {
   margin-top: 2rem;

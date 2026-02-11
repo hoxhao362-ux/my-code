@@ -1,33 +1,47 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { splitVendorChunkPlugin } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
-  // 配置服务器
+  plugins: [vue(), splitVendorChunkPlugin()],
+  // Server Config
   server: {
-    // 配置API代理，将/api请求转发到后端服务器
     proxy: {
       '/api': {
-        target: 'http://localhost:8000', // 后端服务器地址
-        changeOrigin: true, // 允许跨域
-        secure: false // 不验证SSL证书
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
       }
     }
   },
-  // 配置构建输出，确保正确的内容类型
+  // Build Config
   build: {
+    target: 'esnext',
     assetsDir: 'assets',
+    cssCodeSplit: true, // Enable CSS code splitting
+    sourcemap: false, // Disable sourcemaps for production
+    minify: 'esbuild', // Use esbuild for minification (faster)
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vue-vendor': ['vue', 'vue-router', 'pinia']
+        // Manual Chunks Strategy
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Split Vue core libs
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) {
+              return 'vue-core'
+            }
+            // Split other large libs if any
+            // if (id.includes('lodash')) return 'lodash'
+            
+            return 'vendor' // Other dependencies
+          }
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     }
-  },
-  // 移除了esbuild的charset配置，因为esbuild默认就是utf-8
+  }
 })

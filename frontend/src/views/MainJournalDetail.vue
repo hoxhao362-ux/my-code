@@ -355,6 +355,27 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+const handleDownloadPDF = () => {
+  // Mock PDF download
+  console.log('Downloading PDF...')
+  if (hasAttachments.value) {
+      // Find a PDF attachment if possible
+      const pdf = journal.value.attachments.find(a => a.name.toLowerCase().endsWith('.pdf'))
+      if (pdf) {
+          handleDownloadAttachment(pdf)
+      } else {
+          // Fallback to first attachment
+           handleDownloadAttachment(journal.value.attachments[0])
+      }
+  } else {
+      alert('PDF not available for this demo article.')
+  }
+}
+
+const handleCite = () => {
+    alert(`Citation: ${journal.value.author}. "${journal.value.title}". ${journal.value.date}.`)
+}
+
 // 组件挂载时滚动到页面顶部
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -374,74 +395,26 @@ onMounted(() => {
     <div v-if="journal" class="journal-detail-content">
       <!-- 头部卡片 -->
       <header class="journal-detail-header">
-        <div class="header-actions">
-          <button class="back-btn" @click="goBack">
-            <span class="icon">←</span> 返回
-          </button>
-          <!-- 附件下载按钮 -->
-            <div v-if="hasAttachments" class="attachments-container">
-              <div class="attachments-title">附件：</div>
-              <div class="attachments-list">
-                <div 
-                  v-for="attachment in journal.attachments" 
-                  :key="attachment.id"
-                  class="attachment-item"
-                >
-                  <div class="attachment-info">
-                    <span class="attachment-name">{{ attachment.name }} ({{ formatFileSize(attachment.size) }})</span>
-                  </div>
-                  <div class="attachment-actions">
-                    <button 
-                      class="attachment-preview-btn"
-                      @click="previewAttachment(attachment)"
-                    >
-                      <span class="icon">👁️</span> 预览
-                    </button>
-                    <button 
-                      class="attachment-download-btn"
-                      @click="handleDownloadAttachment(attachment)"
-                    >
-                      <span class="icon">📥</span> 下载
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </div>
         <h1 class="journal-title">{{ journal.title }}</h1>
         <div class="journal-meta">
           <div class="meta-row">
             <span class="meta-item">
-              <strong>作者：</strong>{{ journal.author }}
+              <strong>{{ journal.author }}</strong>
             </span>
             <span class="meta-item">
-              <strong>投稿日期：</strong>{{ journal.date }}
-            </span>
-          </div>
-          <div class="meta-row">
-            <span class="meta-item">
-              <strong>模块：</strong>
-              <span 
-                v-if="Array.isArray(journal.module)" 
-                class="module-tags"
-              >
-                <span 
-                  v-for="(module, index) in journal.module" 
-                  :key="index" 
-                  class="module-tag"
-                >
-                  {{ module }}
-                </span>
-              </span>
-              <span v-else>{{ journal.module }}</span>
-            </span>
-            <span class="meta-item">
-              <strong>状态：</strong>
-              <span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span>
+              {{ journal.date }}
             </span>
           </div>
         </div>
       </header>
+
+      <!-- Floating Action Box -->
+      <div class="floating-actions">
+        <button class="btn-float btn-download" @click="handleDownloadPDF">
+          Download PDF
+        </button>
+        <a href="#" class="link-cite" @click.prevent="handleCite">Cite This Article</a>
+      </div>
 
       <!-- 摘要卡片 -->
       <section class="journal-abstract card">
@@ -467,6 +440,14 @@ onMounted(() => {
       <section class="journal-content card">
         <h2 class="section-title">正文</h2>
         <div class="content-body" v-html="journal.content"></div>
+        
+        <!-- Supplementary Materials Link -->
+        <div class="supplementary-section" v-if="hasAttachments">
+             <hr />
+             <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
+               Supplementary Materials
+             </a>
+        </div>
       </section>
     </div>
     <!-- 未找到期刊 -->
@@ -494,42 +475,42 @@ onMounted(() => {
 /* 主内容区域 */
 .journal-detail-content {
   flex: 1;
-  max-width: 1200px;
+  max-width: 900px; /* Readability width */
   margin: 0 auto;
   width: 100%;
-  margin-top: 80px; /* 为固定导航栏留出空间 */
+  margin-top: 100px; /* 为固定导航栏留出空间 */
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0;
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 2rem;
 }
 
 /* 卡片样式 */
 .card {
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: white;
+  border-radius: 0;
   box-shadow: none;
-  padding: 1.5rem;
-  border: 1px solid #ddd;
+  padding: 0;
+  border: none;
+  margin-bottom: 2rem;
 }
 
 /* 头部卡片 */
 .journal-detail-header {
-  background: #f9f9f9;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: none;
-  border: 1px solid #ddd;
+  background: white;
+  padding: 0;
+  border: none;
+  margin-bottom: 2rem;
 }
 
 /* 标题样式 */
 .journal-title {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #333333; /* Lancet Dark Grey */
   margin: 0 0 1.5rem 0;
   line-height: 1.3;
   letter-spacing: -0.5px;
@@ -538,7 +519,7 @@ onMounted(() => {
 /* 元信息样式 */
 .journal-meta {
   color: #7f8c8d;
-  font-size: 1rem;
+  font-size: 0.95rem; /* Smaller, grey */
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -786,15 +767,75 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+/* Floating Actions */
+.floating-actions {
+  position: fixed;
+  top: 150px;
+  right: calc(50% - 700px); /* Position to the right of content */
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  z-index: 100;
+}
+
+@media (max-width: 1400px) {
+  .floating-actions {
+    position: static;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 2rem;
+    border: none;
+    padding: 0;
+  }
+}
+
+.btn-float {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+
+.btn-download {
+  background-color: #C93737;
+  color: white;
+}
+
+.btn-download:hover {
+  background-color: #a02020;
+}
+
+.link-cite {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.link-cite:hover {
+  text-decoration: underline;
+  color: #333;
+}
+
 /* 章节样式 */
 .section-title {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #2c3e50;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 3px solid #667eea;
-  display: inline-block;
+  color: #333;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0;
+  border-bottom: none; /* Clean style */
+  display: block;
 }
 
 /* 摘要样式 */
@@ -804,13 +845,14 @@ onMounted(() => {
 
 .abstract-content {
   font-size: 1.15rem;
-  line-height: 1.8;
-  color: #555;
+  line-height: 1.6; /* Lancet spec */
+  color: #555; /* Light grey */
   text-align: justify;
-  background: #f0f8ff;
-  padding: 1rem;
-  border-radius: 6px;
-  border-left: 4px solid #4a90e2;
+  background: transparent; /* No background */
+  padding: 0;
+  border-radius: 0;
+  border-left: none; /* Removed decoration */
+  margin-bottom: 2rem;
 }
 
 /* 关键词样式 */
@@ -845,22 +887,36 @@ onMounted(() => {
 /* 正文样式 */
 .journal-content {
   margin-bottom: 0;
-  line-height: 1.8;
+  line-height: 1.6; /* Lancet spec */
   color: #333;
-  font-size: 1.15rem;
+  font-size: 14px; /* Lancet spec */
 }
 
 .content-body {
   background: white;
-  padding: 1.5rem;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  padding: 0; /* Remove padding/borders for clean read */
+  border-radius: 0;
+  border: none;
   min-height: 200px;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.8;
-  font-size: 1rem;
+  line-height: 1.6;
+  font-size: 14px;
   color: #333;
+}
+
+.link-supp {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 700;
+  color: #7f8c8d;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link-supp:hover {
+  color: #C93737;
+  text-decoration: underline;
 }
 
 /* 富文本格式支持 */
@@ -955,20 +1011,25 @@ onMounted(() => {
 
 /* 链接样式 */
 .content-body a {
-  color: #3498db;
-  text-decoration: underline;
+  color: #333;
+  text-decoration: none;
+  border-bottom: 1px solid #ccc; /* Subtle link style */
+  transition: all 0.2s;
 }
 
 .content-body a:hover {
-  color: #2980b9;
+  color: #C93737;
+  border-bottom-color: #C93737;
 }
 
 /* 图片样式 */
 .content-body img {
+  display: block;
   max-width: 100%;
   height: auto;
-  margin: 1rem 0;
-  border-radius: 5px;
+  margin: 1.5rem auto; /* Center images */
+  border: 1px solid #eee; /* Thin grey border */
+  border-radius: 0;
 }
 
 /* 代码块样式 */

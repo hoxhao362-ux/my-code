@@ -4,10 +4,156 @@ import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import ReviewForm from '../../components/ReviewForm.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
+
+// Review Modal State
+const showReviewModal = ref(false)
+const currentReviewJournal = ref(null)
+
+const openReviewModal = (journal) => {
+  currentReviewJournal.value = journal
+  showReviewModal.value = true
+}
+
+const handleReviewSubmit = ({ ratings, comments, confidentialComments, decision }) => {
+  if (!currentReviewJournal.value) return
+
+  const journal = { ...currentReviewJournal.value }
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Format the detailed comment
+  const detailedComment = `
+[Decision]: ${decision}
+[Ratings]:
+- Novelty: ${ratings.novelty}
+- Scientific Merit: ${ratings.scientificMerit}
+- Relevance: ${ratings.relevance}
+- Clarity: ${ratings.clarity}
+- Rigour: ${ratings.rigour}
+
+[Comments to Author]:
+${comments}
+
+[Confidential to Editor]:
+${confidentialComments}
+`.trim()
+
+  // Determine Action based on Decision
+  let action = ''
+  if (decision === 'Accept as is') action = 'approve'
+  else if (decision === 'Reject') action = 'reject'
+  else action = 'revise' // New action for R&R
+
+  processReview(journal, action, detailedComment)
+  
+  showReviewModal.value = false
+  currentReviewJournal.value = null
+}
+
+const processReview = (journal, action, comment) => {
+    let updateMessage = ''
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Ensure reviewHistory exists
+    if (!journal.reviewHistory) {
+      journal.reviewHistory = []
+    }
+
+    // Logic based on Stage and Action
+    if (journal.reviewStage === '初审') {
+      if (action === 'approve') {
+        journal.reviewStage = '复审'
+        journal.status = '审稿中'
+        updateMessage = `Passed Editor Screening. Proceeding to Peer Review.`
+        journal.reviewHistory.push({
+          stage: '初审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'reject') {
+        journal.status = '未通过' // Immediate Rejection
+        journal.reviewResult = '未通过'
+        updateMessage = `Rejected at Screening.`
+        journal.reviewHistory.push({
+          stage: '初审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'revise') {
+         // Screening usually doesn't have R&R, but if chosen:
+         journal.status = '修改再审'
+         updateMessage = `Revision Requested (Screening).`
+         journal.reviewHistory.push({
+          stage: '初审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      }
+    } else if (journal.reviewStage === '复审') {
+      if (action === 'approve') {
+        journal.reviewStage = '终审'
+        journal.status = '审稿中'
+        updateMessage = `Passed Peer Review. Proceeding to Final Decision.`
+        journal.reviewHistory.push({
+          stage: '复审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'reject') {
+        journal.status = '未通过'
+        journal.reviewResult = '未通过'
+        updateMessage = `Rejected after Peer Review.`
+        journal.reviewHistory.push({
+          stage: '复审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'revise') {
+        journal.status = '修改再审'
+        updateMessage = `Revision Requested (Peer Review). Waiting for Author.`
+        journal.reviewHistory.push({
+          stage: '复审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      }
+    } else if (journal.reviewStage === '终审') {
+       if (action === 'approve') {
+        journal.status = '已发表'
+        journal.reviewResult = '已通过'
+        updateMessage = `Accepted! Manuscript Published.`
+        journal.reviewHistory.push({
+          stage: '终审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'reject') {
+        journal.status = '未通过'
+        journal.reviewResult = '未通过'
+        updateMessage = `Rejected at Final Decision.`
+        journal.reviewHistory.push({
+          stage: '终审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      } else if (action === 'revise') {
+        journal.status = '修改再审'
+        updateMessage = `Revision Requested (Final).`
+        journal.reviewHistory.push({
+          stage: '终审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+        })
+      }
+    }
+
+    // Update Store
+    userStore.updateJournal(journal)
+    alert(updateMessage)
+
+    // Auto-promote author if published
+    if (journal.status === '已发表') {
+       // ... existing auto-promote logic ...
+       const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
+       if (authorIndex !== -1) {
+         const authorUser = userStore.users[authorIndex];
+         if (authorUser.role === 'user') {
+           authorUser.role = 'author';
+           userStore.users[authorIndex] = authorUser;
+           localStorage.setItem('users', JSON.stringify(userStore.users));
+           if (userStore.user && userStore.user.username === journal.author) {
+             userStore.updateUser({ role: 'author' });
+           }
+         }
+       }
+    }
+}
 
 // 筛选相关状态
 const searchQuery = ref('') // 搜索关键词
@@ -419,25 +565,12 @@ const handleReview = (id, action) => {
               <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             
-            <!-- 审稿建议文本框 -->
-            <div class="review-comment-section">
-              <label :for="'comment-' + journal.id" class="comment-label">审稿建议：</label>
-              <textarea 
-                :id="'comment-' + journal.id" 
-                v-model="journal[`${journal.reviewStage.toLowerCase()}Comment`]"
-                class="review-comment"
-                placeholder="请输入审稿建议..."
-                rows="4"
-              ></textarea>
-            </div>
-            
             <div class="journal-actions">
               <div class="journal-status">
                 {{ journal.status }} - {{ journal.reviewStage }}
               </div>
               <div class="action-buttons">
-                <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">通过</button>
-                <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">拒绝</button>
+                <button class="btn btn-primary" @click="openReviewModal(journal)">Start Review / 审稿</button>
               </div>
             </div>
           </div>
@@ -498,6 +631,23 @@ const handleReview = (id, action) => {
         </div>
       </section>
     </main>
+
+    <!-- Review Modal -->
+    <div v-if="showReviewModal" class="modal-overlay">
+      <div class="modal-content">
+        <!-- Close Button -->
+        <div class="modal-header">
+          <button class="modal-close-btn" @click="showReviewModal = false">
+            &times;
+          </button>
+        </div>
+        <ReviewForm 
+          :journal="currentReviewJournal" 
+          @submit="handleReviewSubmit" 
+          @cancel="showReviewModal = false" 
+        />
+      </div>
+    </div>
 
     <!-- 页脚 -->
     <footer class="footer">
@@ -983,5 +1133,72 @@ const handleReview = (id, action) => {
   .action-buttons {
     align-self: flex-end;
   }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  background: white;
+  width: 900px;
+  max-width: 95vw;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2980b9;
+}
+
+/* Modal Header and Close Button */
+.modal-header {
+  position: relative;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.3s ease;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-btn:hover {
+  color: #333;
+  background: #f5f5f5;
+}
+
+.modal-content {
+  position: relative;
 }
 </style>

@@ -18,7 +18,7 @@ if (!user.value) {
 const message = ref('')
 const messageType = ref('') // 'success' or 'error'
 
-// 显示消息
+// Show Message
 const showMessage = (type, msg) => {
   messageType.value = type
   message.value = msg
@@ -27,113 +27,113 @@ const showMessage = (type, msg) => {
   }, 3000)
 }
 
-// 密码更改数据
+// Password Form Data
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
-// 联系方式更改数据
+// Contact Form Data
 const contactForm = ref({
   currentPassword: '',
   email: user.value?.email || '',
   phone: user.value?.phone || ''
 })
 
-// 验证密码长度和包含字母数字
+// Validate Password Length & Complexity
 const validatePassword = (password) => {
   return password.length >= 6 && /[a-zA-Z]/.test(password) && /\d/.test(password)
 }
 
-// 更改密码
+// Change Password
 const changePassword = () => {
-  // 验证当前密码
+  // Validate Current Password Input
   if (!passwordForm.value.currentPassword) {
-    showMessage('error', '请输入当前密码')
+    showMessage('error', 'Please enter current password')
     return
   }
   
-  // 加密当前密码进行验证
+  // Encrypt Current Password for Verification
   const encryptedCurrent = encryptPassword(passwordForm.value.currentPassword)
   if (encryptedCurrent !== user.value?.password) {
-    showMessage('error', '当前密码不正确')
+    showMessage('error', 'Incorrect current password')
     return
   }
   
-  // 验证新密码
+  // Validate New Password
   if (!passwordForm.value.newPassword) {
-    showMessage('error', '请输入新密码')
+    showMessage('error', 'Please enter new password')
     return
   }
   
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    showMessage('error', '两次输入的新密码不一致')
+    showMessage('error', 'New passwords do not match')
     return
   }
   
   if (!validatePassword(passwordForm.value.newPassword)) {
-    showMessage('error', '密码必须包含至少6个字符，包含字母和数字')
+    showMessage('error', 'Password must be at least 6 characters, containing letters and numbers')
     return
   }
   
-  // 加密新密码
+  // Encrypt New Password
   const encryptedNewPassword = encryptPassword(passwordForm.value.newPassword)
   
-  // 更新用户密码
+  // Update User Password (Mock)
   userStore.updateUser({ password: encryptedNewPassword })
   
-  // 重置表单
+  // Reset Form
   passwordForm.value = {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   }
   
-  showMessage('success', '密码更改成功')
+  showMessage('success', 'Password changed successfully')
 }
 
-// 更改联系方式
+// Change Contact Info
 const changeContact = () => {
-  // 验证当前密码
+  // Validate Current Password Input
   if (!contactForm.value.currentPassword) {
-    showMessage('error', '请输入当前密码')
+    showMessage('error', 'Please enter current password')
     return
   }
   
-  // 加密当前密码进行验证
+  // Encrypt Current Password for Verification
   const encryptedCurrent = encryptPassword(contactForm.value.currentPassword)
   if (encryptedCurrent !== user.value?.password) {
-    showMessage('error', '当前密码不正确')
+    showMessage('error', 'Incorrect current password')
     return
   }
   
-  // 验证邮箱格式
+  // Validate Email Format
   if (!validateEmail(contactForm.value.email)) {
-    showMessage('error', '请输入有效的邮箱地址')
+    showMessage('error', 'Please enter a valid email address')
     return
   }
   
-  // 验证手机号格式
+  // Validate Phone Format
   if (!validatePhone(contactForm.value.phone)) {
-    showMessage('error', '请输入有效的手机号')
+    showMessage('error', 'Please enter a valid phone number')
     return
   }
   
-  // 更新用户联系方式
+  // Update User Contact (Mock)
   userStore.updateUser({
     email: contactForm.value.email,
     phone: contactForm.value.phone
   })
   
-  // 重置表单
+  // Reset Form
   contactForm.value = {
     currentPassword: '',
     email: contactForm.value.email,
     phone: contactForm.value.phone
   }
   
-  showMessage('success', '联系方式更新成功')
+  showMessage('success', 'Contact information updated successfully')
 }
 </script>
 
@@ -147,121 +147,121 @@ const changeContact = () => {
       :logout="userStore.logout"
     />
 
-    <!-- 账号安全内容 -->
-    <main class="content">
+    <!-- Account Security Content -->
       <div class="header">
-        <h1>账号安全</h1>
-        <p class="subtitle">管理您的账号安全设置</p>
+        <h1>Account Security</h1>
+        <p class="subtitle">Manage your account security settings</p>
       </div>
 
-      <!-- 消息提示 -->
+      <!-- Message Alert -->
       <div v-if="message" class="message" :class="messageType">
         {{ message }}
       </div>
 
       <section class="security-section">
         <div class="security-card">
-          <!-- 密码更改 -->
+          <!-- Password Management -->
           <div class="security-item">
-            <h2>密码管理</h2>
+            <h2>Password Management</h2>
             <div class="security-content">
               <form class="password-form" @submit.prevent="changePassword">
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="currentPassword">当前密码</label>
+                    <label for="currentPassword">Current Password</label>
                     <input 
                       type="password" 
                       id="currentPassword"
                       v-model="passwordForm.currentPassword"
                       class="form-control"
-                      placeholder="请输入当前密码"
+                      placeholder="Enter current password"
                       required
                     >
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="newPassword">新密码</label>
+                    <label for="newPassword">New Password</label>
                     <input 
                       type="password" 
                       id="newPassword"
                       v-model="passwordForm.newPassword"
                       class="form-control"
-                      placeholder="请输入新密码"
+                      placeholder="Enter new password"
                       required
                     >
                   </div>
                   <div class="form-group">
-                    <label for="confirmPassword">确认新密码</label>
+                    <label for="confirmPassword">Confirm New Password</label>
                     <input 
                       type="password" 
                       id="confirmPassword"
                       v-model="passwordForm.confirmPassword"
                       class="form-control"
-                      placeholder="请确认新密码"
+                      placeholder="Confirm new password"
                       required
                     >
                   </div>
                 </div>
                 <div class="password-requirements">
-                  <h3>密码要求：</h3>
+                  <h3>Password Requirements:</h3>
                   <ul>
-                    <li>• 长度至少6个字符</li>
-                    <li>• 包含字母和数字</li>
-                    <li>• 建议包含大小写字母和特殊字符</li>
+                    <li>• At least 6 characters long</li>
+                    <li>• Must contain letters and numbers</li>
+                    <li>• Recommended to include uppercase and special characters</li>
+                    <li>• <span style="color: #2ecc71;">Your password is encrypted during transmission</span></li>
                   </ul>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-save">保存更改</button>
+                  <button type="submit" class="btn btn-save">Save Changes</button>
                 </div>
               </form>
             </div>
           </div>
 
-          <!-- 联系方式管理 -->
+          <!-- Contact Info Management -->
           <div class="security-item">
-            <h2>联系方式管理</h2>
+            <h2>Contact Information</h2>
             <div class="security-content">
               <form class="contact-form" @submit.prevent="changeContact">
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="contactCurrentPassword">当前密码</label>
+                    <label for="contactCurrentPassword">Current Password</label>
                     <input 
                       type="password" 
                       id="contactCurrentPassword"
                       v-model="contactForm.currentPassword"
                       class="form-control"
-                      placeholder="请输入当前密码以验证身份"
+                      placeholder="Enter password to verify identity"
                       required
                     >
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="email">邮箱</label>
+                    <label for="email">Email</label>
                     <input 
                       type="email" 
                       id="email"
                       v-model="contactForm.email"
                       class="form-control"
-                      placeholder="请输入邮箱地址"
+                      placeholder="Enter email address"
                       required
                     >
                   </div>
                   <div class="form-group">
-                    <label for="phone">手机号</label>
+                    <label for="phone">Phone Number</label>
                     <input 
                       type="tel" 
                       id="phone"
                       v-model="contactForm.phone"
                       class="form-control"
-                      placeholder="请输入手机号"
+                      placeholder="Enter phone number"
                       required
                     >
                   </div>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-save">保存更改</button>
+                  <button type="submit" class="btn btn-save">Save Changes</button>
                 </div>
               </form>
             </div>

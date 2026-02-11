@@ -566,6 +566,10 @@ const resetConfig = () => {
   width: 100%;
 }
 
+.content.embedded-content {
+  margin-top: 0;
+}
+
 /* 头部样式 */
 .header {
   margin-bottom: 2rem;

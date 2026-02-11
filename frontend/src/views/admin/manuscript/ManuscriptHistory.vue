@@ -6,26 +6,26 @@ import { useUserStore } from '../../../stores/user'
 const router = useRouter()
 const userStore = useUserStore()
 
-// 筛选条件
+// Filters
 const selectedStatus = ref('all')
 const selectedModule = ref('all')
 const searchKeyword = ref('')
 const selectedTimePeriod = ref('all') // 'all', 'day', 'week', 'month', 'year'
 
-// 选项
-const statusOptions = ['all', '待审核', '审核中', '已录用', '已拒稿', '修改再审']
+// Options
+const statusOptions = ['all', 'Pending', 'Under Review', 'Accepted', 'Rejected', 'Revision Requested']
 const moduleOptions = computed(() => {
   const modules = userStore.journals.map(journal => journal.module)
   return ['all', ...Array.from(new Set(modules))]
 })
 
-// 时间段选项
+// Time Period Options
 const timePeriodOptions = [
-  { value: 'all', label: '全部时间' },
-  { value: 'day', label: '最近一天' },
-  { value: 'week', label: '最近一周' },
-  { value: 'month', label: '最近一月' },
-  { value: 'year', label: '最近一年' }
+  { value: 'all', label: 'All Time' },
+  { value: 'day', label: 'Last 24 Hours' },
+  { value: 'week', label: 'Last Week' },
+  { value: 'month', label: 'Last Month' },
+  { value: 'year', label: 'Last Year' }
 ]
 
 // 稿件数据 - 这里可以根据状态筛选已归档的稿件
@@ -95,19 +95,19 @@ const viewManuscript = (id) => {
 <template>
   <div class="manuscript-history-container">
     <div class="page-header">
-      <button class="btn btn-secondary" @click="router.back()">返回</button>
-      <h1>历史投稿</h1>
+      <button class="btn btn-secondary" @click="router.back()">Back</button>
+      <h1>Manuscript History</h1>
     </div>
     
     <div class="filters-section">
       <div class="filter-row">
         <div class="filter-group">
-          <label for="search-input">关键词搜索：</label>
+          <label for="search-input">Keyword Search:</label>
           <input 
             type="text" 
             id="search-input" 
             v-model="searchKeyword" 
-            placeholder="搜索标题、作者或关键词" 
+            placeholder="Search Title, Author or Keywords" 
             class="filter-control search-input"
           >
         </div>
@@ -115,25 +115,25 @@ const viewManuscript = (id) => {
       
       <div class="filter-row">
         <div class="filter-group">
-          <label for="status-filter">状态筛选：</label>
+          <label for="status-filter">Status Filter:</label>
           <select id="status-filter" v-model="selectedStatus" class="filter-control">
             <option v-for="status in statusOptions" :key="status" :value="status">
-              {{ status === 'all' ? '全部状态' : status }}
+              {{ status === 'all' ? 'All Status' : status }}
             </option>
           </select>
         </div>
         
         <div class="filter-group">
-          <label for="module-filter">模块筛选：</label>
+          <label for="module-filter">Module Filter:</label>
           <select id="module-filter" v-model="selectedModule" class="filter-control">
             <option v-for="module in moduleOptions" :key="module" :value="module">
-              {{ module === 'all' ? '全部模块' : module }}
+              {{ module === 'all' ? 'All Modules' : module }}
             </option>
           </select>
         </div>
         
         <div class="filter-group">
-          <label for="time-period-filter">时间段：</label>
+          <label for="time-period-filter">Time Period:</label>
           <select id="time-period-filter" v-model="selectedTimePeriod" class="filter-control">
             <option v-for="option in timePeriodOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -147,11 +147,11 @@ const viewManuscript = (id) => {
       <table class="manuscripts-table">
         <thead>
           <tr>
-            <th>稿件标题</th>
-            <th>模块</th>
-            <th>状态</th>
-            <th>提交时间</th>
-            <th>操作</th>
+            <th>Title</th>
+            <th>Module</th>
+            <th>Status</th>
+            <th>Submitted Date</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -166,16 +166,16 @@ const viewManuscript = (id) => {
             <td>{{ manuscript.date || manuscript.submitDate }}</td>
             <td>
               <button class="btn btn-primary btn-sm" @click="viewManuscript(manuscript.id)">
-                查看详情
+                View Details
               </button>
             </td>
           </tr>
         </tbody>
       </table>
       
-      <!-- 空状态 -->
+      <!-- Empty State -->
       <div v-if="archivedManuscripts.length === 0" class="empty-state">
-        <p>暂无历史投稿记录</p>
+        <p>No history found</p>
       </div>
     </div>
   </div>

@@ -1,10 +1,82 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import { validateEmail, validatePhone, encryptPassword } from '../../utils/encryption'
 
 const userStore = useUserStore()
+
+// Edit State
+const isEditing = ref(false)
+const editForm = reactive({
+  email: '',
+  phone: ''
+})
+const errors = reactive({
+  email: '',
+  phone: ''
+})
+
+// Start Edit Mode
+const startEdit = () => {
+  editForm.email = userStore.user?.email || ''
+  editForm.phone = userStore.user?.phone || ''
+  isEditing.value = true
+  showFullContactInfo.value = true // Auto-expand to show fields
+}
+
+// Cancel Edit Mode
+const cancelEdit = () => {
+  isEditing.value = false
+  errors.email = ''
+  errors.phone = ''
+}
+
+// Save Changes
+const saveEdit = () => {
+  // Reset errors
+  errors.email = ''
+  errors.phone = ''
+  
+  // Validate Email
+  if (!validateEmail(editForm.email)) {
+    errors.email = 'Invalid email format (e.g., xxx@journal.org)'
+    return
+  }
+  
+  // Validate Phone
+  if (editForm.phone && !validatePhone(editForm.phone)) {
+    errors.phone = 'Invalid phone number format'
+    return
+  }
+  
+  // Update Store (Mock update)
+  userStore.updateUser({
+    email: editForm.email,
+    phone: editForm.phone
+  })
+  
+  alert('Profile updated successfully')
+  isEditing.value = false
+}
+
+// Validate on Blur
+const validateField = (field) => {
+  if (field === 'email') {
+    if (!validateEmail(editForm.email)) {
+      errors.email = 'Invalid email format (e.g., xxx@journal.org)'
+    } else {
+      errors.email = ''
+    }
+  }
+  if (field === 'phone') {
+    if (editForm.phone && !validatePhone(editForm.phone)) {
+      errors.phone = 'Invalid phone number format'
+    } else {
+      errors.phone = ''
+    }
+  }
+}
 
 // 加密函数
 const encryptEmail = (email) => {
@@ -24,6 +96,11 @@ const encryptPhone = (phone) => {
 const showAvatarModal = ref(false)
 const showAvatarActions = ref(false)
 const fileInput = ref(null)
+const formData = ref({})
+const verificationData = ref({
+  verifyPassword: '',
+  isVerified: false
+})
 
 // 查看信息状态
 const showFullContactInfo = ref(false)
@@ -71,13 +148,13 @@ const handleAvatarUpload = (event) => {
   if (file) {
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件')
+      alert('Please select an image file')
       return
     }
     
     // 检查文件大小（限制为5MB）
     if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过5MB')
+      alert('Image size cannot exceed 5MB')
       return
     }
     
@@ -88,7 +165,7 @@ const handleAvatarUpload = (event) => {
       // 更新用户头像
       formData.value.avatar = imageUrl
       userStore.updateUser({ avatar: imageUrl })
-      alert('头像更新成功')
+      alert('Avatar updated successfully')
     }
     reader.readAsDataURL(file)
     
@@ -100,7 +177,7 @@ const handleAvatarUpload = (event) => {
 // 验证当前密码
 const verifyPassword = () => {
   if (!verificationData.value.verifyPassword) {
-    alert('请输入当前密码')
+    alert('Please enter current password')
     return
   }
   
@@ -111,7 +188,7 @@ const verifyPassword = () => {
   if (encryptedPassword === userStore.user?.password) {
     verificationData.value.isVerified = true
   } else {
-    alert('当前密码不正确')
+    alert('Current password incorrect')
     verificationData.value.isVerified = false
   }
 }
@@ -162,13 +239,13 @@ const verifyPassword = () => {
                   class="btn btn-edit" 
                   @click="viewAvatar"
                 >
-                  查看头像
+                  View Avatar
                 </button>
                 <button 
                   class="btn btn-password" 
                   @click="triggerFileSelect"
                 >
-                  更改头像
+                  Change Avatar
                 </button>
               </div>
               
@@ -184,30 +261,63 @@ const verifyPassword = () => {
           </div>
           
           <div class="user-card-header">
-            <h3 class="card-title">个人信息</h3>
+            <h3 class="card-title">Personal Information</h3>
             <div class="header-actions">
-              <!-- 查看信息按钮 -->
-              <button 
-                class="btn btn-view" 
-                @click="toggleContactInfo"
-              >
-                {{ showFullContactInfo ? '隐藏信息' : '查看信息' }}
-              </button>
+              <!-- Edit Actions -->
+              <template v-if="isEditing">
+                <button class="btn btn-save" @click="saveEdit">Save</button>
+                <button class="btn btn-cancel" @click="cancelEdit">Cancel</button>
+              </template>
+              <template v-else>
+                <button class="btn btn-edit" @click="startEdit">Edit</button>
+                <button 
+                  class="btn btn-view" 
+                  @click="toggleContactInfo"
+                >
+                  {{ showFullContactInfo ? 'Hide Info' : 'View Info' }}
+                </button>
+              </template>
             </div>
           </div>
           
           <!-- 用户信息 -->
           <div class="user-info">
             <div class="user-details">
-              <h2 class="user-name">{{ userStore.user?.username || '未知用户' }}</h2>
+              <h2 class="user-name">{{ userStore.user?.username || 'Unknown User' }}</h2>
               <p class="user-role">
-                {{ userStore.user?.role === 'admin' ? '管理员' : 
-                   userStore.user?.role === 'reviewer' ? '审核员' : 
-                   userStore.user?.role === 'author' ? '作者' : '普通用户' }}
+                {{ userStore.user?.role === 'admin' ? 'Admin' : 
+                   userStore.user?.role === 'reviewer' ? 'Reviewer' : 
+                   userStore.user?.role === 'author' ? 'Author' : 'User' }}
               </p>
-              <div class="user-contact" v-if="showFullContactInfo">
-                <p v-if="userStore.user?.email"><strong>邮箱：</strong>{{ encryptEmail(userStore.user.email) }}</p>
-                <p v-if="userStore.user?.phone"><strong>手机号：</strong>{{ encryptPhone(userStore.user.phone) }}</p>
+              
+              <!-- View Mode -->
+              <div class="user-contact" v-if="!isEditing && showFullContactInfo">
+                <p v-if="userStore.user?.email"><strong>Email:</strong> {{ encryptEmail(userStore.user.email) }}</p>
+                <p v-if="userStore.user?.phone"><strong>Phone:</strong> {{ encryptPhone(userStore.user.phone) }}</p>
+              </div>
+              
+              <!-- Edit Mode -->
+              <div class="user-edit-form-inline" v-if="isEditing">
+                 <div class="form-group-inline">
+                   <label>Email</label>
+                   <input 
+                     type="email" 
+                     v-model="editForm.email" 
+                     @blur="validateField('email')"
+                     :class="{ 'error-input': errors.email }"
+                   />
+                   <span class="error-text" v-if="errors.email">{{ errors.email }}</span>
+                 </div>
+                 <div class="form-group-inline">
+                   <label>Phone</label>
+                   <input 
+                     type="tel" 
+                     v-model="editForm.phone" 
+                     @blur="validateField('phone')"
+                     :class="{ 'error-input': errors.phone }"
+                   />
+                   <span class="error-text" v-if="errors.phone">{{ errors.phone }}</span>
+                 </div>
               </div>
             </div>
           </div>
@@ -225,7 +335,7 @@ const verifyPassword = () => {
                 <img :src="userStore.user?.avatar" :alt="userStore.user?.username" class="full-size-avatar" />
               </div>
               <div v-else class="no-avatar-message">
-                <p>您还没有上传头像</p>
+                <p>No avatar uploaded</p>
               </div>
             </div>
           </div>
@@ -236,13 +346,55 @@ const verifyPassword = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
+/* Inline Edit Styles */
+.user-edit-form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 400px;
+  margin: 10px auto 0;
+}
+
+.form-group-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.form-group-inline label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.form-group-inline input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.form-group-inline input.error-input {
+  border-color: #e74c3c;
+}
+
+.error-text {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
 /* 个人中心样式 */
 .profile-container {
   min-height: 100vh;
@@ -259,6 +411,10 @@ const verifyPassword = () => {
   padding: 2rem;
   width: 100%;
   margin-top: 80px; /* 为固定导航栏留出空间 */
+}
+
+.profile-content.embedded-content {
+  margin-top: 0;
 }
 
 .profile-wrapper {

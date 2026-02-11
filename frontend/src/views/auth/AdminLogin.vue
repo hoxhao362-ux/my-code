@@ -1,22 +1,36 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
-// 角色选择
+// Role selected by context or dropdown
 const selectedRole = ref('')
-// 记住密码
+// Remember Me
 const rememberMe = ref(false)
 
-// 从localStorage加载记住的密码
+// Determine Context and Title
+const contextTitle = computed(() => {
+  const role = route.query.role
+  if (role === 'admin') return 'Editor Portal Login'
+  if (role === 'reviewer') return 'Reviewer Dashboard Login'
+  if (role === 'author') return 'Author Dashboard Login'
+  return 'Admin Portal Login'
+})
+
+// Auto-select role based on query
 onMounted(() => {
+  if (route.query.role) {
+    selectedRole.value = route.query.role
+  }
+
   const savedUsername = localStorage.getItem('adminRememberedUsername')
   const savedPassword = localStorage.getItem('adminRememberedPassword')
   if (savedUsername && savedPassword) {
@@ -26,36 +40,38 @@ onMounted(() => {
   }
 })
 
-// 登录成功后跳转的目标页面
-
-
 const handleLogin = async () => {
   if (!username.value || !password.value) {
-    error.value = '请输入用户名和密码'
+    error.value = 'Please enter username and password'
     return
   }
   
   try {
-    // 加密密码
     const encryptedPassword = encryptPassword(password.value)
     
-    // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断（按权限从高到低：admin＞reviewer＞author＞user）
+    // Role Logic: 1. URL Query 2. Dropdown 3. Fallback
     let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
                username.value === 'reviewer' ? 'reviewer' : 
                username.value === 'author' ? 'author' : 
                'user')
     
-    // 登录凭证
+    // Check if user is trying to login to wrong portal
+    if (route.query.role && role !== route.query.role) {
+       // Allow "admin" to login everywhere, but strict for others
+       if (role !== 'admin') {
+         error.value = `You are only authorized to access the [${role.charAt(0).toUpperCase() + role.slice(1)} Dashboard]`
+         return
+       }
+    }
+
     const credentials = {
       username: username.value,
       password: encryptedPassword,
       role: role
     }
     
-    // 调用状态管理的登录方法，等待登录完成
     await userStore.login(credentials)
     
-    // 记住密码功能（使用独立的localStorage键名）
     if (rememberMe.value) {
       localStorage.setItem('adminRememberedUsername', username.value)
       localStorage.setItem('adminRememberedPassword', password.value)
@@ -64,19 +80,24 @@ const handleLogin = async () => {
       localStorage.removeItem('adminRememberedPassword')
     }
     
-    // 根据用户角色跳转到对应的后台页面
     let redirectPath = '/admin/login'
     if (userStore.currentRole === 'admin') {
-      redirectPath = '/admin/dashboard'
+      redirectPath = '/editor/dashboard' // Corrected path
     } else if (userStore.currentRole === 'reviewer') {
-      redirectPath = '/admin/audit-dashboard'
+      redirectPath = '/reviewer/dashboard' // Corrected path
     } else if (userStore.currentRole === 'author') {
-      redirectPath = '/admin/author-dashboard'
+      redirectPath = '/author/dashboard' // Corrected path
+    } else if (userStore.currentRole === 'editor' || userStore.currentRole === 'associate_editor') {
+      redirectPath = '/editor/dashboard'
     }
+    
+    // If Admin logs into specific portal, redirect there? 
+    // Usually Admin goes to Editor Portal.
+    
     router.push(redirectPath)
   } catch (err) {
-    console.error('登录失败:', err)
-    error.value = '登录失败，请稍后重试'
+    console.error('Login failed:', err)
+    error.value = 'Login failed, please try again later'
   }
 }
 
@@ -91,24 +112,24 @@ const goToRegister = () => {
     <div class="admin-login-form-wrapper">
       <div class="admin-login-form">
         <!-- 登录标题 -->
-        <h2 class="admin-login-title">后台主页系统</h2>
+        <h2 class="admin-login-title">{{ contextTitle }}</h2>
         
         <div class="admin-form-group">
-          <label for="admin-username">用户名</label>
+          <label for="admin-username">Username</label>
           <input 
             type="text" 
             id="admin-username" 
             v-model="username" 
-            placeholder="请输入用户名"
+            placeholder="Enter username"
           />
         </div>
         <div class="admin-form-group">
-          <label for="admin-password">密码</label>
+          <label for="admin-password">Password</label>
           <input 
             type="password" 
             id="admin-password" 
             v-model="password" 
-            placeholder="请输入密码"
+            placeholder="Enter password"
           />
         </div>
         
@@ -119,32 +140,33 @@ const goToRegister = () => {
             id="admin-rememberMe" 
             v-model="rememberMe" 
           />
-          <label for="admin-rememberMe">记住密码</label>
+          <label for="admin-rememberMe">Remember Me</label>
         </div>
         
-        <!-- 角色选择 -->
-        <div class="admin-form-group">
-          <label for="admin-role">角色</label>
+        <!-- 角色选择 (Hide if fixed in query) -->
+        <div class="admin-form-group" v-if="!route.query.role">
+          <label for="admin-role">Role</label>
           <select 
             id="admin-role" 
             v-model="selectedRole"
             class="admin-role-select"
           >
-            <option value="">请选择角色</option>
-            <option value="admin">管理员</option>
-            <option value="reviewer">审核员</option>
-            <option value="author">作者</option>
+            <option value="">Select Role</option>
+            <option value="admin">Administrator</option>
+            <option value="editor">Editor</option>
+            <option value="reviewer">Reviewer</option>
+            <option value="author">Author</option>
           </select>
         </div>
         
         <p v-if="error" class="admin-error-message">{{ error }}</p>
-        <button class="admin-login-btn" @click="handleLogin">登录后台</button>
+        <button class="admin-login-btn" @click="handleLogin">Login</button>
         <div class="admin-register-link">
-          <span>还没有账号？</span>
-          <a href="#" @click.prevent="goToRegister">立即注册</a>
+          <span>Don't have an account?</span>
+          <a href="#" @click.prevent="goToRegister">Register Now</a>
         </div>
         <div class="admin-back-link">
-          <a href="/" @click.prevent="router.push('/')">返回主站</a>
+          <a href="/" @click.prevent="router.push('/')">Back to Home</a>
         </div>
       </div>
     </div>

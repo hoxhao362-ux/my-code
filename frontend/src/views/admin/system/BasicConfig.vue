@@ -6,6 +6,13 @@ import Navigation from '../../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
 // 基础配置数据 - 使用ref存储表单数据
 const basicConfig = ref({
   platformName: '',
@@ -55,6 +62,7 @@ const resetConfig = () => {
   <div class="admin-basic-config-container">
     <!-- 导航栏 -->
     <Navigation 
+      v-if="!embedded"
       :user="user"
       :current-page="'admin-system-basic'"
       :toggle-directory="() => {}"
@@ -63,7 +71,7 @@ const resetConfig = () => {
     />
 
     <!-- 基础配置内容 -->
-    <main class="content">
+    <main class="content" :class="{ 'embedded-content': embedded }">
       <div class="header">
         <h1>系统设置 - 基础配置</h1>
         <p class="subtitle">管理平台的基础信息和规则</p>
@@ -174,7 +182,7 @@ const resetConfig = () => {
     </main>
 
     <!-- 页脚 -->
-    <footer class="footer">
+    <footer class="footer" v-if="!embedded">
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
       </div>
@@ -198,6 +206,10 @@ const resetConfig = () => {
   margin: 80px auto 0;
   padding: 2rem;
   width: 100%;
+}
+
+.content.embedded-content {
+  margin-top: 0;
 }
 
 /* 头部样式 */

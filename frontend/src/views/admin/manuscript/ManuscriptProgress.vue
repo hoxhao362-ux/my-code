@@ -2,15 +2,21 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useI18n } from '../../../composables/useI18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 
 // 稿件ID筛选
 const selectedManuscriptId = ref('')
 
-// 稿件列表 - 只显示当前用户的稿件
+// 稿件列表 - 管理员/编辑/EA可见所有，普通用户可见自己
 const manuscripts = computed(() => {
+  const role = userStore.user?.role
+  if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(role)) {
+    return userStore.journals
+  }
   return userStore.userJournals
 })
 
@@ -19,6 +25,14 @@ const currentManuscript = computed(() => {
   if (!selectedManuscriptId.value) return null
   return manuscripts.value.find(m => String(m.id) === String(selectedManuscriptId.value))
 })
+
+const progressStages = computed(() => [
+  t('manuscriptProgress.stages.submitted'),
+  t('manuscriptProgress.stages.initial'),
+  t('manuscriptProgress.stages.peer'),
+  t('manuscriptProgress.stages.final'),
+  t('manuscriptProgress.stages.published')
+])
 
 // 查看稿件详情
 const viewManuscript = (id) => {
@@ -36,15 +50,15 @@ onMounted(() => {
 <template>
   <div class="manuscript-progress-container">
     <div class="page-header">
-      <button class="btn btn-secondary" @click="router.back()">返回</button>
-      <h1>稿件进度</h1>
+      <button class="btn btn-secondary" @click="router.back()">{{ t('common.back') }}</button>
+      <h1>{{ t('manuscriptProgress.title') }}</h1>
     </div>
     
     <div class="filters-section">
       <div class="filter-group">
-        <label for="manuscript-filter">选择稿件：</label>
+        <label for="manuscript-filter">{{ t('manuscriptProgress.select') }}：</label>
         <select id="manuscript-filter" v-model="selectedManuscriptId" class="filter-control">
-          <option value="">请选择稿件</option>
+          <option value="">{{ t('manuscriptProgress.placeholder') }}</option>
           <option v-for="manuscript in manuscripts" :key="manuscript.id" :value="manuscript.id">
             {{ manuscript.title }}
           </option>
@@ -56,23 +70,24 @@ onMounted(() => {
       <div class="manuscript-header">
         <h2>{{ currentManuscript.title }}</h2>
         <div class="manuscript-meta">
-          <span class="meta-item">模块：{{ currentManuscript.module }}</span>
-          <span class="meta-item">状态：<span class="status-badge" :class="currentManuscript.status.toLowerCase().replace(/\s/g, '-')">{{ currentManuscript.status }}</span></span>
-          <span class="meta-item">提交时间：{{ currentManuscript.submitDate }}</span>
+          <span class="meta-item">{{ t('dashboard.recentJournals.author').replace('Author', 'Writer') }}: {{ currentManuscript.author }}</span>
+          <span class="meta-item">Module: {{ currentManuscript.module }}</span>
+          <span class="meta-item">Status: <span class="status-badge" :class="currentManuscript.status.toLowerCase().replace(/\s/g, '-')">{{ currentManuscript.status }}</span></span>
+          <span class="meta-item">Date: {{ currentManuscript.date || currentManuscript.submissionDate }}</span>
         </div>
       </div>
       
       <div class="progress-section">
-        <h3>审核进度</h3>
+        <h3>{{ t('manuscriptProgress.auditProgress') }}</h3>
         <div class="progress-timeline">
           <div 
-            v-for="(stage, index) in ['已投稿', '初审', '复审', '终审', '已发表/已拒稿']" 
-            :key="stage"
+            v-for="(stage, index) in progressStages" 
+            :key="index"
             class="progress-step"
             :class="{
               'completed': (
                 // 基础状态：已投稿
-                (['已投稿', '待审核'].includes(currentManuscript.status) && index <= 0) ||
+                (['已投稿', '待审核', 'Submitted'].includes(currentManuscript.status) && index <= 0) ||
                 // 初审相关状态
                 (['审核中', '审稿中', '待初审'].includes(currentManuscript.status) && index <= 1) ||
                 // 复审相关状态
@@ -85,7 +100,7 @@ onMounted(() => {
                 (['已拒稿', '未通过'].includes(currentManuscript.status) && index <= 1)
               ),
               'current': (
-                (['已投稿', '待审核'].includes(currentManuscript.status) && index === 0) ||
+                (['已投稿', '待审核', 'Submitted'].includes(currentManuscript.status) && index === 0) ||
                 (['审核中', '审稿中', '待初审'].includes(currentManuscript.status) && index === 1) ||
                 (['修改再审', '复审', '待复审'].includes(currentManuscript.status) && index === 2) ||
                 (['终审', '待终审'].includes(currentManuscript.status) && index === 3) ||
@@ -104,13 +119,13 @@ onMounted(() => {
       
       <div class="action-buttons">
         <button class="btn btn-primary" @click="viewManuscript(currentManuscript.id)">
-          查看详细信息
+          {{ t('manuscriptProgress.details') }}
         </button>
       </div>
     </div>
     
     <div v-else class="empty-state">
-      <p>请选择要查看进度的稿件</p>
+      <p>{{ t('manuscriptProgress.placeholder') }}</p>
     </div>
   </div>
 </template>

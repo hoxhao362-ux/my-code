@@ -63,7 +63,7 @@ export default {
     actions: 'Operations',
     types: {
       manuscript: 'Manuscript',
-      contribution: 'Authors’ Contributions',
+      contribution: 'Writers’ Contributions',
       conflict: 'Conflicts of Interest',
       figure: 'Figure',
       table: 'Table',
@@ -97,14 +97,14 @@ export default {
     title: 'Additional Information',
     questions: {
       q1: 'Confirm data access and submission responsibility',
-      q2: 'Have all authors reviewed and agreed to the submission?',
+      q2: 'Have all writers reviewed and agreed to the submission?',
       q3: 'Are there any medical writers/editors involved, and provide relevant funding information',
-      q4: 'Which authors have accessed and verified the research data, and who is responsible for the submission decision?',
+      q4: 'Which writers have accessed and verified the research data, and who is responsible for the submission decision?',
       q5: 'Did you use generative AI, and please specify the specific purpose',
       q6: 'Provide manuscript word count, number of references, and number of figures/tables',
     },
     ssrn: 'Agree to publish the research article on the SSRN preprint platform',
-    socialMedia: "Corresponding Author's Social Media Accounts",
+    socialMedia: "Corresponding Writer's Social Media Accounts",
     conference: 'Future Conference Concurrent Submission Confirmation',
     errors: {
       incomplete: 'Please complete all additional information questionnaires',
@@ -126,13 +126,13 @@ export default {
     keywords: 'Keywords',
     keywordsPlaceholder: 'Please enter keywords, separate multiple keywords with semicolons',
     authors: {
-      title: 'Authors',
-      add: 'Add Author',
+      title: 'Writers',
+      add: 'Add Writer',
       name: 'Name',
       institution: 'Institution',
       email: 'Email',
-      corresponding: 'Corresponding Author',
-      first: 'First Author',
+      corresponding: 'Corresponding Writer',
+      first: 'First Writer',
     },
     funding: {
       title: 'Funding Information',
@@ -147,26 +147,70 @@ export default {
     publishingOption: {
       title: 'Publishing Option',
       subscription: 'Subscription (Subscription Model)',
-      subscriptionDesc: 'Traditional publishing model. No fee for authors.',
+      subscriptionDesc: 'Traditional publishing model. No fee for writers.',
       openAccess: 'Open Access (Open Access Model)',
       openAccessDesc: 'Article is freely available to everyone. APC applies.',
     },
     pdf: {
       abstract: 'Abstract',
-      authors: 'Authors',
+      authors: 'Writers',
       funding: 'Funding',
       none: 'None'
     },
     errors: {
       incomplete: 'Please complete all required fields',
-      noAuthor: 'Please add at least one author',
-      noCorresponding: 'Please select a corresponding author',
-      noFirst: 'Please select a first author',
+      noAuthor: 'Please add at least one writer',
+      noCorresponding: 'Please select a corresponding writer',
+      noFirst: 'Please select a first writer',
       noFunding: 'Please add funding information or select "No Funding Information"',
       selectPublishingOption: 'Please select a publishing option',
       submissionFailed: 'Submission failed'
     },
     successMessage: 'Submission has been successfully submitted. Please wait for the journal\'s initial review',
+  },
+  screening: {
+    title: 'Initial Screening & Assignment',
+    searchPlaceholder: 'Search by title or writer...',
+    allModules: 'All Modules',
+    noJournals: 'No manuscripts pending screening.',
+    actions: {
+      assign: 'Assign Reviewer',
+      reject: 'Reject',
+      confirm: 'Confirm'
+    },
+    assignReviewer: 'Assign Reviewers',
+    errors: {
+      selectReviewer: 'Please select at least one reviewer.'
+    },
+    success: {
+      assigned: 'Reviewers assigned successfully.'
+    },
+    confirmReject: 'Are you sure you want to reject this manuscript? This action cannot be undone.'
+  },
+  manuscriptProgress: {
+    title: 'Manuscript Progress',
+    select: 'Select Manuscript',
+    placeholder: 'Please select a manuscript',
+    auditProgress: 'Audit Progress',
+    details: 'View Details',
+    stages: {
+      submitted: 'Submitted',
+      initial: 'Initial Review',
+      peer: 'Peer Review',
+      final: 'Final Decision',
+      published: 'Published/Rejected'
+    }
+  },
+  submissionRules: {
+    title: 'Submission Guidelines',
+    intro: 'Please read the following guidelines carefully before submission...',
+    format: 'Format',
+    formatDesc: 'PDF, Word, or LaTeX.',
+    authors: 'Writers',
+    authorsDesc: 'Ensure all writers are listed and have approved.',
+    originality: 'Originality',
+    originalityDesc: 'Content must be original.',
+    start: 'Start Submission'
   },
   nav: {
     logo: 'Journal Submission Platform',
@@ -193,9 +237,11 @@ export default {
     dashboard: 'Dashboard',
     roleSwitch: 'Role Switch',
     roles: {
-      admin: 'Admin Dashboard',
+      admin: 'Editor Dashboard',
+      associate_editor: 'Associate Editor Dashboard',
+      ea_ae: 'EA & AE Dashboard',
       reviewer: 'Reviewer Dashboard',
-      author: 'Author Dashboard'
+      author: 'Writer Dashboard'
     },
     tasks: 'Audit Tasks',
     history: 'Audit History',
@@ -217,6 +263,143 @@ export default {
     historySubmission: 'History Submission',
     submissionGuide: 'Submission Guide',
     onlineConsultation: 'Online Consultation',
-    permissionDenied: 'Permission denied, cannot access admin panel'
+    permissionDenied: 'Permission denied, cannot access admin panel',
+    // New additions
+    journals: 'Journals',
+    submit: 'Submit',
+    resources: 'Resources',
+    more: 'More',
+    reviewer: 'Reviewer',
+    search: 'Search',
+    searchPlaceholder: 'Search...',
+    subscribe: 'Subscribe',
+    authorResources: 'Author Resources',
+    reviewerResources: 'Reviewer Resources',
+    newsEvents: 'News & Events',
+    editorialBoard: 'Editorial Board',
+    journalInfo: 'Journal Info',
+    history: 'History',
+    becomeReviewer: 'Become a Reviewer',
+    reviewerGuidelines: 'Reviewer Guidelines',
+    reviewerTraining: 'Reviewer Training',
+    myReviews: 'My Reviews',
+    myProfile: 'My Profile',
+    guideForAuthors: 'Guide for Authors',
+    templates: 'Templates',
+    checkStatus: 'Check Status',
+    latestArticles: 'Latest Articles',
+    callForPapers: 'Call for Papers',
+    upcomingEvents: 'Upcoming Events',
+    help: 'Help',
+    settings: 'Settings',
+    profile: 'Profile',
+    editorPreferences: 'Editor Preferences',
+    apiAccess: 'API Access',
+    helpSupport: 'Help & Support',
+    helpCenter: 'Help Center',
+    systemStatus: 'System Status',
+    statistics: 'Statistics',
+    decisionsLetters: 'Decisions & Letters',
+    manuscripts: 'Manuscripts',
+    reviewers: 'Reviewers',
+    editorManagement: 'Editor Management',
+    journalSettings: 'Journal Settings',
+    profileSettings: 'Profile & Settings',
+    auditNewSubmissions: 'New Submissions',
+    auditAssignReviewers: 'Assign Reviewers',
+    auditReviewMonitoring: 'Review Monitoring',
+    auditDecisionMaking: 'Decision Making',
+    auditRevisionHandling: 'Revision Handling',
+    auditReviewerManagement: 'Reviewer Management',
+    auditMyTasks: 'My Tasks',
+  },
+  dashboard: {
+    title: 'Dashboard',
+    welcome: 'Welcome, {name}',
+    stats: {
+      totalJournals: 'Total Submissions',
+      pendingJournals: 'Pending Reviews',
+      totalUsers: 'Total Normals',
+      recentSubmissions: 'Recent Submissions'
+    },
+    recentJournals: {
+      title: 'Recent Submissions',
+      author: 'Writer',
+      date: 'Date',
+      status: 'Status'
+    }
+  },
+  submission: {
+    login: {
+      title: 'Please Enter the Following',
+      username: 'Normalname',
+      password: 'Password',
+      btn: {
+        author: 'Writer Login',
+        reviewer: 'Reviewer Login',
+        editor: 'Editor Login'
+      },
+      orcid: {
+        label: 'Or Login via',
+        help: 'What is ORCID?',
+        info: 'ORCID provides a persistent digital identifier that distinguishes you from every other researcher.'
+      },
+      link: {
+        sendDetails: 'Send Login Details',
+        register: 'Register Now',
+        help: 'Login Help'
+      },
+      error: {
+        required: 'Normalname and password are required',
+        failed: 'Login failed. Please check your credentials.'
+      }
+    }
+  },
+  review: {
+    title: 'Peer Review',
+    dimensions: {
+      novelty: 'Novelty',
+      scientificMerit: 'Scientific Merit',
+      relevance: 'Clinical/Public Health Relevance',
+      clarity: 'Clarity & Compliance',
+      rigour: 'Methodological Rigour',
+    },
+    levels: {
+      excellent: 'Excellent',
+      good: 'Good',
+      fair: 'Fair',
+      poor: 'Poor',
+    },
+    actions: {
+      accept: 'Accept as is',
+      reviseMinor: 'Revise (Minor)',
+      reviseMajor: 'Revise (Major)',
+      reject: 'Reject',
+    },
+    rules: {
+      title: 'Core Review Rules',
+      priority: 'Novelty is the highest priority.',
+      screening: 'Editor Screening (1-3 days): 70-80% rejection rate.',
+      peerReview: 'Peer Review (2-4 weeks): 2-3 reviewers.',
+      rejection: 'Rejection Criteria: Poor novelty, fatal flaws, misconduct.',
+      resubmission: 'Resubmission ban: 6 months for rejected manuscripts.',
+    },
+    comparison: {
+      title: 'Differences from Domestic Core Journals',
+      scoring: 'Scoring: Level + Comments (No numerical scores)',
+      efficiency: 'Efficiency: Fast rejection (1 day min), no redundancy',
+      priority: 'Priority: Innovation > Methodology',
+      response: 'Response: Point-by-point response required',
+    },
+    placeholders: {
+      comment: 'Please provide detailed comments...',
+      confidential: 'Confidential comments to editor...',
+    },
+    errors: {
+      noveltyRequired: 'Novelty evaluation is required',
+      commentRequired: 'Comments are required',
+      allDimensionsRequired: 'Please evaluate all dimensions',
+      decisionRequired: 'Please select a recommendation',
+    }
   }
 }
