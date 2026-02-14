@@ -355,6 +355,30 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+<<<<<<< HEAD
+=======
+const handleDownloadPDF = () => {
+  // Mock PDF download
+  console.log('Downloading PDF...')
+  if (hasAttachments.value) {
+      // Find a PDF attachment if possible
+      const pdf = journal.value.attachments.find(a => a.name.toLowerCase().endsWith('.pdf'))
+      if (pdf) {
+          handleDownloadAttachment(pdf)
+      } else {
+          // Fallback to first attachment
+           handleDownloadAttachment(journal.value.attachments[0])
+      }
+  } else {
+      alert('PDF not available for this demo article.')
+  }
+}
+
+const handleCite = () => {
+    alert(`Citation: ${journal.value.author}. "${journal.value.title}". ${journal.value.date}.`)
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 组件挂载时滚动到页面顶部
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -374,6 +398,7 @@ onMounted(() => {
     <div v-if="journal" class="journal-detail-content">
       <!-- 头部卡片 -->
       <header class="journal-detail-header">
+<<<<<<< HEAD
         <div class="header-actions">
           <button class="back-btn" @click="goBack">
             <span class="icon">←</span> 返回
@@ -408,10 +433,13 @@ onMounted(() => {
               </div>
             </div>
         </div>
+=======
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         <h1 class="journal-title">{{ journal.title }}</h1>
         <div class="journal-meta">
           <div class="meta-row">
             <span class="meta-item">
+<<<<<<< HEAD
               <strong>作者：</strong>{{ journal.author }}
             </span>
             <span class="meta-item">
@@ -438,11 +466,28 @@ onMounted(() => {
             <span class="meta-item">
               <strong>状态：</strong>
               <span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span>
+=======
+              <strong>{{ journal.author }}</strong>
+            </span>
+            <span class="meta-item">
+              {{ journal.date }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </span>
           </div>
         </div>
       </header>
 
+<<<<<<< HEAD
+=======
+      <!-- Floating Action Box -->
+      <div class="floating-actions">
+        <button class="btn-float btn-download" @click="handleDownloadPDF">
+          Download PDF
+        </button>
+        <a href="#" class="link-cite" @click.prevent="handleCite">Cite This Article</a>
+      </div>
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <!-- 摘要卡片 -->
       <section class="journal-abstract card">
         <h2 class="section-title">摘要</h2>
@@ -467,6 +512,17 @@ onMounted(() => {
       <section class="journal-content card">
         <h2 class="section-title">正文</h2>
         <div class="content-body" v-html="journal.content"></div>
+<<<<<<< HEAD
+=======
+        
+        <!-- Supplementary Materials Link -->
+        <div class="supplementary-section" v-if="hasAttachments">
+             <hr />
+             <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
+               Supplementary Materials
+             </a>
+        </div>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </section>
     </div>
     <!-- 未找到期刊 -->
@@ -494,6 +550,7 @@ onMounted(() => {
 /* 主内容区域 */
 .journal-detail-content {
   flex: 1;
+<<<<<<< HEAD
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -505,31 +562,64 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 2rem;
+=======
+  max-width: 900px; /* Readability width */
+  margin: 0 auto;
+  width: 100%;
+  margin-top: 100px; /* 为固定导航栏留出空间 */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: white;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 2rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 卡片样式 */
 .card {
+<<<<<<< HEAD
   background: #f9f9f9;
   border-radius: 8px;
   box-shadow: none;
   padding: 1.5rem;
   border: 1px solid #ddd;
+=======
+  background: white;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  border: none;
+  margin-bottom: 2rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 头部卡片 */
 .journal-detail-header {
+<<<<<<< HEAD
   background: #f9f9f9;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: none;
   border: 1px solid #ddd;
+=======
+  background: white;
+  padding: 0;
+  border: none;
+  margin-bottom: 2rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 标题样式 */
 .journal-title {
   font-size: 2.2rem;
   font-weight: 700;
+<<<<<<< HEAD
   color: #2c3e50;
+=======
+  color: #333333; /* Lancet Dark Grey */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   margin: 0 0 1.5rem 0;
   line-height: 1.3;
   letter-spacing: -0.5px;
@@ -538,7 +628,11 @@ onMounted(() => {
 /* 元信息样式 */
 .journal-meta {
   color: #7f8c8d;
+<<<<<<< HEAD
   font-size: 1rem;
+=======
+  font-size: 0.95rem; /* Smaller, grey */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -786,6 +880,7 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+<<<<<<< HEAD
 /* 章节样式 */
 .section-title {
   font-size: 1.6rem;
@@ -795,6 +890,77 @@ onMounted(() => {
   padding-bottom: 0.75rem;
   border-bottom: 3px solid #667eea;
   display: inline-block;
+=======
+/* Floating Actions */
+.floating-actions {
+  position: fixed;
+  top: 150px;
+  right: calc(50% - 700px); /* Position to the right of content */
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  z-index: 100;
+}
+
+@media (max-width: 1400px) {
+  .floating-actions {
+    position: static;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 2rem;
+    border: none;
+    padding: 0;
+  }
+}
+
+.btn-float {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+
+.btn-download {
+  background-color: #C93737;
+  color: white;
+}
+
+.btn-download:hover {
+  background-color: #a02020;
+}
+
+.link-cite {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.link-cite:hover {
+  text-decoration: underline;
+  color: #333;
+}
+
+/* 章节样式 */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0;
+  border-bottom: none; /* Clean style */
+  display: block;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 摘要样式 */
@@ -804,6 +970,7 @@ onMounted(() => {
 
 .abstract-content {
   font-size: 1.15rem;
+<<<<<<< HEAD
   line-height: 1.8;
   color: #555;
   text-align: justify;
@@ -811,6 +978,16 @@ onMounted(() => {
   padding: 1rem;
   border-radius: 6px;
   border-left: 4px solid #4a90e2;
+=======
+  line-height: 1.6; /* Lancet spec */
+  color: #555; /* Light grey */
+  text-align: justify;
+  background: transparent; /* No background */
+  padding: 0;
+  border-radius: 0;
+  border-left: none; /* Removed decoration */
+  margin-bottom: 2rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 关键词样式 */
@@ -845,13 +1022,20 @@ onMounted(() => {
 /* 正文样式 */
 .journal-content {
   margin-bottom: 0;
+<<<<<<< HEAD
   line-height: 1.8;
   color: #333;
   font-size: 1.15rem;
+=======
+  line-height: 1.6; /* Lancet spec */
+  color: #333;
+  font-size: 14px; /* Lancet spec */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .content-body {
   background: white;
+<<<<<<< HEAD
   padding: 1.5rem;
   border-radius: 6px;
   border: 1px solid #ddd;
@@ -863,6 +1047,33 @@ onMounted(() => {
   color: #333;
 }
 
+=======
+  padding: 0; /* Remove padding/borders for clean read */
+  border-radius: 0;
+  border: none;
+  min-height: 200px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #333;
+}
+
+.link-supp {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 700;
+  color: #7f8c8d;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link-supp:hover {
+  color: #C93737;
+  text-decoration: underline;
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 富文本格式支持 */
 .content-body h1,
 .content-body h2,
@@ -955,20 +1166,41 @@ onMounted(() => {
 
 /* 链接样式 */
 .content-body a {
+<<<<<<< HEAD
   color: #3498db;
   text-decoration: underline;
 }
 
 .content-body a:hover {
   color: #2980b9;
+=======
+  color: #333;
+  text-decoration: none;
+  border-bottom: 1px solid #ccc; /* Subtle link style */
+  transition: all 0.2s;
+}
+
+.content-body a:hover {
+  color: #C93737;
+  border-bottom-color: #C93737;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 图片样式 */
 .content-body img {
+<<<<<<< HEAD
   max-width: 100%;
   height: auto;
   margin: 1rem 0;
   border-radius: 5px;
+=======
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto; /* Center images */
+  border: 1px solid #eee; /* Thin grey border */
+  border-radius: 0;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 代码块样式 */

@@ -2,9 +2,28 @@
 import { ref, computed } from 'vue'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
+<<<<<<< HEAD
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
+=======
+import { useRouter } from 'vue-router'
+
+const userStore = useUserStore()
+const user = computed(() => userStore.user)
+const router = useRouter()
+
+// 处理投稿按钮点击事件
+const goToSubmit = () => {
+  if (user.value) {
+    // 已登录用户直接跳转到投稿系统的投稿页面
+    router.push('/admin/author-submit')
+  } else {
+    // 未登录用户跳转到第二层登录页面
+    router.push('/submission/login')
+  }
+}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 
 // 虚拟数据模拟平台统计
 const stats = ref({
@@ -46,46 +65,76 @@ const showSearchResults = ref(false)
       :logout="userStore.logout"
     />
 
+<<<<<<< HEAD
     <!-- 首页内容 -->
     <main class="main-content">
       <!-- 平台统计 -->
       <section class="stats-section">
         <h2 class="section-title">平台统计</h2>
+=======
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Platform Stats -->
+      <section class="stats-section">
+        <h2 class="section-title">Platform Statistics</h2>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon">📚</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ stats.totalJournals }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">总投稿量</p>
+=======
+              <p class="stat-label">Total Submissions</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">⏳</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ stats.pendingReviews }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">待审核稿件</p>
+=======
+              <p class="stat-label">Pending Reviews</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">👥</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ stats.totalUsers }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">注册用户</p>
+=======
+              <p class="stat-label">Registered Users</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📝</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ stats.recentSubmissions }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">近期投稿</p>
+=======
+              <p class="stat-label">Recent Submissions</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
         </div>
       </section>
 
+<<<<<<< HEAD
       <!-- 平台公告 -->
       <section class="announcements-section">
         <h2 class="section-title">平台公告</h2>
+=======
+      <!-- Announcements -->
+      <section class="announcements-section">
+        <h2 class="section-title">Announcements</h2>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         <div class="announcements-list">
           <div 
             v-for="announcement in announcements" 
@@ -101,10 +150,23 @@ const showSearchResults = ref(false)
         </div>
       </section>
 
+<<<<<<< HEAD
       <!-- 近期投稿 -->
       <section class="journals-section">
         <div class="section-header">
           <h2 class="section-title">近期投稿</h2>
+=======
+      <!-- Recent Submissions -->
+      <section class="journals-section">
+        <div class="section-header">
+          <h2 class="section-title">Recent Submissions</h2>
+          <button 
+            class="submit-btn"
+            @click="goToSubmit"
+          >
+            Submit your paper
+          </button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
         <div class="journals-list">
           <div 
@@ -114,20 +176,34 @@ const showSearchResults = ref(false)
           >
             <div class="journal-info">
               <h3 class="journal-title">{{ journal.title }}</h3>
+<<<<<<< HEAD
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
             </div>
             <div class="journal-status" :class="journal.status.toLowerCase()">
+=======
+              <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+            </div>
+            <div class="journal-status" :class="journal.status.toLowerCase().replace(' ', '-')">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               {{ journal.status }}
             </div>
           </div>
         </div>
       </section>
 
+<<<<<<< HEAD
       <!-- 最近浏览量最高的作品 -->
       <section class="top-journals-section">
         <div class="section-header">
           <h2 class="section-title">热门作品</h2>
           <p class="section-subtitle">最近浏览量最高的四篇作品</p>
+=======
+      <!-- Top Viewed -->
+      <section class="top-journals-section">
+        <div class="section-header">
+          <h2 class="section-title">Popular Articles</h2>
+          <p class="section-subtitle">Top 4 most viewed articles</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
         <div class="journals-grid">
           <div 
@@ -137,10 +213,17 @@ const showSearchResults = ref(false)
           >
             <div class="top-journal-info">
               <h3 class="top-journal-title">{{ journal.title }}</h3>
+<<<<<<< HEAD
               <p class="top-journal-meta">作者：{{ journal.author }} | 模块：{{ journal.module }}</p>
               <p class="top-journal-meta">投稿日期：{{ journal.date }} | 阅读量：{{ journal.viewCount || 0 }}</p>
             </div>
             <div class="top-journal-status" :class="journal.status.toLowerCase()">
+=======
+              <p class="top-journal-meta">Author: {{ journal.author }} | Module: {{ journal.module }}</p>
+              <p class="top-journal-meta">Date: {{ journal.date || journal.submissionDate }} | Views: {{ journal.viewCount || 0 }}</p>
+            </div>
+            <div class="top-journal-status" :class="journal.status.toLowerCase().replace(' ', '-')">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               {{ journal.status }}
             </div>
           </div>
@@ -148,10 +231,17 @@ const showSearchResults = ref(false)
       </section>
     </main>
 
+<<<<<<< HEAD
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+=======
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
     </footer>
   </div>

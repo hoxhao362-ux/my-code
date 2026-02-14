@@ -6,6 +6,16 @@ import Navigation from '../../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+<<<<<<< HEAD
+=======
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 基础配置数据 - 使用ref存储表单数据
 const basicConfig = ref({
   platformName: '',
@@ -55,6 +65,10 @@ const resetConfig = () => {
   <div class="admin-basic-config-container">
     <!-- 导航栏 -->
     <Navigation 
+<<<<<<< HEAD
+=======
+      v-if="!embedded"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       :user="user"
       :current-page="'admin-system-basic'"
       :toggle-directory="() => {}"
@@ -63,7 +77,11 @@ const resetConfig = () => {
     />
 
     <!-- 基础配置内容 -->
+<<<<<<< HEAD
     <main class="content">
+=======
+    <main class="content" :class="{ 'embedded-content': embedded }">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div class="header">
         <h1>系统设置 - 基础配置</h1>
         <p class="subtitle">管理平台的基础信息和规则</p>
@@ -174,7 +192,11 @@ const resetConfig = () => {
     </main>
 
     <!-- 页脚 -->
+<<<<<<< HEAD
     <footer class="footer">
+=======
+    <footer class="footer" v-if="!embedded">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
       </div>
@@ -200,6 +222,13 @@ const resetConfig = () => {
   width: 100%;
 }
 
+<<<<<<< HEAD
+=======
+.content.embedded-content {
+  margin-top: 0;
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 头部样式 */
 .header {
   margin-bottom: 2rem;

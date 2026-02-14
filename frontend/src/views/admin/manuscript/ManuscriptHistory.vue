@@ -6,19 +6,29 @@ import { useUserStore } from '../../../stores/user'
 const router = useRouter()
 const userStore = useUserStore()
 
+<<<<<<< HEAD
 // 筛选条件
+=======
+// Filters
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 const selectedStatus = ref('all')
 const selectedModule = ref('all')
 const searchKeyword = ref('')
 const selectedTimePeriod = ref('all') // 'all', 'day', 'week', 'month', 'year'
 
+<<<<<<< HEAD
 // 选项
 const statusOptions = ['all', '待审核', '审核中', '已录用', '已拒稿', '修改再审']
+=======
+// Options
+const statusOptions = ['all', 'Pending', 'Under Review', 'Accepted', 'Rejected', 'Revision Requested']
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 const moduleOptions = computed(() => {
   const modules = userStore.journals.map(journal => journal.module)
   return ['all', ...Array.from(new Set(modules))]
 })
 
+<<<<<<< HEAD
 // 时间段选项
 const timePeriodOptions = [
   { value: 'all', label: '全部时间' },
@@ -26,6 +36,15 @@ const timePeriodOptions = [
   { value: 'week', label: '最近一周' },
   { value: 'month', label: '最近一月' },
   { value: 'year', label: '最近一年' }
+=======
+// Time Period Options
+const timePeriodOptions = [
+  { value: 'all', label: 'All Time' },
+  { value: 'day', label: 'Last 24 Hours' },
+  { value: 'week', label: 'Last Week' },
+  { value: 'month', label: 'Last Month' },
+  { value: 'year', label: 'Last Year' }
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 ]
 
 // 稿件数据 - 这里可以根据状态筛选已归档的稿件
@@ -95,19 +114,32 @@ const viewManuscript = (id) => {
 <template>
   <div class="manuscript-history-container">
     <div class="page-header">
+<<<<<<< HEAD
       <button class="btn btn-secondary" @click="router.back()">返回</button>
       <h1>历史投稿</h1>
+=======
+      <button class="btn btn-secondary" @click="router.back()">Back</button>
+      <h1>Manuscript History</h1>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     </div>
     
     <div class="filters-section">
       <div class="filter-row">
         <div class="filter-group">
+<<<<<<< HEAD
           <label for="search-input">关键词搜索：</label>
+=======
+          <label for="search-input">Keyword Search:</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <input 
             type="text" 
             id="search-input" 
             v-model="searchKeyword" 
+<<<<<<< HEAD
             placeholder="搜索标题、作者或关键词" 
+=======
+            placeholder="Search Title, Author or Keywords" 
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             class="filter-control search-input"
           >
         </div>
@@ -115,25 +147,43 @@ const viewManuscript = (id) => {
       
       <div class="filter-row">
         <div class="filter-group">
+<<<<<<< HEAD
           <label for="status-filter">状态筛选：</label>
           <select id="status-filter" v-model="selectedStatus" class="filter-control">
             <option v-for="status in statusOptions" :key="status" :value="status">
               {{ status === 'all' ? '全部状态' : status }}
+=======
+          <label for="status-filter">Status Filter:</label>
+          <select id="status-filter" v-model="selectedStatus" class="filter-control">
+            <option v-for="status in statusOptions" :key="status" :value="status">
+              {{ status === 'all' ? 'All Status' : status }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </option>
           </select>
         </div>
         
         <div class="filter-group">
+<<<<<<< HEAD
           <label for="module-filter">模块筛选：</label>
           <select id="module-filter" v-model="selectedModule" class="filter-control">
             <option v-for="module in moduleOptions" :key="module" :value="module">
               {{ module === 'all' ? '全部模块' : module }}
+=======
+          <label for="module-filter">Module Filter:</label>
+          <select id="module-filter" v-model="selectedModule" class="filter-control">
+            <option v-for="module in moduleOptions" :key="module" :value="module">
+              {{ module === 'all' ? 'All Modules' : module }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </option>
           </select>
         </div>
         
         <div class="filter-group">
+<<<<<<< HEAD
           <label for="time-period-filter">时间段：</label>
+=======
+          <label for="time-period-filter">Time Period:</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <select id="time-period-filter" v-model="selectedTimePeriod" class="filter-control">
             <option v-for="option in timePeriodOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -147,11 +197,19 @@ const viewManuscript = (id) => {
       <table class="manuscripts-table">
         <thead>
           <tr>
+<<<<<<< HEAD
             <th>稿件标题</th>
             <th>模块</th>
             <th>状态</th>
             <th>提交时间</th>
             <th>操作</th>
+=======
+            <th>Title</th>
+            <th>Module</th>
+            <th>Status</th>
+            <th>Submitted Date</th>
+            <th>Actions</th>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           </tr>
         </thead>
         <tbody>
@@ -166,16 +224,26 @@ const viewManuscript = (id) => {
             <td>{{ manuscript.date || manuscript.submitDate }}</td>
             <td>
               <button class="btn btn-primary btn-sm" @click="viewManuscript(manuscript.id)">
+<<<<<<< HEAD
                 查看详情
+=======
+                View Details
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </button>
             </td>
           </tr>
         </tbody>
       </table>
       
+<<<<<<< HEAD
       <!-- 空状态 -->
       <div v-if="archivedManuscripts.length === 0" class="empty-state">
         <p>暂无历史投稿记录</p>
+=======
+      <!-- Empty State -->
+      <div v-if="archivedManuscripts.length === 0" class="empty-state">
+        <p>No history found</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
     </div>
   </div>

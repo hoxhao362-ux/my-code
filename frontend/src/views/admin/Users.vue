@@ -6,6 +6,16 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+<<<<<<< HEAD
+=======
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 邮箱加密函数
 const encryptEmail = (email) => {
   if (!email) return ''
@@ -69,18 +79,36 @@ const filteredUsers = computed(() => {
 
 // 角色选项
 const roleOptions = [
+<<<<<<< HEAD
   { value: 'all', label: '全部角色' },
   { value: 'admin', label: '管理员' },
   { value: 'reviewer', label: '审核员' },
   { value: 'author', label: '作者' },
   { value: 'user', label: '普通用户' }
+=======
+  { value: 'all', label: 'All Roles' },
+  { value: 'admin', label: 'Admin (EIC)' },
+  { value: 'editor', label: 'Editor' },
+  { value: 'associate_editor', label: 'Associate Editor' },
+  { value: 'editorial_assistant', label: 'Editorial Assistant' },
+  { value: 'advisory_editor', label: 'Advisory Editor' },
+  { value: 'reviewer', label: 'Reviewer' },
+  { value: 'author', label: 'Author' },
+  { value: 'user', label: 'User' }
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 ]
 
 // 状态选项
 const statusOptions = [
+<<<<<<< HEAD
   { value: 'all', label: '全部状态' },
   { value: 'active', label: '启用' },
   { value: 'inactive', label: '禁用' }
+=======
+  { value: 'all', label: 'All Status' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' }
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 ]
 
 // 清空筛选
@@ -108,11 +136,19 @@ const editForm = ref({
 
 // 禁用时长选项
 const disableDurations = [
+<<<<<<< HEAD
   { value: 1, label: '1天' },
   { value: 7, label: '7天' },
   { value: 30, label: '30天' },
   { value: 90, label: '90天' },
   { value: 0, label: '永久' }
+=======
+  { value: 1, label: '1 Day' },
+  { value: 7, label: '7 Days' },
+  { value: 30, label: '30 Days' },
+  { value: 90, label: '90 Days' },
+  { value: 0, label: 'Permanent' }
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 ]
 
 const disableForm = ref({
@@ -182,26 +218,53 @@ const confirmOperation = () => {
     confirmAction.value()
     showConfirmModal.value = false
   } else {
+<<<<<<< HEAD
     alert('管理员密码错误！')
+=======
+    alert('Invalid admin password!')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }
 
 // 执行编辑操作
 const executeEdit = () => {
+<<<<<<< HEAD
   openConfirmModal(() => {
     if (editForm.value.resetPassword) {
       // 重置密码逻辑
       alert(`已重置用户 ${currentUser.value.username} 的密码为：123456`)
+=======
+  // Check if role is changing from User to Admin - Warning
+  let warning = 'Are you sure you want to update this user?'
+  if (currentUser.value.role !== 'admin' && editForm.value.role === 'admin') {
+     warning = 'Are you sure to set this user as Administrator?'
+  }
+
+  openConfirmModal(() => {
+    if (editForm.value.resetPassword) {
+      // 重置密码逻辑
+      alert(`Password reset for user ${currentUser.value.username} to: 123456`)
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     }
     if (editForm.value.role !== currentUser.value.role) {
       // 角色变更逻辑 - 使用userStore更新角色，确保持久化
       userStore.updateUserRole(currentUser.value.id, editForm.value.role)
       // 更新当前用户对象，确保模态框显示正确
       currentUser.value.role = editForm.value.role
+<<<<<<< HEAD
       alert(`已将用户 ${currentUser.value.username} 的角色变更为 ${editForm.value.role === 'admin' ? '管理员' : editForm.value.role === 'reviewer' ? '审核员' : editForm.value.role === 'author' ? '作者' : '普通用户'}`)
     }
     showEditModal.value = false
   }, '确认要执行编辑操作吗？')
+=======
+      const roleName = editForm.value.role === 'editor' ? 'Editor' : 
+                       editForm.value.role === 'reviewer' ? 'Reviewer' : 
+                       editForm.value.role === 'author' ? 'Author' : 'User'
+      alert(`User ${currentUser.value.username} role updated to ${roleName}`)
+    }
+    showEditModal.value = false
+  }, warning)
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 执行禁用操作
@@ -211,10 +274,17 @@ const executeDisable = () => {
     userStore.updateUserStatus(currentUser.value.id, 'inactive')
     // 更新当前用户对象，确保模态框显示正确
     currentUser.value.status = 'inactive'
+<<<<<<< HEAD
     const durationText = disableForm.value.duration === 0 ? '永久' : `${disableForm.value.duration}天`
     alert(`已禁用用户 ${currentUser.value.username}，禁用时长：${durationText}`)
     showDisableModal.value = false
   }, '确认要禁用该用户吗？')
+=======
+    const durationText = disableForm.value.duration === 0 ? 'Permanent' : `${disableForm.value.duration} days`
+    alert(`User ${currentUser.value.username} disabled for: ${durationText}`)
+    showDisableModal.value = false
+  }, 'Are you sure you want to disable this user?')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 执行删除操作
@@ -222,9 +292,15 @@ const executeDelete = () => {
   openConfirmModal(() => {
     // 删除用户逻辑 - 使用userStore删除用户，确保持久化
     userStore.deleteUser(currentUser.value.id)
+<<<<<<< HEAD
     alert(`已删除用户 ${currentUser.value.username}`)
     showDeleteModal.value = false
   }, '确认要删除该用户吗？此操作不可恢复！')
+=======
+    alert(`User ${currentUser.value.username} deleted`)
+    showDeleteModal.value = false
+  }, 'Are you sure you want to delete this user? This action cannot be undone!')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 启用用户
@@ -234,8 +310,13 @@ const enableUser = (user) => {
     userStore.updateUserStatus(user.id, 'active')
     // 更新当前用户对象，确保界面显示正确
     user.status = 'active'
+<<<<<<< HEAD
     alert(`已启用用户 ${user.username}`)
   }, '确认要启用该用户吗？')
+=======
+    alert(`User ${user.username} enabled`)
+  }, 'Are you sure you want to enable this user?')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 </script>
 
@@ -243,6 +324,10 @@ const enableUser = (user) => {
   <div class="admin-users-container">
     <!-- 导航栏 -->
     <Navigation 
+<<<<<<< HEAD
+=======
+      v-if="!embedded"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       :user="user"
       :current-page="'admin-users'"
       :toggle-directory="() => {}"
@@ -251,10 +336,17 @@ const enableUser = (user) => {
     />
 
     <!-- 用户管理内容 -->
+<<<<<<< HEAD
     <main class="content">
       <div class="header">
         <h1>用户管理</h1>
         <p class="subtitle">管理平台所有用户，包括查看、编辑、禁用和删除用户</p>
+=======
+    <main class="content" :class="{ 'embedded-content': embedded }">
+      <div class="header">
+        <h1>User Management</h1>
+        <p class="subtitle">Manage all users, view, edit, disable or delete accounts</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
 
       <!-- 信息检索和筛选 -->
@@ -265,7 +357,11 @@ const enableUser = (user) => {
             <input 
               type="text" 
               v-model="searchKeyword" 
+<<<<<<< HEAD
               placeholder="搜索用户名、邮箱或手机号..." 
+=======
+              placeholder="Search by username, email or phone..." 
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               class="search-input"
             >
             <button class="search-btn">
@@ -315,6 +411,7 @@ const enableUser = (user) => {
         <div class="stats-container">
           <div class="stat-card">
             <div class="stat-number">{{ userStore.users.length }}</div>
+<<<<<<< HEAD
             <div class="stat-label">总用户数</div>
           </div>
           <div class="stat-card">
@@ -328,6 +425,21 @@ const enableUser = (user) => {
           <div class="stat-card">
             <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
             <div class="stat-label">作者</div>
+=======
+            <div class="stat-label">Total Normals</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ userStore.users.filter(u => u.status === 'active').length }}</div>
+            <div class="stat-label">Active Normals</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'reviewer').length }}</div>
+            <div class="stat-label">Reviewers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
+            <div class="stat-label">Writers</div>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           </div>
         </div>
       </section>
@@ -353,9 +465,19 @@ const enableUser = (user) => {
                 <td class="user-username">{{ user.username }}</td>
                 <td>
                   <span class="role-badge" :class="user.role">
+<<<<<<< HEAD
                     {{ user.role === 'admin' ? '管理员' : 
                        user.role === 'reviewer' ? '审核员' : 
                        user.role === 'author' ? '作者' : '普通用户' }}
+=======
+                    {{ user.role === 'admin' ? 'Admin' : 
+                       user.role === 'editor' ? 'Editor' :
+                       user.role === 'associate_editor' ? 'Associate Editor' :
+                       user.role === 'editorial_assistant' ? 'Editorial Assistant' :
+                       user.role === 'advisory_editor' ? 'Advisory Editor' :
+                       user.role === 'reviewer' ? 'Reviewer' : 
+                       user.role === 'author' ? 'Author' : 'User' }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </span>
                 </td>
                 <td class="user-email">{{ encryptEmail(user.email) }}</td>
@@ -385,9 +507,15 @@ const enableUser = (user) => {
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
               <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm5.5 3a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-3-8a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3.5a1 1 0 0 1-1-1zm8 7a1 1 0 1 0 0-2h-1a1 1 0 1 0 0 2h1z"/>
             </svg>
+<<<<<<< HEAD
             <p>没有找到匹配的用户</p>
             <button @click="clearFilters" class="empty-action-btn">
               清空筛选条件
+=======
+            <p>No matching users found</p>
+            <button @click="clearFilters" class="empty-action-btn">
+              Clear Filters
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </button>
           </div>
         </div>
@@ -398,11 +526,16 @@ const enableUser = (user) => {
     <div v-if="showViewModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
+<<<<<<< HEAD
           <h2>查看用户信息</h2>
+=======
+          <h2>User Information</h2>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <button class="close-btn" @click="showViewModal = false">×</button>
         </div>
         <div class="modal-content">
           <div class="user-info-section">
+<<<<<<< HEAD
             <h3>个人信息</h3>
             <div class="info-grid">
               <div class="info-item">
@@ -424,20 +557,53 @@ const enableUser = (user) => {
               <div class="info-item">
                 <span class="info-label">状态：</span>
                 <span class="info-value">{{ currentUser?.status === 'active' ? '启用' : '禁用' }}</span>
+=======
+            <h3>Personal Information</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Username:</span>
+                <span class="info-value">{{ currentUser?.username }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Role:</span>
+                <span class="info-value">{{ currentUser?.role === 'admin' ? 'Editor' : currentUser?.role === 'reviewer' ? 'Reviewer' : currentUser?.role === 'author' ? 'Author' : 'User' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ currentUser?.email }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Phone:</span>
+                <span class="info-value">{{ currentUser?.phone }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="info-value">{{ currentUser?.status === 'active' ? 'Active' : 'Inactive' }}</span>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </div>
             </div>
           </div>
           
           <!-- 投稿记录 -->
           <div class="records-section" v-if="(currentUser?.role === 'user' || currentUser?.role === 'author') && getUserSubmissions(currentUser?.id).length > 0">
+<<<<<<< HEAD
             <h3>投稿记录</h3>
+=======
+            <h3>Submission History</h3>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="records-table-container">
               <table class="records-table">
                 <thead>
                   <tr>
+<<<<<<< HEAD
                     <th>标题</th>
                     <th>投稿日期</th>
                     <th>状态</th>
+=======
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Status</th>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </tr>
                 </thead>
                 <tbody>
@@ -452,15 +618,26 @@ const enableUser = (user) => {
           </div>
           
           <!-- 审稿记录 -->
+<<<<<<< HEAD
           <div class="records-section" v-if="(currentUser?.role === 'admin' || currentUser?.role === 'reviewer') && getUserReviews(currentUser?.id).length > 0">
             <h3>审稿记录</h3>
+=======
+          <div class="records-section" v-if="(currentUser?.role === 'editor' || currentUser?.role === 'reviewer') && getUserReviews(currentUser?.id).length > 0">
+            <h3>Review History</h3>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="records-table-container">
               <table class="records-table">
                 <thead>
                   <tr>
+<<<<<<< HEAD
                     <th>稿件标题</th>
                     <th>审稿日期</th>
                     <th>结果</th>
+=======
+                    <th>Manuscript</th>
+                    <th>Date</th>
+                    <th>Result</th>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </tr>
                 </thead>
                 <tbody>
@@ -475,7 +652,11 @@ const enableUser = (user) => {
           </div>
         </div>
         <div class="modal-footer">
+<<<<<<< HEAD
           <button class="modal-btn close-modal" @click="showViewModal = false">关闭</button>
+=======
+          <button class="modal-btn close-modal" @click="showViewModal = false">Close</button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>
@@ -484,12 +665,17 @@ const enableUser = (user) => {
     <div v-if="showEditModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
+<<<<<<< HEAD
           <h2>编辑用户信息</h2>
+=======
+          <h2>Edit User</h2>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <button class="close-btn" @click="showEditModal = false">×</button>
         </div>
         <div class="modal-content">
           <div class="edit-form">
             <div class="form-group">
+<<<<<<< HEAD
               <label for="username">用户名</label>
               <input type="text" id="username" name="username" :value="currentUser?.username" disabled class="disabled-input">
             </div>
@@ -500,17 +686,42 @@ const enableUser = (user) => {
                 <option value="reviewer">审核员</option>
                 <option value="author">作者</option>
                 <option value="user">普通用户</option>
+=======
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" :value="currentUser?.username" disabled class="disabled-input">
+            </div>
+            <div class="form-group">
+              <label for="editRole">Role</label>
+              <select id="editRole" name="editRole" v-model="editForm.role" class="form-control">
+                <option value="admin">Admin</option>
+                <option value="editor">Editor</option>
+                <option value="associate_editor">Associate Editor</option>
+                <option value="editorial_assistant">Editorial Assistant</option>
+                <option value="advisory_editor">Advisory Editor</option>
+                <option value="reviewer">Reviewer</option>
+                <option value="author">Author</option>
+                <option value="user">User</option>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </select>
             </div>
             <div class="form-group checkbox-group">
               <input type="checkbox" id="resetPassword" v-model="editForm.resetPassword">
+<<<<<<< HEAD
               <label for="resetPassword">重置密码为默认密码 (123456)</label>
+=======
+              <label for="resetPassword">Reset password to default (123456)</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
         </div>
         <div class="modal-footer">
+<<<<<<< HEAD
           <button class="modal-btn close-modal" @click="showEditModal = false">取消</button>
           <button class="modal-btn confirm-modal" @click="executeEdit">确认</button>
+=======
+          <button class="modal-btn close-modal" @click="showEditModal = false">Cancel</button>
+          <button class="modal-btn confirm-modal" @click="executeEdit">Confirm</button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>
@@ -519,6 +730,7 @@ const enableUser = (user) => {
     <div v-if="showDisableModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
+<<<<<<< HEAD
           <h2>禁用用户</h2>
           <button class="close-btn" @click="showDisableModal = false">×</button>
         </div>
@@ -527,6 +739,16 @@ const enableUser = (user) => {
           <div class="disable-form">
             <div class="form-group">
               <label for="disableDuration">禁用时长</label>
+=======
+          <h2>Disable User</h2>
+          <button class="close-btn" @click="showDisableModal = false">×</button>
+        </div>
+        <div class="modal-content">
+          <p class="warning-text">Are you sure you want to disable <strong>{{ currentUser?.username }}</strong>?</p>
+          <div class="disable-form">
+            <div class="form-group">
+              <label for="disableDuration">Duration</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <select id="disableDuration" name="disableDuration" v-model="disableForm.duration" class="form-control">
                 <option 
                   v-for="duration in disableDurations" 
@@ -538,21 +760,34 @@ const enableUser = (user) => {
               </select>
             </div>
             <div class="form-group">
+<<<<<<< HEAD
               <label for="disableReason">禁用原因</label>
+=======
+              <label for="disableReason">Reason</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <textarea 
                 id="disableReason" 
                 name="disableReason" 
                 v-model="disableForm.reason" 
                 class="form-control" 
                 rows="3" 
+<<<<<<< HEAD
                 placeholder="请输入禁用原因..."
+=======
+                placeholder="Reason for disabling..."
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               ></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer">
+<<<<<<< HEAD
           <button class="modal-btn close-modal" @click="showDisableModal = false">取消</button>
           <button class="modal-btn confirm-modal" @click="executeDisable">确认禁用</button>
+=======
+          <button class="modal-btn close-modal" @click="showDisableModal = false">Cancel</button>
+          <button class="modal-btn confirm-modal" @click="executeDisable">Confirm</button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>
@@ -561,6 +796,7 @@ const enableUser = (user) => {
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
+<<<<<<< HEAD
           <h2>删除用户</h2>
           <button class="close-btn" @click="showDeleteModal = false">×</button>
         </div>
@@ -571,6 +807,18 @@ const enableUser = (user) => {
         <div class="modal-footer">
           <button class="modal-btn close-modal" @click="showDeleteModal = false">取消</button>
           <button class="modal-btn delete-modal" @click="executeDelete">确认删除</button>
+=======
+          <h2>Delete User</h2>
+          <button class="close-btn" @click="showDeleteModal = false">×</button>
+        </div>
+        <div class="modal-content">
+          <p class="danger-text">Warning: Deleting <strong>{{ currentUser?.username }}</strong> will permanently remove all their data. This cannot be undone!</p>
+          <p class="danger-text">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn close-modal" @click="showDeleteModal = false">Cancel</button>
+          <button class="modal-btn delete-modal" @click="executeDelete">Delete</button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>
@@ -579,12 +827,17 @@ const enableUser = (user) => {
     <div v-if="showConfirmModal" class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
+<<<<<<< HEAD
           <h2>管理员密码确认</h2>
+=======
+          <h2>Admin Confirmation</h2>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <button class="close-btn" @click="showConfirmModal = false">×</button>
         </div>
         <div class="modal-content">
           <p>{{ confirmMessage }}</p>
           <div class="form-group">
+<<<<<<< HEAD
             <label for="adminPassword">请输入管理员密码：</label>
             <input type="password" id="adminPassword" name="adminPassword" v-model="adminPassword" class="form-control" placeholder="管理员密码">
           </div>
@@ -592,12 +845,25 @@ const enableUser = (user) => {
         <div class="modal-footer">
           <button class="modal-btn close-modal" @click="showConfirmModal = false">取消</button>
           <button class="modal-btn confirm-modal" @click="confirmOperation">确认</button>
+=======
+            <label for="adminPassword">Enter Admin Password:</label>
+            <input type="password" id="adminPassword" name="adminPassword" v-model="adminPassword" class="form-control" placeholder="Admin Password">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn close-modal" @click="showConfirmModal = false">Cancel</button>
+          <button class="modal-btn confirm-modal" @click="confirmOperation">Confirm</button>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>
     
     <!-- 页脚 -->
+<<<<<<< HEAD
     <footer class="footer">
+=======
+    <footer class="footer" v-if="!embedded">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
       </div>
@@ -623,6 +889,13 @@ const enableUser = (user) => {
   width: 100%;
 }
 
+<<<<<<< HEAD
+=======
+.content.embedded-content {
+  margin-top: 0;
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 头部样式 */
 .header {
   margin-bottom: 2rem;

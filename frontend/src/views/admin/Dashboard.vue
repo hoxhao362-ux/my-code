@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+<<<<<<< HEAD
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
@@ -11,12 +12,65 @@ const totalJournals = computed(() => userStore.journals.length)
 const pendingJournals = computed(() => userStore.pendingJournals.length)
 const totalUsers = computed(() => 2345) // 模拟数据
 const recentSubmissions = computed(() => 45) // 模拟数据
+=======
+import { useI18n } from '../../composables/useI18n'
+
+const { t } = useI18n()
+const userStore = useUserStore()
+const user = computed(() => userStore.user)
+
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// Dashboard Title based on role
+const dashboardTitle = computed(() => {
+  const role = user.value?.role
+  if (role === 'admin') return 'Editor-in-Chief Dashboard'
+  if (role === 'editor') return 'Editor Dashboard'
+  if (role === 'associate_editor') return 'Associate Editor Dashboard'
+  if (role === 'editorial_assistant') return 'Editorial Assistant Dashboard'
+  if (role === 'advisory_editor') return 'Advisory Editor Dashboard'
+  return 'Dashboard'
+})
+
+// Filtered Journals based on role
+const filteredJournals = computed(() => {
+  let list = userStore.journals
+  const role = user.value?.role
+  const username = user.value?.username
+
+  if (role === 'editor') {
+    // Mock: Editor sees journals assigned to them (author matches for demo or specific field)
+    // For now, return all for demo, or filter by some logic if data supported it
+    // Let's filter by a mock property 'assignedTo' if it existed, but userStore.journals is simple.
+    // We will just return all for now but label it "Assigned Manuscripts"
+    return list
+  }
+  // AE sees all
+  // Advisory sees subset
+  return list
+})
+
+// 统计信息
+const totalJournals = computed(() => filteredJournals.value.length)
+const pendingJournals = computed(() => filteredJournals.value.filter(j => j.status === '待审核' || j.status === '审稿中').length)
+const totalUsers = computed(() => 2345) // Mock
+const recentSubmissions = computed(() => 45) // Mock
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 </script>
 
 <template>
   <div class="admin-dashboard-container">
     <!-- 导航栏 -->
     <Navigation 
+<<<<<<< HEAD
+=======
+      v-if="!embedded"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       :user="user"
       :current-page="'admin-dashboard'"
       :toggle-directory="() => {}"
@@ -25,11 +79,19 @@ const recentSubmissions = computed(() => 45) // 模拟数据
     />
 
     <!-- 管理员后台内容 -->
+<<<<<<< HEAD
     <main class="dashboard-content">
       <div class="dashboard-header">
         <h1 class="dashboard-title">管理员后台</h1>
         <div class="user-info">
           <span class="welcome-message">欢迎，{{ user?.username }}</span>
+=======
+    <main class="dashboard-content" :class="{ 'embedded-content': embedded }">
+      <div class="dashboard-header">
+        <h1 class="dashboard-title">{{ dashboardTitle }}</h1>
+        <div class="user-info">
+          <span class="welcome-message">{{ t('dashboard.welcome', { name: user?.username }) }}</span>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
 
@@ -40,28 +102,44 @@ const recentSubmissions = computed(() => 45) // 模拟数据
             <div class="stat-icon">📚</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalJournals }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">总投稿量</p>
+=======
+              <p class="stat-label">Total Manuscripts</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">⏳</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingJournals }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">待审核稿件</p>
+=======
+              <p class="stat-label">Pending Reviews</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">👥</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalUsers }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">注册用户</p>
+=======
+              <p class="stat-label">Registered Users</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📝</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ recentSubmissions }}</h3>
+<<<<<<< HEAD
               <p class="stat-label">近期投稿</p>
+=======
+              <p class="stat-label">Recent Submissions</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
         </div>
@@ -70,20 +148,35 @@ const recentSubmissions = computed(() => 45) // 模拟数据
       <!-- 近期投稿 -->
       <section class="journals-section">
         <div class="section-header">
+<<<<<<< HEAD
           <h2 class="section-title">近期投稿</h2>
         </div>
         <div class="journals-list">
           <div 
             v-for="journal in userStore.journals.slice(0, 5)" 
+=======
+          <h2 class="section-title">Recent Manuscripts</h2>
+        </div>
+        <div class="journals-list">
+          <div 
+            v-for="journal in filteredJournals.slice(0, 5)" 
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             :key="journal.id" 
             class="journal-item"
           >
             <div class="journal-info">
               <h4 class="journal-title">{{ journal.title }}</h4>
+<<<<<<< HEAD
               <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
             </div>
             <div class="journal-status" :class="journal.status.toLowerCase()">
               {{ journal.status }}
+=======
+              <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+            </div>
+            <div class="journal-status" :class="journal.status === '已发表' ? 'published' : journal.status === '待审核' ? 'pending' : 'rejected'">
+              {{ journal.status === '已发表' ? 'Published' : journal.status === '待审核' ? 'Pending' : journal.status === '审稿中' ? 'Under Review' : 'Rejected' }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
         </div>
@@ -91,9 +184,15 @@ const recentSubmissions = computed(() => 45) // 模拟数据
     </main>
 
     <!-- 页脚 -->
+<<<<<<< HEAD
     <footer class="footer">
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+=======
+    <footer class="footer" v-if="!embedded">
+      <div class="footer-content">
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
     </footer>
   </div>
@@ -120,6 +219,13 @@ const recentSubmissions = computed(() => 45) // 模拟数据
   margin-top: 80px; /* 为固定导航栏留出空间 */
 }
 
+<<<<<<< HEAD
+=======
+.dashboard-content.embedded-content {
+  margin-top: 0;
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 仪表盘头部 */
 .dashboard-header {
   display: flex;
@@ -264,17 +370,30 @@ const recentSubmissions = computed(() => 45) // 模拟数据
   min-width: 80px;
 }
 
+<<<<<<< HEAD
 .journal-status.已通过 {
+=======
+.journal-status.published {
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   background: #2ecc71;
   color: white;
 }
 
+<<<<<<< HEAD
 .journal-status.审稿中 {
   background: #3498db;
   color: white;
 }
 
 .journal-status.未通过 {
+=======
+.journal-status.pending {
+  background: #f1c40f;
+  color: white;
+}
+
+.journal-status.rejected {
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   background: #e74c3c;
   color: white;
 }

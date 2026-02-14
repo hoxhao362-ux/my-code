@@ -6,6 +6,16 @@ import Navigation from '../../components/Navigation.vue'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
+<<<<<<< HEAD
+=======
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 使用userStore中的用户数据
 const users = computed(() => userStore.users)
 
@@ -49,6 +59,10 @@ const toggleUserStatus = (id) => {
   <div class="admin-account-status-container">
     <!-- 导航栏 -->
     <Navigation 
+<<<<<<< HEAD
+=======
+      v-if="!embedded"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       :user="user"
       :current-page="'admin-account-status'"
       :toggle-directory="() => {}"
@@ -56,9 +70,15 @@ const toggleUserStatus = (id) => {
     />
 
     <!-- 账号状态管理内容 -->
+<<<<<<< HEAD
     <main class="content">
       <div class="header">
         <h1>账号状态管理</h1>
+=======
+    <main class="content" :class="{ 'embedded-content': embedded }">
+      <div class="header">
+        <h1>Account Status Management</h1>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
 
       <section class="account-status-section">
@@ -67,12 +87,21 @@ const toggleUserStatus = (id) => {
             <thead>
               <tr>
                 <th>ID</th>
+<<<<<<< HEAD
                 <th>用户名</th>
                 <th>角色</th>
                 <th>邮箱</th>
                 <th>手机号</th>
                 <th>状态</th>
                 <th>操作</th>
+=======
+                <th>Username</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Actions</th>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </tr>
             </thead>
             <tbody>
@@ -84,7 +113,11 @@ const toggleUserStatus = (id) => {
                 <td>{{ encryptPhone(user.phone) }}</td>
                 <td>
                   <span class="status-badge" :class="user.status">
+<<<<<<< HEAD
                     {{ user.status === 'active' ? '启用' : '禁用' }}
+=======
+                    {{ user.status === 'active' ? 'Active' : 'Inactive' }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </span>
                 </td>
                 <td>
@@ -92,13 +125,21 @@ const toggleUserStatus = (id) => {
                     class="action-btn status-btn" 
                     @click="toggleUserStatus(user.id)"
                   >
+<<<<<<< HEAD
                     {{ user.status === 'active' ? '禁用' : '启用' }}
+=======
+                    {{ user.status === 'active' ? 'Disable' : 'Enable' }}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </button>
                   <button 
                     class="action-btn reset-btn" 
                     @click="resetPassword(user.id)"
                   >
+<<<<<<< HEAD
                     重置密码
+=======
+                    Reset Password
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   </button>
                 </td>
               </tr>
@@ -109,7 +150,11 @@ const toggleUserStatus = (id) => {
     </main>
 
     <!-- 页脚 -->
+<<<<<<< HEAD
     <footer class="footer">
+=======
+    <footer class="footer" v-if="!embedded">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div class="footer-content">
         <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
       </div>
@@ -133,6 +178,13 @@ const toggleUserStatus = (id) => {
   width: 100%;
 }
 
+<<<<<<< HEAD
+=======
+.content.embedded-content {
+  margin-top: 0;
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 .header {
   display: flex;
   justify-content: space-between;

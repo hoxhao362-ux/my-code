@@ -1,15 +1,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+<<<<<<< HEAD
 import { useRouter } from 'vue-router'
+=======
+import { useRouter, useRoute } from 'vue-router'
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
 
 const userStore = useUserStore()
 const router = useRouter()
+<<<<<<< HEAD
+=======
+const route = useRoute()
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
+<<<<<<< HEAD
 // 角色选择
 const selectedRole = ref('')
 // 记住密码
@@ -17,6 +26,28 @@ const rememberMe = ref(false)
 
 // 从localStorage加载记住的密码
 onMounted(() => {
+=======
+// Role selected by context or dropdown
+const selectedRole = ref('')
+// Remember Me
+const rememberMe = ref(false)
+
+// Determine Context and Title
+const contextTitle = computed(() => {
+  const role = route.query.role
+  if (role === 'admin') return 'Editor Portal Login'
+  if (role === 'reviewer') return 'Reviewer Dashboard Login'
+  if (role === 'author') return 'Author Dashboard Login'
+  return 'Admin Portal Login'
+})
+
+// Auto-select role based on query
+onMounted(() => {
+  if (route.query.role) {
+    selectedRole.value = route.query.role
+  }
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   const savedUsername = localStorage.getItem('adminRememberedUsername')
   const savedPassword = localStorage.getItem('adminRememberedPassword')
   if (savedUsername && savedPassword) {
@@ -26,36 +57,65 @@ onMounted(() => {
   }
 })
 
+<<<<<<< HEAD
 // 登录成功后跳转的目标页面
 
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
     error.value = '请输入用户名和密码'
+=======
+const handleLogin = async () => {
+  if (!username.value || !password.value) {
+    error.value = 'Please enter username and password'
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     return
   }
   
   try {
+<<<<<<< HEAD
     // 加密密码
     const encryptedPassword = encryptPassword(password.value)
     
     // 角色分配优先级：1. 用户选择的角色 2. 用户名自动判断（按权限从高到低：admin＞reviewer＞author＞user）
+=======
+    const encryptedPassword = encryptPassword(password.value)
+    
+    // Role Logic: 1. URL Query 2. Dropdown 3. Fallback
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
                username.value === 'reviewer' ? 'reviewer' : 
                username.value === 'author' ? 'author' : 
                'user')
     
+<<<<<<< HEAD
     // 登录凭证
+=======
+    // Check if user is trying to login to wrong portal
+    if (route.query.role && role !== route.query.role) {
+       // Allow "admin" to login everywhere, but strict for others
+       if (role !== 'admin') {
+         error.value = `You are only authorized to access the [${role.charAt(0).toUpperCase() + role.slice(1)} Dashboard]`
+         return
+       }
+    }
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     const credentials = {
       username: username.value,
       password: encryptedPassword,
       role: role
     }
     
+<<<<<<< HEAD
     // 调用状态管理的登录方法，等待登录完成
     await userStore.login(credentials)
     
     // 记住密码功能（使用独立的localStorage键名）
+=======
+    await userStore.login(credentials)
+    
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     if (rememberMe.value) {
       localStorage.setItem('adminRememberedUsername', username.value)
       localStorage.setItem('adminRememberedPassword', password.value)
@@ -64,6 +124,7 @@ const handleLogin = async () => {
       localStorage.removeItem('adminRememberedPassword')
     }
     
+<<<<<<< HEAD
     // 根据用户角色跳转到对应的后台页面
     let redirectPath = '/admin/login'
     if (userStore.currentRole === 'admin') {
@@ -77,6 +138,26 @@ const handleLogin = async () => {
   } catch (err) {
     console.error('登录失败:', err)
     error.value = '登录失败，请稍后重试'
+=======
+    let redirectPath = '/admin/login'
+    if (userStore.currentRole === 'admin') {
+      redirectPath = '/editor/dashboard' // Corrected path
+    } else if (userStore.currentRole === 'reviewer') {
+      redirectPath = '/reviewer/dashboard' // Corrected path
+    } else if (userStore.currentRole === 'author') {
+      redirectPath = '/author/dashboard' // Corrected path
+    } else if (userStore.currentRole === 'editor' || userStore.currentRole === 'associate_editor') {
+      redirectPath = '/editor/dashboard'
+    }
+    
+    // If Admin logs into specific portal, redirect there? 
+    // Usually Admin goes to Editor Portal.
+    
+    router.push(redirectPath)
+  } catch (err) {
+    console.error('Login failed:', err)
+    error.value = 'Login failed, please try again later'
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }
 
@@ -91,24 +172,43 @@ const goToRegister = () => {
     <div class="admin-login-form-wrapper">
       <div class="admin-login-form">
         <!-- 登录标题 -->
+<<<<<<< HEAD
         <h2 class="admin-login-title">后台主页系统</h2>
         
         <div class="admin-form-group">
           <label for="admin-username">用户名</label>
+=======
+        <h2 class="admin-login-title">{{ contextTitle }}</h2>
+        
+        <div class="admin-form-group">
+          <label for="admin-username">Username</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <input 
             type="text" 
             id="admin-username" 
             v-model="username" 
+<<<<<<< HEAD
             placeholder="请输入用户名"
           />
         </div>
         <div class="admin-form-group">
           <label for="admin-password">密码</label>
+=======
+            placeholder="Enter username"
+          />
+        </div>
+        <div class="admin-form-group">
+          <label for="admin-password">Password</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <input 
             type="password" 
             id="admin-password" 
             v-model="password" 
+<<<<<<< HEAD
             placeholder="请输入密码"
+=======
+            placeholder="Enter password"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           />
         </div>
         
@@ -119,25 +219,43 @@ const goToRegister = () => {
             id="admin-rememberMe" 
             v-model="rememberMe" 
           />
+<<<<<<< HEAD
           <label for="admin-rememberMe">记住密码</label>
         </div>
         
         <!-- 角色选择 -->
         <div class="admin-form-group">
           <label for="admin-role">角色</label>
+=======
+          <label for="admin-rememberMe">Remember Me</label>
+        </div>
+        
+        <!-- 角色选择 (Hide if fixed in query) -->
+        <div class="admin-form-group" v-if="!route.query.role">
+          <label for="admin-role">Role</label>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <select 
             id="admin-role" 
             v-model="selectedRole"
             class="admin-role-select"
           >
+<<<<<<< HEAD
             <option value="">请选择角色</option>
             <option value="admin">管理员</option>
             <option value="reviewer">审核员</option>
             <option value="author">作者</option>
+=======
+            <option value="">Select Role</option>
+            <option value="admin">Administrator</option>
+            <option value="editor">Editor</option>
+            <option value="reviewer">Reviewer</option>
+            <option value="author">Author</option>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           </select>
         </div>
         
         <p v-if="error" class="admin-error-message">{{ error }}</p>
+<<<<<<< HEAD
         <button class="admin-login-btn" @click="handleLogin">登录后台</button>
         <div class="admin-register-link">
           <span>还没有账号？</span>
@@ -145,6 +263,15 @@ const goToRegister = () => {
         </div>
         <div class="admin-back-link">
           <a href="/" @click.prevent="router.push('/')">返回主站</a>
+=======
+        <button class="admin-login-btn" @click="handleLogin">Login</button>
+        <div class="admin-register-link">
+          <span>Don't have an account?</span>
+          <a href="#" @click.prevent="goToRegister">Register Now</a>
+        </div>
+        <div class="admin-back-link">
+          <a href="/" @click.prevent="router.push('/')">Back to Home</a>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </div>

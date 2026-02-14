@@ -497,7 +497,11 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+<<<<<<< HEAD
   margin-top: 80px; /* 为固定导航栏留出空间 */
+=======
+  margin-top: 100px; /* 为固定导航栏留出空间 */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   display: flex;
   flex-direction: column;
   gap: 1rem;

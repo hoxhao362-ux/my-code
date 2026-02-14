@@ -1,5 +1,9 @@
 <script setup>
+<<<<<<< HEAD
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+=======
+import { ref, onMounted, onUnmounted } from 'vue'
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 
@@ -10,9 +14,29 @@ const props = defineProps({
   user: Object,
   currentPage: String,
   toggleDirectory: Function,
+<<<<<<< HEAD
   logout: Function
 })
 
+=======
+  logout: Function,
+  customNavigation: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['navigate'])
+
+const handleNav = (key, path) => {
+  if (props.customNavigation) {
+    emit('navigate', key)
+  } else {
+    router.push(path)
+  }
+}
+
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 const toggleLang = () => {
   setLang(currentLang.value === 'en' ? 'zh' : 'en')
 }
@@ -20,6 +44,7 @@ const toggleLang = () => {
 // 控制角色管理子菜单的显示状态
 const showRoleMenu = ref(false)
 
+<<<<<<< HEAD
 // 控制系统设置子菜单的显示状态
 const showSystemMenu = ref(false)
 
@@ -152,10 +177,178 @@ const toggleRoleMenu = (event) => {
   showManuscriptMenu.value = false
   showGuideMenu.value = false
   showAuthorHelpMenu.value = false
+=======
+// 控制期刊子菜单
+const showJournalsMenu = ref(false)
+// 控制资源子菜单 (聚合 Author/Reviewer/News)
+const showResourcesMenu = ref(false)
+// 控制更多子菜单 (聚合 Journal Info)
+const showMoreMenu = ref(false)
+
+// 控制个人资料子菜单
+const showProfileMenu = ref(false)
+// 控制系统设置子菜单
+const showSystemMenu = ref(false)
+// 控制帮助子菜单
+const showHelpMenu = ref(false)
+// 控制投稿子菜单
+const showSubmissionMenu = ref(false)
+// 控制稿件管理子菜单
+const showManuscriptMenu = ref(false)
+// 控制指南子菜单
+const showGuideMenu = ref(false)
+// 控制作者帮助子菜单
+const showAuthorHelpMenu = ref(false)
+// 控制审核任务子菜单
+const showAuditTasksMenu = ref(false)
+// Control Reviewer Menu
+const showReviewerMenu = ref(false)
+// Control User Menu (Icon)
+const showUserMenu = ref(false)
+// Control Mobile Menu
+const showMobileMenu = ref(false)
+// User Menu Ref
+const userMenuRef = ref(null)
+
+// Hover Timers
+let hoverTimer = null
+let closeTimer = null
+
+// 搜索查询
+const searchQuery = ref('')
+// 订阅模态框
+const showSubscribeModal = ref(false)
+// Logout Modal
+const showLogoutModal = ref(false)
+
+// 处理鼠标悬停 (仅PC端)
+const handleHover = (menu, isOpen) => {
+  if (window.innerWidth > 768) {
+    if (isOpen) {
+      // Clear any pending close timer
+      if (closeTimer) clearTimeout(closeTimer)
+      
+      // Delay open by 0.1s (100ms)
+      hoverTimer = setTimeout(() => {
+        // 打开时关闭其他菜单
+        closeOtherMenus(menu)
+        switch (menu) {
+          case 'resources': showResourcesMenu.value = true; break;
+          case 'more': showMoreMenu.value = true; break;
+          case 'reviewer': showReviewerMenu.value = true; break; // Added Reviewer
+          case 'profile': showProfileMenu.value = true; break;
+          case 'help': showHelpMenu.value = true; break;
+          case 'journals': showJournalsMenu.value = true; break;
+          // Admin menus
+          case 'role': showRoleMenu.value = true; break;
+          case 'system': showSystemMenu.value = true; break;
+          case 'submission': showSubmissionMenu.value = true; break;
+          case 'manuscript': showManuscriptMenu.value = true; break;
+          case 'guide': showGuideMenu.value = true; break;
+          case 'authorHelp': showAuthorHelpMenu.value = true; break;
+          case 'auditTasks': showAuditTasksMenu.value = true; break;
+        }
+      }, 100)
+    } else {
+      // Delay close by 0.2s (200ms)
+      if (hoverTimer) clearTimeout(hoverTimer)
+      
+      closeTimer = setTimeout(() => {
+        // 关闭
+        switch (menu) {
+          case 'resources': showResourcesMenu.value = false; break;
+          case 'more': showMoreMenu.value = false; break;
+          case 'reviewer': showReviewerMenu.value = false; break; // Added Reviewer
+          case 'profile': showProfileMenu.value = false; break;
+          case 'help': showHelpMenu.value = false; break;
+          case 'journals': showJournalsMenu.value = false; break;
+          // Admin menus
+          case 'role': showRoleMenu.value = false; break;
+          case 'system': showSystemMenu.value = false; break;
+          case 'submission': showSubmissionMenu.value = false; break;
+          case 'manuscript': showManuscriptMenu.value = false; break;
+          case 'guide': showGuideMenu.value = false; break;
+          case 'authorHelp': showAuthorHelpMenu.value = false; break;
+          case 'auditTasks': showAuditTasksMenu.value = false; break;
+        }
+      }, 200)
+    }
+  }
+}
+
+// 切换Reviewer子菜单
+const toggleReviewerMenu = (event) => {
+  if (event) event.stopPropagation()
+  showReviewerMenu.value = !showReviewerMenu.value
+  closeOtherMenus('reviewer')
+}
+
+// 切换User子菜单
+const toggleUserMenu = (event) => {
+  if (event) event.stopPropagation()
+  showUserMenu.value = !showUserMenu.value
+  closeOtherMenus('user')
+}
+
+// Handle My Reviews Click
+const handleMyReviewsClick = () => {
+  if (props.user?.status === 'active') {
+    // Check if we need to bridge the session to submission system
+    import('../stores/user').then(({ useUserStore }) => {
+      const userStore = useUserStore()
+      // If not logged in to submission system, or logged in but context is different
+      if (!userStore.submissionUser && props.user.role === 'reviewer') {
+         // Silently login to submission system
+         userStore.loginSubmission({ 
+           username: props.user.username, 
+           role: 'reviewer' 
+         }).then(() => {
+           router.push('/reviewer/assignments')
+         }).catch(err => {
+           console.error('Auto-login failed', err)
+           router.push('/submission/login') // Fallback
+         })
+      } else {
+         router.push('/reviewer/assignments')
+      }
+    })
+    closeAllMenus()
+  }
+  // If not active, do nothing (tooltip handles message)
+}
+
+// 切换资源子菜单
+const toggleResourcesMenu = (event) => {
+  event.stopPropagation()
+  showResourcesMenu.value = !showResourcesMenu.value
+  closeOtherMenus('resources')
+}
+
+// 切换更多子菜单
+const toggleMoreMenu = (event) => {
+  event.stopPropagation()
+  showMoreMenu.value = !showMoreMenu.value
+  closeOtherMenus('more')
+}
+
+// 切换期刊子菜单
+const toggleJournalsMenu = (event) => {
+  if (event) event.stopPropagation()
+  showJournalsMenu.value = !showJournalsMenu.value
+  closeOtherMenus('journals')
+}
+
+// 切换个人资料子菜单
+const toggleProfileMenu = (event) => {
+  if (event) event.stopPropagation()
+  showProfileMenu.value = !showProfileMenu.value
+  closeOtherMenus('profile')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 切换系统设置子菜单
 const toggleSystemMenu = (event) => {
+<<<<<<< HEAD
   event.stopPropagation()
   showSystemMenu.value = !showSystemMenu.value
   showRoleMenu.value = false
@@ -204,10 +397,30 @@ const toggleHelpMenu = (event) => {
   showManuscriptMenu.value = false
   showGuideMenu.value = false
   showAuthorHelpMenu.value = false
+=======
+  if (event) event.stopPropagation()
+  showSystemMenu.value = !showSystemMenu.value
+  closeOtherMenus('system')
+}
+
+// 切换帮助子菜单
+const toggleHelpMenu = (event) => {
+  if (event) event.stopPropagation()
+  showHelpMenu.value = !showHelpMenu.value
+  closeOtherMenus('help')
+}
+
+// 切换投稿子菜单
+const toggleSubmissionMenu = (event) => {
+  if (event) event.stopPropagation()
+  showSubmissionMenu.value = !showSubmissionMenu.value
+  closeOtherMenus('submission')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 切换稿件管理子菜单
 const toggleManuscriptMenu = (event) => {
+<<<<<<< HEAD
   event.stopPropagation()
   showManuscriptMenu.value = !showManuscriptMenu.value
   showRoleMenu.value = false
@@ -243,10 +456,62 @@ const toggleAuthorHelpMenu = (event) => {
   showHelpMenu.value = false
   showManuscriptMenu.value = false
   showGuideMenu.value = false
+=======
+  if (event) event.stopPropagation()
+  showManuscriptMenu.value = !showManuscriptMenu.value
+  closeOtherMenus('manuscript')
+}
+
+// 切换指南子菜单
+const toggleGuideMenu = (event) => {
+  if (event) event.stopPropagation()
+  showGuideMenu.value = !showGuideMenu.value
+  closeOtherMenus('guide')
+}
+
+// 切换作者帮助子菜单
+const toggleAuthorHelpMenu = (event) => {
+  if (event) event.stopPropagation()
+  showAuthorHelpMenu.value = !showAuthorHelpMenu.value
+  closeOtherMenus('authorHelp')
+}
+
+// 切换审核任务子菜单
+const toggleAuditTasksMenu = (event) => {
+  if (event) event.stopPropagation()
+  showAuditTasksMenu.value = !showAuditTasksMenu.value
+  closeOtherMenus('auditTasks')
+}
+
+// 关闭其他菜单
+const closeOtherMenus = (current) => {
+  if (current !== 'journals') showJournalsMenu.value = false
+  if (current !== 'resources') showResourcesMenu.value = false
+  if (current !== 'more') showMoreMenu.value = false
+  if (current !== 'reviewer') showReviewerMenu.value = false // Added
+  if (current !== 'user') showUserMenu.value = false // Added
+  if (current !== 'profile') showProfileMenu.value = false
+  if (current !== 'help') showHelpMenu.value = false
+  if (current !== 'role') showRoleMenu.value = false
+  if (current !== 'system') showSystemMenu.value = false
+  if (current !== 'submission') showSubmissionMenu.value = false
+  if (current !== 'manuscript') showManuscriptMenu.value = false
+  if (current !== 'guide') showGuideMenu.value = false
+  if (current !== 'authorHelp') showAuthorHelpMenu.value = false
+  if (current !== 'auditTasks') showAuditTasksMenu.value = false
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 关闭所有子菜单
 const closeAllMenus = () => {
+<<<<<<< HEAD
+=======
+  showJournalsMenu.value = false
+  showResourcesMenu.value = false
+  showMoreMenu.value = false
+  showReviewerMenu.value = false // Added
+  showUserMenu.value = false // Added
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   showRoleMenu.value = false
   showSystemMenu.value = false
   showProfileMenu.value = false
@@ -255,7 +520,11 @@ const closeAllMenus = () => {
   showManuscriptMenu.value = false
   showGuideMenu.value = false
   showAuthorHelpMenu.value = false
+<<<<<<< HEAD
   showRoleSwitchMenu.value = false
+=======
+  showAuditTasksMenu.value = false
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 点击页面其他部分关闭子菜单
@@ -264,21 +533,39 @@ const handleClickOutside = () => {
 }
 
 // 监听点击事件
+<<<<<<< HEAD
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
 
+=======
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
 // 检查当前是否在后台
 const isAdminRoute = () => {
+<<<<<<< HEAD
   return window.location.pathname.startsWith('/admin')
 }
 
 const goToSubmit = () => {
   router.push('/submit')
+=======
+  return window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/submission') || window.location.pathname.startsWith('/editor') || window.location.pathname.startsWith('/reviewer')
+}
+
+const applicationStatus = ref('')
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  applicationStatus.value = localStorage.getItem('reviewer_application_status') || ''
+})
+
+const goToSubmit = () => {
+  router.push('/submission')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 const goToProfile = () => {
@@ -294,6 +581,7 @@ const goToHome = () => {
 }
 
 const goToAdminDashboard = () => {
+<<<<<<< HEAD
   if (props.user?.role === 'admin') {
     router.push('/admin/dashboard')
   } else if (props.user?.role === 'reviewer') {
@@ -317,6 +605,14 @@ const handleAdminLogin = () => {
   } else {
     // 未登录用户，跳转到后台登录页
     router.push('/admin/login')
+=======
+  if (props.user?.role === 'reviewer') {
+    router.push('/reviewer/dashboard')
+  } else if (props.user?.role === 'author') {
+    router.push('/admin/author-dashboard')
+  } else {
+    router.push('/editor/dashboard')
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }
 
@@ -328,13 +624,105 @@ const goToAuditHistory = () => {
   router.push('/admin/audit-history')
 }
 
+<<<<<<< HEAD
 const handleLogout = () => {
   props.logout()
   router.push('/login')
+=======
+// 处理搜索
+const handleSearch = () => {
+  if (searchQuery.value.trim()) {
+    console.log('Searching for:', searchQuery.value)
+    router.push({ path: '/search', query: { q: searchQuery.value } })
+  }
+}
+
+// 处理订阅
+const handleSubscribe = () => {
+  console.log('Subscribing...')
+  alert(t('common.success'))
+  showSubscribeModal.value = false
+}
+
+const confirmLogout = () => {
+  showLogoutModal.value = true
+  closeAllMenus()
+}
+
+const goToLogin = () => {
+  console.log('Navigating to login page...')
+  router.push('/login').catch(err => {
+    console.error('Login navigation failed:', err)
+  })
+}
+
+const handleLogout = () => {
+  showLogoutModal.value = false
+  
+  // Check if we are in the submission/admin system context
+  if (isAdminRoute()) {
+    // If so, use submission logout logic
+    import('../stores/user').then(({ useUserStore }) => {
+      const userStore = useUserStore()
+      userStore.logoutSubmission()
+      
+      // Show Success Toast
+      const toast = document.createElement('div')
+      toast.className = 'logout-toast'
+      toast.textContent = 'Successfully logged out of submit system'
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        z-index: 9999;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        animation: fadeIn 0.3s ease;
+      `
+      document.body.appendChild(toast)
+      
+      setTimeout(() => {
+        toast.style.opacity = '0'
+        setTimeout(() => document.body.removeChild(toast), 300)
+        
+        // Force Reload on Main Site to clear any state
+        window.location.href = '/?clearSubmitState=true'
+      }, 1500)
+    })
+  } else {
+    // Reviewer Logout Special Case (Logged in as submissionUser but in Main Site context - likely impossible now due to strict guards, but kept for safety)
+    if (props.user?.role === 'reviewer') {
+       // This branch might be dead code now if strict isolation works, but if they managed to get here:
+       import('../stores/user').then(({ useUserStore }) => {
+         const userStore = useUserStore()
+         userStore.logoutSubmission()
+         window.location.href = '/?clearSubmitState=true'
+       })
+       return
+    }
+
+    // Otherwise, standard main site logout (Read-Only)
+    if (props.logout) {
+      props.logout()
+    }
+    // Also clear store manually just in case
+    import('../stores/user').then(({ useUserStore }) => {
+       const userStore = useUserStore()
+       userStore.logout()
+       router.push('/login')
+    })
+  }
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 </script>
 
 <template>
+<<<<<<< HEAD
   <nav class="navbar">
     <div class="navbar-container">
       <div class="navbar-logo">
@@ -353,10 +741,357 @@ const handleLogout = () => {
               {{ t('nav.home') }}
             </a>
           </li>
+=======
+  <!-- System Status Banners -->
+  <div v-if="!isAdminRoute() && user" class="system-banner read-only">
+    Read-Only Mode | Journal Submission Platform
+  </div>
+  <div v-if="isAdminRoute() && user" class="system-banner submit-mode">
+    Submit System - [User Role: {{ user.role }}]
+  </div>
+
+  <nav class="navbar" :class="{ 'reviewer-navbar': user?.role === 'reviewer', 'has-banner': user }">
+    <div class="navbar-container" :class="{ 'reviewer-container': user?.role === 'reviewer' }">
+      <div class="navbar-logo" v-if="user?.role !== 'reviewer'">
+        <h1>{{ t('nav.logo') }}</h1>
+      </div>
+      <div class="nav-wrapper">
+        <!-- 主站导航 -->
+        <template v-if="!isAdminRoute()">
+          <!-- Mobile Hamburger -->
+          <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">
+             ☰
+          </div>
+
+          <!-- Desktop Menu -->
+          <ul class="navbar-menu desktop-only">
+            <!-- 1. Home -->
+            <li class="nav-item">
+              <a href="#" class="nav-link" :class="{ active: currentPage === 'home' }" @click.prevent="goToHome">
+                {{ t('nav.home') }}
+              </a>
+            </li>
+
+          <!-- 2. Journals (Lancet Style) -->
+          <li class="nav-item">
+            <a href="#" class="nav-link journals-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
+              {{ t('nav.journals') }}
+            </a>
+          </li>
+
+          <!-- 3. Submit (No Change) -->
+          <li class="nav-item">
+            <a href="#" class="nav-link btn-submit-nav" @click.prevent="goToSubmit()">
+              {{ t('nav.submit') }}
+            </a>
+          </li>
+
+          <!-- 4. Resources (Aggregated) -->
+          <li class="nav-item dropdown" @mouseenter="handleHover('resources', true)" @mouseleave="handleHover('resources', false)">
+            <div class="dropdown-toggle" @click="toggleResourcesMenu">
+              <a href="#" class="nav-link">{{ t('nav.resources') }} ▼</a>
+            </div>
+            <ul class="dropdown-menu" v-if="showResourcesMenu">
+              <li class="dropdown-header">{{ t('nav.authorResources') }}</li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/guide'); closeAllMenus()">{{ t('nav.guideForAuthors') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
+              <li><div class="dropdown-divider"></div></li>
+              <li class="dropdown-header">{{ t('nav.reviewerResources') }}</li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link" 
+                  :class="{ 'disabled-link': applicationStatus === 'pending_review' }"
+                  :title="applicationStatus === 'pending_review' ? 'Your application is currently under review' : ''"
+                  @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()"
+                >
+                  {{ t('nav.becomeReviewer') }}
+                </a>
+              </li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
+              
+              <li><div class="dropdown-divider"></div></li>
+              <li class="dropdown-header">{{ t('nav.newsEvents') }}</li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/latest'); closeAllMenus()">{{ t('nav.latestArticles') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/calls'); closeAllMenus()">{{ t('nav.callForPapers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/events'); closeAllMenus()">{{ t('nav.upcomingEvents') }}</a></li>
+            </ul>
+          </li>
+
+          <!-- 5. Reviewer Dropdown (Visible for Reviewers OR Applicants) -->
+          <li v-if="user && (user.role === 'reviewer' || applicationStatus)" class="nav-item dropdown" @mouseenter="handleHover('reviewer', true)" @mouseleave="handleHover('reviewer', false)">
+            <div class="dropdown-toggle" @click="toggleReviewerMenu">
+              <a href="#" class="nav-link">{{ t('nav.reviewer') }} ▼</a>
+            </div>
+            <ul class="dropdown-menu reviewer-menu" v-if="showReviewerMenu">
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link" 
+                  :class="{ 'disabled-link': applicationStatus === 'pending_review' }"
+                  :title="applicationStatus === 'pending_review' ? 'Your application is currently under review' : ''"
+                  @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()"
+                >
+                  {{ t('nav.becomeReviewer') }}
+                </a>
+              </li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
+              <li><div class="dropdown-divider"></div></li>
+              
+              <!-- My Reviews -->
+              <li v-if="user.role === 'reviewer'">
+                <a 
+                  href="#" 
+                  class="nav-link" 
+                  :class="{ 'disabled-link': user?.status !== 'active' }"
+                  @click.prevent="handleMyReviewsClick"
+                >
+                  {{ t('nav.myReviews') }}
+                </a>
+              </li>
+              
+              <!-- My Profile -->
+              <li v-if="user.role === 'reviewer'">
+                <a 
+                  href="#" 
+                  class="nav-link" 
+                  @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()"
+                >
+                  {{ t('nav.myProfile') }}
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <!-- 6. Help (Simplified) -->
+          <li class="nav-item">
+            <a href="#" class="nav-link" @click.prevent="$router.push('/faq')">
+              {{ t('nav.help') }}
+            </a>
+          </li>
+
+          <!-- 6. About (Aggregated) -->
+          <li class="nav-item dropdown" @mouseenter="handleHover('more', true)" @mouseleave="handleHover('more', false)">
+            <div class="dropdown-toggle" @click="toggleMoreMenu">
+              <a href="#" class="nav-link">{{ t('nav.more') }} ▼</a>
+            </div>
+            <ul class="dropdown-menu" v-if="showMoreMenu">
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/editorial-board'); closeAllMenus()">{{ t('nav.editorialBoard') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/journal-info'); closeAllMenus()">{{ t('nav.journalInfo') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/history'); closeAllMenus()">{{ t('nav.history') }}</a></li>
+            </ul>
+          </li>
+
+          <!-- Spacer to push secondary nav to right -->
+          <li class="nav-spacer"></li>
+
+          <!-- 7. Search Icon (Hover to expand) -->
+          <li class="nav-item search-item">
+            <div class="search-container">
+              <div class="search-icon">🔍</div>
+              <div class="search-input-wrapper">
+                 <input type="text" v-model="searchQuery" @keyup.enter="handleSearch" :placeholder="t('nav.searchPlaceholder')" />
+              </div>
+            </div>
+          </li>
+
+          <!-- 8. Login / User Dropdown -->
+          <template v-if="user">
+             <!-- Modified for Reviewer: Click only, no hover -->
+             <li class="nav-item dropdown" 
+                 @mouseenter="user.role !== 'reviewer' && handleHover('profile', true)" 
+                 @mouseleave="user.role !== 'reviewer' && handleHover('profile', false)">
+              <div class="dropdown-toggle" @click="toggleProfileMenu">
+                <a href="#" class="nav-link login-btn">{{ user.username }} ▼</a>
+              </div>
+              <ul class="dropdown-menu" v-if="showProfileMenu">
+                <template v-if="user.role === 'reviewer'">
+                  <li>
+                    <a 
+                      href="#" 
+                      class="nav-link" 
+                      :class="{ 'disabled-link': user?.status !== 'active' }"
+                      @click.prevent="handleMyReviewsClick"
+                    >
+                      {{ t('nav.myReviews') }}
+                    </a>
+                  </li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="handleLogout" title="Logout from submit system (Reviewer access)">Logout (Submit System)</a></li>
+                </template>
+                <template v-else>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/account-security'); closeAllMenus()">{{ t('nav.settings') }}</a></li>
+                  <li><div class="dropdown-divider"></div></li>
+                  <li><a href="#" class="nav-link logout" @click.prevent="confirmLogout">{{ t('nav.logout') }} (Read-Only)</a></li>
+                </template>
+              </ul>
+            </li>
+          </template>
+          <template v-else>
+            <li class="nav-item">
+               <a href="#" class="nav-link login-btn" @click.prevent="goToLogin">{{ t('nav.login') }} (Read-Only)</a>
+            </li>
+          </template>
+
+           <!-- Language Switcher -->
+          <li class="nav-item">
+            <a href="#" class="nav-link" @click.prevent="toggleLang">
+              {{ currentLang === 'en' ? '中文' : 'En' }}
+            </a>
+          </li>
+          </ul>
+        </template>
+        
+        <!-- 审核员后台导航 (Reviewer Navigation - Standardized) -->
+        <template v-else-if="user?.role === 'reviewer'">
+          <div class="reviewer-nav-layout">
+            <!-- Mobile Hamburger (Visible < 1024px) -->
+            <div class="hamburger-menu" @click="showMobileMenu = true">
+              ☰
+            </div>
+
+            <!-- Left 85%: Core Navigation -->
+            <div class="core-nav-section">
+              <!-- 1. Home -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'home' }" @click.prevent="goToHome">
+                  {{ t('nav.home') }}
+                </a>
+              </li>
+
+              <!-- 2. Journals -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
+                  {{ t('nav.journals') }}
+                </a>
+              </li>
+
+              <!-- 3. Submit (Button) -->
+              <li class="nav-item">
+                <a href="#" class="nav-link btn-submit-nav" @click.prevent="goToSubmit()">
+                  {{ t('nav.submit') }}
+                </a>
+              </li>
+
+              <!-- 4. Resources -->
+              <li class="nav-item dropdown" @mouseenter="handleHover('resources', true)" @mouseleave="handleHover('resources', false)">
+                <div class="dropdown-toggle" @click="toggleResourcesMenu">
+                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('resources-') }">{{ t('nav.resources') }} ▼</a>
+                </div>
+                <ul class="dropdown-menu" v-if="showResourcesMenu">
+                   <!-- Reusing Resources Content -->
+                  <li class="dropdown-header">{{ t('nav.authorResources') }}</li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/guide'); closeAllMenus()">{{ t('nav.guideForAuthors') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
+                  <li><div class="dropdown-divider"></div></li>
+                  <li class="dropdown-header">{{ t('nav.newsEvents') }}</li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/latest'); closeAllMenus()">{{ t('nav.latestArticles') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/calls'); closeAllMenus()">{{ t('nav.callForPapers') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/events'); closeAllMenus()">{{ t('nav.upcomingEvents') }}</a></li>
+                </ul>
+              </li>
+
+              <!-- 5. Reviewer (Exclusive Dropdown) -->
+              <li class="nav-item dropdown" @mouseenter="handleHover('reviewer', true)" @mouseleave="handleHover('reviewer', false)">
+                <div class="dropdown-toggle" @click="toggleReviewerMenu">
+                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('reviewer-') }">{{ t('nav.reviewer') }} ▼</a>
+                </div>
+                <ul class="dropdown-menu reviewer-menu" v-if="showReviewerMenu">
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()">{{ t('nav.becomeReviewer') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
+                  <li><div class="dropdown-divider"></div></li>
+                  
+                  <!-- My Reviews: Permission Logic -->
+                  <li>
+                    <a 
+                      href="#" 
+                      class="nav-link" 
+                      :class="{ 'disabled-link': user?.status !== 'active' }"
+                      @click.prevent="handleMyReviewsClick"
+                      title="Please apply and pass the reviewer review first"
+                    >
+                      {{ t('nav.myReviews') }}
+                    </a>
+                  </li>
+
+                  <!-- My Profile: Permission Logic -->
+                  <li>
+                    <a 
+                      href="#" 
+                      class="nav-link" 
+                      @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()"
+                      :title="user?.status !== 'active' ? 'View Only' : ''"
+                    >
+                      {{ t('nav.myProfile') }}
+                    </a>
+                  </li>
+                </ul>
+              </li>
+
+              <!-- 6. More -->
+              <li class="nav-item dropdown" @mouseenter="handleHover('more', true)" @mouseleave="handleHover('more', false)">
+                <div class="dropdown-toggle" @click="toggleMoreMenu">
+                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('about-') }">{{ t('nav.more') }} ▼</a>
+                </div>
+                <ul class="dropdown-menu" v-if="showMoreMenu">
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/editorial-board'); closeAllMenus()">{{ t('nav.editorialBoard') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/journal-info'); closeAllMenus()">{{ t('nav.journalInfo') }}</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/history'); closeAllMenus()">{{ t('nav.history') }}</a></li>
+                </ul>
+              </li>
+            </div>
+
+            <!-- Right 15%: Icons -->
+            <div class="icon-nav-section">
+              <!-- Search Icon -->
+              <div class="search-container">
+                <div class="search-icon">🔍</div>
+                <div class="search-input-wrapper">
+                   <input type="text" v-model="searchQuery" @keyup.enter="handleSearch" :placeholder="t('nav.searchPlaceholder')" />
+                </div>
+              </div>
+
+              <!-- User Icon -->
+              <div class="user-container dropdown" @click="toggleUserMenu" ref="userMenuRef">
+                <div class="user-icon">👤</div>
+                <ul class="dropdown-menu user-menu" v-if="showUserMenu">
+                  <!-- Login/Logout -->
+              <li v-if="!user"><a href="#" class="nav-link" @click.prevent="goToLogin">{{ t('nav.login') }} (Read-Only)</a></li>
+              <li v-else><a href="#" class="nav-link" @click.prevent="handleLogout">{{ t('nav.logout') }} (Read-Only)</a></li>
+              
+              <!-- Language -->
+                  <li>
+                    <a href="#" class="nav-link" @click.prevent="toggleLang">
+                      {{ currentLang === 'en' ? 'Chinese' : 'English' }} <span v-if="currentLang === 'en'">✓</span>
+                    </a>
+                  </li>
+
+                  <!-- Help -->
+                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/submission/help'); closeAllMenus()">{{ t('nav.help') }}</a></li>
+                </ul>
+              </div>
+            </div>
+
+
+          </div>
+        </template>
+        
+        <!-- Unified Editor Navigation (Shared for all editor roles) -->
+        <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
+          <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
+          <ul class="navbar-menu desktop-only">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <li class="nav-item">
             <a 
               href="#" 
               class="nav-link"
+<<<<<<< HEAD
               @click.prevent="$router.push('/directory')"
             >
               {{ t('nav.directory') }}
@@ -399,10 +1134,120 @@ const handleLogout = () => {
           
           <!-- 个人中心入口 - 仅对已登录用户显示 -->
           <li v-if="user" class="nav-item dropdown">
+=======
+              :class="{ active: currentPage === 'editor-dashboard' }"
+              @click.prevent="handleNav('editor-dashboard', '/editor/dashboard')"
+            >
+              {{ t('nav.dashboard') }}
+            </a>
+          </li>
+          
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-manuscripts' }"
+              @click.prevent="handleNav('editor-manuscripts', '/editor/manuscripts')"
+            >
+              {{ t('nav.manuscripts') }}
+            </a>
+          </li>
+
+          <!-- Audit Tasks Menu (Added) -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleAuditTasksMenu">
+              <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('audit-') }">
+                {{ t('nav.tasks') }} ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showAuditTasksMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-new-submissions', '/editor/audit/new-submissions'); closeAllMenus()">{{ t('nav.auditNewSubmissions') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-assign-reviewers', '/editor/audit/assign-reviewers'); closeAllMenus()">{{ t('nav.auditAssignReviewers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-review-monitoring', '/editor/audit/review-monitoring'); closeAllMenus()">{{ t('nav.auditReviewMonitoring') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); closeAllMenus()">{{ t('nav.auditDecisionMaking') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); closeAllMenus()">{{ t('nav.auditRevisionHandling') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); closeAllMenus()">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); closeAllMenus()">{{ t('nav.auditMyTasks') }}</a></li>
+            </ul>
+          </li>
+
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-reviewers' }"
+              @click.prevent="handleNav('editor-reviewers', '/editor/reviewers')"
+            >
+              {{ t('nav.reviewers') }}
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-decisions' }"
+              @click.prevent="handleNav('editor-decisions', '/editor/decisions')"
+            >
+              {{ t('nav.decisionsLetters') }}
+            </a>
+          </li>
+
+          <!-- Admin Only Menu Items -->
+          <template v-if="user?.role === 'admin'">
+             <li class="nav-item dropdown">
+              <div class="dropdown-toggle" @click="toggleRoleMenu">
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'editor-users' }"
+                >
+                  {{ t('nav.editorManagement') }} ▼
+                </a>
+              </div>
+              <ul class="dropdown-menu" v-if="showRoleMenu">
+                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-users', '/editor/users'); closeAllMenus()">{{ t('nav.userList') }}</a></li>
+                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); closeAllMenus()">{{ t('nav.accountStatus') }}</a></li>
+              </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+              <div class="dropdown-toggle" @click="toggleSystemMenu">
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage.startsWith('editor-system') }"
+                >
+                  {{ t('nav.journalSettings') }} ▼
+                </a>
+              </div>
+              <ul class="dropdown-menu" v-if="showSystemMenu">
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); closeAllMenus()">{{ t('nav.basicConfig') }}</a></li>
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); closeAllMenus()">{{ t('nav.moduleManagement') }}</a></li>
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); closeAllMenus()">{{ t('nav.inviteCodeManagement') }}</a></li>
+              </ul>
+            </li>
+
+            <li class="nav-item">
+               <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'editor-system-logs' }"
+                  @click.prevent="handleNav('editor-system-logs', '/editor/system/logs')"
+                >
+                  {{ t('nav.statistics') }}
+                </a>
+            </li>
+          </template>
+
+          <li class="nav-item dropdown">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="dropdown-toggle" @click="toggleProfileMenu">
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage === 'profile' }"
               >
                 {{ t('nav.profile') }} ▼
@@ -434,10 +1279,28 @@ const handleLogout = () => {
           
           <!-- 帮助中心 -->
           <li class="nav-item dropdown">
+=======
+                :class="{ active: currentPage === 'editor-settings' }"
+              >
+                {{ t('nav.profileSettings') }} ▼
+              </a>
+            </div>
+             <ul class="dropdown-menu" v-if="showProfileMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=profile'); closeAllMenus()">{{ t('nav.profileInfo') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=security'); closeAllMenus()">{{ t('nav.accountSecurity') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=notifications'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
+              <li v-if="user?.role === 'editor' || user?.role === 'admin'"><a href="#" class="nav-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=preferences'); closeAllMenus()">{{ t('nav.editorPreferences') }}</a></li>
+              <li v-if="user?.role === 'editor' || user?.role === 'admin'"><a href="#" class="nav-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=api'); closeAllMenus()">{{ t('nav.apiAccess') }}</a></li>
+            </ul>
+          </li>
+
+           <li class="nav-item dropdown">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="dropdown-toggle" @click="toggleHelpMenu">
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage === 'help' }"
               >
                 {{ t('nav.helpCenter') }} ▼
@@ -840,20 +1703,44 @@ const handleLogout = () => {
               {{ t('nav.returnMain') }}
             </a>
           </li>
+=======
+                :class="{ active: currentPage.startsWith('submission-help') || currentPage.startsWith('submission-system') }"
+              >
+                {{ t('nav.helpSupport') }} ▼
+              </a>
+            </div>
+             <ul class="dropdown-menu" v-if="showHelpMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('submission-help', '/submission/help'); closeAllMenus()">{{ t('nav.helpCenter') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('submission-help-feedback', '/submission/help/feedback'); closeAllMenus()">{{ t('nav.feedback') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('submission-system-status', '/submission/system-status'); closeAllMenus()">{{ t('nav.systemStatus') }}</a></li>
+            </ul>
+          </li>
+          </ul>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </template>
         
         <!-- 作者后台导航 -->
         <template v-else-if="user?.role === 'author'">
+<<<<<<< HEAD
+=======
+          <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
+          <ul class="navbar-menu desktop-only">
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <li class="nav-item">
             <a 
               href="#" 
               class="nav-link"
+<<<<<<< HEAD
               :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' }"
+=======
+              :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' || currentPage === 'submission-author-dashboard' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               @click.prevent="goToAdminDashboard"
             >
               {{ t('nav.dashboard') }}
             </a>
           </li>
+<<<<<<< HEAD
           <!-- 角色切换菜单 -->
           <li v-if="availableRoles.length > 1" class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
@@ -874,6 +1761,8 @@ const handleLogout = () => {
               </li>
             </ul>
           </li>
+=======
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           
           <!-- 稿件管理菜单 -->
           <li class="nav-item dropdown">
@@ -881,7 +1770,11 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage.startsWith('admin-manuscript') }"
+=======
+                :class="{ active: currentPage.startsWith('admin-manuscript') || currentPage.startsWith('submission-manuscript') }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.manuscriptManagement') }} ▼
               </a>
@@ -891,7 +1784,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-author-submit' }"
+=======
+                  :class="{ active: currentPage === 'admin-author-submit' || currentPage === 'submission-author-submit' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/author-submit'); closeAllMenus()"
                 >
                   {{ t('nav.newSubmission') }}
@@ -901,7 +1798,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-manuscript-my' }"
+=======
+                  :class="{ active: currentPage === 'admin-manuscript-my' || currentPage === 'submission-manuscript-my' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/my'); closeAllMenus()"
                 >
                   {{ t('nav.myManuscripts') }}
@@ -911,7 +1812,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-manuscript-progress' }"
+=======
+                  :class="{ active: currentPage === 'admin-manuscript-progress' || currentPage === 'submission-manuscript-progress' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/progress'); closeAllMenus()"
                 >
                   {{ t('nav.manuscriptProgress') }}
@@ -921,7 +1826,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-manuscript-history' }"
+=======
+                  :class="{ active: currentPage === 'admin-manuscript-history' || currentPage === 'submission-manuscript-history' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/history'); closeAllMenus()"
                 >
                   {{ t('nav.historySubmission') }}
@@ -936,7 +1845,11 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' }"
+=======
+                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' || currentPage.startsWith('submission-profile') || currentPage === 'submission-notifications' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.profile') }} ▼
               </a>
@@ -946,7 +1859,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
+=======
+                  :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage === 'submission-author-profile' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
                 >
                   {{ t('nav.profileInfo') }}
@@ -956,8 +1873,13 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-profile-security' }"
                   @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
+=======
+                  :class="{ active: currentPage === 'admin-profile-security' || currentPage === 'submission-profile-security' }"
+                  @click.prevent="router.push('/account-security'); closeAllMenus()"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.accountSecurity') }}
                 </a>
@@ -966,8 +1888,13 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-notifications' }"
                   @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
+=======
+                  :class="{ active: currentPage === 'admin-notifications' || currentPage === 'submission-notifications' }"
+                  @click.prevent="router.push('/submission/notifications'); closeAllMenus()"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.messages') }}
                 </a>
@@ -981,7 +1908,11 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage.startsWith('admin-guide') }"
+=======
+                :class="{ active: currentPage.startsWith('admin-guide') || currentPage.startsWith('submission-guide') }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.submissionGuide') }} ▼
               </a>
@@ -991,8 +1922,13 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-submission-rules' }"
                   @click.prevent="router.push('/admin/submission-rules'); closeAllMenus()"
+=======
+                  :class="{ active: currentPage === 'admin-submission-rules' || currentPage === 'submission-rules' }"
+                  @click.prevent="router.push('/submission/submission-rules'); closeAllMenus()"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.submissionRules') }}
                 </a>
@@ -1001,7 +1937,11 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-guide-faq' }"
+=======
+                  :class="{ active: currentPage === 'admin-guide-faq' || currentPage === 'submission-guide-faq' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/guide/faq'); closeAllMenus()"
                 >
                   {{ t('nav.faq') }}
@@ -1016,7 +1956,11 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
+<<<<<<< HEAD
                 :class="{ active: currentPage.startsWith('admin-help') }"
+=======
+                :class="{ active: currentPage.startsWith('admin-help') || currentPage.startsWith('submission-help') || currentPage.startsWith('submission-system') }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.helpCenter') }} ▼
               </a>
@@ -1026,7 +1970,21 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-help-consultation' }"
+=======
+                  :class="{ active: currentPage === 'submission-help' }"
+                  @click.prevent="router.push('/submission/help'); closeAllMenus()"
+                >
+                  {{ t('nav.helpCenter') }}
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'admin-help-consultation' || currentPage === 'submission-help-consultation' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/help/consultation'); closeAllMenus()"
                 >
                   {{ t('nav.onlineConsultation') }}
@@ -1036,12 +1994,29 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
+<<<<<<< HEAD
                   :class="{ active: currentPage === 'admin-help-feedback' }"
+=======
+                  :class="{ active: currentPage === 'admin-help-feedback' || currentPage === 'submission-help-feedback' }"
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/help/feedback'); closeAllMenus()"
                 >
                   {{ t('nav.feedback') }}
                 </a>
               </li>
+<<<<<<< HEAD
+=======
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'submission-system-status' }"
+                  @click.prevent="router.push('/submission/system-status'); closeAllMenus()"
+                >
+                  {{ t('nav.systemStatus') }}
+                </a>
+              </li>
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </ul>
           </li>
           
@@ -1054,6 +2029,7 @@ const handleLogout = () => {
               {{ t('nav.returnMain') }}
             </a>
           </li>
+<<<<<<< HEAD
         </template>
         
         <!-- 登录状态导航 -->
@@ -1108,13 +2084,288 @@ const handleLogout = () => {
   color: white;
   padding: 1rem 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+=======
+           <!-- Logout -->
+           <li class="nav-item">
+            <a href="#" class="nav-link logout" @click.prevent="handleLogout" title="Logout from submit system">
+              Logout (Submit System)
+            </a>
+          </li>
+          <!-- Language -->
+          <li class="nav-item">
+             <a href="#" class="nav-link" @click.prevent="toggleLang">
+               {{ currentLang === 'en' ? '中文' : 'En' }}
+             </a>
+           </li>
+           </ul>
+        </template>
+        
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- Unified Mobile Sidebar -->
+  <div class="mobile-sidebar-overlay" v-if="showMobileMenu" @click="showMobileMenu = false">
+    <div class="mobile-sidebar" @click.stop>
+      <div class="sidebar-header">
+        <span class="close-btn" @click="showMobileMenu = false">×</span>
+      </div>
+      <ul class="sidebar-menu">
+        
+        <!-- 1. Main Site / Reviewer Navigation -->
+        <template v-if="!isAdminRoute() || user?.role === 'reviewer'">
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link" @click.prevent="goToHome; showMobileMenu = false">{{ t('nav.home') }}</a>
+          </li>
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link" @click.prevent="$router.push('/journals/all'); showMobileMenu = false">{{ t('nav.journals') }}</a>
+          </li>
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link btn-submit-sidebar" @click.prevent="goToSubmit(); showMobileMenu = false">{{ t('nav.submit') }}</a>
+          </li>
+          <!-- Resources -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleResourcesMenu">{{ t('nav.resources') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showResourcesMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/guide'); showMobileMenu = false">{{ t('nav.guideForAuthors') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/templates'); showMobileMenu = false">{{ t('nav.templates') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/status'); showMobileMenu = false">{{ t('nav.checkStatus') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/become'); showMobileMenu = false">{{ t('nav.becomeReviewer') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); showMobileMenu = false">{{ t('nav.reviewerGuidelines') }}</a></li>
+            </ul>
+          </li>
+          <!-- Reviewer -->
+          <li class="sidebar-item has-submenu" v-if="user && (user.role === 'reviewer' || applicationStatus)">
+            <div class="sidebar-link" @click="toggleReviewerMenu">{{ t('nav.reviewer') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showReviewerMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/become'); showMobileMenu = false">{{ t('nav.becomeReviewer') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); showMobileMenu = false">{{ t('nav.reviewerGuidelines') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/training'); showMobileMenu = false">{{ t('nav.reviewerTraining') }}</a></li>
+              <template v-if="user.role === 'reviewer'">
+                 <li><a href="#" class="submenu-link" :class="{ 'disabled': user?.status !== 'active' }" @click.prevent="handleMyReviewsClick; if(user?.status==='active') showMobileMenu = false">{{ t('nav.myReviews') }}</a></li>
+                 <li><a href="#" class="submenu-link" @click.prevent="$router.push('/reviewer/profile'); showMobileMenu = false">{{ t('nav.myProfile') }}</a></li>
+              </template>
+            </ul>
+          </li>
+          <!-- More -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleMoreMenu">{{ t('nav.more') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showMoreMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/about/editorial-board'); showMobileMenu = false">{{ t('nav.editorialBoard') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/about/journal-info'); showMobileMenu = false">{{ t('nav.journalInfo') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/about/history'); showMobileMenu = false">{{ t('nav.history') }}</a></li>
+            </ul>
+          </li>
+          <!-- Login/Logout -->
+          <li class="sidebar-item" v-if="!user">
+            <a href="#" class="sidebar-link" @click.prevent="goToLogin(); showMobileMenu = false">{{ t('nav.login') }} (Read-Only)</a>
+          </li>
+          <li class="sidebar-item" v-else>
+            <a href="#" class="sidebar-link logout" @click.prevent="handleLogout">{{ t('nav.logout') }} (Read-Only)</a>
+          </li>
+        </template>
+
+        <!-- 2. Editor / Admin Navigation -->
+        <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
+          <li class="sidebar-item">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-dashboard', '/editor/dashboard'); showMobileMenu = false">{{ t('nav.dashboard') }}</a>
+          </li>
+          <li class="sidebar-item">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-manuscripts', '/editor/manuscripts'); showMobileMenu = false">{{ t('nav.manuscripts') }}</a>
+          </li>
+          <!-- Tasks -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleAuditTasksMenu">{{ t('nav.tasks') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showAuditTasksMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-new-submissions', '/editor/audit/new-submissions'); showMobileMenu = false">{{ t('nav.auditNewSubmissions') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-assign-reviewers', '/editor/audit/assign-reviewers'); showMobileMenu = false">{{ t('nav.auditAssignReviewers') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-review-monitoring', '/editor/audit/review-monitoring'); showMobileMenu = false">{{ t('nav.auditReviewMonitoring') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); showMobileMenu = false">{{ t('nav.auditDecisionMaking') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); showMobileMenu = false">{{ t('nav.auditRevisionHandling') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); showMobileMenu = false">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); showMobileMenu = false">{{ t('nav.auditMyTasks') }}</a></li>
+            </ul>
+          </li>
+           <li class="sidebar-item">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-reviewers', '/editor/reviewers'); showMobileMenu = false">{{ t('nav.reviewers') }}</a>
+          </li>
+           <li class="sidebar-item">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-decisions', '/editor/decisions'); showMobileMenu = false">{{ t('nav.decisionsLetters') }}</a>
+          </li>
+          
+          <!-- Admin Only -->
+          <template v-if="user?.role === 'admin'">
+             <li class="sidebar-item has-submenu">
+                <div class="sidebar-link" @click="toggleRoleMenu">{{ t('nav.editorManagement') }} <span class="arrow">▼</span></div>
+                <ul class="sidebar-submenu" v-if="showRoleMenu">
+                   <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-users', '/editor/users'); showMobileMenu = false">{{ t('nav.userList') }}</a></li>
+                   <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); showMobileMenu = false">{{ t('nav.accountStatus') }}</a></li>
+                </ul>
+             </li>
+             <li class="sidebar-item has-submenu">
+                <div class="sidebar-link" @click="toggleSystemMenu">{{ t('nav.journalSettings') }} <span class="arrow">▼</span></div>
+                <ul class="sidebar-submenu" v-if="showSystemMenu">
+                  <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); showMobileMenu = false">{{ t('nav.basicConfig') }}</a></li>
+                  <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); showMobileMenu = false">{{ t('nav.notificationSettings') }}</a></li>
+                  <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); showMobileMenu = false">{{ t('nav.moduleManagement') }}</a></li>
+                  <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); showMobileMenu = false">{{ t('nav.inviteCodeManagement') }}</a></li>
+                </ul>
+             </li>
+              <li class="sidebar-item">
+                 <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-system-logs', '/editor/system/logs'); showMobileMenu = false">{{ t('nav.statistics') }}</a>
+              </li>
+          </template>
+
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleProfileMenu">{{ t('nav.profileSettings') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showProfileMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=profile'); showMobileMenu = false">{{ t('nav.profileInfo') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=security'); showMobileMenu = false">{{ t('nav.accountSecurity') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('editor-settings', '/editor/settings?tab=notifications'); showMobileMenu = false">{{ t('nav.notificationSettings') }}</a></li>
+            </ul>
+          </li>
+          
+           <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleHelpMenu">{{ t('nav.helpSupport') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showHelpMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('submission-help', '/submission/help'); showMobileMenu = false">{{ t('nav.helpCenter') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('submission-help-feedback', '/submission/help/feedback'); showMobileMenu = false">{{ t('nav.feedback') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('submission-system-status', '/submission/system-status'); showMobileMenu = false">{{ t('nav.systemStatus') }}</a></li>
+            </ul>
+          </li>
+          
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link logout" @click.prevent="handleLogout" title="Logout from submit system (Reviewer access)">Logout (Submit System)</a>
+          </li>
+        </template>
+
+        <!-- 3. Author Navigation -->
+        <template v-else-if="user?.role === 'author'">
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link" @click.prevent="goToAdminDashboard; showMobileMenu = false">{{ t('nav.dashboard') }}</a>
+          </li>
+          <!-- Manuscripts -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleManuscriptMenu">{{ t('nav.manuscriptManagement') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showManuscriptMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/author-submit'); showMobileMenu = false">{{ t('nav.newSubmission') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/my'); showMobileMenu = false">{{ t('nav.myManuscripts') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/progress'); showMobileMenu = false">{{ t('nav.manuscriptProgress') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/history'); showMobileMenu = false">{{ t('nav.historySubmission') }}</a></li>
+            </ul>
+          </li>
+           <!-- Profile -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleProfileMenu">{{ t('nav.profile') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showProfileMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/author-profile'); showMobileMenu = false">{{ t('nav.profileInfo') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/account-security'); showMobileMenu = false">{{ t('nav.accountSecurity') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/notifications'); showMobileMenu = false">{{ t('nav.messages') }}</a></li>
+            </ul>
+          </li>
+           <!-- Guide -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleGuideMenu">{{ t('nav.submissionGuide') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showGuideMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/submission-rules'); showMobileMenu = false">{{ t('nav.submissionRules') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/guide/faq'); showMobileMenu = false">{{ t('nav.faq') }}</a></li>
+            </ul>
+          </li>
+          <!-- Help -->
+          <li class="sidebar-item has-submenu">
+            <div class="sidebar-link" @click="toggleAuthorHelpMenu">{{ t('nav.helpCenter') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showAuthorHelpMenu">
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/help'); showMobileMenu = false">{{ t('nav.helpCenter') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/help/consultation'); showMobileMenu = false">{{ t('nav.onlineConsultation') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/help/feedback'); showMobileMenu = false">{{ t('nav.feedback') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/system-status'); showMobileMenu = false">{{ t('nav.systemStatus') }}</a></li>
+            </ul>
+          </li>
+          
+           <li class="sidebar-item">
+            <a href="#" class="sidebar-link" @click.prevent="goToHome; showMobileMenu = false">{{ t('nav.returnMain') }}</a>
+          </li>
+          <li class="sidebar-item">
+            <a href="#" class="sidebar-link logout" @click.prevent="handleLogout" title="Logout from submit system">Logout (Submit System)</a>
+          </li>
+        </template>
+
+      </ul>
+    </div>
+  </div>
+
+  <!-- Subscribe Modal -->
+  <div v-if="showSubscribeModal" class="modal-overlay" @click="showSubscribeModal = false">
+    <div class="modal-content" @click.stop>
+      <h3>{{ t('nav.subscribe') }}</h3>
+      <p>Stay updated with the latest research and journal news.</p>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" placeholder="Enter your email" class="modal-input" />
+      </div>
+      <div class="form-group">
+        <label>Interests</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox"> Highly Cited Papers</label>
+          <label><input type="checkbox"> Event Notifications</label>
+          <label><input type="checkbox"> Newsletters</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" @click="showSubscribeModal = false">{{ t('common.cancel') }}</button>
+        <button class="btn-confirm" @click="handleSubscribe">{{ t('nav.subscribe') }}</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* System Banners */
+.system-banner {
+  width: 100%;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 4px 0;
+  font-weight: 500;
+  position: fixed;
+  top: 0;
+  z-index: 1001;
+}
+
+.system-banner.read-only {
+  background-color: #f0f0f0;
+  color: #666;
+  border-bottom: 1px solid #ddd;
+}
+
+.system-banner.submit-mode {
+  background-color: #C93737;
+  color: white;
+}
+
+/* Navbar adjustments for banner */
+.navbar.has-banner {
+  top: 28px; /* Height of banner approx */
+}
+
+/* 导航栏样式 - 固定在顶部 */
+.navbar {
+  background: white;
+  color: #333;
+  padding: 1rem 0;
+  border-bottom: 1px solid #eee;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   margin: 0;
+<<<<<<< HEAD
   border: none;
+=======
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   outline: none;
 }
 
@@ -1123,6 +2374,7 @@ const handleLogout = () => {
   margin: 0 auto;
   padding: 0 1rem;
   display: flex;
+<<<<<<< HEAD
   justify-content: space-between;
   align-items: center;
 }
@@ -1131,6 +2383,11 @@ const handleLogout = () => {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
+=======
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .navbar-menu {
@@ -1138,8 +2395,21 @@ const handleLogout = () => {
   list-style: none;
   margin: 0;
   padding: 0;
+<<<<<<< HEAD
   min-width: 600px;
   justify-content: flex-end;
+=======
+  width: 100%;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.navbar-logo h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  color: #333;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .nav-item {
@@ -1148,7 +2418,11 @@ const handleLogout = () => {
 }
 
 .nav-link {
+<<<<<<< HEAD
   color: white;
+=======
+  color: #333;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -1160,6 +2434,7 @@ const handleLogout = () => {
   text-align: center;
 }
 
+<<<<<<< HEAD
 .nav-link:hover,
 .nav-link.active {
   color: #3498db;
@@ -1173,6 +2448,33 @@ const handleLogout = () => {
 .nav-link.logout:hover {
   color: #c0392b;
   background: rgba(231, 76, 60, 0.1);
+=======
+/* Navigation Item Highlight Style */
+.nav-link.active {
+  color: #C93737;
+  background: transparent;
+  border-bottom: 2px solid #C93737;
+  border-radius: 0;
+}
+
+.nav-link:hover {
+  color: #333;
+  background: #f5f5f5;
+}
+
+/* Ensure no shadows on hover */
+.nav-link:hover, .nav-link.active {
+  box-shadow: none;
+}
+
+.nav-link.logout {
+  color: #C93737;
+}
+
+.nav-link.logout:hover {
+  color: #C93737;
+  background: rgba(201, 55, 55, 0.1);
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 下拉菜单样式 */
@@ -1184,16 +2486,30 @@ const handleLogout = () => {
   cursor: pointer;
 }
 
+<<<<<<< HEAD
+=======
+/* Updated Dropdown Menu for Content Fit */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 .dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
+<<<<<<< HEAD
   background: #2c3e50;
   border-radius: 5px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   z-index: 1001;
   min-width: 150px;
   margin-top: 0.5rem;
+=======
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #eee;
+  z-index: 1001;
+  min-width: max-content; /* Fit content */
+  margin-top: 0.1rem;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   list-style: none;
   padding: 0.5rem 0;
 }
@@ -1204,7 +2520,11 @@ const handleLogout = () => {
 
 .dropdown-menu .dropdown-divider {
   height: 1px;
+<<<<<<< HEAD
   background-color: rgba(255, 255, 255, 0.1);
+=======
+  background-color: #eee;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   margin: 0.5rem 0;
   padding: 0;
 }
@@ -1212,38 +2532,77 @@ const handleLogout = () => {
 .dropdown-menu .nav-link {
   display: block;
   padding: 0.5rem 1.5rem;
+<<<<<<< HEAD
   color: white;
+=======
+  color: #333;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   text-decoration: none;
   font-size: 0.9rem;
   transition: all 0.3s ease;
   text-align: left;
   min-width: auto;
+<<<<<<< HEAD
+=======
+  white-space: nowrap; /* Prevent wrapping */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .dropdown-menu .nav-link:hover,
 .dropdown-menu .nav-link.active {
+<<<<<<< HEAD
   background: rgba(52, 152, 219, 0.2);
   color: #3498db;
+=======
+  background: rgba(201, 55, 55, 0.1);
+  color: #C93737;
+}
+
+/* Hamburger Menu Global */
+.hamburger-menu {
+  display: none;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .navbar-container {
+<<<<<<< HEAD
     flex-direction: column;
+=======
+    flex-direction: row; /* Change to row to align Logo and Hamburger */
+    justify-content: space-between;
+    align-items: center;
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     gap: 1rem;
     padding: 1rem;
   }
   
+<<<<<<< HEAD
   .navbar-menu {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
   }
   
+=======
+  .navbar-menu.desktop-only {
+    display: none; /* Hide desktop menu */
+  }
+
+  .hamburger-menu.mobile-only {
+    display: block; /* Show hamburger */
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  /* Hide old mobile menu styles if any remain active */
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   .nav-item {
     margin-left: 0;
   }
   
+<<<<<<< HEAD
   .nav-link {
     font-size: 0.9rem;
     padding: 0.5rem 1rem;
@@ -1271,4 +2630,517 @@ const handleLogout = () => {
     text-align: center;
   }
 }
+=======
+  .navbar-logo h1 {
+    font-size: 1.3rem;
+  }
+}
+
+/* New Styles for Main Site Navigation */
+.nav-spacer {
+  flex-grow: 1;
+}
+
+.btn-submit-nav {
+  color: white !important;
+  background: #C93737 !important;
+  font-weight: normal;
+  border-radius: 4px;
+}
+.btn-submit-nav:hover {
+  color: white !important;
+  background: #C93737 !important;
+  opacity: 0.9;
+  transform: none;
+}
+
+/* Updated Search Styles (Icon + Hover Expand) */
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px; /* Match nav height */
+}
+
+.search-icon {
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 10px;
+  color: #333;
+  transition: color 0.3s;
+}
+
+.search-icon:hover {
+  color: #e74c3c;
+}
+
+.search-input-wrapper {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.4s ease;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  border: 1px solid #eee;
+}
+
+.search-container:hover .search-input-wrapper,
+.search-input-wrapper:focus-within {
+  width: 250px;
+  padding: 0 5px;
+}
+
+.search-input-wrapper input {
+  border: none;
+  outline: none;
+  padding: 8px 10px;
+  width: 100%;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Simplified Login Button */
+.login-btn {
+  color: #666 !important; /* Grey text */
+  font-weight: 500;
+}
+.login-btn:hover {
+  color: #e74c3c !important; /* Brand color on hover */
+  background: transparent !important;
+}
+
+/* Dropdown Header Style */
+.dropdown-header {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #95a5a6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 400px;
+  color: #333;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+.modal-content h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.modal-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.checkbox-group label {
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.modal-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.btn-cancel {
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #333;
+}
+.btn-confirm {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-confirm:hover {
+  background: #2980b9;
+}
+
+.btn-danger {
+  background: #C93737;
+}
+
+.btn-danger:hover {
+  background: #B02E2E;
+}
+
+/* Reviewer Navigation Specific Styles */
+.reviewer-nav-layout {
+  display: flex;
+  width: 100%;
+  height: 60px; /* Strict height */
+  min-width: 1200px; /* Strict min-width */
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Left 85% */
+.core-nav-section {
+  width: 85%;
+  display: flex;
+  align-items: center;
+  gap: 32px; /* Fixed spacing */
+  padding-left: 0;
+  height: 100%;
+}
+
+/* Right 15% */
+.icon-nav-section {
+  width: 15%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px; /* Fixed icon spacing */
+  padding-left: 24px; /* Gap from core nav */
+  height: 100%;
+}
+
+/* Override nav-item for reviewer layout */
+.reviewer-nav-layout .nav-item {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Link Styles */
+.reviewer-nav-layout .nav-link {
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-family: Arial, Helvetica, sans-serif; /* Sans-serif */
+  padding: 0 4px; /* Minimal padding for text */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid transparent; /* Prepare for active state */
+  border-radius: 0;
+  background: transparent;
+  transition: background-color 0.3s;
+}
+
+.reviewer-nav-layout .nav-link:hover {
+  background-color: #F5F5F5;
+  color: #333333;
+}
+
+.reviewer-nav-layout .nav-link.active {
+  border-bottom: 1px solid #C93737;
+  color: #333333; /* Text color remains #333 */
+  background: transparent;
+}
+
+/* Submit Button Specific */
+.reviewer-nav-layout .btn-submit-nav {
+  background-color: #C93737 !important;
+  color: #FFFFFF !important;
+  border-radius: 4px;
+  padding: 8px 24px !important;
+  height: auto;
+  line-height: normal;
+  border: none;
+}
+
+.reviewer-nav-layout .btn-submit-nav:hover {
+  background-color: #B02E2E !important;
+  color: #FFFFFF !important;
+}
+
+/* Reviewer Dropdown Specific */
+.reviewer-menu {
+  top: 60px; /* Align with bottom of nav */
+  margin-top: 0;
+  border: 1px solid #E5E5E5;
+  box-shadow: none !important; /* Forbidden shadow */
+  border-radius: 0 0 4px 4px;
+  min-width: 200px;
+  padding: 8px 0;
+}
+
+.reviewer-menu .nav-link {
+  font-size: 14px;
+  color: #333333; /* Dark Grey */
+  padding: 8px 16px;
+  height: auto;
+  display: block;
+  text-align: left;
+  border: none;
+}
+
+.reviewer-menu .nav-link:hover {
+  background-color: #F5F5F5; /* Light Grey Hover */
+  color: #333333;
+}
+
+.disabled-link {
+  color: #999999 !important; /* Light Grey #999 */
+  cursor: not-allowed;
+  pointer-events: none; /* Unclickable */
+  background-color: transparent !important;
+}
+
+/* User Icon */
+.user-container {
+  position: relative;
+  cursor: pointer;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.user-icon {
+  font-size: 16px;
+  color: #333333;
+  transition: color 0.3s;
+}
+
+.user-container:hover .user-icon {
+  color: #C93737;
+}
+
+.user-menu {
+  right: 0;
+  left: auto;
+  width: 150px; /* Fixed width */
+  border: 1px solid #E5E5E5;
+  box-shadow: none; /* Spec says no shadow for Reviewer dropdown, assume User too? Spec says "User menu... border 1px... click outside to close". Doesn't explicitly forbid shadow but says "Reviewer dropdown... no shadow". Actually "Dropdown menu style... no any shadow". Applies to Reviewer? Or all? "Reviewer Exclusive Dropdown... no any shadow". User menu "Background white, border 1px...". I'll remove shadow to be safe/consistent. */
+  top: 100%;
+  margin-top: 10px; /* Spacing */
+}
+
+/* Search Box Override */
+.reviewer-nav-layout .search-container {
+  height: 100%;
+}
+.reviewer-nav-layout .search-icon {
+  font-size: 16px;
+  color: #333333;
+}
+.reviewer-nav-layout .search-icon:hover {
+  color: #C93737;
+}
+.reviewer-nav-layout .search-input-wrapper {
+  border-radius: 4px;
+  border: 1px solid #E5E5E5;
+}
+.reviewer-nav-layout .search-container:hover .search-input-wrapper,
+.reviewer-nav-layout .search-input-wrapper:focus-within {
+  width: 300px; /* Fixed width */
+}
+
+/* Mobile Adaptation for Reviewer */
+@media (max-width: 1024px) {
+  .reviewer-nav-layout {
+    min-width: auto;
+    padding: 0 16px;
+    justify-content: space-between;
+  }
+  
+  .core-nav-section {
+    display: none; /* Hide core nav on mobile, use Hamburger */
+  }
+  
+  .icon-nav-section {
+    width: auto;
+    gap: 20px; /* Mobile gap */
+  }
+  
+  /* Add Hamburger Menu Logic here */
+  .hamburger-menu {
+    display: block; /* Visible on mobile */
+    font-size: 16px;
+    color: #333333;
+    cursor: pointer;
+    padding: 10px;
+  }
+  .hamburger-menu:hover {
+    color: #C93737;
+  }
+}
+
+/* Sidebar Styles */
+.mobile-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mobile-sidebar {
+  width: 250px;
+  background: white;
+  height: 100%;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.close-btn {
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-item {
+  margin-bottom: 15px;
+}
+
+.sidebar-link {
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.sidebar-link:hover {
+  color: #C93737;
+}
+
+.btn-submit-sidebar {
+  background-color: #C93737;
+  color: white !important;
+  text-align: center;
+  border-radius: 4px;
+  padding: 8px 16px;
+  display: block;
+}
+
+.sidebar-submenu {
+  list-style: none;
+  padding-left: 15px;
+  margin-top: 5px;
+  border-left: 1px solid #eee;
+}
+
+.submenu-link {
+  font-size: 12px;
+  color: #666;
+  text-decoration: none;
+  display: block;
+  padding: 5px 0;
+}
+
+.submenu-link:hover {
+  color: #C93737;
+}
+
+.submenu-link.disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* Hamburger default hidden on PC */
+.hamburger-menu {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .hamburger-menu {
+    display: block;
+  }
+  
+  /* Mobile Icon Updates */
+  .reviewer-nav-layout .icon-nav-section {
+    gap: 20px;
+  }
+  .reviewer-nav-layout .search-icon,
+  .user-icon {
+    font-size: 18px;
+  }
+}
+
+/* Strict Reviewer Navbar Overrides */
+.navbar.reviewer-navbar {
+  padding: 0;
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #eee; /* Ensure border is present */
+}
+
+.navbar-container.reviewer-container {
+  padding: 0 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: row; /* Override column */
+  align-items: center;
+  gap: 0;
+  max-width: 100%; /* Layout handles 1200px min-width */
+}
+>>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 </style>
