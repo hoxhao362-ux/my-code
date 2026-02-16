@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import IntelligentReviewerRecommendation from '../../../components/audit/IntelligentReviewerRecommendation.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -23,6 +24,16 @@ const currentJournal = ref(null)
 const selectedReviewerIds = ref([])
 const filterMethod = ref('all') // 'field', 'method'
 const searchQuery = ref('')
+const activeTab = ref('recommended') // 'manual', 'smart', 'recommended'
+
+const authorRecommendedReviewers = computed(() => {
+  if (!currentJournal.value) return []
+  // Get accepted recommendations for this manuscript
+  return userStore.recommendedReviewers.filter(r => 
+    String(r.manuscriptId) === String(currentJournal.value.id) && 
+    r.status === 'accepted'
+  )
+})
 
 const filteredReviewers = computed(() => {
   let list = availableReviewers.value
@@ -36,7 +47,35 @@ const filteredReviewers = computed(() => {
 const openAssignModal = (journal) => {
   currentJournal.value = journal
   selectedReviewerIds.value = []
+  
+  // Check if there are author recommendations
+  const hasRecommendations = userStore.recommendedReviewers.some(r => 
+    String(r.manuscriptId) === String(journal.id) && 
+    r.status === 'accepted'
+  )
+  
+  activeTab.value = hasRecommendations ? 'recommended' : 'smart'
   showModal.value = true
+}
+
+const handleSmartSelect = (reviewer) => {
+  if (!selectedReviewerIds.value.includes(reviewer.id)) {
+    selectedReviewerIds.value.push(reviewer.id)
+    // Switch to manual tab to show selection
+    activeTab.value = 'manual'
+  }
+}
+
+const handleSelectRecommended = (reviewer) => {
+  // Logic to handle recommended reviewer selection
+  // Note: These might be 'temporary' reviewers not in the main user table yet.
+  // We track them by their recommendation ID or we need to mock a user ID.
+  
+  if (selectedReviewerIds.value.includes(reviewer.id)) {
+    selectedReviewerIds.value = selectedReviewerIds.value.filter(id => id !== reviewer.id)
+  } else {
+    selectedReviewerIds.value.push(reviewer.id)
+  }
 }
 
 const confirmAssignment = () => {
@@ -47,20 +86,40 @@ const confirmAssignment = () => {
   
   const journal = { ...currentJournal.value }
   journal.status = 'Under Review' // English status
-  // Mock adding reviewers
-  journal.reviewers = selectedReviewerIds.value.map(id => {
-    const r = availableReviewers.value.find(u => u.id === id)
-    return {
-      id: r.id,
-      name: r.username,
-      status: 'Invited',
-      invitedAt: new Date().toISOString()
+  
+  // Mix of Real Users (Manual/Smart) and Recommended Reviewers
+  const newReviewers = selectedReviewerIds.value.map(id => {
+    // Check if it's a real user first
+    const realUser = availableReviewers.value.find(u => u.id === id)
+    if (realUser) {
+      return {
+        id: realUser.id,
+        name: realUser.username,
+        status: 'Invited',
+        invitedAt: new Date().toISOString()
+      }
     }
-  })
+    
+    // Check if it's a recommended reviewer
+    const recReviewer = userStore.recommendedReviewers.find(r => r.id === id)
+    if (recReviewer) {
+       return {
+         id: 'rec-' + recReviewer.id, // Temporary ID
+         name: recReviewer.reviewerName,
+         email: recReviewer.reviewerEmail,
+         status: 'Invited (External)',
+         invitedAt: new Date().toISOString(),
+         isExternal: true
+       }
+    }
+    return null
+  }).filter(Boolean)
+  
+  journal.reviewers = [...(journal.reviewers || []), ...newReviewers]
   
   userStore.updateJournal(journal)
   showModal.value = false
-  alert('Reviewers assigned. Manuscript moved to "Under Review".')
+  alert(`Reviewers assigned. ${newReviewers.length} invitations sent. Manuscript moved to "Under Review".`)
 }
 
 const handleReinvite = (journal) => {
@@ -106,22 +165,102 @@ const handleReinvite = (journal) => {
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <h2>Select Reviewers</h2>
-        <div class="modal-search">
-           <input v-model="searchQuery" placeholder="Search reviewers..." class="search-input" />
-           <div class="filters">
-             <label><input type="radio" v-model="filterMethod" value="all"> All</label>
-             <label><input type="radio" v-model="filterMethod" value="field"> Match Field</label>
-           </div>
+        
+        <!-- Tabs -->
+        <div class="modal-tabs">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'recommended' }"
+            @click="activeTab = 'recommended'"
+          >
+            👤 Author Recommended
+            <span v-if="authorRecommendedReviewers.length" class="badge-count">{{ authorRecommendedReviewers.length }}</span>
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'smart' }"
+            @click="activeTab = 'smart'"
+          >
+            🤖 Smart Recommendation
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'manual' }"
+            @click="activeTab = 'manual'"
+          >
+            🔍 Manual Search
+          </button>
         </div>
-        <div class="reviewer-list">
-          <div v-for="reviewer in filteredReviewers" :key="reviewer.id" class="reviewer-item">
-             <label>
-               <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds">
-               <span class="r-name">{{ reviewer.username }}</span>
-               <span class="r-email">{{ reviewer.email }}</span>
-             </label>
+
+        <!-- Author Recommended Tab -->
+        <div v-if="activeTab === 'recommended'" class="tab-content">
+          <div v-if="authorRecommendedReviewers.length === 0" class="no-data-tab">
+            No approved author recommendations for this manuscript.
+            <p class="hint">Please check "Recommended Reviewers" audit page first.</p>
+          </div>
+          <div v-else class="reviewer-list">
+             <div v-for="reviewer in authorRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
+               <label>
+                 <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds" disabled> <!-- ID might not match user ID, handling below -->
+                 <!-- Wait, recommendedReviewers might not have a user ID if they are external. 
+                      Ideally they should have been registered or linked. 
+                      If status is 'accepted', they might just be approved for invitation. 
+                      The logic in RecommendedReviewers says: "accepted" -> Just status change.
+                      They might NOT be in the main user list yet if they haven't registered.
+                      Requirement: "If not in system -> Send invitation".
+                      "If already in system -> Assign".
+                      
+                      Here we are ASSIGNING.
+                      If they are external, we can't assign them until they register?
+                      Or we invite them to register?
+                      
+                      Let's assume for now we just invite them via email if they are selected here.
+                      So we use their email.
+                 -->
+                 <div class="reviewer-info">
+                   <span class="r-name">{{ reviewer.reviewerName }}</span>
+                   <span class="r-aff">{{ reviewer.reviewerAffiliation }}</span>
+                   <div class="r-reason">Reason: {{ reviewer.recommendationReason }}</div>
+                 </div>
+                 <button class="btn-select-rec" 
+                   @click="handleSelectRecommended(reviewer)"
+                   :class="{ 'selected': selectedReviewerIds.includes(reviewer.id) }"
+                 >
+                   {{ selectedReviewerIds.includes(reviewer.id) ? 'Selected' : 'Select' }}
+                 </button>
+               </label>
+            </div>
           </div>
         </div>
+
+        <!-- Smart Tab -->
+        <div v-if="activeTab === 'smart'" class="tab-content">
+          <IntelligentReviewerRecommendation 
+            :manuscript="currentJournal" 
+            @select="handleSmartSelect" 
+          />
+        </div>
+
+        <!-- Manual Tab -->
+        <div v-if="activeTab === 'manual'" class="tab-content manual-content">
+          <div class="modal-search">
+             <input v-model="searchQuery" placeholder="Search reviewers..." class="search-input" />
+             <div class="filters">
+               <label><input type="radio" v-model="filterMethod" value="all"> All</label>
+               <label><input type="radio" v-model="filterMethod" value="field"> Match Field</label>
+             </div>
+          </div>
+          <div class="reviewer-list">
+            <div v-for="reviewer in filteredReviewers" :key="reviewer.id" class="reviewer-item">
+               <label>
+                 <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds">
+                 <span class="r-name">{{ reviewer.username }}</span>
+                 <span class="r-email">{{ reviewer.email }}</span>
+               </label>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-footer">
           <div class="selection-count">Selected: {{ selectedReviewerIds.length }}</div>
           <div class="buttons">
@@ -156,9 +295,31 @@ const handleReinvite = (journal) => {
 
 .no-data { text-align: center; padding: 3rem; background: white; border-radius: 8px; color: #999; }
 
+.no-data-tab { text-align: center; padding: 2rem; color: #999; }
+.hint { font-size: 0.9rem; color: #3498db; margin-top: 0.5rem; }
+.badge-count { background: #3498db; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; margin-left: 5px; }
+.reviewer-item.recommended-item label { align-items: flex-start; }
+.reviewer-info { flex: 1; display: flex; flex-direction: column; }
+.r-aff { font-size: 0.85rem; color: #666; }
+.r-reason { font-size: 0.85rem; color: #27ae60; margin-top: 4px; font-style: italic; background: #f0fdf4; padding: 4px; border-radius: 4px; }
+.btn-select-rec { padding: 4px 12px; border: 1px solid #3498db; color: #3498db; background: white; border-radius: 4px; cursor: pointer; }
+.btn-select-rec.selected { background: #3498db; color: white; }
+.btn-select-rec:hover { background: #e1f5fe; }
+.btn-select-rec.selected:hover { background: #2980b9; }
+
 /* Modal */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: white; width: 600px; padding: 2rem; border-radius: 8px; max-height: 80vh; display: flex; flex-direction: column; }
+.modal-content { background: white; width: 700px; padding: 2rem; border-radius: 8px; max-height: 85vh; display: flex; flex-direction: column; }
+
+/* Tabs */
+.modal-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 1rem; }
+.tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 1rem; color: #666; }
+.tab-btn.active { color: #3498db; border-bottom-color: #3498db; font-weight: bold; }
+.tab-btn:hover { color: #3498db; }
+
+.tab-content { flex: 1; overflow-y: auto; }
+.manual-content { display: flex; flex-direction: column; min-height: 300px; }
+
 .modal-search { display: flex; justify-content: space-between; margin-bottom: 1rem; }
 .search-input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 60%; }
 .filters { display: flex; gap: 1rem; align-items: center; }
@@ -167,6 +328,6 @@ const handleReinvite = (journal) => {
 .reviewer-item label { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; }
 .r-name { font-weight: bold; }
 .r-email { color: #888; font-size: 0.9rem; }
-.modal-footer { display: flex; justify-content: space-between; align-items: center; }
+.modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; }
 .modal-footer .buttons { display: flex; gap: 1rem; }
 </style>

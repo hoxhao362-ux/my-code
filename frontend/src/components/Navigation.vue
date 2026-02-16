@@ -814,6 +814,8 @@ const handleLogout = () => {
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); closeAllMenus()">{{ t('nav.auditDecisionMaking') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); closeAllMenus()">{{ t('nav.auditRevisionHandling') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); closeAllMenus()">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-recommended-reviewers', '/editor/audit/recommended-reviewers'); closeAllMenus()">{{ t('nav.auditRecommendedReviewers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-opposed-reviewers', '/editor/audit/opposed-reviewers'); closeAllMenus()">{{ t('nav.auditOpposedReviewers') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); closeAllMenus()">{{ t('nav.auditMyTasks') }}</a></li>
             </ul>
           </li>
@@ -837,6 +839,29 @@ const handleLogout = () => {
               @click.prevent="handleNav('editor-decisions', '/editor/decisions')"
             >
               {{ t('nav.decisionsLetters') }}
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-statistics' }"
+              @click.prevent="handleNav('editor-statistics', '/editor/statistics')"
+            >
+              Data Statistics
+            </a>
+          </li>
+
+          <!-- Board Management (Editor Only) -->
+          <li class="nav-item" v-if="['editor', 'admin'].includes(user?.role)">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-board' }"
+              @click.prevent="handleNav('editor-board', '/editor/board')"
+            >
+              Board Management
             </a>
           </li>
 
@@ -883,7 +908,7 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'editor-system-logs' }"
                   @click.prevent="handleNav('editor-system-logs', '/editor/system/logs')"
                 >
-                  {{ t('nav.statistics') }}
+                  {{ t('nav.logManagement') }}
                 </a>
             </li>
           </template>
@@ -1239,6 +1264,8 @@ const handleLogout = () => {
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); showMobileMenu = false">{{ t('nav.auditDecisionMaking') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); showMobileMenu = false">{{ t('nav.auditRevisionHandling') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); showMobileMenu = false">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-recommended-reviewers', '/editor/audit/recommended-reviewers'); showMobileMenu = false">{{ t('nav.auditRecommendedReviewers') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-opposed-reviewers', '/editor/audit/opposed-reviewers'); showMobileMenu = false">{{ t('nav.auditOpposedReviewers') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); showMobileMenu = false">{{ t('nav.auditMyTasks') }}</a></li>
             </ul>
           </li>
@@ -1247,6 +1274,11 @@ const handleLogout = () => {
           </li>
            <li class="sidebar-item">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-decisions', '/editor/decisions'); showMobileMenu = false">{{ t('nav.decisionsLetters') }}</a>
+          </li>
+          
+           <!-- Board Management (Sidebar) -->
+           <li class="sidebar-item" v-if="['editor', 'admin'].includes(user?.role)">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-board', '/editor/board'); showMobileMenu = false">Board Management</a>
           </li>
           
           <!-- Admin Only -->

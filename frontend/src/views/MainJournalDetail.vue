@@ -37,6 +37,9 @@ const journal = computed(() => {
 // 获取当前用户
 const user = computed(() => userStore.user)
 
+// Blind Review Logic (Mock)
+const isBlindReview = ref(true)
+
 // 预览附件
 const previewAttachment = (attachment) => {
   const fileExtension = `.${attachment.name.split('.').pop().toLowerCase()}`
@@ -447,6 +450,35 @@ onMounted(() => {
              <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
                Supplementary Materials
              </a>
+        </div>
+      </section>
+
+      <!-- 审核历史记录卡片 -->
+      <section class="journal-review-history card" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
+        <h2 class="section-title">
+          审核历史记录
+          <span v-if="isBlindReview" class="blind-badge">Blind Review - Reviewer Identity Anonymous</span>
+        </h2>
+        <div class="review-history-list">
+          <div 
+            v-for="(record, index) in journal.reviewHistory" 
+            :key="index" 
+            class="review-history-item"
+          >
+            <div class="review-history-header">
+              <span class="review-stage">{{ record.stage }}：</span>
+              <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
+              <span class="review-date">{{ record.date }}</span>
+              <span class="reviewer" v-if="isBlindReview">
+                (Reviewer {{ index + 1 }} - [Anonymized])
+              </span>
+              <span class="reviewer" v-else>({{ record.reviewer }})</span>
+            </div>
+            <div class="review-comment" v-if="record.comment">
+              <div v-if="isBlindReview" class="comment-content" v-html="record.comment.replace(/Reviewer Name/g, '[Anonymized]')"></div>
+              <div v-else class="comment-content">{{ record.comment }}</div>
+            </div>
+          </div>
         </div>
       </section>
     </div>

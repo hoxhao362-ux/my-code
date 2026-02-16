@@ -1,10 +1,12 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import { useI18n } from '../../composables/useI18n'
 
 const { t } = useI18n()
+const router = useRouter()
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
@@ -30,17 +32,10 @@ const dashboardTitle = computed(() => {
 const filteredJournals = computed(() => {
   let list = userStore.journals
   const role = user.value?.role
-  const username = user.value?.username
-
+  
   if (role === 'editor') {
-    // Mock: Editor sees journals assigned to them (author matches for demo or specific field)
-    // For now, return all for demo, or filter by some logic if data supported it
-    // Let's filter by a mock property 'assignedTo' if it existed, but userStore.journals is simple.
-    // We will just return all for now but label it "Assigned Manuscripts"
     return list
   }
-  // AE sees all
-  // Advisory sees subset
   return list
 })
 
@@ -49,6 +44,25 @@ const totalJournals = computed(() => filteredJournals.value.length)
 const pendingJournals = computed(() => filteredJournals.value.filter(j => j.status === '待审核' || j.status === '审稿中').length)
 const totalUsers = computed(() => 2345) // Mock
 const recentSubmissions = computed(() => 45) // Mock
+
+// New Stats for Reviewer Management
+const pendingRecommendations = computed(() => {
+  return (userStore.recommendedReviewers || []).filter(r => r.status === 'pending').length
+})
+
+const pendingOppositions = computed(() => {
+  return (userStore.opposedReviewers || []).filter(r => r.status === 'pending').length
+})
+
+// Navigation Helpers
+const navigateTo = (path) => {
+  // If embedded (in portal), we might need to emit event or just push. 
+  // Since Navigation component handles 'navigate' event in portal, 
+  // but here we are inside Dashboard which is a child.
+  // The simplest way for portal to catch this is if we use the same route mechanism.
+  // The portal watches route changes.
+  router.push(path)
+}
 </script>
 
 <template>
@@ -101,6 +115,25 @@ const recentSubmissions = computed(() => 45) // Mock
             <div class="stat-content">
               <h3 class="stat-number">{{ recentSubmissions }}</h3>
               <p class="stat-label">Recent Submissions</p>
+            </div>
+          </div>
+          
+          <!-- New Widgets for Reviewer Management -->
+          <div class="stat-card action-card" @click="navigateTo('/editor/audit/recommended-reviewers')">
+            <div class="stat-icon">👍</div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ pendingRecommendations }}</h3>
+              <p class="stat-label">Author Recommendations</p>
+              <span class="action-hint">Pending Approval</span>
+            </div>
+          </div>
+          
+          <div class="stat-card action-card" @click="navigateTo('/editor/audit/opposed-reviewers')">
+            <div class="stat-icon">🚫</div>
+            <div class="stat-content">
+              <h3 class="stat-number">{{ pendingOppositions }}</h3>
+              <p class="stat-label">Avoidance Requests</p>
+              <span class="action-hint">Pending Review</span>
             </div>
           </div>
         </div>
@@ -213,6 +246,17 @@ const recentSubmissions = computed(() => 45) // Mock
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.stat-card.action-card {
+  cursor: pointer;
+  border-left: 4px solid #3498db;
+}
+
+.stat-card.action-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
+  background-color: #f8fbfe;
+}
+
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
@@ -238,6 +282,17 @@ const recentSubmissions = computed(() => 45) // Mock
   color: #7f8c8d;
   margin: 0.25rem 0 0 0;
   font-size: 0.9rem;
+}
+
+.action-hint {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #e67e22;
+  background: #fff3e0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: bold;
 }
 
 /* 近期投稿部分 */

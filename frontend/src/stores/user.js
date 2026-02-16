@@ -31,11 +31,152 @@ export const useUserStore = defineStore('user', {
     // Invitations (Mock Data for Reviewer System)
     invitations: JSON.parse(localStorage.getItem('invitations_v2')) || mockJournalData.invitations,
     
+    // Recommended Reviewers (Mock Data)
+    recommendedReviewers: JSON.parse(localStorage.getItem('recommendedReviewers')) || [
+      {
+        id: 1,
+        manuscriptId: 101,
+        manuscriptTitle: '基于深度学习的医学图像分析',
+        authorId: 1,
+        authorName: '张三',
+        reviewerName: '李四',
+        reviewerEmail: 'lisi@example.com',
+        reviewerAffiliation: '北京大学医学部',
+        reviewerExpertise: ['医学影像', '深度学习'],
+        recommendationReason: '该专家在医学影像领域有丰富经验，发表过多篇相关高质量论文',
+        status: 'pending',
+        recommendedAt: '2026-02-10T10:00:00Z',
+        reviewedAt: null,
+        reviewedBy: null,
+        submissionCount: 1,
+        avgScore: 4.8,
+        riskLevel: 'low',
+        evalStatus: 'pending'
+      },
+      {
+        id: 2,
+        manuscriptId: 102,
+        manuscriptTitle: '新型药物研发进展',
+        authorId: 2,
+        authorName: '王五',
+        reviewerName: '赵六',
+        reviewerEmail: 'zhaoliu@example.com',
+        reviewerAffiliation: '中国科学院药物研究所',
+        reviewerExpertise: ['药物化学', '药理学'],
+        recommendationReason: '该专家在新型药物研发领域有深入研究，熟悉相关技术路线',
+        status: 'accepted',
+        recommendedAt: '2026-02-08T14:30:00Z',
+        reviewedAt: '2026-02-12T09:15:00Z',
+        reviewedBy: 'admin',
+        submissionCount: 3,
+        avgScore: 3.5,
+        riskLevel: 'medium',
+        evalStatus: 'pending'
+      },
+      {
+        id: 3,
+        manuscriptId: 103,
+        manuscriptTitle: '临床研究方法学探讨',
+        authorId: 3,
+        authorName: '孙七',
+        reviewerName: '周八',
+        reviewerEmail: 'zhouba@example.com',
+        reviewerAffiliation: '北京协和医院',
+        reviewerExpertise: ['临床医学', '临床研究方法学'],
+        recommendationReason: '该专家在临床研究方法学领域有丰富经验，担任过多项临床试验的PI',
+        status: 'rejected',
+        recommendedAt: '2026-02-05T16:45:00Z',
+        reviewedAt: '2026-02-09T11:20:00Z',
+        reviewedBy: 'admin',
+        submissionCount: 5,
+        avgScore: 2.1,
+        riskLevel: 'high',
+        evalStatus: 'pending'
+      },
+      {
+        id: 5,
+        manuscriptId: 105,
+        manuscriptTitle: '生物信息学在医学研究中的应用',
+        authorId: 5,
+        authorName: '陈一',
+        reviewerName: '林二',
+        reviewerEmail: 'liner@example.com',
+        reviewerAffiliation: '清华大学医学院',
+        reviewerExpertise: ['生物信息学', '基因组学'],
+        recommendationReason: '该专家在生物信息学领域有突出贡献，开发了多个 widely used 的生物信息学工具',
+        status: 'completed', 
+        recommendedAt: '2026-01-28T13:15:00Z',
+        reviewedAt: '2026-01-30T10:20:00Z',
+        reviewedBy: 'admin',
+        submissionCount: 1,
+        avgScore: 4.9,
+        riskLevel: 'low',
+        evalStatus: 'unevaluated' 
+      }
+    ],
+
+    // Opposed Reviewers (Mock Data)
+    opposedReviewers: JSON.parse(localStorage.getItem('opposedReviewers')) || [
+      {
+        id: 1,
+        manuscriptId: 101,
+        manuscriptTitle: '基于深度学习的医学图像分析',
+        authorId: 1,
+        authorName: '张三',
+        opposedReviewerName: '王某某',
+        opposedReviewerAffiliation: '某大学附属医院',
+        opposedReason: '学术观点存在严重分歧，且该专家曾公开批评过本课题组的研究方向，可能存在偏见。',
+        status: 'pending',
+        requestedAt: '2026-02-10T10:00:00Z',
+        handledAt: null,
+        handledBy: null
+      },
+      {
+        id: 2,
+        manuscriptId: 102,
+        manuscriptTitle: '新型药物研发进展',
+        authorId: 2,
+        authorName: '李四',
+        opposedReviewerName: '陈某某',
+        opposedReviewerAffiliation: '竞争对手实验室',
+        opposedReason: '目前正在进行类似药物的研发，存在直接的利益冲突。',
+        status: 'accepted',
+        requestedAt: '2026-02-08T14:30:00Z',
+        handledAt: '2026-02-09T09:15:00Z',
+        handledBy: 'admin'
+      },
+      {
+        id: 3,
+        manuscriptId: 104,
+        manuscriptTitle: '公共卫生政策分析',
+        authorId: 4,
+        authorName: '赵六',
+        opposedReviewerName: '刘某某',
+        opposedReviewerAffiliation: '未知机构',
+        opposedReason: '理由不充分，仅表示不希望该专家评审。',
+        status: 'rejected',
+        requestedAt: '2026-02-03T09:30:00Z',
+        handledAt: '2026-02-04T14:45:00Z',
+        handledBy: 'admin'
+      }
+    ],
+
     // Feedback Messages
     feedbackMessages: [],
     
     // User List (for Admin)
-    users: JSON.parse(localStorage.getItem('users')) || mockUserData.users
+    users: JSON.parse(localStorage.getItem('users')) || mockUserData.users,
+
+    // System Logs
+    systemLogs: JSON.parse(localStorage.getItem('systemLogs')) || [
+      // Latest Operations (Mock)
+      { id: 13, type: 'operation', user: 'admin', action: 'Login', target: '/admin', time: '2026-01-11 09:30:25', ip: '127.0.0.1', status: 'success' },
+      { id: 14, type: 'operation', user: 'admin', action: 'View User List', target: '/admin/users', time: '2026-01-11 09:32:18', ip: '127.0.0.1', status: 'success' },
+      { id: 17, type: 'operation', user: 'reviewer1', action: 'Review Manuscript', target: 'Manuscript ID:20260111001', time: '2026-01-11 09:45:30', ip: '192.168.1.106', status: 'success' },
+      { id: 18, type: 'operation', user: 'author1', action: 'Submit Manuscript', target: 'Manuscript ID:20260111002', time: '2026-01-11 09:50:22', ip: '192.168.1.107', status: 'success' },
+      { id: 5, type: 'login', user: 'admin', action: 'Login Success', target: '', time: '2026-01-08 17:00:00', ip: '127.0.0.1', status: 'success' },
+      { id: 9, type: 'error', user: 'user2', action: 'Access Denied', target: '/admin/dashboard', time: '2026-01-08 16:40:00', ip: '192.168.1.103', status: 'error' }
+    ]
   }),
 
   getters: {
@@ -607,14 +748,54 @@ export const useUserStore = defineStore('user', {
   },
 
   // Update Invitation
-  updateInvitation(updatedInvitation) {
-    const index = this.invitations.findIndex(i => i.id === updatedInvitation.id)
-    if (index !== -1) {
-      this.invitations[index] = updatedInvitation
-      localStorage.setItem('invitations_v2', JSON.stringify(this.invitations))
-      return true
+    updateInvitation(updatedInvitation) {
+      const index = this.invitations.findIndex(i => i.id === updatedInvitation.id)
+      if (index !== -1) {
+        this.invitations[index] = updatedInvitation
+        localStorage.setItem('invitations_v2', JSON.stringify(this.invitations))
+        return true
+      }
+      return false
+    },
+
+    // Update Recommended Reviewer
+    updateRecommendedReviewer(updatedReviewer) {
+      const index = this.recommendedReviewers.findIndex(r => r.id === updatedReviewer.id)
+      if (index !== -1) {
+        this.recommendedReviewers[index] = updatedReviewer
+        localStorage.setItem('recommendedReviewers', JSON.stringify(this.recommendedReviewers))
+        return true
+      }
+      return false
+    },
+
+    // Update Opposed Reviewer
+    updateOpposedReviewer(updatedOpposed) {
+      const index = this.opposedReviewers.findIndex(o => o.id === updatedOpposed.id)
+      if (index !== -1) {
+        this.opposedReviewers[index] = updatedOpposed
+        localStorage.setItem('opposedReviewers', JSON.stringify(this.opposedReviewers))
+        return true
+      }
+      return false
+    },
+
+    // Add System Log
+    addSystemLog(logData) {
+      const newLog = {
+        id: Date.now(),
+        time: new Date().toLocaleString(),
+        ip: logData.ip || '127.0.0.1', // Mock IP
+        status: 'success',
+        ...logData
+      }
+      this.systemLogs.unshift(newLog)
+      // Keep only last 1000 logs
+      if (this.systemLogs.length > 1000) {
+        this.systemLogs = this.systemLogs.slice(0, 1000)
+      }
+      localStorage.setItem('systemLogs', JSON.stringify(this.systemLogs))
+      return newLog
     }
-    return false
   }
-}
 })

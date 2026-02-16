@@ -35,6 +35,10 @@ const mainRoutes = [
   { path: '/faq', name: 'main-faq', component: () => import('../views/MainFaq.vue') },
   { path: '/contact', name: 'main-contact', component: () => import('../views/MainContact.vue') },
   { path: '/feedback', name: 'main-feedback', component: () => import('../views/MainFeedback.vue') },
+  
+  // Public Functional Routes
+  { path: '/reviewer-registration', name: 'reviewer-registration', component: () => import('../views/public/TemporaryReviewerRegistration.vue') },
+
   // 主站登录注册路由
   { path: '/login', name: 'main-login', component: () => import('../views/auth/Login.vue') },
   { path: '/register', name: 'main-register', component: () => import('../views/auth/Register.vue') }
@@ -72,6 +76,8 @@ const adminRoutes = [
   { path: '/editor/audit/decision-making', name: 'audit-decision-making', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/editor/audit/revision-handling', name: 'audit-revision-handling', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/editor/audit/reviewer-management', name: 'audit-reviewer-management', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
+  { path: '/editor/audit/recommended-reviewers', name: 'audit-recommended-reviewers', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
+  { path: '/editor/audit/opposed-reviewers', name: 'audit-opposed-reviewers', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/editor/audit/my-tasks', name: 'audit-my-tasks', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   
   // Editorial Management Routes (Unified)
@@ -93,6 +99,15 @@ const adminRoutes = [
   
   { path: '/editor/modules', name: 'editor-modules', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor'] } },
   { path: '/admin/modules', redirect: '/editor/modules' },
+  
+  { path: '/editor/statistics', name: 'editor-statistics', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor'] } },
+  { path: '/admin/statistics', redirect: '/editor/statistics' },
+  
+  // Board Management (Strictly Editor Only)
+  { path: '/editor/board', name: 'editor-board', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor'] } },
+
+  // Invitation Registration (Public Landing)
+  { path: '/invite/register', name: 'invite-register', component: () => import('../views/auth/EditorInviteRegister.vue') },
   
   // System Settings Routes (Admin Only)
   { path: '/editor/system/basic', name: 'editor-system-basic', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin'] } },

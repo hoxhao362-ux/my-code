@@ -186,6 +186,34 @@ const onDropItem = (dropIdx) => {
   }
   dragStartIdx.value = null
 }
+
+// Reference Anonymization Logic
+const hasCheckedCitations = ref(false)
+
+const checkSelfCitations = () => {
+  // Simulate scan
+  hasCheckedCitations.value = true
+  alert("Potential self-citations detected: 3 references need anonymization.")
+}
+
+const handleAnonFileChange = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    // Validate PDF/Word
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (!['pdf', 'doc', 'docx'].includes(ext)) {
+      alert('Invalid file format. Only PDF, DOC, DOCX are supported.')
+      e.target.value = ''
+      return
+    }
+    
+    store.formData.referenceAnonymization.file = {
+      name: file.name,
+      url: URL.createObjectURL(file),
+      size: file.size
+    }
+  }
+}
 </script>
 
 <template>
@@ -290,6 +318,39 @@ const onDropItem = (dropIdx) => {
 
     <div v-if="store.steps[1].status === 'error'" class="error-msg">
       {{ t('attachFiles.errors.noFile') }}
+    </div>
+
+    <!-- Reference Anonymization Section -->
+    <div class="anonymization-section">
+      <h3 class="section-title">Reference Anonymization for Blind Review</h3>
+      
+      <div class="check-action">
+        <button class="btn-check" @click="checkSelfCitations">Check Self-Citations</button>
+        <span v-if="hasCheckedCitations" class="check-result warning">
+          ⚠️ Potential self-citations detected: 3 references need anonymization.
+        </span>
+      </div>
+
+      <div class="upload-anon-file" v-if="hasCheckedCitations">
+        <label class="field-label">Upload Anonymized References (PDF/Word)</label>
+        <div class="file-input-wrapper">
+          <input type="file" accept=".pdf,.doc,.docx" @change="handleAnonFileChange">
+          <span v-if="store.formData.referenceAnonymization.file" class="file-name">
+            {{ store.formData.referenceAnonymization.file.name }}
+          </span>
+        </div>
+      </div>
+
+      <div class="confirm-checkbox">
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="store.formData.referenceAnonymization.confirmed">
+          <span class="checkbox-text">I confirm all self-citations have been anonymized</span>
+        </label>
+      </div>
+      
+      <div v-if="store.steps[1].status === 'error' && !store.formData.referenceAnonymization.confirmed" class="error-text">
+        Please confirm reference anonymization.
+      </div>
     </div>
 
     <StepNavigation />
@@ -445,5 +506,82 @@ const onDropItem = (dropIdx) => {
 /* List transition */
 .list-move {
   transition: transform 0.5s;
+}
+
+/* Anonymization Section */
+.anonymization-section {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.check-action {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-check {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #C93737;
+  color: #C93737;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-check:hover {
+  background: #fff5f5;
+}
+
+.check-result.warning {
+  color: #e67e22;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.upload-anon-file {
+  margin-bottom: 1.5rem;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-name {
+  color: #2ecc71;
+  font-size: 0.9rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-weight: 500;
+  color: #333;
 }
 </style>

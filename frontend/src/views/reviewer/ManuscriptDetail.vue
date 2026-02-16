@@ -77,6 +77,20 @@ const initialReviewData = computed(() => {
 // Check if this is a revision (Re-review)
 const isRevision = computed(() => journal.value && journal.value.reviewStage === '复审')
 
+// Blind Review Logic
+const isBlindReview = ref(true)
+
+const displayContent = computed(() => {
+  if (!journal.value || !journal.value.content) return ''
+  let content = journal.value.content
+  if (isBlindReview.value) {
+    // Simple mock anonymization
+    content = content.replace(/Author Name/g, '[Anonymized]')
+    content = content.replace(/University of X/g, '[Anonymized Institution]')
+  }
+  return content
+})
+
 const activeTab = ref(route.query.tab || 'overview')
 
 // Update active tab if query param changes
@@ -298,6 +312,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             <h1>{{ journal.title }}</h1>
             <span class="manuscript-id">ID: {{ journal.id }}</span>
             <span v-if="isRevision" class="revision-badge">Revision (Re-review)</span>
+            <span v-if="isBlindReview" class="blind-badge">Blind Review - Author Information Removed</span>
           </div>
         </div>
 
@@ -322,6 +337,11 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="info-section">
             <h3>Basic Information</h3>
             <div class="info-grid">
+              <!-- Author Hidden for Blind Review -->
+              <div class="info-item" v-if="!isBlindReview">
+                <label>Author:</label>
+                <span>{{ journal.author }}</span>
+              </div>
               <div class="info-item">
                 <label>Title:</label>
                 <span>{{ journal.title }}</span>
@@ -379,7 +399,10 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
 
           <section class="content-preview">
              <h3>Online Reading</h3>
-             <div class="paper-content" v-if="journal.content" v-html="journal.content"></div>
+             <div class="blind-notice" v-if="isBlindReview">
+               This is a blind review - author information has been anonymized. Self-citations are marked as 'Author et al.'
+             </div>
+             <div class="paper-content" v-if="displayContent" v-html="displayContent"></div>
              <div class="paper-content placeholder" v-else>
                <p>PDF Preview is not available for this mock data.</p>
              </div>
@@ -616,6 +639,27 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
   border-radius: 4px;
   font-size: 0.8rem;
   vertical-align: middle;
+}
+
+.blind-badge {
+  border: 1px solid #C93737;
+  color: #C93737;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  vertical-align: middle;
+  margin-left: 10px;
+  font-weight: 600;
+}
+
+.blind-notice {
+  background: #fff5f5;
+  color: #C93737;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border: 1px dashed #C93737;
 }
 
 /* Tabs */

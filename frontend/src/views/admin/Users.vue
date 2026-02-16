@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
 const userStore = useUserStore()
 const user = ref(userStore.user)
@@ -107,6 +108,10 @@ const showEditModal = ref(false)
 const showDisableModal = ref(false)
 const showDeleteModal = ref(false)
 const showConfirmModal = ref(false)
+const showVerification = ref(false)
+const verificationAction = ref('')
+const verificationTarget = ref('')
+const pendingCallback = ref(null)
 
 // 当前操作的用户
 const currentUser = ref(null)
@@ -197,15 +202,26 @@ const confirmOperation = () => {
   }
 }
 
+// 验证成功回调
+const handleVerificationSuccess = () => {
+  if (pendingCallback.value) {
+    pendingCallback.value()
+    pendingCallback.value = null
+  }
+}
+
 // 执行编辑操作
 const executeEdit = () => {
   // Check if role is changing from User to Admin - Warning
   let warning = 'Are you sure you want to update this user?'
+  let isSensitive = false
+  
   if (currentUser.value.role !== 'admin' && editForm.value.role === 'admin') {
      warning = 'Are you sure to set this user as Administrator?'
+     isSensitive = true
   }
 
-  openConfirmModal(() => {
+  const action = () => {
     if (editForm.value.resetPassword) {
       // 重置密码逻辑
       alert(`Password reset for user ${currentUser.value.username} to: 123456`)
@@ -221,12 +237,23 @@ const executeEdit = () => {
       alert(`User ${currentUser.value.username} role updated to ${roleName}`)
     }
     showEditModal.value = false
-  }, warning)
+  }
+
+  if (isSensitive) {
+    // 敏感操作，触发二次验证
+    verificationAction.value = 'Upgrade to Administrator'
+    verificationTarget.value = currentUser.value.username
+    pendingCallback.value = action
+    showVerification.value = true
+  } else {
+    // 普通操作，使用原有确认
+    openConfirmModal(action, warning)
+  }
 }
 
 // 执行禁用操作
 const executeDisable = () => {
-  openConfirmModal(() => {
+  const action = () => {
     // 禁用用户逻辑 - 使用userStore更新状态，确保持久化
     userStore.updateUserStatus(currentUser.value.id, 'inactive')
     // 更新当前用户对象，确保模态框显示正确
@@ -234,17 +261,29 @@ const executeDisable = () => {
     const durationText = disableForm.value.duration === 0 ? 'Permanent' : `${disableForm.value.duration} days`
     alert(`User ${currentUser.value.username} disabled for: ${durationText}`)
     showDisableModal.value = false
-  }, 'Are you sure you want to disable this user?')
+  }
+
+  // 禁用用户也是敏感操作
+  verificationAction.value = 'Disable User Account'
+  verificationTarget.value = currentUser.value.username
+  pendingCallback.value = action
+  showVerification.value = true
 }
 
 // 执行删除操作
 const executeDelete = () => {
-  openConfirmModal(() => {
+  const action = () => {
     // 删除用户逻辑 - 使用userStore删除用户，确保持久化
     userStore.deleteUser(currentUser.value.id)
     alert(`User ${currentUser.value.username} deleted`)
     showDeleteModal.value = false
-  }, 'Are you sure you want to delete this user? This action cannot be undone!')
+  }
+  
+  // 删除也是敏感操作
+  verificationAction.value = 'Delete User'
+  verificationTarget.value = currentUser.value.username
+  pendingCallback.value = action
+  showVerification.value = true
 }
 
 // 启用用户
@@ -624,6 +663,15 @@ const enableUser = (user) => {
         </div>
       </div>
     </div>
+    
+    <!-- 敏感操作验证 -->
+    <SensitiveOperationVerification
+      :visible="showVerification"
+      :action-type="verificationAction"
+      :target="verificationTarget"
+      @close="showVerification = false"
+      @verify-success="handleVerificationSuccess"
+    />
     
     <!-- 页脚 -->
     <footer class="footer" v-if="!embedded">

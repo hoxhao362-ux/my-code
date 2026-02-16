@@ -311,6 +311,8 @@ export default {
     auditDecisionMaking: 'Decision Making',
     auditRevisionHandling: 'Revision Handling',
     auditReviewerManagement: 'Reviewer Management',
+    auditRecommendedReviewers: 'Recommended Reviewers',
+    auditOpposedReviewers: 'Opposed Reviewers',
     auditMyTasks: 'My Tasks',
   },
   dashboard: {

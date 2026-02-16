@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
+import { MANUSCRIPT_STATUS, AUTHOR_STATUS_MAP } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -11,45 +12,63 @@ const user = computed(() => userStore.submissionUser)
 // Author submission data
 const userJournals = computed(() => userStore.userJournals)
 
+// Helper to check status groups
+const isProcessing = (status) => [
+  MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
+  MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW,
+  MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED,
+  MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+  MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
+  MANUSCRIPT_STATUS.UNDER_FINAL_DECISION
+].includes(status)
+
+const isRevision = (status) => [
+  MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION,
+  MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
+].includes(status)
+
+const isDecisionMade = (status) => [
+  MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED,
+  MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED,
+  MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
+  MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
+  MANUSCRIPT_STATUS.PENDING_COPYRIGHT,
+  MANUSCRIPT_STATUS.PENDING_PROOF,
+  MANUSCRIPT_STATUS.PENDING_PUBLICATION,
+  MANUSCRIPT_STATUS.PUBLISHED,
+  MANUSCRIPT_STATUS.WITHDRAWN
+].includes(status)
+
 // Menu Groups Configuration
 const menuGroups = computed(() => {
-  // Helper to count journals by status or logic
   const count = (filterFn) => userJournals.value.filter(filterFn).length
   
   return [
     {
       title: 'New Submissions',
       items: [
-        { label: 'Submit New Manuscript', count: null, action: 'submit' }, // Special action
-        { label: 'Submissions Sent Back to Author', count: count(j => j.status === 'Sent Back'), key: 'sent_back' },
-        { label: 'Incomplete Submissions', count: count(j => j.status === 'Incomplete'), key: 'incomplete' },
-        { label: 'Submissions Waiting for Author\'s Approval', count: count(j => j.status === 'Waiting Approval'), key: 'waiting_approval' },
-        { label: 'Submissions Being Processed', count: count(j => j.status === 'Being Processed' || j.status === '审稿中'), key: 'processing' }
+        { label: 'Submit New Manuscript', count: null, action: 'submit' },
+        { label: 'Submissions Being Processed', count: count(j => isProcessing(j.status)), key: 'processing' },
+        { label: 'Submissions Waiting for Author\'s Approval', count: count(j => j.status === 'Waiting Approval'), key: 'waiting_approval' } // Legacy/Mock
       ]
     },
     {
       title: 'Revisions',
       items: [
-        { label: 'Submissions Needing Revision', count: count(j => j.status === 'Needing Revision'), key: 'needing_revision' },
-        { label: 'Revisions Sent Back to Author', count: count(j => j.status === 'Revision Sent Back'), key: 'revision_sent_back' },
-        { label: 'Incomplete Submissions Being Revised', count: count(j => j.status === 'Incomplete Revision'), key: 'incomplete_revision' },
-        { label: 'Revisions Waiting for Author\'s Approval', count: count(j => j.status === 'Revision Waiting Approval'), key: 'revision_waiting_approval' },
-        { label: 'Revisions Being Processed', count: count(j => j.status === 'Revision Processing'), key: 'revision_processing' },
-        { label: 'Declined Revisions', count: count(j => j.status === 'Revision Declined'), key: 'revision_declined' }
+        { label: 'Submissions Needing Revision', count: count(j => isRevision(j.status)), key: 'needing_revision' },
+        { label: 'Revisions Being Processed', count: 0, key: 'revision_processing' } // Mock placeholder
       ]
     },
     {
       title: 'Completed',
       items: [
-        { label: 'Submissions with a Decision', count: count(j => j.status === 'Decision Made' || j.status === '已通过' || j.status === '未通过'), key: 'decision_made' },
-        { label: 'Submissions with Production Completed', count: count(j => j.status === 'Production Completed'), key: 'production_completed' }
+        { label: 'Submissions with a Decision', count: count(j => isDecisionMade(j.status)), key: 'decision_made' }
       ]
     }
   ]
 })
 
 // Active selection state
-const activeGroupTitle = ref('New Submissions') // Default active group (though UI shows all groups, selection is detail view)
 const selectedItemKey = ref(null)
 
 // Handle item click
@@ -61,7 +80,6 @@ const handleItemClick = (item) => {
   
   if (item.count > 0) {
     selectedItemKey.value = item.key
-    // Smooth scroll to details or update details view
   }
 }
 
@@ -69,15 +87,10 @@ const handleItemClick = (item) => {
 const selectedManuscripts = computed(() => {
   if (!selectedItemKey.value) return []
   
-  // Mapping keys to filter logic (simplified for demo)
-  // In real app, this would be more complex or backend query
   switch (selectedItemKey.value) {
-    case 'sent_back': return userJournals.value.filter(j => j.status === 'Sent Back')
-    case 'incomplete': return userJournals.value.filter(j => j.status === 'Incomplete')
-    case 'waiting_approval': return userJournals.value.filter(j => j.status === 'Waiting Approval')
-    case 'processing': return userJournals.value.filter(j => j.status === 'Being Processed' || j.status === '审稿中')
-    case 'decision_made': return userJournals.value.filter(j => j.status === 'Decision Made' || j.status === '已通过' || j.status === '未通过')
-    // Add other cases...
+    case 'processing': return userJournals.value.filter(j => isProcessing(j.status))
+    case 'needing_revision': return userJournals.value.filter(j => isRevision(j.status))
+    case 'decision_made': return userJournals.value.filter(j => isDecisionMade(j.status))
     default: return []
   }
 })
@@ -90,6 +103,33 @@ const selectedItemLabel = computed(() => {
   }
   return ''
 })
+
+const getAuthorStatusLabel = (status) => {
+  return AUTHOR_STATUS_MAP[status] || status
+}
+
+// Reviewer Management Logic
+const recommendedReviewers = computed(() => userStore.recommendedReviewers)
+const showReviewerModal = ref(false)
+const selectedManuscriptForReviewers = ref(null)
+
+const currentManuscriptReviewers = computed(() => {
+  if (!selectedManuscriptForReviewers.value) return []
+  return recommendedReviewers.value.filter(r => String(r.manuscriptId) === String(selectedManuscriptForReviewers.value.id))
+})
+
+const openReviewerModal = (manuscript) => {
+  selectedManuscriptForReviewers.value = manuscript
+  showReviewerModal.value = true
+}
+
+const handleWithdrawRecommendation = (reviewer) => {
+  if (!confirm('Are you sure you want to withdraw this recommendation?')) return
+  
+  const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'author' }
+  userStore.updateRecommendedReviewer(updated)
+  alert('Recommendation withdrawn successfully.')
+}
 
 </script>
 
@@ -142,20 +182,20 @@ const selectedItemLabel = computed(() => {
               
               <!-- 列表模板 -->
               <div class="manuscript-list">
-                 <!-- 简单列表展示，可根据分类差异化模板 -->
                 <div v-for="manuscript in selectedManuscripts" :key="manuscript.id" class="manuscript-card">
                    <div class="card-header">
                      <span class="ms-id">#{{ manuscript.id }}</span>
-                     <span class="ms-status">{{ manuscript.status }}</span>
+                     <span class="ms-status-badge">{{ getAuthorStatusLabel(manuscript.status) }}</span>
                    </div>
                    <h4 class="ms-title">{{ manuscript.title }}</h4>
                    <div class="ms-meta">
-                     <span>Submitted: {{ manuscript.date }}</span>
-                     <span>Module: {{ manuscript.module }}</span>
+                     <span>Submitted: {{ manuscript.submittedDate }}</span>
+                     <span>Field: {{ manuscript.field }}</span>
                    </div>
                    <div class="card-actions">
                      <button class="action-btn">View Submission</button>
                      <button class="action-btn">History</button>
+                     <button class="action-btn" @click="openReviewerModal(manuscript)">Reviewers</button>
                    </div>
                 </div>
               </div>
@@ -164,10 +204,45 @@ const selectedItemLabel = computed(() => {
       </div>
     </main>
 
+    <!-- Reviewer Management Modal -->
+    <div v-if="showReviewerModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Recommended Reviewers</h3>
+        <p class="modal-subtitle">Manuscript: {{ selectedManuscriptForReviewers?.title }}</p>
+        
+        <div v-if="currentManuscriptReviewers.length === 0" class="no-data">
+          No reviewers recommended for this manuscript.
+        </div>
+
+        <ul v-else class="reviewer-list">
+          <li v-for="reviewer in currentManuscriptReviewers" :key="reviewer.id" class="reviewer-item">
+            <div class="reviewer-info">
+              <strong>{{ reviewer.reviewerName }}</strong>
+              <span class="affiliation">{{ reviewer.reviewerAffiliation }}</span>
+              <span class="status-tag" :class="reviewer.status">{{ reviewer.status }}</span>
+            </div>
+            <div class="reviewer-actions">
+              <button 
+                v-if="reviewer.status === 'pending'" 
+                class="btn-withdraw" 
+                @click="handleWithdrawRecommendation(reviewer)"
+              >
+                Withdraw
+              </button>
+            </div>
+          </li>
+        </ul>
+
+        <div class="modal-footer">
+          <button class="btn-close" @click="showReviewerModal = false">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -218,8 +293,8 @@ const selectedItemLabel = computed(() => {
 }
 
 .action-link {
-  color: #0056b3;
-  font-weight: normal;
+  color: #C93737;
+  font-weight: bold;
   text-decoration: none;
   font-size: 0.95rem;
 }
@@ -233,10 +308,11 @@ const selectedItemLabel = computed(() => {
   font-size: 0.95rem;
   transition: all 0.2s;
   display: inline-block;
+  color: #333;
 }
 
 .status-link.disabled {
-  color: #777;
+  color: #999;
   cursor: default;
   pointer-events: none; /* Make unclickable */
 }
@@ -251,7 +327,8 @@ const selectedItemLabel = computed(() => {
 }
 
 .status-link.active {
-  background-color: #e8f0fe;
+  background-color: #fce4ec; /* Light pink/red for active */
+  color: #C93737;
   padding: 2px 5px;
   border-radius: 3px;
   font-weight: bold;
@@ -261,7 +338,7 @@ const selectedItemLabel = computed(() => {
 .manuscript-details-section {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 2px solid #0056b3;
+  border-top: 2px solid #C93737;
 }
 
 .details-title {
@@ -291,10 +368,16 @@ const selectedItemLabel = computed(() => {
   color: #666;
 }
 
+.ms-status-badge {
+  font-weight: bold;
+  color: #C93737;
+}
+
 .ms-title {
   margin: 0 0 0.5rem 0;
-  color: #0056b3;
+  color: #333;
   font-size: 1.1rem;
+  font-weight: bold;
 }
 
 .ms-meta {
@@ -341,5 +424,123 @@ const selectedItemLabel = computed(() => {
   text-align: center;
   border-top: 1px solid #eee;
   margin-top: auto;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-subtitle {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.reviewer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reviewer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewer-info strong {
+  font-size: 1rem;
+  color: #333;
+}
+
+.affiliation {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.status-tag.pending { background: #fff3cd; color: #856404; }
+.status-tag.accepted { background: #d4edda; color: #155724; }
+.status-tag.rejected { background: #f8d7da; color: #721c24; }
+.status-tag.invited { background: #d1ecf1; color: #0c5460; }
+.status-tag.completed { background: #e2e3e5; color: #383d41; }
+.status-tag.declined { background: #343a40; color: #fff; }
+.status-tag.contact_failed { background: #e0a800; color: #fff; }
+.status-tag.withdrawn { background: #6c757d; color: #fff; }
+
+.btn-withdraw {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.btn-withdraw:hover {
+  background: #c82333;
+}
+
+.modal-footer {
+  margin-top: 1.5rem;
+  text-align: right;
+}
+
+.btn-close {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background: #5a6268;
 }
 </style>
