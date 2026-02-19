@@ -30,11 +30,15 @@ import ReviewMonitoring from './audit/ReviewMonitoring.vue'
 import DecisionMaking from './audit/DecisionMaking.vue'
 import RevisionHandling from './audit/RevisionHandling.vue'
 import ReviewerManagementAudit from './audit/ReviewerManagement.vue'
+import RecommendedReviewersAudit from './audit/RecommendedReviewers.vue'
+import OpposedReviewersAudit from './audit/OpposedReviewers.vue'
 import MyTasksHistory from './audit/MyTasksHistory.vue'
 // Additional admin components
 import Journals from '../admin/Journals.vue'
 import ProfileSettings from '../admin/ProfileSettings.vue'
 import ProfileManuscriptStatus from '../admin/ProfileManuscriptStatus.vue'
+import DataStatistics from './DataStatistics.vue'
+import BoardManagement from './board/BoardManagement.vue'
 // Submission components
 import SystemStatus from '../submission/SystemStatus.vue'
 
@@ -81,6 +85,10 @@ onMounted(() => {
     currentViewKey.value = 'audit-revision-handling'
   } else if (path === '/editor/audit/reviewer-management') {
     currentViewKey.value = 'audit-reviewer-management'
+  } else if (path === '/editor/audit/recommended-reviewers') {
+    currentViewKey.value = 'audit-recommended-reviewers'
+  } else if (path === '/editor/audit/opposed-reviewers') {
+    currentViewKey.value = 'audit-opposed-reviewers'
   } else if (path === '/editor/audit/my-tasks') {
     currentViewKey.value = 'audit-my-tasks'
   } else if (path === '/editor/reviewer-management') {
@@ -89,6 +97,10 @@ onMounted(() => {
     currentViewKey.value = 'editor-journals'
   } else if (path === '/editor/modules') {
     currentViewKey.value = 'editor-modules'
+  } else if (path === '/editor/statistics') {
+    currentViewKey.value = 'editor-statistics'
+  } else if (path === '/editor/board') {
+    currentViewKey.value = 'editor-board'
   } else if (path === '/admin/profile-manuscript-status') {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (path === '/submission/system-status') {
@@ -134,6 +146,10 @@ watch(() => route.path, (newPath) => {
     currentViewKey.value = 'audit-revision-handling'
   } else if (newPath === '/editor/audit/reviewer-management') {
     currentViewKey.value = 'audit-reviewer-management'
+  } else if (newPath === '/editor/audit/recommended-reviewers') {
+    currentViewKey.value = 'audit-recommended-reviewers'
+  } else if (newPath === '/editor/audit/opposed-reviewers') {
+    currentViewKey.value = 'audit-opposed-reviewers'
   } else if (newPath === '/editor/audit/my-tasks') {
     currentViewKey.value = 'audit-my-tasks'
   } else if (newPath === '/editor/reviewer-management') {
@@ -142,6 +158,10 @@ watch(() => route.path, (newPath) => {
     currentViewKey.value = 'editor-journals'
   } else if (newPath === '/editor/modules') {
     currentViewKey.value = 'editor-modules'
+  } else if (newPath === '/editor/statistics') {
+    currentViewKey.value = 'editor-statistics'
+  } else if (newPath === '/editor/board') {
+    currentViewKey.value = 'editor-board'
   } else if (newPath === '/admin/profile-manuscript-status') {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (newPath === '/submission/system-status') {
@@ -165,12 +185,16 @@ const componentMap = {
   'editor-reviewer-management': ReviewerManagementAudit,
   'editor-journals': Journals,
   'editor-modules': Modules,
+  'editor-statistics': ReviewerStats,
+  'editor-board': BoardManagement,
   'audit-new-submissions': NewSubmissions,
   'audit-assign-reviewers': AssignReviewers,
   'audit-review-monitoring': ReviewMonitoring,
   'audit-decision-making': DecisionMaking,
   'audit-revision-handling': RevisionHandling,
   'audit-reviewer-management': ReviewerManagementAudit,
+  'audit-recommended-reviewers': RecommendedReviewersAudit,
+  'audit-opposed-reviewers': OpposedReviewersAudit,
   'audit-my-tasks': MyTasksHistory,
   'admin-profile-manuscript-status': ProfileManuscriptStatus,
   'submission-system-status': SystemStatus,

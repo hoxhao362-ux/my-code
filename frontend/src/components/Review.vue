@@ -76,15 +76,6 @@ const filterByStatus = (journals) => {
   return journals.filter(journal => journal.status === selectedStatus.value)
 }
 
-<<<<<<< HEAD
-// 待审稿件（从真实期刊数据中筛选）
-const pendingJournals = computed(() => {
-  let journals = props.journals.filter(journal => {
-    const isAdmin = props.user?.role === 'admin'
-    const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
-    // 包含所有待审核状态：待审核、审稿中、待初审、待复审、待终审
-    const isPendingStatus = ['待审核', '审稿中', '待初审', '待复审', '待终审'].includes(journal.status)
-=======
     // 待审稿件（从真实期刊数据中筛选）
 const pendingJournals = computed(() => {
   let journals = props.journals.filter(journal => {
@@ -92,7 +83,6 @@ const pendingJournals = computed(() => {
     const allowedStages = isAdmin ? ['Initial Review', 'Final Decision'] : ['Re-review']
     // 包含所有待审核状态
     const isPendingStatus = ['Pending', 'Under Review', 'Pending Initial Review', 'Pending Re-review', 'Pending Final Decision'].includes(journal.status)
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     return isPendingStatus && allowedStages.includes(journal.reviewStage)
   })
   
@@ -115,11 +105,7 @@ const pendingJournals = computed(() => {
 
 // 历史审稿记录（从真实期刊数据中筛选）
 const reviewHistory = computed(() => {
-<<<<<<< HEAD
-  let journals = props.journals.filter(journal => journal.status === '已通过' || journal.status === '未通过')
-=======
   let journals = props.journals.filter(journal => journal.status === 'Accepted' || journal.status === 'Rejected')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   
   // 模块筛选
   if (selectedModule.value !== 'all') {
@@ -150,32 +136,11 @@ const handleReview = (id, action) => {
     
     // 初始化审稿阶段（如果不存在）
     if (!journal.reviewStage) {
-<<<<<<< HEAD
-      journal.reviewStage = '初审'
-=======
       journal.reviewStage = 'Initial Review'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     }
     
     if (action === 'approve') {
       // 审核通过逻辑
-<<<<<<< HEAD
-      if (journal.reviewStage === '初审') {
-        journal.reviewStage = '复审'
-        journal.status = '审稿中'
-      } else if (journal.reviewStage === '复审') {
-        journal.reviewStage = '终审'
-        journal.status = '审稿中'
-      } else {
-        // 终审通过
-        journal.status = '已通过'
-        journal.reviewResult = '已通过'
-      }
-    } else {
-      // 审核拒绝逻辑（任何阶段拒绝都会直接结束）
-      journal.status = '未通过'
-      journal.reviewResult = '未通过'
-=======
       if (journal.reviewStage === 'Initial Review') {
         journal.reviewStage = 'Re-review'
         journal.status = 'Under Review'
@@ -191,7 +156,6 @@ const handleReview = (id, action) => {
       // 审核拒绝逻辑（任何阶段拒绝都会直接结束）
       journal.status = 'Rejected'
       journal.reviewResult = 'Rejected'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     }
     
     // 更新审核信息
@@ -203,17 +167,10 @@ const handleReview = (id, action) => {
     props.updateJournals(updatedJournals)
     
     // 显示审核结果
-<<<<<<< HEAD
-    if (journal.status === '已通过' || journal.status === '未通过') {
-      alert(`已${journal.status}稿件：${journal.title}`)
-    } else {
-      alert(`已将稿件：${journal.title} 推进到${journal.reviewStage}`)
-=======
     if (journal.status === 'Accepted' || journal.status === 'Rejected') {
       alert(`Manuscript ${journal.status}: ${journal.title}`)
     } else {
       alert(`Manuscript advanced to ${journal.reviewStage}: ${journal.title}`)
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     }
   }
 }
@@ -248,21 +205,6 @@ const filteredHistory = computed(() => {
 
 <template>
   <div class="review-container">
-<<<<<<< HEAD
-    <!-- 导航栏 -->
-    <nav class="navbar">
-      <div class="navbar-container">
-        <div class="navbar-logo">
-          <h1>期刊投稿平台</h1>
-        </div>
-        <ul class="navbar-menu">
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">首页</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="toggleDirectory">目录</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('submit')">投稿</a></li>
-          <li class="nav-item"><a href="#" class="nav-link active">审稿</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
-          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">退出登录</a></li>
-=======
     <!-- Navbar -->
     <nav class="navbar">
       <div class="navbar-container">
@@ -276,23 +218,10 @@ const filteredHistory = computed(() => {
           <li class="nav-item"><a href="#" class="nav-link active">Review</a></li>
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">Profile</a></li>
           <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">Logout</a></li>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </ul>
       </div>
     </nav>
 
-<<<<<<< HEAD
-    <!-- 审稿内容 -->
-    <main class="review-content">
-      <div class="review-header">
-        <h2 class="review-title">审稿管理</h2>
-        <div class="review-stats">
-          <span class="stat-item">待审稿件：{{ pendingJournals.length }}</span>
-        </div>
-      </div>
-
-      <!-- 标签切换 -->
-=======
     <!-- Review Content -->
     <main class="review-content">
       <div class="review-header">
@@ -303,56 +232,35 @@ const filteredHistory = computed(() => {
       </div>
 
       <!-- Tabs -->
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div class="tabs">
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'pending' }"
           @click="activeTab = 'pending'"
         >
-<<<<<<< HEAD
-          待审稿件
-=======
           Pending Reviews
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </button>
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'history' }"
           @click="activeTab = 'history'"
         >
-<<<<<<< HEAD
-          历史记录
-        </button>
-      </div>
-      
-      <!-- 待审稿件筛选控件 -->
-=======
           History
         </button>
       </div>
       
       <!-- Pending Reviews Filters -->
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div v-if="activeTab === 'pending'" class="filter-section">
         <div class="filters-container">
           <div class="filter-row">
             <div class="module-filter">
-<<<<<<< HEAD
-              <label for="module-filter" class="filter-label">模块筛选：</label>
-=======
               <label for="module-filter" class="filter-label">Module:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <select 
                 id="module-filter" 
                 v-model="selectedModule"
                 class="filter-select"
               >
-<<<<<<< HEAD
-                <option value="all">全部模块</option>
-=======
                 <option value="all">All Modules</option>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 <option 
                   v-for="module in modules" 
                   :key="module"
@@ -364,90 +272,53 @@ const filteredHistory = computed(() => {
             </div>
             
             <div class="status-filter">
-<<<<<<< HEAD
-              <label for="status-filter" class="filter-label">状态筛选：</label>
-=======
               <label for="status-filter" class="filter-label">Status:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <select 
                 id="status-filter" 
                 v-model="selectedStatus"
                 class="filter-select"
               >
-<<<<<<< HEAD
-                <option value="all">全部状态</option>
-                <option value="待审核">待审核</option>
-                <option value="审稿中">审稿中</option>
-                <option value="待初审">待初审</option>
-                <option value="待复审">待复审</option>
-                <option value="待终审">待终审</option>
-=======
                 <option value="all">All Status</option>
                 <option value="Pending">Pending</option>
                 <option value="Under Review">Under Review</option>
                 <option value="Pending Initial Review">Pending Initial Review</option>
                 <option value="Pending Re-review">Pending Re-review</option>
                 <option value="Pending Final Decision">Pending Final Decision</option>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </select>
             </div>
             
             <div class="time-range-filter">
-<<<<<<< HEAD
-              <label for="time-range-filter" class="filter-label">时间范围：</label>
-=======
               <label for="time-range-filter" class="filter-label">Time Range:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <select 
                 id="time-range-filter" 
                 v-model="timeRange"
                 class="filter-select"
               >
-<<<<<<< HEAD
-                <option value="all">全部时间</option>
-                <option value="today">今日</option>
-                <option value="week">本周</option>
-                <option value="month">本月</option>
-                <option value="year">本年</option>
-=======
                 <option value="all">All Time</option>
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
                 <option value="year">This Year</option>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </select>
             </div>
           </div>
           
           <div class="filter-row search-row">
             <div class="search-filter">
-<<<<<<< HEAD
-              <label for="search-keyword" class="filter-label">关键词搜索：</label>
-=======
               <label for="search-keyword" class="filter-label">Search:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               <input 
                 type="text" 
                 id="search-keyword" 
                 v-model="searchKeyword"
                 class="search-input"
-<<<<<<< HEAD
-                placeholder="输入标题、作者、关键词等..."
-=======
                 placeholder="Search Title, Author, Keywords..."
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
             </div>
           </div>
         </div>
       </div>
 
-<<<<<<< HEAD
-      <!-- 待审稿件列表 -->
-=======
       <!-- Pending Reviews List -->
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <div v-if="activeTab === 'pending'" class="journals-list">
         <div 
           v-for="journal in pendingJournals" 
@@ -456,15 +327,6 @@ const filteredHistory = computed(() => {
         >
           <div class="journal-info">
             <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
-<<<<<<< HEAD
-            <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
-            <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
-          </div>
-          
-          <!-- 审稿建议文本框 -->
-          <div class="review-comment-section">
-            <label for="comment-{{ journal.id }}" class="comment-label">审稿建议：</label>
-=======
             <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date }}</p>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
           </div>
@@ -472,57 +334,26 @@ const filteredHistory = computed(() => {
           <!-- Review Comment -->
           <div class="review-comment-section">
             <label for="comment-{{ journal.id }}" class="comment-label">Review Comment:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <textarea 
               id="comment-{{ journal.id }}" 
               v-model="journal.reviewComment"
               class="review-comment"
-<<<<<<< HEAD
-              placeholder="请输入审稿建议..."
-=======
               placeholder="Enter your review comments..."
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               rows="4"
             ></textarea>
           </div>
           
           <div class="journal-actions">
             <div class="journal-status">
-<<<<<<< HEAD
-              状态：{{ journal.status }} | 阶段：{{ journal.reviewStage || '初审' }}
-            </div>
-            <div class="action-buttons">
-              <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">通过</button>
-              <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">拒绝</button>
-=======
               Status: {{ journal.status }} | Stage: {{ journal.reviewStage || 'Initial Review' }}
             </div>
             <div class="action-buttons">
               <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">Approve</button>
               <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">Reject</button>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
         </div>
 
-<<<<<<< HEAD
-        <!-- 无稿件提示 -->
-        <div v-if="pendingJournals.length === 0" class="no-journals">
-          <p>当前没有待审核的稿件</p>
-        </div>
-      </div>
-
-      <!-- 历史记录 -->
-      <div v-else class="history-section">
-        <!-- 历史记录筛选 -->
-        <div class="history-header">
-          <h3 class="history-title">历史审稿记录</h3>
-          <div class="history-filters">
-            <div class="filter-row">
-              <!-- 模块筛选 -->
-              <div class="filter-item">
-                <label for="history-module-filter">模块筛选：</label>
-=======
         <!-- No Reviews -->
         <div v-if="pendingJournals.length === 0" class="no-journals">
           <p>No pending reviews found</p>
@@ -539,17 +370,12 @@ const filteredHistory = computed(() => {
               <!-- Module Filter -->
               <div class="filter-item">
                 <label for="history-module-filter">Module:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 <select 
                   id="history-module-filter" 
                   v-model="selectedModule"
                   class="filter-select"
                 >
-<<<<<<< HEAD
-                  <option value="all">全部模块</option>
-=======
                   <option value="all">All Modules</option>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   <option 
                     v-for="module in modules" 
                     :key="module"
@@ -560,31 +386,14 @@ const filteredHistory = computed(() => {
                 </select>
               </div>
               
-<<<<<<< HEAD
-              <!-- 状态筛选 -->
-              <div class="filter-item">
-                <label for="history-status-filter">状态筛选：</label>
-=======
               <!-- Status Filter -->
               <div class="filter-item">
                 <label for="history-status-filter">Status:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 <select 
                   id="history-status-filter" 
                   v-model="selectedStatus"
                   class="filter-select"
                 >
-<<<<<<< HEAD
-                  <option value="all">全部状态</option>
-                  <option value="已通过">已通过</option>
-                  <option value="未通过">未通过</option>
-                </select>
-              </div>
-              
-              <!-- 时间范围筛选 -->
-              <div class="filter-item">
-                <label for="history-time-range-filter">时间范围：</label>
-=======
                   <option value="all">All Status</option>
                   <option value="Accepted">Accepted</option>
                   <option value="Rejected">Rejected</option>
@@ -594,25 +403,11 @@ const filteredHistory = computed(() => {
               <!-- Time Range Filter -->
               <div class="filter-item">
                 <label for="history-time-range-filter">Time Range:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 <select 
                   id="history-time-range-filter" 
                   v-model="timeRange"
                   class="filter-select"
                 >
-<<<<<<< HEAD
-                  <option value="all">全部时间</option>
-                  <option value="today">今日</option>
-                  <option value="week">本周</option>
-                  <option value="month">本月</option>
-                  <option value="year">本年</option>
-                </select>
-              </div>
-              
-              <!-- 关键词搜索 -->
-              <div class="filter-item search-item">
-                <label for="history-search-keyword">关键词搜索：</label>
-=======
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
                   <option value="week">This Week</option>
@@ -624,21 +419,11 @@ const filteredHistory = computed(() => {
               <!-- Search -->
               <div class="filter-item search-item">
                 <label for="history-search-keyword">Search:</label>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 <input 
                   type="text" 
                   id="history-search-keyword" 
                   v-model="searchKeyword"
                   class="search-input"
-<<<<<<< HEAD
-                  placeholder="输入标题、作者、关键词等..."
-                >
-              </div>
-              
-              <!-- 清除筛选条件 -->
-              <div class="filter-item">
-                <button class="btn btn-clear" @click="selectedModule = 'all'; selectedStatus = 'all'; timeRange = 'all'; searchKeyword = ''; selectedDate = ''">清除所有筛选</button>
-=======
                   placeholder="Search Title, Author, Keywords..."
                 >
               </div>
@@ -646,17 +431,12 @@ const filteredHistory = computed(() => {
               <!-- Clear Filters -->
               <div class="filter-item">
                 <button class="btn btn-clear" @click="selectedModule = 'all'; selectedStatus = 'all'; timeRange = 'all'; searchKeyword = ''; selectedDate = ''">Clear All Filters</button>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </div>
             </div>
           </div>
         </div>
 
-<<<<<<< HEAD
-        <!-- 历史记录列表 -->
-=======
         <!-- History List -->
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         <div class="history-list">
           <div 
             v-for="journal in filteredHistory" 
@@ -666,65 +446,37 @@ const filteredHistory = computed(() => {
             <div class="journal-info">
               <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
               <p class="journal-meta">
-<<<<<<< HEAD
-                作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 
-                审核日期：{{ journal.reviewDate }} | 
-                审稿阶段：{{ journal.reviewStage || '未明确' }} |
-                <span class="review-result" :class="(journal.reviewResult || journal.status).toLowerCase()">
-=======
                 Author: {{ journal.author }} | Date: {{ journal.date }} | 
                 Review Date: {{ journal.reviewDate }} | 
                 Stage: {{ journal.reviewStage || 'Unknown' }} |
                 <span class="review-result" :class="(journal.reviewResult || journal.status).toLowerCase().replace(' ', '-')">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   {{ journal.reviewResult || journal.status }}
                 </span>
               </p>
               <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               
-<<<<<<< HEAD
-              <!-- 显示审稿建议 -->
-              <div class="history-comment-section">
-                <h4 class="comment-section-title">审稿建议：</h4>
-                <div class="history-comment">
-                  {{ journal.reviewComment || '无审稿建议' }}
-=======
               <!-- Review Comment -->
               <div class="history-comment-section">
                 <h4 class="comment-section-title">Review Comment:</h4>
                 <div class="history-comment">
                   {{ journal.reviewComment || 'No comments' }}
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-<<<<<<< HEAD
-        <!-- 无历史记录提示 -->
-        <div v-if="filteredHistory.length === 0" class="no-journals">
-          <p>当前没有匹配的审稿记录</p>
-=======
         <!-- No History -->
         <div v-if="filteredHistory.length === 0" class="no-journals">
           <p>No review history found</p>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </div>
       </div>
     </main>
 
-<<<<<<< HEAD
-    <!-- 页脚 -->
-    <footer class="footer">
-      <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
-=======
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-content">
         <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
     </footer>
   </div>

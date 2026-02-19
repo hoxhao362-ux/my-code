@@ -1,9 +1,5 @@
 <script setup>
-<<<<<<< HEAD
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-=======
 import { ref, onMounted, onUnmounted } from 'vue'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 
@@ -14,11 +10,6 @@ const props = defineProps({
   user: Object,
   currentPage: String,
   toggleDirectory: Function,
-<<<<<<< HEAD
-  logout: Function
-})
-
-=======
   logout: Function,
   customNavigation: {
     type: Boolean,
@@ -36,7 +27,6 @@ const handleNav = (key, path) => {
   }
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 const toggleLang = () => {
   setLang(currentLang.value === 'en' ? 'zh' : 'en')
 }
@@ -44,140 +34,6 @@ const toggleLang = () => {
 // 控制角色管理子菜单的显示状态
 const showRoleMenu = ref(false)
 
-<<<<<<< HEAD
-// 控制系统设置子菜单的显示状态
-const showSystemMenu = ref(false)
-
-// 控制个人中心子菜单的显示状态
-const showProfileMenu = ref(false)
-
-// 控制投稿中心子菜单的显示状态
-const showSubmissionMenu = ref(false)
-
-// 控制帮助中心子菜单的显示状态
-const showHelpMenu = ref(false)
-
-// 控制稿件管理子菜单的显示状态
-const showManuscriptMenu = ref(false)
-
-// 控制投稿指南子菜单的显示状态
-const showGuideMenu = ref(false)
-
-// 控制作者帮助中心子菜单的显示状态
-const showAuthorHelpMenu = ref(false)
-
-// 控制角色切换菜单的显示状态
-const showRoleSwitchMenu = ref(false)
-
-// 角色切换相关
-const rolePriority = {
-  admin: 3,
-  reviewer: 2,
-  author: 1
-}
-
-// 获取当前用户可以切换到的角色列表
-const availableRoles = computed(() => {
-  if (!props.user) return []
-  
-  // 获取用户的原始角色，用于确定可切换的角色范围
-  // 这里假设用户的原始角色是其最高权限角色
-  let originalRole = props.user.originalRole || props.user.role
-  
-  // 确定用户的最高权限优先级
-  let maxPriority = 0
-  
-  switch (originalRole) {
-    case 'admin':
-      maxPriority = rolePriority.admin
-      break
-    case 'reviewer':
-      maxPriority = rolePriority.reviewer
-      break
-    case 'author':
-      maxPriority = rolePriority.author
-      break
-  }
-  
-  // 高权限角色可以切换到低权限角色
-  const roles = []
-  if (maxPriority >= rolePriority.admin) {
-    roles.push({ value: 'admin', label: t('nav.roles.admin') })
-  }
-  if (maxPriority >= rolePriority.reviewer) {
-    roles.push({ value: 'reviewer', label: t('nav.roles.reviewer') })
-  }
-  if (maxPriority >= rolePriority.author) {
-    roles.push({ value: 'author', label: t('nav.roles.author') })
-  }
-  
-  return roles
-})
-
-// 切换角色
-const switchRole = (role) => {
-  if (!props.user) return
-  
-  // 导入 userStore
-  import('../stores/user').then(({ useUserStore }) => {
-    const userStore = useUserStore()
-    
-    // 保存用户的原始角色（仅在首次切换时保存）
-    const updatedUser = {
-      ...props.user,
-      role
-    }
-    
-    // 如果用户没有原始角色，保存当前角色作为原始角色
-    if (!updatedUser.originalRole) {
-      updatedUser.originalRole = props.user.role
-    }
-    
-    // 更新用户角色
-    userStore.updateUser(updatedUser)
-    
-    // 根据选择的角色跳转到对应后台主页
-    switch (role) {
-      case 'admin':
-        router.push('/admin/dashboard')
-        break
-      case 'reviewer':
-        router.push('/admin/audit-dashboard')
-        break
-      case 'author':
-        router.push('/admin/author-dashboard')
-        break
-    }
-    closeAllMenus()
-  })
-}
-
-// 切换角色切换菜单
-const toggleRoleSwitchMenu = (event) => {
-  event.stopPropagation()
-  showRoleSwitchMenu.value = !showRoleSwitchMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换角色管理子菜单
-const toggleRoleMenu = (event) => {
-  event.stopPropagation()
-  showRoleMenu.value = !showRoleMenu.value
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-=======
 // 控制期刊子菜单
 const showJournalsMenu = ref(false)
 // 控制资源子菜单 (聚合 Author/Reviewer/News)
@@ -343,61 +199,10 @@ const toggleProfileMenu = (event) => {
   if (event) event.stopPropagation()
   showProfileMenu.value = !showProfileMenu.value
   closeOtherMenus('profile')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 切换系统设置子菜单
 const toggleSystemMenu = (event) => {
-<<<<<<< HEAD
-  event.stopPropagation()
-  showSystemMenu.value = !showSystemMenu.value
-  showRoleMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换个人中心子菜单
-const toggleProfileMenu = (event) => {
-  event.stopPropagation()
-  showProfileMenu.value = !showProfileMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换投稿中心子菜单
-const toggleSubmissionMenu = (event) => {
-  event.stopPropagation()
-  showSubmissionMenu.value = !showSubmissionMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换帮助中心子菜单
-const toggleHelpMenu = (event) => {
-  event.stopPropagation()
-  showHelpMenu.value = !showHelpMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-=======
   if (event) event.stopPropagation()
   showSystemMenu.value = !showSystemMenu.value
   closeOtherMenus('system')
@@ -415,48 +220,10 @@ const toggleSubmissionMenu = (event) => {
   if (event) event.stopPropagation()
   showSubmissionMenu.value = !showSubmissionMenu.value
   closeOtherMenus('submission')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 切换稿件管理子菜单
 const toggleManuscriptMenu = (event) => {
-<<<<<<< HEAD
-  event.stopPropagation()
-  showManuscriptMenu.value = !showManuscriptMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换投稿指南子菜单
-const toggleGuideMenu = (event) => {
-  event.stopPropagation()
-  showGuideMenu.value = !showGuideMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showAuthorHelpMenu.value = false
-}
-
-// 切换作者帮助中心子菜单
-const toggleAuthorHelpMenu = (event) => {
-  event.stopPropagation()
-  showAuthorHelpMenu.value = !showAuthorHelpMenu.value
-  showRoleMenu.value = false
-  showSystemMenu.value = false
-  showProfileMenu.value = false
-  showSubmissionMenu.value = false
-  showHelpMenu.value = false
-  showManuscriptMenu.value = false
-  showGuideMenu.value = false
-=======
   if (event) event.stopPropagation()
   showManuscriptMenu.value = !showManuscriptMenu.value
   closeOtherMenus('manuscript')
@@ -499,19 +266,15 @@ const closeOtherMenus = (current) => {
   if (current !== 'guide') showGuideMenu.value = false
   if (current !== 'authorHelp') showAuthorHelpMenu.value = false
   if (current !== 'auditTasks') showAuditTasksMenu.value = false
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 关闭所有子菜单
 const closeAllMenus = () => {
-<<<<<<< HEAD
-=======
   showJournalsMenu.value = false
   showResourcesMenu.value = false
   showMoreMenu.value = false
   showReviewerMenu.value = false // Added
   showUserMenu.value = false // Added
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   showRoleMenu.value = false
   showSystemMenu.value = false
   showProfileMenu.value = false
@@ -520,11 +283,7 @@ const closeAllMenus = () => {
   showManuscriptMenu.value = false
   showGuideMenu.value = false
   showAuthorHelpMenu.value = false
-<<<<<<< HEAD
-  showRoleSwitchMenu.value = false
-=======
   showAuditTasksMenu.value = false
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 // 点击页面其他部分关闭子菜单
@@ -533,26 +292,12 @@ const handleClickOutside = () => {
 }
 
 // 监听点击事件
-<<<<<<< HEAD
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-=======
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
 // 检查当前是否在后台
 const isAdminRoute = () => {
-<<<<<<< HEAD
-  return window.location.pathname.startsWith('/admin')
-}
-
-const goToSubmit = () => {
-  router.push('/submit')
-=======
   return window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/submission') || window.location.pathname.startsWith('/editor') || window.location.pathname.startsWith('/reviewer')
 }
 
@@ -565,7 +310,6 @@ onMounted(() => {
 
 const goToSubmit = () => {
   router.push('/submission')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 const goToProfile = () => {
@@ -581,38 +325,12 @@ const goToHome = () => {
 }
 
 const goToAdminDashboard = () => {
-<<<<<<< HEAD
-  if (props.user?.role === 'admin') {
-    router.push('/admin/dashboard')
-  } else if (props.user?.role === 'reviewer') {
-    router.push('/admin/audit-dashboard')
-  } else if (props.user?.role === 'author') {
-    router.push('/admin/author-dashboard')
-  }
-}
-
-// 处理登录后台点击事件
-const handleAdminLogin = () => {
-  if (props.user) {
-    // 已登录用户，检查角色权限
-    if (props.user.role === 'admin' || props.user.role === 'reviewer' || props.user.role === 'author') {
-      // 有权限，跳转到后台登录页
-      router.push('/admin/login')
-    } else {
-      // 普通用户，显示权限不足提示
-      alert(t('nav.permissionDenied'))
-    }
-  } else {
-    // 未登录用户，跳转到后台登录页
-    router.push('/admin/login')
-=======
   if (props.user?.role === 'reviewer') {
     router.push('/reviewer/dashboard')
   } else if (props.user?.role === 'author') {
     router.push('/admin/author-dashboard')
   } else {
     router.push('/editor/dashboard')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }
 
@@ -624,11 +342,6 @@ const goToAuditHistory = () => {
   router.push('/admin/audit-history')
 }
 
-<<<<<<< HEAD
-const handleLogout = () => {
-  props.logout()
-  router.push('/login')
-=======
 // 处理搜索
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
@@ -717,31 +430,10 @@ const handleLogout = () => {
        router.push('/login')
     })
   }
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 </script>
 
 <template>
-<<<<<<< HEAD
-  <nav class="navbar">
-    <div class="navbar-container">
-      <div class="navbar-logo">
-        <h1>{{ t('nav.logo') }}</h1>
-      </div>
-      <ul class="navbar-menu">
-        <!-- 主站导航 -->
-        <template v-if="!isAdminRoute()">
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link" 
-              :class="{ active: currentPage === 'home' }"
-              @click.prevent="goToHome"
-            >
-              {{ t('nav.home') }}
-            </a>
-          </li>
-=======
   <!-- System Status Banners -->
   <div v-if="!isAdminRoute() && user" class="system-banner read-only">
     Read-Only Mode | Journal Submission Platform
@@ -1086,55 +778,10 @@ const handleLogout = () => {
         <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <li class="nav-item">
             <a 
               href="#" 
               class="nav-link"
-<<<<<<< HEAD
-              @click.prevent="$router.push('/directory')"
-            >
-              {{ t('nav.directory') }}
-            </a>
-          </li>
-          <!-- 普通用户、作者和管理员都可以投稿 -->
-          <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleSubmissionMenu">
-              <a 
-                href="#" 
-                class="nav-link"
-                :class="{ active: currentPage === 'submit' }"
-              >
-                {{ t('nav.submissionCenter') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showSubmissionMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'submission-rules' }"
-                  @click.prevent="router.push('/submission-rules'); closeAllMenus()"
-                >
-                  {{ t('nav.submissionRules') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'submit' }"
-                  @click.prevent="goToSubmit(); closeAllMenus()"
-                >
-                  {{ t('nav.onlineSubmission') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          
-          <!-- 个人中心入口 - 仅对已登录用户显示 -->
-          <li v-if="user" class="nav-item dropdown">
-=======
               :class="{ active: currentPage === 'editor-dashboard' }"
               @click.prevent="handleNav('editor-dashboard', '/editor/dashboard')"
             >
@@ -1167,6 +814,8 @@ const handleLogout = () => {
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); closeAllMenus()">{{ t('nav.auditDecisionMaking') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); closeAllMenus()">{{ t('nav.auditRevisionHandling') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); closeAllMenus()">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-recommended-reviewers', '/editor/audit/recommended-reviewers'); closeAllMenus()">{{ t('nav.auditRecommendedReviewers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-opposed-reviewers', '/editor/audit/opposed-reviewers'); closeAllMenus()">{{ t('nav.auditOpposedReviewers') }}</a></li>
               <li><a href="#" class="nav-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); closeAllMenus()">{{ t('nav.auditMyTasks') }}</a></li>
             </ul>
           </li>
@@ -1190,6 +839,29 @@ const handleLogout = () => {
               @click.prevent="handleNav('editor-decisions', '/editor/decisions')"
             >
               {{ t('nav.decisionsLetters') }}
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-statistics' }"
+              @click.prevent="handleNav('editor-statistics', '/editor/statistics')"
+            >
+              Data Statistics
+            </a>
+          </li>
+
+          <!-- Board Management (Editor Only) -->
+          <li class="nav-item" v-if="['editor', 'admin'].includes(user?.role)">
+            <a 
+              href="#" 
+              class="nav-link"
+              :class="{ active: currentPage === 'editor-board' }"
+              @click.prevent="handleNav('editor-board', '/editor/board')"
+            >
+              Board Management
             </a>
           </li>
 
@@ -1236,50 +908,16 @@ const handleLogout = () => {
                   :class="{ active: currentPage === 'editor-system-logs' }"
                   @click.prevent="handleNav('editor-system-logs', '/editor/system/logs')"
                 >
-                  {{ t('nav.statistics') }}
+                  {{ t('nav.logManagement') }}
                 </a>
             </li>
           </template>
 
           <li class="nav-item dropdown">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="dropdown-toggle" @click="toggleProfileMenu">
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage === 'profile' }"
-              >
-                {{ t('nav.profile') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showProfileMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'profile' }"
-                  @click.prevent="router.push('/profile'); closeAllMenus()"
-                >
-                  {{ t('nav.profileInfo') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'account-security' }"
-                  @click.prevent="router.push('/account-security'); closeAllMenus()"
-                >
-                  {{ t('nav.accountSecurity') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          
-          <!-- 帮助中心 -->
-          <li class="nav-item dropdown">
-=======
                 :class="{ active: currentPage === 'editor-settings' }"
               >
                 {{ t('nav.profileSettings') }} ▼
@@ -1295,415 +933,10 @@ const handleLogout = () => {
           </li>
 
            <li class="nav-item dropdown">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="dropdown-toggle" @click="toggleHelpMenu">
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage === 'help' }"
-              >
-                {{ t('nav.helpCenter') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showHelpMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'faq' }"
-                  @click.prevent="router.push('/faq'); closeAllMenus()"
-                >
-                  {{ t('nav.faq') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'contact' }"
-                  @click.prevent="router.push('/contact'); closeAllMenus()"
-                >
-                  {{ t('nav.contact') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'feedback' }"
-                  @click.prevent="router.push('/feedback'); closeAllMenus()"
-                >
-                  {{ t('nav.feedback') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          
-          <!-- 后台主页入口 -->
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              @click.prevent="handleAdminLogin"
-            >
-              {{ t('nav.adminLogin') }}
-            </a>
-          </li>
-        </template>
-        
-        <!-- 审核员后台导航 -->
-        <template v-else-if="user?.role === 'reviewer'">
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'reviewer-dashboard' || currentPage === 'admin-audit-dashboard' }"
-              @click.prevent="goToAdminDashboard"
-            >
-              {{ t('nav.dashboard') }}
-            </a>
-          </li>
-          <!-- 角色切换菜单 -->
-          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
-              <a href="#" class="nav-link">
-                {{ t('nav.roleSwitch') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
-              <li v-for="role in availableRoles" :key="role.value">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: user.role === role.value }"
-                  @click.prevent="switchRole(role.value)"
-                >
-                  {{ role.label }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'reviewer-pending' || currentPage === 'admin-audit-list' }"
-              @click.prevent="goToAuditList"
-            >
-              {{ t('nav.tasks') }}
-            </a>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'reviewer-history' || currentPage === 'admin-audit-history' }"
-              @click.prevent="goToAuditHistory"
-            >
-              {{ t('nav.history') }}
-            </a>
-          </li>
-          <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleProfileMenu">
-              <a 
-                href="#" 
-                class="nav-link"
-                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') }"
-              >
-                {{ t('nav.profile') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showProfileMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
-                  @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
-                >
-                  {{ t('nav.profileInfo') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-security' }"
-                  @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
-                >
-                  {{ t('nav.accountSecurity') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-notifications' }"
-                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
-                >
-                  {{ t('nav.messages') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              @click.prevent="goToHome"
-            >
-              {{ t('nav.returnMain') }}
-            </a>
-          </li>
-        </template>
-        
-        <!-- 管理员后台导航 -->
-        <template v-else-if="user?.role === 'admin'">
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'admin-dashboard' }"
-              @click.prevent="goToAdminDashboard"
-            >
-              {{ t('nav.dashboard') }}
-            </a>
-          </li>
-          <!-- 角色切换菜单 -->
-          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
-              <a href="#" class="nav-link">
-                {{ t('nav.roleSwitch') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
-              <li v-for="role in availableRoles" :key="role.value">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: user.role === role.value }"
-                  @click.prevent="switchRole(role.value)"
-                >
-                  {{ role.label }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          <!-- 审核功能菜单 -->
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'reviewer-pending' || currentPage === 'admin-audit-list' }"
-              @click.prevent="goToAuditList"
-            >
-              {{ t('nav.tasks') }}
-            </a>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'reviewer-history' || currentPage === 'admin-audit-history' }"
-              @click.prevent="goToAuditHistory"
-            >
-              {{ t('nav.history') }}
-            </a>
-          </li>
-          <!-- 角色管理菜单 -->
-          <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleRoleMenu">
-              <a 
-                href="#" 
-                class="nav-link"
-                :class="{ active: currentPage.startsWith('admin-users') }"
-              >
-                {{ t('nav.roleManagement') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showRoleMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-users' }"
-                  @click.prevent="router.push('/admin/users'); closeAllMenus()"
-                >
-                  {{ t('nav.userList') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-reviewer-management' }"
-                  @click.prevent="router.push('/admin/reviewer-management'); closeAllMenus()"
-                >
-                  {{ t('nav.reviewerManagement') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-account-status' }"
-                  @click.prevent="router.push('/admin/account-status'); closeAllMenus()"
-                >
-                  {{ t('nav.accountStatus') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          
-          <!-- 系统设置菜单 -->
-          <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleSystemMenu">
-              <a 
-                href="#" 
-                class="nav-link"
-                :class="{ active: currentPage.startsWith('admin-system') }"
-              >
-                {{ t('nav.systemSettings') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showSystemMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-system-basic' }"
-                  @click.prevent="router.push('/admin/system/basic'); closeAllMenus()"
-                >
-                  {{ t('nav.basicConfig') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-system-notification' }"
-                  @click.prevent="router.push('/admin/system/notification'); closeAllMenus()"
-                >
-                  {{ t('nav.notificationSettings') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-system-logs' }"
-                  @click.prevent="router.push('/admin/system/logs'); closeAllMenus()"
-                >
-                  {{ t('nav.logManagement') }}
-                </a>
-              </li>
-              <li class="dropdown-divider"></li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-system-modules' || currentPage === 'admin-modules' }"
-                  @click.prevent="router.push('/admin/system/modules'); closeAllMenus()"
-                >
-                  {{ t('nav.moduleManagement') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-system-invitation-codes' }"
-                  @click.prevent="router.push('/admin/system/invitation-codes'); closeAllMenus()"
-                >
-                  {{ t('nav.inviteCodeManagement') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleProfileMenu">
-              <a 
-                href="#" 
-                class="nav-link"
-                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') }"
-              >
-                {{ t('nav.profile') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showProfileMenu">
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
-                  @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
-                >
-                  {{ t('nav.profileInfo') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-security' }"
-                  @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
-                >
-                  {{ t('nav.accountSecurity') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-notifications' }"
-                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
-                >
-                  {{ t('nav.messages') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-logs' }"
-                  @click.prevent="router.push('/admin/profile-logs'); closeAllMenus()"
-                >
-                  {{ t('nav.operationLogs') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-profile-manuscript-status' }"
-                  @click.prevent="router.push('/admin/profile-manuscript-status'); closeAllMenus()"
-                >
-                  {{ t('nav.manuscriptStatus') }}
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'admin-feedback-management' }"
-                  @click.prevent="router.push('/admin/feedback-management'); closeAllMenus()"
-                >
-                  {{ t('nav.feedbackManagement') }}
-                </a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              @click.prevent="goToHome"
-            >
-              {{ t('nav.returnMain') }}
-            </a>
-          </li>
-=======
                 :class="{ active: currentPage.startsWith('submission-help') || currentPage.startsWith('submission-system') }"
               >
                 {{ t('nav.helpSupport') }} ▼
@@ -1716,53 +949,22 @@ const handleLogout = () => {
             </ul>
           </li>
           </ul>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
         </template>
         
         <!-- 作者后台导航 -->
         <template v-else-if="user?.role === 'author'">
-<<<<<<< HEAD
-=======
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           <li class="nav-item">
             <a 
               href="#" 
               class="nav-link"
-<<<<<<< HEAD
-              :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' }"
-=======
               :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' || currentPage === 'submission-author-dashboard' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               @click.prevent="goToAdminDashboard"
             >
               {{ t('nav.dashboard') }}
             </a>
           </li>
-<<<<<<< HEAD
-          <!-- 角色切换菜单 -->
-          <li v-if="availableRoles.length > 1" class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleRoleSwitchMenu">
-              <a href="#" class="nav-link">
-                {{ t('nav.roleSwitch') }} ▼
-              </a>
-            </div>
-            <ul class="dropdown-menu" v-if="showRoleSwitchMenu">
-              <li v-for="role in availableRoles" :key="role.value">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: user.role === role.value }"
-                  @click.prevent="switchRole(role.value)"
-                >
-                  {{ role.label }}
-                </a>
-              </li>
-            </ul>
-          </li>
-=======
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
           
           <!-- 稿件管理菜单 -->
           <li class="nav-item dropdown">
@@ -1770,11 +972,7 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage.startsWith('admin-manuscript') }"
-=======
                 :class="{ active: currentPage.startsWith('admin-manuscript') || currentPage.startsWith('submission-manuscript') }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.manuscriptManagement') }} ▼
               </a>
@@ -1784,11 +982,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-author-submit' }"
-=======
                   :class="{ active: currentPage === 'admin-author-submit' || currentPage === 'submission-author-submit' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/author-submit'); closeAllMenus()"
                 >
                   {{ t('nav.newSubmission') }}
@@ -1798,11 +992,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-manuscript-my' }"
-=======
                   :class="{ active: currentPage === 'admin-manuscript-my' || currentPage === 'submission-manuscript-my' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/my'); closeAllMenus()"
                 >
                   {{ t('nav.myManuscripts') }}
@@ -1812,11 +1002,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-manuscript-progress' }"
-=======
                   :class="{ active: currentPage === 'admin-manuscript-progress' || currentPage === 'submission-manuscript-progress' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/progress'); closeAllMenus()"
                 >
                   {{ t('nav.manuscriptProgress') }}
@@ -1826,11 +1012,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-manuscript-history' }"
-=======
                   :class="{ active: currentPage === 'admin-manuscript-history' || currentPage === 'submission-manuscript-history' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/manuscript/history'); closeAllMenus()"
                 >
                   {{ t('nav.historySubmission') }}
@@ -1845,11 +1027,7 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' }"
-=======
                 :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' || currentPage.startsWith('submission-profile') || currentPage === 'submission-notifications' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.profile') }} ▼
               </a>
@@ -1859,11 +1037,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' }"
-=======
                   :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage === 'submission-author-profile' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
                 >
                   {{ t('nav.profileInfo') }}
@@ -1873,13 +1047,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-profile-security' }"
-                  @click.prevent="router.push('/admin/profile-security'); closeAllMenus()"
-=======
                   :class="{ active: currentPage === 'admin-profile-security' || currentPage === 'submission-profile-security' }"
                   @click.prevent="router.push('/account-security'); closeAllMenus()"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.accountSecurity') }}
                 </a>
@@ -1888,13 +1057,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-notifications' }"
-                  @click.prevent="router.push('/admin/notifications'); closeAllMenus()"
-=======
                   :class="{ active: currentPage === 'admin-notifications' || currentPage === 'submission-notifications' }"
                   @click.prevent="router.push('/submission/notifications'); closeAllMenus()"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.messages') }}
                 </a>
@@ -1908,11 +1072,7 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage.startsWith('admin-guide') }"
-=======
                 :class="{ active: currentPage.startsWith('admin-guide') || currentPage.startsWith('submission-guide') }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.submissionGuide') }} ▼
               </a>
@@ -1922,13 +1082,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-submission-rules' }"
-                  @click.prevent="router.push('/admin/submission-rules'); closeAllMenus()"
-=======
                   :class="{ active: currentPage === 'admin-submission-rules' || currentPage === 'submission-rules' }"
                   @click.prevent="router.push('/submission/submission-rules'); closeAllMenus()"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 >
                   {{ t('nav.submissionRules') }}
                 </a>
@@ -1937,11 +1092,7 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-guide-faq' }"
-=======
                   :class="{ active: currentPage === 'admin-guide-faq' || currentPage === 'submission-guide-faq' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/guide/faq'); closeAllMenus()"
                 >
                   {{ t('nav.faq') }}
@@ -1956,11 +1107,7 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
-<<<<<<< HEAD
-                :class="{ active: currentPage.startsWith('admin-help') }"
-=======
                 :class="{ active: currentPage.startsWith('admin-help') || currentPage.startsWith('submission-help') || currentPage.startsWith('submission-system') }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               >
                 {{ t('nav.helpCenter') }} ▼
               </a>
@@ -1970,9 +1117,6 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-help-consultation' }"
-=======
                   :class="{ active: currentPage === 'submission-help' }"
                   @click.prevent="router.push('/submission/help'); closeAllMenus()"
                 >
@@ -1984,7 +1128,6 @@ const handleLogout = () => {
                   href="#" 
                   class="nav-link"
                   :class="{ active: currentPage === 'admin-help-consultation' || currentPage === 'submission-help-consultation' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/help/consultation'); closeAllMenus()"
                 >
                   {{ t('nav.onlineConsultation') }}
@@ -1994,18 +1137,12 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-<<<<<<< HEAD
-                  :class="{ active: currentPage === 'admin-help-feedback' }"
-=======
                   :class="{ active: currentPage === 'admin-help-feedback' || currentPage === 'submission-help-feedback' }"
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                   @click.prevent="router.push('/admin/help/feedback'); closeAllMenus()"
                 >
                   {{ t('nav.feedback') }}
                 </a>
               </li>
-<<<<<<< HEAD
-=======
               <li>
                 <a 
                   href="#" 
@@ -2016,7 +1153,6 @@ const handleLogout = () => {
                   {{ t('nav.systemStatus') }}
                 </a>
               </li>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </ul>
           </li>
           
@@ -2029,62 +1165,6 @@ const handleLogout = () => {
               {{ t('nav.returnMain') }}
             </a>
           </li>
-<<<<<<< HEAD
-        </template>
-        
-        <!-- 登录状态导航 -->
-        <template v-if="user">
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link logout"
-              @click.prevent="handleLogout"
-            >
-              {{ t('nav.logout') }}
-            </a>
-          </li>
-        </template>
-        <template v-else-if="!isAdminRoute()">
-          <!-- 未登录用户：登录和注册 -->
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              @click.prevent="router.push('/login')"
-            >
-              {{ t('nav.login') }}
-            </a>
-          </li>
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              @click.prevent="router.push('/register')"
-            >
-              {{ t('nav.register') }}
-            </a>
-          </li>
-        </template>
-        
-        <!-- Language Switcher -->
-        <li class="nav-item">
-          <a href="#" class="nav-link" @click.prevent="toggleLang">
-            {{ currentLang === 'en' ? '中文' : 'En' }}
-          </a>
-        </li>
-      </ul>
-    </div>
-  </nav>
-</template>
-
-<style scoped>
-/* 导航栏样式 - 固定在顶部 */
-.navbar {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-=======
            <!-- Logout -->
            <li class="nav-item">
             <a href="#" class="nav-link logout" @click.prevent="handleLogout" title="Logout from submit system">
@@ -2184,6 +1264,8 @@ const handleLogout = () => {
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-decision-making', '/editor/audit/decision-making'); showMobileMenu = false">{{ t('nav.auditDecisionMaking') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-revision-handling', '/editor/audit/revision-handling'); showMobileMenu = false">{{ t('nav.auditRevisionHandling') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-reviewer-management', '/editor/audit/reviewer-management'); showMobileMenu = false">{{ t('nav.auditReviewerManagement') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-recommended-reviewers', '/editor/audit/recommended-reviewers'); showMobileMenu = false">{{ t('nav.auditRecommendedReviewers') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-opposed-reviewers', '/editor/audit/opposed-reviewers'); showMobileMenu = false">{{ t('nav.auditOpposedReviewers') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-my-tasks', '/editor/audit/my-tasks'); showMobileMenu = false">{{ t('nav.auditMyTasks') }}</a></li>
             </ul>
           </li>
@@ -2192,6 +1274,11 @@ const handleLogout = () => {
           </li>
            <li class="sidebar-item">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-decisions', '/editor/decisions'); showMobileMenu = false">{{ t('nav.decisionsLetters') }}</a>
+          </li>
+          
+           <!-- Board Management (Sidebar) -->
+           <li class="sidebar-item" v-if="['editor', 'admin'].includes(user?.role)">
+             <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-board', '/editor/board'); showMobileMenu = false">Board Management</a>
           </li>
           
           <!-- Admin Only -->
@@ -2355,17 +1442,12 @@ const handleLogout = () => {
   color: #333;
   padding: 1rem 0;
   border-bottom: 1px solid #eee;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   margin: 0;
-<<<<<<< HEAD
-  border: none;
-=======
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   outline: none;
 }
 
@@ -2374,20 +1456,9 @@ const handleLogout = () => {
   margin: 0 auto;
   padding: 0 1rem;
   display: flex;
-<<<<<<< HEAD
-  justify-content: space-between;
-  align-items: center;
-}
-
-.navbar-logo h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0;
-=======
   flex-direction: column;
   align-items: flex-start;
   gap: 1rem;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .navbar-menu {
@@ -2395,10 +1466,6 @@ const handleLogout = () => {
   list-style: none;
   margin: 0;
   padding: 0;
-<<<<<<< HEAD
-  min-width: 600px;
-  justify-content: flex-end;
-=======
   width: 100%;
   justify-content: flex-start;
   gap: 0.5rem;
@@ -2409,7 +1476,6 @@ const handleLogout = () => {
   font-weight: bold;
   margin: 0;
   color: #333;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .nav-item {
@@ -2418,11 +1484,7 @@ const handleLogout = () => {
 }
 
 .nav-link {
-<<<<<<< HEAD
-  color: white;
-=======
   color: #333;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 500;
@@ -2434,21 +1496,6 @@ const handleLogout = () => {
   text-align: center;
 }
 
-<<<<<<< HEAD
-.nav-link:hover,
-.nav-link.active {
-  color: #3498db;
-  background: rgba(52, 152, 219, 0.1);
-}
-
-.nav-link.logout {
-  color: #e74c3c;
-}
-
-.nav-link.logout:hover {
-  color: #c0392b;
-  background: rgba(231, 76, 60, 0.1);
-=======
 /* Navigation Item Highlight Style */
 .nav-link.active {
   color: #C93737;
@@ -2474,7 +1521,6 @@ const handleLogout = () => {
 .nav-link.logout:hover {
   color: #C93737;
   background: rgba(201, 55, 55, 0.1);
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 下拉菜单样式 */
@@ -2486,22 +1532,11 @@ const handleLogout = () => {
   cursor: pointer;
 }
 
-<<<<<<< HEAD
-=======
 /* Updated Dropdown Menu for Content Fit */
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 .dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
-<<<<<<< HEAD
-  background: #2c3e50;
-  border-radius: 5px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  z-index: 1001;
-  min-width: 150px;
-  margin-top: 0.5rem;
-=======
   background: white;
   border-radius: 5px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -2509,7 +1544,6 @@ const handleLogout = () => {
   z-index: 1001;
   min-width: max-content; /* Fit content */
   margin-top: 0.1rem;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   list-style: none;
   padding: 0.5rem 0;
 }
@@ -2520,11 +1554,7 @@ const handleLogout = () => {
 
 .dropdown-menu .dropdown-divider {
   height: 1px;
-<<<<<<< HEAD
-  background-color: rgba(255, 255, 255, 0.1);
-=======
   background-color: #eee;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   margin: 0.5rem 0;
   padding: 0;
 }
@@ -2532,28 +1562,17 @@ const handleLogout = () => {
 .dropdown-menu .nav-link {
   display: block;
   padding: 0.5rem 1.5rem;
-<<<<<<< HEAD
-  color: white;
-=======
   color: #333;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   text-decoration: none;
   font-size: 0.9rem;
   transition: all 0.3s ease;
   text-align: left;
   min-width: auto;
-<<<<<<< HEAD
-=======
   white-space: nowrap; /* Prevent wrapping */
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 .dropdown-menu .nav-link:hover,
 .dropdown-menu .nav-link.active {
-<<<<<<< HEAD
-  background: rgba(52, 152, 219, 0.2);
-  color: #3498db;
-=======
   background: rgba(201, 55, 55, 0.1);
   color: #C93737;
 }
@@ -2561,31 +1580,18 @@ const handleLogout = () => {
 /* Hamburger Menu Global */
 .hamburger-menu {
   display: none;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .navbar-container {
-<<<<<<< HEAD
-    flex-direction: column;
-=======
     flex-direction: row; /* Change to row to align Logo and Hamburger */
     justify-content: space-between;
     align-items: center;
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     gap: 1rem;
     padding: 1rem;
   }
   
-<<<<<<< HEAD
-  .navbar-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-  
-=======
   .navbar-menu.desktop-only {
     display: none; /* Hide desktop menu */
   }
@@ -2597,40 +1603,10 @@ const handleLogout = () => {
   }
 
   /* Hide old mobile menu styles if any remain active */
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   .nav-item {
     margin-left: 0;
   }
   
-<<<<<<< HEAD
-  .nav-link {
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-    min-width: 70px;
-  }
-  
-  .navbar-logo h1 {
-    font-size: 1.3rem;
-  }
-  
-  /* 移动端下拉菜单调整 */
-  .dropdown-menu {
-    position: static;
-    width: 100%;
-    box-shadow: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 0.5rem;
-  }
-  
-  .nav-item.dropdown:hover .dropdown-menu {
-    display: block;
-  }
-  
-  .dropdown-menu .nav-link {
-    text-align: center;
-  }
-}
-=======
   .navbar-logo h1 {
     font-size: 1.3rem;
   }
@@ -3142,5 +2118,4 @@ const handleLogout = () => {
   gap: 0;
   max-width: 100%; /* Layout handles 1200px min-width */
 }
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 </style>

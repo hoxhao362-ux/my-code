@@ -63,11 +63,7 @@ export default {
     actions: 'Operations',
     types: {
       manuscript: 'Manuscript',
-<<<<<<< HEAD
-      contribution: 'Authors’ Contributions',
-=======
       contribution: 'Writers’ Contributions',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       conflict: 'Conflicts of Interest',
       figure: 'Figure',
       table: 'Table',
@@ -101,24 +97,14 @@ export default {
     title: 'Additional Information',
     questions: {
       q1: 'Confirm data access and submission responsibility',
-<<<<<<< HEAD
-      q2: 'Have all authors reviewed and agreed to the submission?',
-      q3: 'Are there any medical writers/editors involved, and provide relevant funding information',
-      q4: 'Which authors have accessed and verified the research data, and who is responsible for the submission decision?',
-=======
       q2: 'Have all writers reviewed and agreed to the submission?',
       q3: 'Are there any medical writers/editors involved, and provide relevant funding information',
       q4: 'Which writers have accessed and verified the research data, and who is responsible for the submission decision?',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       q5: 'Did you use generative AI, and please specify the specific purpose',
       q6: 'Provide manuscript word count, number of references, and number of figures/tables',
     },
     ssrn: 'Agree to publish the research article on the SSRN preprint platform',
-<<<<<<< HEAD
-    socialMedia: "Corresponding Author's Social Media Accounts",
-=======
     socialMedia: "Corresponding Writer's Social Media Accounts",
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     conference: 'Future Conference Concurrent Submission Confirmation',
     errors: {
       incomplete: 'Please complete all additional information questionnaires',
@@ -140,15 +126,6 @@ export default {
     keywords: 'Keywords',
     keywordsPlaceholder: 'Please enter keywords, separate multiple keywords with semicolons',
     authors: {
-<<<<<<< HEAD
-      title: 'Authors',
-      add: 'Add Author',
-      name: 'Name',
-      institution: 'Institution',
-      email: 'Email',
-      corresponding: 'Corresponding Author',
-      first: 'First Author',
-=======
       title: 'Writers',
       add: 'Add Writer',
       name: 'Name',
@@ -156,7 +133,6 @@ export default {
       email: 'Email',
       corresponding: 'Corresponding Writer',
       first: 'First Writer',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     },
     funding: {
       title: 'Funding Information',
@@ -171,43 +147,27 @@ export default {
     publishingOption: {
       title: 'Publishing Option',
       subscription: 'Subscription (Subscription Model)',
-<<<<<<< HEAD
-      subscriptionDesc: 'Traditional publishing model. No fee for authors.',
-=======
       subscriptionDesc: 'Traditional publishing model. No fee for writers.',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       openAccess: 'Open Access (Open Access Model)',
       openAccessDesc: 'Article is freely available to everyone. APC applies.',
     },
     pdf: {
       abstract: 'Abstract',
-<<<<<<< HEAD
-      authors: 'Authors',
-=======
       authors: 'Writers',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       funding: 'Funding',
       none: 'None'
     },
     errors: {
       incomplete: 'Please complete all required fields',
-<<<<<<< HEAD
-      noAuthor: 'Please add at least one author',
-      noCorresponding: 'Please select a corresponding author',
-      noFirst: 'Please select a first author',
-=======
       noAuthor: 'Please add at least one writer',
       noCorresponding: 'Please select a corresponding writer',
       noFirst: 'Please select a first writer',
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       noFunding: 'Please add funding information or select "No Funding Information"',
       selectPublishingOption: 'Please select a publishing option',
       submissionFailed: 'Submission failed'
     },
     successMessage: 'Submission has been successfully submitted. Please wait for the journal\'s initial review',
   },
-<<<<<<< HEAD
-=======
   screening: {
     title: 'Initial Screening & Assignment',
     searchPlaceholder: 'Search by title or writer...',
@@ -252,7 +212,6 @@ export default {
     originalityDesc: 'Content must be original.',
     start: 'Start Submission'
   },
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   nav: {
     logo: 'Journal Submission Platform',
     home: 'Home',
@@ -278,17 +237,11 @@ export default {
     dashboard: 'Dashboard',
     roleSwitch: 'Role Switch',
     roles: {
-<<<<<<< HEAD
-      admin: 'Admin Dashboard',
-      reviewer: 'Reviewer Dashboard',
-      author: 'Author Dashboard'
-=======
       admin: 'Editor Dashboard',
       associate_editor: 'Associate Editor Dashboard',
       ea_ae: 'EA & AE Dashboard',
       reviewer: 'Reviewer Dashboard',
       author: 'Writer Dashboard'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     },
     tasks: 'Audit Tasks',
     history: 'Audit History',
@@ -310,9 +263,6 @@ export default {
     historySubmission: 'History Submission',
     submissionGuide: 'Submission Guide',
     onlineConsultation: 'Online Consultation',
-<<<<<<< HEAD
-    permissionDenied: 'Permission denied, cannot access admin panel'
-=======
     permissionDenied: 'Permission denied, cannot access admin panel',
     // New additions
     journals: 'Journals',
@@ -361,6 +311,8 @@ export default {
     auditDecisionMaking: 'Decision Making',
     auditRevisionHandling: 'Revision Handling',
     auditReviewerManagement: 'Reviewer Management',
+    auditRecommendedReviewers: 'Recommended Reviewers',
+    auditOpposedReviewers: 'Opposed Reviewers',
     auditMyTasks: 'My Tasks',
   },
   dashboard: {
@@ -451,6 +403,5 @@ export default {
       allDimensionsRequired: 'Please evaluate all dimensions',
       decisionRequired: 'Please select a recommendation',
     }
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }

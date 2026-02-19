@@ -17,6 +17,15 @@ const journal = computed(() => {
   return userStore.journals.find(j => String(j.id) === String(journalId.value))
 })
 
+// Active Recommendations for this Journal
+const activeRecommendations = computed(() => {
+  if (!journalId.value) return []
+  return userStore.recommendedReviewers.filter(r => 
+    String(r.manuscriptId) === String(journalId.value) && 
+    r.status === 'pending'
+  )
+})
+
 // 审稿记录
 const reviewRecords = computed(() => {
   // 从期刊的reviewHistory中获取审核记录，并转换为reviewRecords格式
@@ -100,6 +109,71 @@ const initializeEdit = () => {
   })
   isEditing.value = true
   modificationDescription.value = ''
+  
+  // Initialize Revision Recommendations
+  revisionRecommended.value = []
+  revisionOpposed.value = []
+}
+
+// --- Revision Reviewer Recommendation Logic ---
+const revisionRecommended = ref([])
+const revisionOpposed = ref([])
+
+const addRevisionRecommended = () => {
+  if (revisionRecommended.value.length >= 3) {
+      alert("Maximum 3 recommended reviewers allowed.")
+      return
+  }
+  revisionRecommended.value.push({
+      name: '',
+      email: '',
+      affiliation: '',
+      reason: '',
+      coiDeclared: false
+    })
+}
+
+const removeRevisionRecommended = (index) => {
+  revisionRecommended.value.splice(index, 1)
+}
+
+const addRevisionOpposed = () => {
+  revisionOpposed.value.push({
+    name: '',
+    affiliation: '',
+    reason: ''
+  })
+}
+
+const removeRevisionOpposed = (index) => {
+  revisionOpposed.value.splice(index, 1)
+}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const isRevisionFieldInvalid = (value, type, minLength = 0) => {
+  if (!value) return true 
+  if (type === 'email') return !emailRegex.test(value)
+  if (type === 'coi') return value !== true
+  if (minLength > 0) return value.length < minLength
+  return false
+}
+
+// Withdraw Recommendation Logic
+const handleWithdrawRecommendation = (recordId) => {
+  if (!confirm('Are you sure you want to withdraw this recommendation? This action cannot be undone.')) return
+  
+  // Find and update in store
+  const recIndex = userStore.recommendedReviewers.findIndex(r => String(r.id) === String(recordId))
+  if (recIndex !== -1) {
+    const rec = userStore.recommendedReviewers[recIndex]
+    if (rec.status === 'pending') {
+      rec.status = 'withdrawn'
+      userStore.updateRecommendedReviewer(rec)
+      alert('Recommendation withdrawn successfully.')
+    } else {
+      alert('Cannot withdraw: Reviewer status is no longer pending.')
+    }
+  }
 }
 
 // 触发文件上传
@@ -286,7 +360,15 @@ const previewAttachment = (attachment) => {
               height: 100%;
               background: white;
             }
-          </style>
+                    .rejection-reason {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #fff5f5;
+  border-left: 3px solid #e74c3c;
+  color: #c0392b;
+  font-size: 0.9em;
+}
+</style>
         </head>
         <body>
           <div class="preview-header">
@@ -430,6 +512,51 @@ const saveModifications = () => {
     newStatus = '待复审'
   } else if (rejectedStage === '终审') {
     newStatus = '待终审'
+  }
+
+  // Save Revision Recommended Reviewers
+  if (revisionRecommended.value.length > 0) {
+      if (!userStore.recommendedReviewers) userStore.recommendedReviewers = []
+      revisionRecommended.value.forEach((reviewer, index) => {
+          userStore.recommendedReviewers.unshift({
+              id: Date.now() + index,
+              manuscriptId: journal.value.id,
+              manuscriptTitle: editedJournal.value.title,
+              authorId: userStore.user?.id || 999,
+              authorName: userStore.user?.username || 'Unknown',
+              reviewerName: reviewer.name,
+              reviewerEmail: reviewer.email,
+              reviewerAffiliation: reviewer.affiliation || 'N/A',
+              reviewerExpertise: ['Unknown'],
+              recommendationReason: reviewer.reason,
+              status: 'pending',
+              recommendedAt: new Date().toISOString(),
+              stage: 'revision',
+              riskLevel: 'low',
+              evalStatus: 'pending'
+          })
+      })
+  }
+
+  // Save Revision Opposed Reviewers
+  if (revisionOpposed.value.length > 0) {
+      if (!userStore.opposedReviewers) userStore.opposedReviewers = []
+      revisionOpposed.value.forEach((reviewer, index) => {
+          userStore.opposedReviewers.unshift({
+              id: Date.now() + index + 100,
+              manuscriptId: journal.value.id,
+              manuscriptTitle: editedJournal.value.title,
+              authorId: userStore.user?.id || 999,
+              authorName: userStore.user?.username || 'Unknown',
+              opposedReviewerName: reviewer.name,
+              opposedReviewerAffiliation: reviewer.affiliation || 'N/A',
+              opposedReason: reviewer.reason,
+              status: 'pending',
+              requestedAt: new Date().toISOString(),
+              stage: 'revision',
+              handledAt: null
+          })
+      })
   }
   
   // 更新期刊信息
@@ -601,6 +728,16 @@ const goBack = () => {
               >
               <span v-else>{{ journal.title }}</span>
             </div>
+            
+            <!-- Active Recommendations (Withdrawal) -->
+            <div v-if="!isEditing && activeRecommendations.length > 0" class="active-recommendations">
+               <strong>Pending Reviewer Recommendations:</strong>
+               <div v-for="rec in activeRecommendations" :key="rec.id" class="rec-status-item">
+                 <span>{{ rec.reviewerName }} ({{ rec.reviewerEmail }})</span>
+                 <button class="withdraw-btn" @click="handleWithdrawRecommendation(rec.id)">Withdraw</button>
+               </div>
+            </div>
+
             <div class="meta-item">
               <strong>作者：</strong>{{ journal.author }}
             </div>
@@ -733,6 +870,67 @@ const goBack = () => {
             </div>
           </div>
           
+          <!-- Revision Stage: Recommended Reviewers -->
+          <div v-if="isEditing" class="revision-reviewers-section">
+            <h3 class="section-title">Recommend Reviewers for Revision (Optional)</h3>
+            <p class="section-helper">You may recommend up to 3 reviewers for this revision stage.</p>
+            
+            <div v-for="(reviewer, index) in revisionRecommended" :key="'rev-rec-'+index" class="reviewer-row">
+              <div class="reviewer-fields">
+                <div class="form-group-item">
+                   <label>Name *</label>
+                   <input v-model="reviewer.name" class="meta-input" placeholder="Reviewer Name">
+                </div>
+                <div class="form-group-item">
+                   <label>Email *</label>
+                   <input v-model="reviewer.email" class="meta-input" placeholder="Reviewer Email">
+                </div>
+                <div class="form-group-item">
+                   <label>Affiliation</label>
+                   <input v-model="reviewer.affiliation" class="meta-input" placeholder="Institution">
+                </div>
+                <div class="form-group-item full-width">
+                   <label>Reason *</label>
+                   <textarea v-model="reviewer.reason" class="meta-input" rows="2" placeholder="Reason (>50 chars)"></textarea>
+                </div>
+                 <div class="form-group-item full-width checkbox-row">
+                   <label>
+                     <input type="checkbox" v-model="reviewer.coiDeclared">
+                     I declare no Conflict of Interest *
+                   </label>
+                </div>
+              </div>
+              <button class="remove-btn" @click="removeRevisionRecommended(index)">Remove</button>
+            </div>
+            
+            <button class="add-btn" @click="addRevisionRecommended" :disabled="revisionRecommended.length >= 3">+ Add Reviewer</button>
+          </div>
+
+          <!-- Revision Stage: Opposed Reviewers -->
+          <div v-if="isEditing" class="revision-reviewers-section">
+            <h3 class="section-title">Oppose Reviewers for Revision (Optional)</h3>
+            
+            <div v-for="(reviewer, index) in revisionOpposed" :key="'rev-opp-'+index" class="reviewer-row">
+              <div class="reviewer-fields">
+                <div class="form-group-item">
+                   <label>Name *</label>
+                   <input v-model="reviewer.name" class="meta-input" placeholder="Reviewer Name">
+                </div>
+                <div class="form-group-item">
+                   <label>Affiliation</label>
+                   <input v-model="reviewer.affiliation" class="meta-input" placeholder="Institution">
+                </div>
+                <div class="form-group-item full-width">
+                   <label>Reason *</label>
+                   <textarea v-model="reviewer.reason" class="meta-input" rows="2" placeholder="Reason for avoidance (>80 chars)"></textarea>
+                </div>
+              </div>
+              <button class="remove-btn" @click="removeRevisionOpposed(index)">Remove</button>
+            </div>
+            
+            <button class="add-btn" @click="addRevisionOpposed">+ Add Opposed Reviewer</button>
+          </div>
+
           <!-- 修改说明 -->
           <div v-if="isEditing" class="modification-description">
             <h3>修改说明</h3>
@@ -820,17 +1018,30 @@ const goBack = () => {
                 v-for="record in reviewRecords" 
                 :key="record.id" 
                 class="record-item full-record"
+                :class="{
+                  'recommended-reviewer-record': record.type === 'Recommended Reviewer',
+                  'opposed-reviewer-record': record.type === 'Opposed Reviewer'
+                }"
               >
                 <div class="record-header">
                   <div class="record-meta">
-                    <h3>{{ record.reviewStage }} - {{ record.reviewResult }}</h3>
-                    <p class="reviewer-info">审核人：{{ record.reviewerId }}</p>
-                    <p class="review-date">审核时间：{{ formatDate(record.reviewDate) }}</p>
+                    <h3>
+                      <span v-if="record.type === 'Recommended Reviewer'" class="record-type-badge recommended">Reviewer Rec.</span>
+                      <span v-else-if="record.type === 'Opposed Reviewer'" class="record-type-badge opposed">Opposition Req.</span>
+                      {{ record.reviewStage }} - {{ record.reviewResult }}
+                    </h3>
+                    <p class="reviewer-info">审核人/Handler：{{ record.reviewerId }}</p>
+                    <p class="review-date">时间/Date：{{ formatDate(record.reviewDate) }}</p>
                   </div>
                 </div>
                 <div class="record-content">
-                  <h4>审核意见：</h4>
+                  <h4>{{ record.type === 'Recommended Reviewer' || record.type === 'Opposed Reviewer' ? 'Details/Comments:' : '审核意见：' }}</h4>
                   <p>{{ record.reviewComments }}</p>
+                  
+                  <!-- Show Reason for Rejection explicitly if available -->
+                  <div v-if="record.reviewResult === 'Rejected' && record.type === 'Recommended Reviewer'" class="rejection-reason">
+                    <strong>Reason for Rejection:</strong> {{ record.reviewComments.split('Reason/Note:')[1] || 'See above' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -841,11 +1052,19 @@ const goBack = () => {
                 v-for="record in reviewRecords" 
                 :key="record.id" 
                 class="record-item partial-record"
+                :class="{
+                  'recommended-reviewer-record': record.type === 'Recommended Reviewer',
+                  'opposed-reviewer-record': record.type === 'Opposed Reviewer'
+                }"
               >
                 <div class="record-header">
                   <div class="record-meta">
-                    <h3>{{ record.reviewStage }} - {{ record.reviewResult }}</h3>
-                    <p class="review-date">审核时间：{{ formatDate(record.reviewDate) }}</p>
+                    <h3>
+                       <span v-if="record.type === 'Recommended Reviewer'" class="record-type-badge recommended">Reviewer Rec.</span>
+                       <span v-else-if="record.type === 'Opposed Reviewer'" class="record-type-badge opposed">Opposition Req.</span>
+                       {{ record.reviewStage }} - {{ record.reviewResult }}
+                    </h3>
+                    <p class="review-date">时间/Date：{{ formatDate(record.reviewDate) }}</p>
                   </div>
                 </div>
                 <div class="record-content">
@@ -853,6 +1072,11 @@ const goBack = () => {
                   <div v-if="record.reviewStage === '终审'" class="final-conclusion">
                     <h4>最终结论：</h4>
                     <p>{{ record.reviewResult }}</p>
+                  </div>
+                  <!-- Show Recommendation/Opposition Outcomes to Author -->
+                  <div v-else-if="record.type === 'Recommended Reviewer' || record.type === 'Opposed Reviewer'" class="rec-conclusion">
+                    <h4>Outcome:</h4>
+                    <p>{{ record.comment }}</p>
                   </div>
                 </div>
               </div>
@@ -1571,5 +1795,175 @@ const goBack = () => {
   .form-actions {
     flex-direction: column;
   }
+}
+
+.record-type-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: white;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.record-type-badge.recommended {
+  background-color: #27ae60;
+}
+
+.record-type-badge.opposed {
+  background-color: #e74c3c;
+}
+
+.recommended-reviewer-record {
+  border-left: 4px solid #27ae60 !important;
+  background-color: #f0f9f4 !important;
+}
+
+.opposed-reviewer-record {
+  border-left: 4px solid #e74c3c !important;
+  background-color: #fdf2f2 !important;
+}
+
+.rec-conclusion {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+/* Revision Reviewer Styles */
+.revision-reviewers-section {
+  margin-top: 1.5rem;
+  background-color: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.section-title {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.section-helper {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.reviewer-row {
+  background: white;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.reviewer-fields {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.form-group-item {
+  width: calc(50% - 0.5rem);
+}
+
+.form-group-item.full-width {
+  width: 100%;
+}
+
+.form-group-item label {
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.add-btn {
+  padding: 0.5rem 1rem;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.add-btn:hover {
+  background-color: #219150;
+}
+
+.add-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.remove-btn {
+  padding: 0.25rem 0.5rem;
+  color: #e74c3c;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.remove-btn:hover {
+  text-decoration: underline;
+}
+
+.active-recommendations {
+  grid-column: 1 / -1;
+  background: #fff3cd;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.rec-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.withdraw-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.withdraw-btn:hover {
+  background: #c0392b;
 }
 </style>

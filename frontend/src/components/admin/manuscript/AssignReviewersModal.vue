@@ -19,6 +19,7 @@ const showNewReviewerModal = ref(false)
 const showConfirmation = ref(false)
 const isSending = ref(false)
 const isSuccess = ref(false)
+const hideIdentity = ref(true)
 
 // Form Data
 const invitation = reactive({
@@ -138,6 +139,11 @@ const validateAndSend = () => {
     alert('Please select at least one reviewer.')
     return
   }
+  
+  if (hideIdentity.value) {
+     alert("Reviewers assigned with blind review enabled - author will not see reviewer identities.")
+  }
+  
   showConfirmation.value = true
 }
 
@@ -303,6 +309,14 @@ const requiredTypesMissing = computed(() => {
               </div>
               <button class="btn-outline small">Preview</button>
             </div>
+            
+            <div v-show="!invitationCollapsed" class="blind-review-option">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="hideIdentity" disabled>
+                <span class="brand-red-text">Hide reviewer identity from authors</span>
+              </label>
+              <p class="helper-text">Reviewer names and affiliations will remain anonymous to authors.</p>
+            </div>
           </section>
         </div>
 
@@ -407,6 +421,22 @@ const requiredTypesMissing = computed(() => {
 .invitation-form { margin-top: 1rem; }
 .form-row { margin-bottom: 1rem; }
 .full-width { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+
+.blind-review-option {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #eee;
+}
+.brand-red-text {
+  color: #C93737;
+  font-weight: 600;
+  margin-left: 8px;
+}
+.helper-text {
+  margin: 4px 0 0 24px;
+  font-size: 12px;
+  color: #999;
+}
 
 .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 1rem; background: white; }
 .btn { padding: 0.6rem 1.5rem; border-radius: 4px; border: none; cursor: pointer; }

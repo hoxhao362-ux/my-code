@@ -194,17 +194,11 @@ export default {
     dashboard: '后台主页',
     roleSwitch: '角色切换',
     roles: {
-<<<<<<< HEAD
-      admin: '管理员后台',
-      reviewer: '审核员后台',
-      author: '作者后台'
-=======
       admin: '编辑工作台',
       associate_editor: '副编辑工作台',
       ea_ae: '助理/顾问编辑工作台',
       reviewer: '审核员工作台',
       author: '作者工作台'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     },
     tasks: '审核任务',
     history: '审核记录',
@@ -212,6 +206,10 @@ export default {
     roleManagement: '角色管理',
     userList: '用户列表',
     reviewerManagement: '审核员管理',
+    auditReviewerManagement: '评审人管理',
+    auditRecommendedReviewers: '推荐评审人',
+    auditOpposedReviewers: '回避评审人',
+    auditMyTasks: '我的任务',
     accountStatus: '账号状态',
     systemSettings: '系统设置',
     basicConfig: '基础配置',
@@ -227,8 +225,6 @@ export default {
     submissionGuide: '投稿指南',
     onlineConsultation: '在线咨询',
     permissionDenied: '权限不足，无法登录后台'
-<<<<<<< HEAD
-=======
   },
   submission: {
     login: {
@@ -351,6 +347,5 @@ export default {
       allDimensionsRequired: '请评价所有维度',
       decisionRequired: '请选择推荐意见',
     }
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   }
 }

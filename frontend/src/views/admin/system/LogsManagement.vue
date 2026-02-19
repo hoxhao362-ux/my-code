@@ -4,49 +4,28 @@ import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 import { exportLogsToExcel, checkExportPermission } from '../../../utils/export'
 
+const props = defineProps({
+  embedded: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-// 日志类型
+// Log Types
 const logTypes = [
-  { value: 'all', label: '全部日志' },
-  { value: 'operation', label: '操作日志' },
-  { value: 'login', label: '登录日志' },
-  { value: 'error', label: '异常日志' }
+  { value: 'all', label: 'All Logs' },
+  { value: 'operation', label: 'Operation Logs' },
+  { value: 'login', label: 'Login Logs' },
+  { value: 'error', label: 'Error Logs' }
 ]
 
-// 日志数据
-const logsData = ref([
-  // 最新操作日志（今天）
-  { id: 13, type: 'operation', user: 'admin', action: '登录系统', target: '/admin', time: '2026-01-11 09:30:25', ip: '127.0.0.1', status: 'success' },
-  { id: 14, type: 'operation', user: 'admin', action: '查看用户列表', target: '/admin/users', time: '2026-01-11 09:32:18', ip: '127.0.0.1', status: 'success' },
-  { id: 15, type: 'operation', user: 'admin', action: '更新系统配置', target: '系统设置', time: '2026-01-11 09:35:42', ip: '127.0.0.1', status: 'success' },
-  { id: 16, type: 'operation', user: 'admin', action: '查看审核任务', target: '/admin/audit-list', time: '2026-01-11 09:40:15', ip: '127.0.0.1', status: 'success' },
-  { id: 17, type: 'operation', user: 'reviewer1', action: '审核稿件', target: '稿件ID:20260111001', time: '2026-01-11 09:45:30', ip: '192.168.1.106', status: 'success' },
-  { id: 18, type: 'operation', user: 'author1', action: '提交新稿件', target: '稿件ID:20260111002', time: '2026-01-11 09:50:22', ip: '192.168.1.107', status: 'success' },
-  { id: 19, type: 'operation', user: 'admin', action: '导出操作日志', target: '日志文件', time: '2026-01-11 09:55:10', ip: '127.0.0.1', status: 'success' },
-  { id: 20, type: 'operation', user: 'admin', action: '查看系统日志', target: '/admin/system/logs', time: '2026-01-11 10:00:05', ip: '127.0.0.1', status: 'success' },
-  
-  // 操作日志
-  { id: 1, type: 'operation', user: 'admin', action: '修改用户角色', target: 'user1', time: '2026-01-08 17:30:45', ip: '127.0.0.1', status: 'success' },
-  { id: 2, type: 'operation', user: 'admin', action: '禁用用户', target: 'user2', time: '2026-01-08 17:25:30', ip: '127.0.0.1', status: 'success' },
-  { id: 3, type: 'operation', user: 'admin', action: '添加审核员', target: 'reviewer4', time: '2026-01-08 17:20:15', ip: '127.0.0.1', status: 'success' },
-  { id: 4, type: 'operation', user: 'admin', action: '修改投稿规则', target: '', time: '2026-01-08 17:15:00', ip: '127.0.0.1', status: 'success' },
-  
-  // 登录日志
-  { id: 5, type: 'login', user: 'admin', action: '登录成功', target: '', time: '2026-01-08 17:00:00', ip: '127.0.0.1', status: 'success' },
-  { id: 6, type: 'login', user: 'user1', action: '登录失败', target: '', time: '2026-01-08 16:55:45', ip: '192.168.1.100', status: 'failed' },
-  { id: 7, type: 'login', user: 'reviewer1', action: '登录成功', target: '', time: '2026-01-08 16:50:30', ip: '192.168.1.101', status: 'success' },
-  { id: 8, type: 'login', user: 'author1', action: '登录成功', target: '', time: '2026-01-08 16:45:15', ip: '192.168.1.102', status: 'success' },
-  
-  // 异常日志
-  { id: 9, type: 'error', user: 'user2', action: '权限不足', target: '/admin/dashboard', time: '2026-01-08 16:40:00', ip: '192.168.1.103', status: 'error' },
-  { id: 10, type: 'error', user: '', action: '系统错误', target: '/api/submission', time: '2026-01-08 16:35:45', ip: '192.168.1.104', status: 'error' },
-  { id: 11, type: 'error', user: 'user3', action: '参数错误', target: '/api/review', time: '2026-01-08 16:30:30', ip: '192.168.1.105', status: 'error' },
-  { id: 12, type: 'error', user: '', action: '数据库连接失败', target: '', time: '2026-01-08 16:25:15', ip: '', status: 'error' }
-])
+// Log Data - Computed from Store
+const logsData = computed(() => userStore.systemLogs)
 
-// 日志过滤条件
+// Log Filters
 const logFilters = ref({
   type: 'all',
   keyword: '',
@@ -54,88 +33,88 @@ const logFilters = ref({
   endDate: ''
 })
 
-// 分页设置
+// Pagination Settings
 const pagination = ref({
   currentPage: 1,
   pageSize: 10,
   total: computed(() => filteredLogs.value.length)
 })
 
-// 计算过滤后的日志
+// Filter Logs
 const filteredLogs = computed(() => {
   return logsData.value.filter(log => {
-    // 类型过滤
+    // Type Filter
     const matchesType = logFilters.value.type === 'all' || log.type === logFilters.value.type
     
-    // 关键词过滤
+    // Keyword Filter
     const matchesKeyword = !logFilters.value.keyword || 
-      log.user.toLowerCase().includes(logFilters.value.keyword.toLowerCase()) ||
-      log.action.toLowerCase().includes(logFilters.value.keyword.toLowerCase()) ||
-      log.target.toLowerCase().includes(logFilters.value.keyword.toLowerCase()) ||
-      log.ip.includes(logFilters.value.keyword)
+      (log.user && log.user.toLowerCase().includes(logFilters.value.keyword.toLowerCase())) ||
+      (log.action && log.action.toLowerCase().includes(logFilters.value.keyword.toLowerCase())) ||
+      (log.target && log.target.toLowerCase().includes(logFilters.value.keyword.toLowerCase())) ||
+      (log.ip && log.ip.includes(logFilters.value.keyword))
     
-    // 日期过滤
+    // Date Filter
     const logDate = new Date(log.time)
     const startDate = logFilters.value.startDate ? new Date(logFilters.value.startDate) : null
     const endDate = logFilters.value.endDate ? new Date(logFilters.value.endDate) : null
     
     let matchesDate = true
     if (startDate && endDate) {
-      matchesDate = logDate >= startDate && logDate <= endDate
+      // Add one day to end date to include the full day
+      const endDateAdjusted = new Date(endDate)
+      endDateAdjusted.setDate(endDateAdjusted.getDate() + 1)
+      matchesDate = logDate >= startDate && logDate < endDateAdjusted
     } else if (startDate) {
       matchesDate = logDate >= startDate
     } else if (endDate) {
-      matchesDate = logDate <= endDate
+      const endDateAdjusted = new Date(endDate)
+      endDateAdjusted.setDate(endDateAdjusted.getDate() + 1)
+      matchesDate = logDate < endDateAdjusted
     }
     
     return matchesType && matchesKeyword && matchesDate
   })
 })
 
-// 计算分页后的日志
+// Paginated Logs
 const paginatedLogs = computed(() => {
   const start = (pagination.value.currentPage - 1) * pagination.value.pageSize
   const end = start + pagination.value.pageSize
   return filteredLogs.value.slice(start, end)
 })
 
-// 导出日志
+// Export Logs
 const exportLogs = () => {
-  // 调用真实的日志导出功能，导出过滤后的日志
   exportLogsToExcel(filteredLogs.value)
 }
 
-// 确认模态框状态
+// Confirm Modal
 const showConfirmModal = ref(false)
 
-// 打开确认模态框
 const openConfirmModal = () => {
   showConfirmModal.value = true
 }
 
-// 确认清空日志
+// Confirm Clear
 const confirmClearLogs = () => {
-  // 执行清空操作
-  logsData.value = []
-  // 关闭模态框
+  // Clear in store
+  userStore.systemLogs = []
+  // Clear in local storage (manually or via store action if available, but direct manipulation for now is ok given the store structure)
+  localStorage.removeItem('systemLogs')
+  
   showConfirmModal.value = false
-  // 显示成功提示
-  alert('日志已清空！')
+  alert('Logs cleared successfully!')
 }
 
-// 取消清空日志
 const cancelClearLogs = () => {
-  // 仅关闭模态框，不执行任何操作
   showConfirmModal.value = false
 }
 
-// 切换日志类型
 const changeLogType = (type) => {
   logFilters.value.type = type
   pagination.value.currentPage = 1
 }
 
-// 重置筛选条件
 const resetFilters = () => {
   logFilters.value = {
     type: 'all',
@@ -146,17 +125,15 @@ const resetFilters = () => {
   pagination.value.currentPage = 1
 }
 
-// 获取日志类型名称
 const getLogTypeName = (type) => {
   const typeMap = {
-    'operation': '操作日志',
-    'login': '登录日志',
-    'error': '异常日志'
+    'operation': 'Operation',
+    'login': 'Login',
+    'error': 'Error'
   }
   return typeMap[type] || type
 }
 
-// 获取状态样式
 const getStatusClass = (status) => {
   const statusMap = {
     'success': 'success',
@@ -169,8 +146,8 @@ const getStatusClass = (status) => {
 
 <template>
   <div class="admin-logs-management-container">
-    <!-- 导航栏 -->
     <Navigation 
+      v-if="!embedded"
       :user="user"
       :current-page="'admin-system-logs'"
       :toggle-directory="() => {}"
@@ -178,15 +155,14 @@ const getStatusClass = (status) => {
       :logout="userStore.logout"
     />
 
-    <!-- 日志管理内容 -->
     <main class="content">
       <div class="header">
-        <h1>系统设置 - 日志管理</h1>
-        <p class="subtitle">管理平台的操作日志、登录日志和异常日志</p>
+        <h1>System Settings - Logs Management</h1>
+        <p class="subtitle">Manage platform operation logs, login logs, and error logs.</p>
       </div>
 
       <section class="logs-section">
-        <!-- 日志类型切换 -->
+        <!-- Log Type Tabs -->
         <div class="log-type-tabs">
           <button 
             v-for="type in logTypes" 
@@ -199,14 +175,14 @@ const getStatusClass = (status) => {
           </button>
         </div>
         
-        <!-- 日志过滤和操作 -->
+        <!-- Filters & Actions -->
         <div class="logs-header">
           <div class="filter-controls">
             <div class="search-box">
               <input 
                 type="text" 
                 v-model="logFilters.keyword" 
-                placeholder="搜索日志..."
+                placeholder="Search logs..."
                 class="search-input"
               >
             </div>
@@ -216,18 +192,18 @@ const getStatusClass = (status) => {
                 type="date" 
                 v-model="logFilters.startDate" 
                 class="date-input"
-                placeholder="开始日期"
+                placeholder="Start Date"
               >
-              <span class="date-separator">至</span>
+              <span class="date-separator">to</span>
               <input 
                 type="date" 
                 v-model="logFilters.endDate" 
                 class="date-input"
-                placeholder="结束日期"
+                placeholder="End Date"
               >
             </div>
             
-            <button class="btn btn-reset" @click="resetFilters">重置筛选</button>
+            <button class="btn btn-reset" @click="resetFilters">Reset</button>
           </div>
           
           <div class="log-actions">
@@ -236,25 +212,25 @@ const getStatusClass = (status) => {
               class="btn btn-export" 
               @click="exportLogs"
             >
-              导出日志
+              Export
             </button>
-            <button class="btn btn-danger" @click="openConfirmModal">清空日志</button>
+            <button class="btn btn-danger" @click="openConfirmModal">Clear Logs</button>
           </div>
         </div>
         
-        <!-- 日志列表 -->
+        <!-- Logs Table -->
         <div class="logs-table-container">
           <table class="logs-table">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>日志类型</th>
-                <th>操作用户</th>
-                <th>操作内容</th>
-                <th>操作对象</th>
-                <th>IP地址</th>
-                <th>操作时间</th>
-                <th>状态</th>
+                <th>Type</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>IP Address</th>
+                <th>Time</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -265,7 +241,7 @@ const getStatusClass = (status) => {
                     {{ getLogTypeName(log.type) }}
                   </span>
                 </td>
-                <td class="log-user">{{ log.user || '系统' }}</td>
+                <td class="log-user">{{ log.user || 'System' }}</td>
                 <td class="log-action">{{ log.action }}</td>
                 <td class="log-target">{{ log.target || '-' }}</td>
                 <td class="log-ip">{{ log.ip || '-' }}</td>
@@ -277,14 +253,14 @@ const getStatusClass = (status) => {
                 </td>
               </tr>
               
-              <!-- 空状态 -->
+              <!-- Empty State -->
               <tr v-if="paginatedLogs.length === 0" class="empty-row">
                 <td colspan="8" class="empty-cell">
                   <div class="empty-state">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm5.5 3a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-3-8a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3.5a1 1 0 0 1-1-1zm8 7a1 1 0 1 0 0-2h-1a1 1 0 1 0 0 2h1z"/>
                     </svg>
-                    <p>没有找到匹配的日志记录</p>
+                    <p>No matching logs found</p>
                   </div>
                 </td>
               </tr>
@@ -292,10 +268,10 @@ const getStatusClass = (status) => {
           </table>
         </div>
         
-        <!-- 分页 -->
+        <!-- Pagination -->
         <div class="pagination" v-if="pagination.total > 0">
           <div class="pagination-info">
-            共 {{ pagination.total }} 条记录，第 {{ pagination.currentPage }} / {{ Math.ceil(pagination.total / pagination.pageSize) }} 页
+            Total {{ pagination.total }} records, Page {{ pagination.currentPage }} / {{ Math.ceil(pagination.total / pagination.pageSize) }}
           </div>
           <div class="pagination-controls">
             <button 
@@ -303,41 +279,40 @@ const getStatusClass = (status) => {
               :disabled="pagination.currentPage === 1"
               @click="pagination.currentPage--"
             >
-              上一页
+              Previous
             </button>
             <button 
               class="page-btn" 
               :disabled="pagination.currentPage === Math.ceil(pagination.total / pagination.pageSize)"
               @click="pagination.currentPage++"
             >
-              下一页
+              Next
             </button>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- 确认清空日志模态框 -->
+    <!-- Confirm Modal -->
     <div class="modal-overlay" v-if="showConfirmModal">
       <div class="modal">
         <div class="modal-header">
-          <h2>确认清空日志</h2>
+          <h2>Confirm Clear Logs</h2>
           <button class="close-btn" @click="cancelClearLogs">&times;</button>
         </div>
         <div class="modal-content">
-          <p>确定要清空所有日志吗？此操作不可恢复！</p>
+          <p>Are you sure you want to clear all logs? This action cannot be undone!</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-cancel" @click="cancelClearLogs">取消</button>
-          <button class="btn btn-danger" @click="confirmClearLogs">确认清空</button>
+          <button class="btn btn-cancel" @click="cancelClearLogs">Cancel</button>
+          <button class="btn btn-danger" @click="confirmClearLogs">Clear All</button>
         </div>
       </div>
     </div>
 
-    <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>

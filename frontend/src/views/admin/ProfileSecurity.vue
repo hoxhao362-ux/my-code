@@ -7,8 +7,6 @@ import { encryptPassword } from '../../utils/encryption'
 const userStore = useUserStore()
 const user = ref(userStore.user)
 
-<<<<<<< HEAD
-=======
 const props = defineProps({
   embedded: {
     type: Boolean,
@@ -16,7 +14,6 @@ const props = defineProps({
   }
 })
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 本地密码验证函数
 const validatePassword = (password) => {
   // 验证密码长度和包含字母数字
@@ -394,13 +391,10 @@ const generateTwoFactorSecret = () => {
   width: 100%;
 }
 
-<<<<<<< HEAD
-=======
 .content.embedded-content {
   margin-top: 0;
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 头部样式 */
 .header {
   margin-bottom: 2rem;

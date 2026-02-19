@@ -73,7 +73,7 @@ const handleCancel = () => {
         :disabled="loading"
       >
         <span v-if="loading">{{ t('common.loading') }}</span>
-        <span v-else>{{ isFinal ? t('common.submit') : (store.currentStep === 1 ? t('common.proceed') : t('common.next')) }}</span>
+        <span v-else>{{ isFinal ? t('common.submit') : (store.currentStep === 1 || store.currentStep === 4 ? t('common.proceed') : t('common.next')) }}</span>
       </button>
     </div>
   </div>

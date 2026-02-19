@@ -4,17 +4,12 @@ import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
-<<<<<<< HEAD
-=======
 import ReviewForm from '../../components/ReviewForm.vue'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-<<<<<<< HEAD
-=======
 // Review Modal State
 const showReviewModal = ref(false)
 const currentReviewJournal = ref(null)
@@ -160,7 +155,6 @@ const processReview = (journal, action, comment) => {
     }
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 筛选相关状态
 const searchQuery = ref('') // 搜索关键词
 const selectedModule = ref('all') // 模块筛选
@@ -571,32 +565,12 @@ const handleReview = (id, action) => {
               <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             
-<<<<<<< HEAD
-            <!-- 审稿建议文本框 -->
-            <div class="review-comment-section">
-              <label :for="'comment-' + journal.id" class="comment-label">审稿建议：</label>
-              <textarea 
-                :id="'comment-' + journal.id" 
-                v-model="journal[`${journal.reviewStage.toLowerCase()}Comment`]"
-                class="review-comment"
-                placeholder="请输入审稿建议..."
-                rows="4"
-              ></textarea>
-            </div>
-            
-=======
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             <div class="journal-actions">
               <div class="journal-status">
                 {{ journal.status }} - {{ journal.reviewStage }}
               </div>
               <div class="action-buttons">
-<<<<<<< HEAD
-                <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">通过</button>
-                <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">拒绝</button>
-=======
                 <button class="btn btn-primary" @click="openReviewModal(journal)">Start Review / 审稿</button>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </div>
             </div>
           </div>
@@ -658,8 +632,6 @@ const handleReview = (id, action) => {
       </section>
     </main>
 
-<<<<<<< HEAD
-=======
     <!-- Review Modal -->
     <div v-if="showReviewModal" class="modal-overlay">
       <div class="modal-content">
@@ -677,7 +649,6 @@ const handleReview = (id, action) => {
       </div>
     </div>
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
@@ -1163,8 +1134,6 @@ const handleReview = (id, action) => {
     align-self: flex-end;
   }
 }
-<<<<<<< HEAD
-=======
 
 /* Modal Styles */
 .modal-overlay {
@@ -1232,5 +1201,4 @@ const handleReview = (id, action) => {
 .modal-content {
   position: relative;
 }
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 </style>

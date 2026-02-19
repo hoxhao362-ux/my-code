@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import ActionModal from '../../components/admin/manuscript/actions/ActionModal.vue'
+import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
@@ -16,6 +17,20 @@ const selectedReviewers = ref([])
 const showActionModal = ref(false)
 const currentActionType = ref('')
 const currentReviewer = ref(null)
+
+// Verification State
+const showVerification = ref(false)
+const verificationAction = ref('')
+const verificationTarget = ref('')
+const pendingCallback = ref(null)
+
+// Verification Success Callback
+const handleVerificationSuccess = () => {
+  if (pendingCallback.value) {
+    pendingCallback.value()
+    pendingCallback.value = null
+  }
+}
 
 // Dropdown state
 const showBatchDropdown = ref(false)
@@ -163,49 +178,49 @@ const handleBatchAction = (type) => {
 
   const selectedReviewerObjects = reviewers.value.filter(r => selectedReviewers.value.includes(r.id))
 
-  if (type === 'invite') {
-    currentActionType.value = 'batch_invite'
-  } else if (type === 'remind') {
-    // Check pending count > 0
-    const pendingReviewers = selectedReviewerObjects.filter(r => r.pendingCount > 0)
-    if (pendingReviewers.length === 0) {
-      alert("No pending tasks for selected reviewers.")
-      return
+  const proceed = () => {
+    if (type === 'invite') {
+      currentActionType.value = 'batch_invite'
+    } else if (type === 'remind') {
+      // Check pending count > 0
+      const pendingReviewers = selectedReviewerObjects.filter(r => r.pendingCount > 0)
+      if (pendingReviewers.length === 0) {
+        alert("No pending tasks for selected reviewers.")
+        return
+      }
+      if (pendingReviewers.length < selectedReviewerObjects.length) {
+         // Optional: warn user that some reviewers have no pending tasks?
+      }
+      currentActionType.value = 'batch_remind'
+    } else if (type === 'mark_active') {
+      const inactiveReviewers = selectedReviewerObjects.filter(r => r.status !== 'Active')
+      if (inactiveReviewers.length === 0) {
+        alert("Selected reviewers are already active.")
+        return
+      }
+      currentActionType.value = 'batch_mark_active'
+    } else if (type === 'mark_inactive') {
+      const activeReviewers = selectedReviewerObjects.filter(r => r.status === 'Active')
+      if (activeReviewers.length === 0) {
+        alert("Selected reviewers are already inactive.")
+        return
+      }
+      currentActionType.value = 'batch_mark_inactive'
     }
-    // If some don't have pending tasks, maybe filter them out or let Modal handle? 
-    // Prompt says "Editor can select manuscript...". Modal will likely show filtered list.
-    // Let's pass all selected and let Modal filter or just pass filtered.
-    // Prompt: "Editor check >=1 'Pending > 0' reviewer". So we should probably filter here or warn.
-    // Let's filter to be safe.
-    if (pendingReviewers.length < selectedReviewerObjects.length) {
-       // Optional: warn user that some reviewers have no pending tasks?
-       // For now, let's just pass the valid ones.
-    }
-    currentActionType.value = 'batch_remind'
-  } else if (type === 'mark_active') {
-    const inactiveReviewers = selectedReviewerObjects.filter(r => r.status !== 'Active')
-    if (inactiveReviewers.length === 0) {
-      alert("Selected reviewers are already active.")
-      return
-    }
-    currentActionType.value = 'batch_mark_active'
-  } else if (type === 'mark_inactive') {
-    const activeReviewers = selectedReviewerObjects.filter(r => r.status === 'Active')
-    if (activeReviewers.length === 0) {
-      alert("Selected reviewers are already inactive.")
-      return
-    }
-    currentActionType.value = 'batch_mark_inactive'
+    
+    currentReviewer.value = selectedReviewerObjects
+    showActionModal.value = true
   }
-  
-  // Reuse currentReviewer to pass the list? Or better add a new prop to ActionModal.
-  // We will add 'reviewers' prop to ActionModal.
-  // For now, let's set currentReviewer to null (or array if we hack it, but better add prop).
-  // We'll set a temporary property on the modal component usage.
-  currentReviewer.value = selectedReviewerObjects // We will assume ActionModal can handle array in 'reviewers' prop (to be added) or we pass it via 'reviewer' (not ideal).
-  // Actually, let's update the template to pass selectedReviewers properly.
-  
-  showActionModal.value = true
+
+  if (type === 'mark_inactive') {
+    // Sensitive Action: Mark Inactive
+    verificationAction.value = 'Batch Suspend Reviewers'
+    verificationTarget.value = `${selectedReviewerObjects.length} Reviewers`
+    pendingCallback.value = proceed
+    showVerification.value = true
+  } else {
+    proceed()
+  }
 }
 
 const handleModalSubmit = ({ type, data }) => {
@@ -369,6 +384,16 @@ const selectAll = (e) => {
       @close="showActionModal = false"
       @submit="handleModalSubmit"
     />
+
+    <!-- Sensitive Operation Verification -->
+    <SensitiveOperationVerification
+      :visible="showVerification"
+      :action-type="verificationAction"
+      :target="verificationTarget"
+      @close="showVerification = false"
+      @verify-success="handleVerificationSuccess"
+    />
+
   </div>
 </template>
 

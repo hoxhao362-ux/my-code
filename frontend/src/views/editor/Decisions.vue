@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
+import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
@@ -321,6 +322,20 @@ const showActionModal = ref(false)
 const currentAction = ref('') // 'view_details', 'resend', 'forward', 'add_note', 'approve', 'reject', 'assign_ae'
 const currentLetter = ref(null)
 
+// Verification State
+const showVerification = ref(false)
+const verificationAction = ref('')
+const verificationTarget = ref('')
+const pendingCallback = ref(null)
+
+// Verification Success Callback
+const handleVerificationSuccess = () => {
+  if (pendingCallback.value) {
+    pendingCallback.value()
+    pendingCallback.value = null
+  }
+}
+
 // Forms for Modals
 const actionForms = ref({
   resend: {
@@ -380,43 +395,55 @@ const openActionModal = (action, item) => {
 }
 
 const handleConfirmAction = () => {
-  if (currentAction.value === 'resend') {
-     alert(`Resending to ${actionForms.value.resend.recipient}...`)
-     currentLetter.value.openStatus = 'Unopened'
-     currentLetter.value.date = new Date().toLocaleDateString()
-  } else if (currentAction.value === 'forward') {
-     alert(`Forwarding to ${actionForms.value.forward.recipient}...`)
-  } else if (currentAction.value === 'add_note') {
-     alert('Internal Note Saved.')
-  } else if (currentAction.value === 'approve') {
-     alert('Decision Approved.')
-     // Update queue
-     const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
-     if (idx !== -1) approvalQueue.value.splice(idx, 1)
-     // Add to sent
-     sentLetters.value.unshift({
+  const proceed = () => {
+    if (currentAction.value === 'resend') {
+      alert(`Resending to ${actionForms.value.resend.recipient}...`)
+      currentLetter.value.openStatus = 'Unopened'
+      currentLetter.value.date = new Date().toLocaleDateString()
+    } else if (currentAction.value === 'forward') {
+      alert(`Forwarding to ${actionForms.value.forward.recipient}...`)
+    } else if (currentAction.value === 'add_note') {
+      alert('Internal Note Saved.')
+    } else if (currentAction.value === 'approve') {
+      alert('Decision Approved.')
+      // Update queue
+      const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
+      if (idx !== -1) approvalQueue.value.splice(idx, 1)
+      // Add to sent
+      sentLetters.value.unshift({
         id: Date.now(),
         recipient: currentLetter.value.author,
         subject: `Decision on ${currentLetter.value.manuscriptId}`,
         date: new Date().toLocaleDateString(),
         status: 'Approved',
         openStatus: 'Unopened'
-     })
-  } else if (currentAction.value === 'reject') {
-     if (actionForms.value.reject.reason === 'Others' && (!actionForms.value.reject.detail || actionForms.value.reject.detail.length < 20)) {
-       alert("Please provide a detailed explanation (at least 20 chars).")
-       return
-     }
-     alert('Decision Rejected.')
-     const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
-     if (idx !== -1) approvalQueue.value.splice(idx, 1)
-  } else if (currentAction.value === 'assign_ae') {
-     alert(`Task reassigned to ${actionForms.value.assignAE.targetAE}.`)
-     const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
-     if (idx !== -1) approvalQueue.value.splice(idx, 1)
+      })
+    } else if (currentAction.value === 'reject') {
+      if (actionForms.value.reject.reason === 'Others' && (!actionForms.value.reject.detail || actionForms.value.reject.detail.length < 20)) {
+        alert("Please provide a detailed explanation (at least 20 chars).")
+        return
+      }
+      alert('Decision Rejected.')
+      const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
+      if (idx !== -1) approvalQueue.value.splice(idx, 1)
+    } else if (currentAction.value === 'assign_ae') {
+      alert(`Task reassigned to ${actionForms.value.assignAE.targetAE}.`)
+      const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
+      if (idx !== -1) approvalQueue.value.splice(idx, 1)
+    }
+    
+    showActionModal.value = false
   }
-  
-  showActionModal.value = false
+
+  if (currentAction.value === 'reject') {
+    // Sensitive Action: Reject
+    verificationAction.value = 'Reject Manuscript Decision'
+    verificationTarget.value = currentLetter.value.manuscriptTitle
+    pendingCallback.value = proceed
+    showVerification.value = true
+  } else {
+    proceed()
+  }
 }
 
 const handleViewSentLetter = (letter) => {
@@ -989,6 +1016,15 @@ const toggleTemplateDropdown = (id) => {
          </div>
       </div>
     </div>
+
+    <!-- Sensitive Operation Verification -->
+    <SensitiveOperationVerification
+      :visible="showVerification"
+      :action-type="verificationAction"
+      :target="verificationTarget"
+      @close="showVerification = false"
+      @verify-success="handleVerificationSuccess"
+    />
 
   </div>
 </template>

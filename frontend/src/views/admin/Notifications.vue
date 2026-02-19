@@ -1,11 +1,7 @@
 <template>
   <div class="notifications-container">
     <h2 class="page-title">消息通知</h2>
-<<<<<<< HEAD
-    <div class="back-button-container">
-=======
     <div class="back-button-container" v-if="!embedded">
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       <button class="back-button" @click="goBack">
         <span class="back-arrow">←</span> 返回上一页
       </button>
@@ -61,8 +57,6 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-<<<<<<< HEAD
-=======
 const props = defineProps({
   embedded: {
     type: Boolean,
@@ -70,7 +64,6 @@ const props = defineProps({
   }
 })
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 const goBack = () => {
   router.back()
 }

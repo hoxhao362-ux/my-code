@@ -7,6 +7,7 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import html2pdf from 'html2pdf.js'
 import { useErrorScroll } from '../../composables/useErrorScroll'
+import { validateORCID, validateDOI, searchInstitutions } from '../../utils/validators'
 
 const store = useSubmissionStore()
 const { t } = useI18n()
@@ -14,9 +15,65 @@ const submitting = ref(false)
 const showPublishingModal = ref(false)
 const { scrollToError } = useErrorScroll()
 
+// Helper: Institution Search
+const showInstSuggestions = ref(null)
+const instSuggestions = ref([])
+const activeInstSearch = ref(null)
+
+const handleInstSearch = async (query, index) => {
+  if (query.length < 2) {
+    instSuggestions.value = []
+    showInstSuggestions.value = null
+    return
+  }
+  activeInstSearch.value = index
+  instSuggestions.value = await searchInstitutions(query)
+  if (instSuggestions.value.length > 0) {
+    showInstSuggestions.value = index
+  }
+}
+
+const selectInstitution = (index, inst) => {
+  store.formData.authors[index].institution = inst
+  showInstSuggestions.value = null
+}
+
+// Helper: ORCID Validation
+const validatingORCID = ref({})
+const orcidStatus = ref({}) // { index: { valid: bool, msg: string } }
+
+const checkORCID = async (index, orcid) => {
+  if (!orcid) return
+  validatingORCID.value[index] = true
+  const result = await validateORCID(orcid)
+  orcidStatus.value[index] = result
+  validatingORCID.value[index] = false
+}
+
+// Helper: DOI Validation
+const repWorkDOI = ref('')
+const doiStatus = ref(null)
+const validatingDOI = ref(false)
+
+const checkDOI = async () => {
+  if (!repWorkDOI.value) return
+  validatingDOI.value = true
+  const result = await validateDOI(repWorkDOI.value)
+  doiStatus.value = result
+  validatingDOI.value = false
+  
+  if (result.valid) {
+     // Store it in form data (mock field)
+     if (!store.formData.repWorkDOI) store.formData.repWorkDOI = repWorkDOI.value
+  }
+}
+
 onMounted(() => {
   if (store.steps[5].status === 'error') {
     scrollToError()
+  }
+  if (store.formData.repWorkDOI) {
+      repWorkDOI.value = store.formData.repWorkDOI
   }
 })
 
@@ -198,10 +255,33 @@ const confirmSubmit = async () => {
           <div class="card-body">
             <div class="form-row">
               <input v-model="author.name" :placeholder="t('manuscriptData.authors.name')" class="form-input">
-              <input v-model="author.institution" :placeholder="t('manuscriptData.authors.institution')" class="form-input">
+              
+              <div class="inst-search-wrapper" style="position: relative; width: 100%;">
+                <input 
+                  v-model="author.institution" 
+                  @input="e => handleInstSearch(e.target.value, index)"
+                  :placeholder="t('manuscriptData.authors.institution')" 
+                  class="form-input"
+                >
+                <ul v-if="showInstSuggestions === index && instSuggestions.length > 0" class="inst-suggestions">
+                   <li v-for="inst in instSuggestions" :key="inst" @click="selectInstitution(index, inst)">{{ inst }}</li>
+                </ul>
+              </div>
             </div>
             <div class="form-row">
-              <input v-model="author.email" :placeholder="t('manuscriptData.authors.email')" class="form-input full">
+              <input v-model="author.email" :placeholder="t('manuscriptData.authors.email')" class="form-input">
+              <div class="orcid-wrapper" style="width: 100%;">
+                <input 
+                   v-model="author.orcid" 
+                   @blur="checkORCID(index, author.orcid)"
+                   placeholder="ORCID (e.g. 0000-0000-0000-0000)" 
+                   class="form-input"
+                   :class="{'valid': orcidStatus[index]?.valid, 'invalid': orcidStatus[index]?.valid === false}"
+                >
+                <span v-if="validatingORCID[index]" class="status-icon">⌛</span>
+                <span v-else-if="orcidStatus[index]?.valid" class="status-icon success" title="Verified">✓</span>
+                <span v-else-if="orcidStatus[index]?.valid === false" class="status-icon error" :title="orcidStatus[index].message">✕</span>
+              </div>
             </div>
             <div class="roles">
               <label>
@@ -266,6 +346,34 @@ const confirmSubmit = async () => {
       </div>
       <div v-if="store.steps[5].status === 'error' && !store.formData.noFunding && store.formData.funding.length === 0" class="error-msg">
         {{ t('manuscriptData.errors.noFunding') }}
+      </div>
+    </div>
+
+    <!-- Representative Work DOI Validation (Requirement #6) -->
+    <div class="section">
+      <div class="section-header">
+        <h3>Representative Work DOI (Author Validation)</h3>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Representative Work DOI (Optional)</label>
+        <div class="doi-wrapper" style="display: flex; gap: 10px; align-items: center;">
+          <input 
+            v-model="repWorkDOI" 
+            placeholder="e.g. 10.1038/s41586-020-2012-7" 
+            class="form-input"
+            style="flex: 1;"
+            :class="{'valid': doiStatus?.valid, 'invalid': doiStatus?.valid === false}"
+          >
+          <button class="btn btn-secondary" @click="checkDOI" :disabled="validatingDOI">
+             {{ validatingDOI ? 'Verifying...' : 'Verify DOI' }}
+          </button>
+        </div>
+        <div v-if="doiStatus" :class="doiStatus.valid ? 'success-msg' : 'error-msg'" style="margin-top: 5px; font-size: 13px;">
+           {{ doiStatus.message }}
+        </div>
+        <p class="hint" style="font-size: 12px; color: #666; margin-top: 5px;">
+          The system will verify the validity of the DOI link.
+        </p>
       </div>
     </div>
 
@@ -498,5 +606,60 @@ const confirmSubmit = async () => {
 .error-msg {
   color: #e74c3c;
   margin-top: 10px;
+}
+
+.success-msg {
+  color: #27ae60;
+  margin-top: 10px;
+}
+
+.inst-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.inst-suggestions li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.inst-suggestions li:hover {
+  background: #f0f8ff;
+}
+
+.valid {
+  border-color: #27ae60 !important;
+  background-image: linear-gradient(to right, transparent, #e8f5e9);
+}
+
+.invalid {
+  border-color: #e74c3c !important;
+  background-image: linear-gradient(to right, transparent, #fdeea9);
+}
+
+.status-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+}
+
+.orcid-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 </style>

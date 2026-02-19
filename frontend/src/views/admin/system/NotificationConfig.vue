@@ -21,6 +21,14 @@ const notificationConfig = ref({
     statusUpdate: {
       subject: '稿件状态更新通知',
       content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+    },
+    reviewerInvitation: {
+      subject: 'Invitation to Review: {{title}}',
+      content: 'Dear Dr. {{reviewerName}},\n\nWe would like to invite you to review the manuscript entitled "{{title}}" (ID: {{submissionId}}) for our journal.\n\nAbstract:\n{{abstract}}\n\nPlease click the link below to accept or decline this invitation:\n{{link}}\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
+    },
+    recommendationResult: {
+      subject: 'Update on Recommended Reviewer for {{title}}',
+      content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
     }
   },
   
@@ -369,6 +377,56 @@ const resetConfig = () => {
                   </div>
                 </div>
               </div>
+              
+              <div class="template-group">
+                <h4>评审邀请通知（Reviewer Invitation）</h4>
+                <div class="form-group">
+                  <label>邮件主题</label>
+                  <input 
+                    type="text" 
+                    v-model="notificationConfig.emailTemplates.reviewerInvitation.subject" 
+                    class="form-control"
+                    placeholder="请输入邮件主题"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>邮件内容</label>
+                  <textarea 
+                    v-model="notificationConfig.emailTemplates.reviewerInvitation.content" 
+                    class="form-control textarea-large"
+                    rows="8"
+                    placeholder="请输入邮件内容"
+                  ></textarea>
+                  <div class="template-tips">
+                    <p>可用变量：{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{abstract}}（摘要）、{{link}}（接受链接）</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="template-group">
+                <h4>作者推荐结果通知（Recommendation Result）</h4>
+                <div class="form-group">
+                  <label>邮件主题</label>
+                  <input 
+                    type="text" 
+                    v-model="notificationConfig.emailTemplates.recommendationResult.subject" 
+                    class="form-control"
+                    placeholder="请输入邮件主题"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>邮件内容</label>
+                  <textarea 
+                    v-model="notificationConfig.emailTemplates.recommendationResult.content" 
+                    class="form-control textarea-large"
+                    rows="8"
+                    placeholder="请输入邮件内容"
+                  ></textarea>
+                  <div class="template-tips">
+                    <p>可用变量：{{authorName}}（作者姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div class="form-section">
@@ -566,13 +624,10 @@ const resetConfig = () => {
   width: 100%;
 }
 
-<<<<<<< HEAD
-=======
 .content.embedded-content {
   margin-top: 0;
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 头部样式 */
 .header {
   margin-bottom: 2rem;

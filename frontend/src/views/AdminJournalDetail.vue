@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import Navigation from '../components/Navigation.vue'
 import { checkExportPermission } from '../utils/export'
+import ManuscriptReviewerManagement from './admin/manuscript/ManuscriptReviewerManagement.vue'
+import ManuscriptBlindReviewAudit from './admin/manuscript/ManuscriptBlindReviewAudit.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -25,6 +27,18 @@ const journal = computed(() => {
 
 // 获取当前用户
 const user = computed(() => userStore.user)
+
+// Tabs
+const activeTab = ref('reviewer_management')
+const tabs = [
+  { id: 'manuscript', label: 'Manuscript Detail' },
+  { id: 'reviewer_management', label: 'Reviewer Management' },
+  { id: 'audit', label: 'Blind Review Audit' },
+  { id: 'history', label: 'Review History' }
+]
+
+// Blind Review Audit State - Managed in component
+
 
 // 预览附件
 const previewAttachment = (attachment) => {
@@ -423,51 +437,85 @@ onMounted(() => {
         </div>
       </header>
 
-      <!-- 摘要卡片 -->
-      <section class="journal-abstract card">
-        <h2 class="section-title">摘要</h2>
-        <div class="abstract-content" v-html="journal.abstract"></div>
-      </section>
+      <!-- Tabs Header -->
+      <div class="tabs-header">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id" 
+          class="tab-btn" 
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
 
-      <!-- 关键词卡片 -->
-      <section class="journal-keywords card">
-        <h2 class="section-title">关键词</h2>
-        <div class="keywords-list">
-          <span 
-            v-for="(keyword, index) in journal.keywords" 
-            :key="index" 
-            class="keyword-tag"
-          >
-            {{ keyword }}
-          </span>
-        </div>
-      </section>
-
-      <!-- 正文卡片 -->
-      <section class="journal-content card">
-        <h2 class="section-title">正文</h2>
-        <div class="content-body" v-html="journal.content"></div>
-      </section>
-
-      <!-- 审核历史记录卡片 -->
-      <section class="journal-review-history card" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
-        <h2 class="section-title">审核历史记录</h2>
-        <div class="review-history-list">
-          <div 
-            v-for="(record, index) in journal.reviewHistory" 
-            :key="index" 
-            class="review-history-item"
-          >
-            <div class="review-history-header">
-              <span class="review-stage">{{ record.stage }}：</span>
-              <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
-              <span class="review-date">{{ record.date }}</span>
-              <span class="reviewer">({{ record.reviewer }})</span>
-            </div>
-            <div class="review-comment" v-if="record.comment">{{ record.comment }}</div>
+      <!-- Tab Content: Manuscript -->
+      <div v-show="activeTab === 'manuscript'">
+        <!-- 摘要卡片 -->
+        <section class="journal-abstract card">
+          <h2 class="section-title">摘要</h2>
+          <div class="abstract-content" v-html="journal.abstract"></div>
+        </section>
+  
+        <!-- 关键词卡片 -->
+        <section class="journal-keywords card">
+          <h2 class="section-title">关键词</h2>
+          <div class="keywords-list">
+            <span 
+              v-for="(keyword, index) in journal.keywords" 
+              :key="index" 
+              class="keyword-tag"
+            >
+              {{ keyword }}
+            </span>
           </div>
-        </div>
-      </section>
+        </section>
+  
+        <!-- 正文卡片 -->
+        <section class="journal-content card">
+          <h2 class="section-title">正文</h2>
+          <div class="content-body" v-html="journal.content"></div>
+        </section>
+      </div>
+
+      <!-- Tab Content: Reviewer Management -->
+      <div v-show="activeTab === 'reviewer_management'" class="reviewer-management-tab">
+        <section class="card">
+           <ManuscriptReviewerManagement :manuscript-id="journalId" />
+        </section>
+      </div>
+
+      <!-- Tab Content: Blind Review Audit -->
+      <div v-show="activeTab === 'audit'" class="audit-tab">
+        <section class="card">
+          <ManuscriptBlindReviewAudit :manuscript-id="journalId" />
+        </section>
+      </div>
+
+      <!-- Tab Content: History -->
+      <div v-show="activeTab === 'history'">
+        <!-- 审核历史记录卡片 -->
+        <section class="journal-review-history card" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
+          <h2 class="section-title">审核历史记录</h2>
+          <div class="review-history-list">
+            <div 
+              v-for="(record, index) in journal.reviewHistory" 
+              :key="index" 
+              class="review-history-item"
+            >
+              <div class="review-history-header">
+                <span class="review-stage">{{ record.stage }}：</span>
+                <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
+                <span class="review-date">{{ record.date }}</span>
+                <span class="reviewer">({{ record.reviewer }})</span>
+              </div>
+              <div class="review-comment" v-if="record.comment">{{ record.comment }}</div>
+            </div>
+          </div>
+        </section>
+        <div v-else class="card no-data">No history available.</div>
+      </div>
     </div>
     <!-- 未找到稿件 -->
     <div v-else class="no-journal card">
@@ -497,11 +545,7 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-<<<<<<< HEAD
-  margin-top: 80px; /* 为固定导航栏留出空间 */
-=======
   margin-top: 100px; /* 为固定导航栏留出空间 */
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -527,6 +571,114 @@ onMounted(() => {
   padding: 1.5rem;
   box-shadow: none;
   border: 1px solid #e0e0e0;
+}
+
+/* Tabs */
+.tabs-header {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 1.5rem;
+  background: white;
+  padding: 0 1rem;
+  border-radius: 8px 8px 0 0;
+}
+
+.tab-btn {
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: -2px;
+}
+
+.tab-btn.active {
+  color: #C93737;
+  border-bottom-color: #C93737;
+}
+
+.tab-btn:hover {
+  color: #C93737;
+}
+
+/* Audit Styles */
+.audit-intro {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.audit-table {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.audit-header {
+  display: flex;
+  background: #f8f9fa;
+  padding: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+}
+
+.audit-row {
+  display: flex;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.col-item { flex: 2; }
+.col-status { flex: 1; }
+.col-action { flex: 1; display: flex; gap: 0.5rem; }
+
+.item-name { font-weight: 500; color: #333; }
+.ref-check { margin-top: 5px; }
+.btn-text { background: none; border: none; color: #3498db; cursor: pointer; text-decoration: underline; padding: 0; font-size: 0.9rem; }
+.feedback-text { color: #C93737; font-size: 0.9rem; margin-top: 5px; }
+
+.status-pass { color: #2ecc71; font-weight: bold; }
+.status-fail { color: #e74c3c; font-weight: bold; }
+.status-pending { color: #f39c12; font-weight: bold; }
+
+.btn-approve {
+  background: #C93737;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-reject {
+  background: #eee;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.audit-footer {
+  margin-top: 2rem;
+  text-align: right;
+}
+
+.btn-complete {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-complete:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
 }
 
 /* 标题样式 */

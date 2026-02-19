@@ -1,17 +1,11 @@
 <script setup>
-<<<<<<< HEAD
-import { ref, computed } from 'vue'
-=======
 import { ref, computed, reactive } from 'vue'
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import { validateEmail, validatePhone, encryptPassword } from '../../utils/encryption'
 
 const userStore = useUserStore()
 
-<<<<<<< HEAD
-=======
 // Edit State
 const isEditing = ref(false)
 const editForm = reactive({
@@ -84,7 +78,6 @@ const validateField = (field) => {
   }
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 // 加密函数
 const encryptEmail = (email) => {
   if (!email) return ''
@@ -103,14 +96,11 @@ const encryptPhone = (phone) => {
 const showAvatarModal = ref(false)
 const showAvatarActions = ref(false)
 const fileInput = ref(null)
-<<<<<<< HEAD
-=======
 const formData = ref({})
 const verificationData = ref({
   verifyPassword: '',
   isVerified: false
 })
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 
 // 查看信息状态
 const showFullContactInfo = ref(false)
@@ -158,21 +148,13 @@ const handleAvatarUpload = (event) => {
   if (file) {
     // 检查文件类型
     if (!file.type.startsWith('image/')) {
-<<<<<<< HEAD
-      alert('请选择图片文件')
-=======
       alert('Please select an image file')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       return
     }
     
     // 检查文件大小（限制为5MB）
     if (file.size > 5 * 1024 * 1024) {
-<<<<<<< HEAD
-      alert('图片大小不能超过5MB')
-=======
       alert('Image size cannot exceed 5MB')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       return
     }
     
@@ -183,11 +165,7 @@ const handleAvatarUpload = (event) => {
       // 更新用户头像
       formData.value.avatar = imageUrl
       userStore.updateUser({ avatar: imageUrl })
-<<<<<<< HEAD
-      alert('头像更新成功')
-=======
       alert('Avatar updated successfully')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     }
     reader.readAsDataURL(file)
     
@@ -199,11 +177,7 @@ const handleAvatarUpload = (event) => {
 // 验证当前密码
 const verifyPassword = () => {
   if (!verificationData.value.verifyPassword) {
-<<<<<<< HEAD
-    alert('请输入当前密码')
-=======
     alert('Please enter current password')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     return
   }
   
@@ -214,11 +188,7 @@ const verifyPassword = () => {
   if (encryptedPassword === userStore.user?.password) {
     verificationData.value.isVerified = true
   } else {
-<<<<<<< HEAD
-    alert('当前密码不正确')
-=======
     alert('Current password incorrect')
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
     verificationData.value.isVerified = false
   }
 }
@@ -269,21 +239,13 @@ const verifyPassword = () => {
                   class="btn btn-edit" 
                   @click="viewAvatar"
                 >
-<<<<<<< HEAD
-                  查看头像
-=======
                   View Avatar
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 </button>
                 <button 
                   class="btn btn-password" 
                   @click="triggerFileSelect"
                 >
-<<<<<<< HEAD
-                  更改头像
-=======
                   Change Avatar
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
                 </button>
               </div>
               
@@ -299,17 +261,6 @@ const verifyPassword = () => {
           </div>
           
           <div class="user-card-header">
-<<<<<<< HEAD
-            <h3 class="card-title">个人信息</h3>
-            <div class="header-actions">
-              <!-- 查看信息按钮 -->
-              <button 
-                class="btn btn-view" 
-                @click="toggleContactInfo"
-              >
-                {{ showFullContactInfo ? '隐藏信息' : '查看信息' }}
-              </button>
-=======
             <h3 class="card-title">Personal Information</h3>
             <div class="header-actions">
               <!-- Edit Actions -->
@@ -326,24 +277,12 @@ const verifyPassword = () => {
                   {{ showFullContactInfo ? 'Hide Info' : 'View Info' }}
                 </button>
               </template>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
             </div>
           </div>
           
           <!-- 用户信息 -->
           <div class="user-info">
             <div class="user-details">
-<<<<<<< HEAD
-              <h2 class="user-name">{{ userStore.user?.username || '未知用户' }}</h2>
-              <p class="user-role">
-                {{ userStore.user?.role === 'admin' ? '管理员' : 
-                   userStore.user?.role === 'reviewer' ? '审核员' : 
-                   userStore.user?.role === 'author' ? '作者' : '普通用户' }}
-              </p>
-              <div class="user-contact" v-if="showFullContactInfo">
-                <p v-if="userStore.user?.email"><strong>邮箱：</strong>{{ encryptEmail(userStore.user.email) }}</p>
-                <p v-if="userStore.user?.phone"><strong>手机号：</strong>{{ encryptPhone(userStore.user.phone) }}</p>
-=======
               <h2 class="user-name">{{ userStore.user?.username || 'Unknown User' }}</h2>
               <p class="user-role">
                 {{ userStore.user?.role === 'admin' ? 'Admin' : 
@@ -379,7 +318,6 @@ const verifyPassword = () => {
                    />
                    <span class="error-text" v-if="errors.phone">{{ errors.phone }}</span>
                  </div>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </div>
             </div>
           </div>
@@ -397,11 +335,7 @@ const verifyPassword = () => {
                 <img :src="userStore.user?.avatar" :alt="userStore.user?.username" class="full-size-avatar" />
               </div>
               <div v-else class="no-avatar-message">
-<<<<<<< HEAD
-                <p>您还没有上传头像</p>
-=======
                 <p>No avatar uploaded</p>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
               </div>
             </div>
           </div>
@@ -412,19 +346,13 @@ const verifyPassword = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-<<<<<<< HEAD
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
-=======
         <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-<<<<<<< HEAD
-=======
 /* Inline Edit Styles */
 .user-edit-form-inline {
   display: flex;
@@ -467,7 +395,6 @@ const verifyPassword = () => {
   margin-top: 4px;
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 /* 个人中心样式 */
 .profile-container {
   min-height: 100vh;
@@ -486,13 +413,10 @@ const verifyPassword = () => {
   margin-top: 80px; /* 为固定导航栏留出空间 */
 }
 
-<<<<<<< HEAD
-=======
 .profile-content.embedded-content {
   margin-top: 0;
 }
 
->>>>>>> e5fb48ccf9d841fc1e38217dce4c36103c37bd05
 .profile-wrapper {
   background: white;
   border-radius: 10px;

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import { EMAIL_TEMPLATES } from '../../../../constants/emailTemplates.js'
 
 const props = defineProps({
   visible: Boolean,
@@ -97,8 +98,8 @@ const forms = reactive({
   // Reviewer Management Actions
   inviteReviewer: {
     deadline: '',
-    subject: 'Invitation to Review',
-    content: 'Dear Dr. [Name], We would like to invite you...'
+    subject: EMAIL_TEMPLATES.reviewerInvitation.subject,
+    content: EMAIL_TEMPLATES.reviewerInvitation.content
   },
   cancelInvitation: {
     reason: '',
@@ -108,8 +109,8 @@ const forms = reactive({
   batchInvite: {
     selectedReviewers: [], // Subset of props.reviewers confirmed to invite
     deadline: '',
-    subject: 'Invitation to Review',
-    content: 'Dear Dr. [Name], We would like to invite you...'
+    subject: EMAIL_TEMPLATES.reviewerInvitation.subject,
+    content: EMAIL_TEMPLATES.reviewerInvitation.content
   },
   batchRemind: {
     selectedManuscripts: [], // Should map manuscript IDs
@@ -122,6 +123,13 @@ const forms = reactive({
   batchMarkInactive: {
     reason: '',
     othersDetail: '' // for validation >= 20 chars
+  },
+  // New Action: Notify Author of Recommendation Results
+  notifyAuthorRecommendation: {
+    subject: EMAIL_TEMPLATES.recommendationResults.subject,
+    content: EMAIL_TEMPLATES.recommendationResults.content,
+    channels: ['email', 'system_message'], // Default both selected
+    additionalNote: ''
   }
 })
 
@@ -212,6 +220,8 @@ const isFormValid = computed(() => {
         return forms.batchMarkInactive.othersDetail.length >= 20
       }
       return !!forms.batchMarkInactive.reason
+    case 'notify_author_recommendation':
+      return forms.notifyAuthorRecommendation.subject && forms.notifyAuthorRecommendation.content && forms.notifyAuthorRecommendation.channels.length > 0
     default:
       return true
   }
@@ -225,6 +235,30 @@ const initData = () => {
   
   // Simulate Conflict Check for Invite
   if (props.actionType === 'invite_reviewer') {
+    let content = EMAIL_TEMPLATES.reviewerInvitation.content
+    content = content.replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
+                     .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
+                     .replace('[Submission Date]', '2026-02-10')
+                     .replace('[Due Date]', forms.inviteReviewer.deadline || '2026-03-01') // Use form deadline if set, or default
+                     .replace('[Reviewer Full Name]', props.reviewer?.name || 'Reviewer')
+                     .replace('[Relevant Field, e.g., cardiovascular research]', props.reviewer?.reason || 'your expertise') // Use reason or field
+    
+    // Dynamic Link based on Reviewer Type
+    const isExternal = props.reviewer?.type === 'External'
+    const acceptLink = isExternal 
+      ? `http://localhost:5173/reviewer-registration?email=${props.reviewer?.email}&invite=true`
+      : `http://localhost:5173/login?email=${props.reviewer?.email}&redirect=review`
+      
+    content = content.replace('[Accept Link]', acceptLink)
+                     .replace('[Decline Link]', `http://localhost:5173/reviewer-decline?email=${props.reviewer?.email}`)
+    
+    forms.inviteReviewer.content = content
+    
+    // Set Subject
+    forms.inviteReviewer.subject = EMAIL_TEMPLATES.reviewerInvitation.subject
+      .replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
+      .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
+
     setTimeout(() => {
       conflictCheckResult.value = 'No conflicts found (Safe to Invite)'
     }, 1500)
@@ -244,14 +278,83 @@ const initData = () => {
   
   // Batch Remind Init
   if (props.actionType === 'batch_remind') {
-    // Collect all pending manuscripts from all selected reviewers
-    // Mock logic: generate fake manuscripts for each reviewer
     forms.batchRemind.selectedManuscripts = []
-    // We need to populate a list for selection in the UI. 
-    // Let's create a temporary reactive variable for available manuscripts?
-    // Or we just assume forms.batchRemind.selectedManuscripts starts with ALL and user deselects.
-    // We need a list of available items to render.
-    // Let's attach a 'manuscripts' property to the reviewer objects or use a separate mock map.
+  }
+
+  // Notify Author Init
+  if (props.actionType === 'notify_author_recommendation' && props.reviewers) {
+    let content = EMAIL_TEMPLATES.recommendationResults.content
+    
+    // Replace Basic Info
+    content = content.replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
+                     .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
+                     .replace('[Submission Time]', '2026-02-10 10:00')
+                     .replace('[Corresponding Author Full Name]', 'Dr. Author')
+                     .replace('[Date]', new Date().toLocaleDateString())
+
+    // Generate Dynamic Reviewer List
+    let reviewersHtml = ''
+    props.reviewers.forEach((r, index) => {
+      const decisionColor = r.status === 'Rejected' ? '#999' : '#C93737' // Gray for Reject, Red for Approved (per template)
+      const decisionText = r.status === 'Rejected' ? 'Rejected' : 'Approved'
+      
+      let detailLine = ''
+      if (r.status === 'Rejected') {
+        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">Rejection Reason: ${r.rejectionReason || 'Conflict of Interest'}</p>`
+      } else {
+        const inviteStatus = r.status === 'Invited' ? 'Invitation Sent' : 'Invitation will be sent shortly'
+        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">Invitation Status: ${inviteStatus}</p>`
+      }
+
+      // Add border for all except last one (logic can be simple: always add margin bottom)
+      const borderStyle = index < props.reviewers.length - 1 ? 'border-bottom: 1px dashed #ddd; padding-bottom: 10px; margin-bottom: 15px;' : 'margin-bottom: 5px;'
+
+      reviewersHtml += `
+        <div style="${borderStyle}">
+          <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">${r.name}</p>
+          <p style="margin: 0 0 5px 0; font-size: 14px; color: #555;">Affiliation: ${r.affiliation || 'N/A'}</p>
+          <p style="margin: 0 0 5px 0; font-size: 14px; color: ${decisionColor}; font-weight: bold;">Editorial Decision: ${decisionText}</p>
+          ${detailLine}
+        </div>
+      `
+    })
+
+    // Find the placeholder section start and end
+    // We look for the first reviewer block start
+    const startMarker = '<div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ddd;">'
+    const endMarker = 'Rejection Reason: [Objective reason, e.g., potential conflict of interest, research field mismatch]</p>\n              </div>'
+    
+    // Simple robust replacement: Find the container "Reviewer Recommendation Results" and "Next Processing Flow"
+    // And replace the content between them.
+    const containerStart = 'Reviewer Recommendation Results</p>'
+    const containerEnd = '<div style="margin-bottom: 20px;">\n               <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold;'
+    
+    // Actually, finding unique strings is better.
+    // The template has: <p ...>Reviewer Recommendation Results</p>
+    // Then the reviewer blocks.
+    // Then </div> (closing the gray box).
+    // Then <div ...> <p ...>Next Processing Flow</p>
+    
+    // Let's use the container start and end div logic.
+    const startIdx = content.indexOf(containerStart)
+    if (startIdx !== -1) {
+       const endIdx = content.indexOf('</div>', startIdx) // Find the closing div of the gray box
+       if (endIdx !== -1) {
+          // Keep the header "Reviewer Recommendation Results</p>"
+          const headerEndIdx = startIdx + containerStart.length
+          const prefix = content.substring(0, headerEndIdx)
+          const suffix = content.substring(endIdx)
+          
+          content = prefix + '\n' + reviewersHtml + '\n' + suffix
+       }
+    }
+    
+    forms.notifyAuthorRecommendation.content = content
+    
+    // Set Subject
+    forms.notifyAuthorRecommendation.subject = EMAIL_TEMPLATES.recommendationResults.subject
+      .replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
+      .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
   }
 
   // Reset forms based on actionType if needed
@@ -304,7 +407,8 @@ const modalTitle = computed(() => {
     batch_invite: 'Batch Invite Reviewers',
     batch_remind: 'Batch Remind Reviewers',
     batch_mark_active: 'Batch Mark as Active',
-    batch_mark_inactive: 'Batch Mark as Inactive'
+    batch_mark_inactive: 'Batch Mark as Inactive',
+    notify_author_recommendation: 'Notify Author Recommendation Results'
   }
   let title = map[props.actionType] || 'Action'
   if (props.manuscript) {
@@ -633,6 +737,44 @@ const modalTitle = computed(() => {
             <div class="form-group" v-if="forms.batchMarkInactive.reason === 'Others'">
               <label class="required">Detailed Explanation (≥20 chars)</label>
               <textarea v-model="forms.batchMarkInactive.othersDetail" rows="3" class="textarea-input"></textarea>
+            </div>
+         </div>
+
+         <!-- 22. Notify Author Recommendation Results -->
+         <div v-if="actionType === 'notify_author_recommendation'">
+            <div class="info-block">
+               <p>Notify author about the decision on their recommended reviewers.</p>
+            </div>
+            
+            <div class="form-group">
+               <label class="required">Notification Channels</label>
+               <div class="check-list horizontal">
+                  <label><input type="checkbox" v-model="forms.notifyAuthorRecommendation.channels" value="email"> Email</label>
+                  <label><input type="checkbox" v-model="forms.notifyAuthorRecommendation.channels" value="system_message"> Station Message</label>
+               </div>
+            </div>
+
+            <div class="form-group">
+              <label class="required">Email Subject</label>
+              <input v-model="forms.notifyAuthorRecommendation.subject" class="input-text">
+            </div>
+            
+            <div class="form-group">
+               <label>Email Content Preview (Auto-generated)</label>
+               <!-- Use a read-only div for HTML preview if possible, or textarea -->
+               <!-- The requirement says "Preview content... optional input for additional notes" -->
+               <!-- Let's show the HTML content in a preview box and allow editing raw HTML or just show it read-only? -->
+               <!-- "All content auto-filled... edit confirming" implies editable? -->
+               <!-- "Reviewer Management" -> "Send Invite" -> "Auto-filled, cannot modify" (User 1) -->
+               <!-- "Notify Author" -> "Preview content... optional input for additional notes" (User 5) -->
+               
+               <!-- So Content is Preview (Maybe ReadOnly), plus an Additional Note input -->
+               <div class="html-preview" v-html="forms.notifyAuthorRecommendation.content"></div>
+            </div>
+
+            <div class="form-group">
+               <label>Additional Notes (Optional)</label>
+               <textarea v-model="forms.notifyAuthorRecommendation.additionalNote" rows="3" class="textarea-input" placeholder="Enter any additional explanation for the author..."></textarea>
             </div>
          </div>
         
