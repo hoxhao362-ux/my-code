@@ -16,6 +16,7 @@ from core.service_manager import service_manager
 # 显式导入单例，触发它们向 service_manager 注册
 from database.service.database_service import db_manager
 from utils.redis import redis_client
+from utils.kafka import kafka_service
 
 from api.v1.user import user_router
 from api.v1.submit import submit_router
