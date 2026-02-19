@@ -183,7 +183,7 @@ const pendingJournals = computed(() => {
     const q = searchQuery.value.toLowerCase()
     journals = journals.filter(j => 
       j.title.toLowerCase().includes(q) || 
-      j.author.toLowerCase().includes(q) ||
+      j.writer.toLowerCase().includes(q) ||
       stripHtmlTags(j.abstract).toLowerCase().includes(q)
     )
   }
@@ -225,7 +225,7 @@ const viewJournalDetail = (id) => {
         <div v-for="journal in pendingJournals" :key="journal.id" class="journal-item">
           <div class="journal-info">
             <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
-            <p class="journal-meta">{{ journal.author }} | {{ journal.date }} | {{ journal.module }}</p>
+            <p class="journal-meta">{{ journal.writer }} | {{ journal.date }} | {{ journal.module }}</p>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract), 150) }}</p>
           </div>
           <div class="journal-actions">

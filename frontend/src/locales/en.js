@@ -3,6 +3,7 @@ export default {
     back: 'Back',
     next: 'Next',
     proceed: 'Proceed',
+    select: 'Select...',
     saveLater: 'Save & Submit Later',
     cancel: 'Cancel',
     submit: 'Submit',
@@ -125,7 +126,7 @@ export default {
     abstract: 'Abstract',
     keywords: 'Keywords',
     keywordsPlaceholder: 'Please enter keywords, separate multiple keywords with semicolons',
-    authors: {
+    writers: {
       title: 'Writers',
       add: 'Add Writer',
       name: 'Name',
@@ -153,13 +154,13 @@ export default {
     },
     pdf: {
       abstract: 'Abstract',
-      authors: 'Writers',
+      writers: 'Writers',
       funding: 'Funding',
       none: 'None'
     },
     errors: {
       incomplete: 'Please complete all required fields',
-      noAuthor: 'Please add at least one writer',
+      noWriter: 'Please add at least one writer',
       noCorresponding: 'Please select a corresponding writer',
       noFirst: 'Please select a first writer',
       noFunding: 'Please add funding information or select "No Funding Information"',
@@ -206,8 +207,8 @@ export default {
     intro: 'Please read the following guidelines carefully before submission...',
     format: 'Format',
     formatDesc: 'PDF, Word, or LaTeX.',
-    authors: 'Writers',
-    authorsDesc: 'Ensure all writers are listed and have approved.',
+    writers: 'Writers',
+    writersDesc: 'Ensure all writers are listed and have approved.',
     originality: 'Originality',
     originalityDesc: 'Content must be original.',
     start: 'Start Submission'
@@ -241,7 +242,7 @@ export default {
       associate_editor: 'Associate Editor Dashboard',
       ea_ae: 'EA & AE Dashboard',
       reviewer: 'Reviewer Dashboard',
-      author: 'Writer Dashboard'
+      writer: 'Writer Dashboard'
     },
     tasks: 'Audit Tasks',
     history: 'Audit History',
@@ -273,7 +274,7 @@ export default {
     search: 'Search',
     searchPlaceholder: 'Search...',
     subscribe: 'Subscribe',
-    authorResources: 'Author Resources',
+    writerResources: 'Writer Resources',
     reviewerResources: 'Reviewer Resources',
     newsEvents: 'News & Events',
     editorialBoard: 'Editorial Board',
@@ -284,7 +285,7 @@ export default {
     reviewerTraining: 'Reviewer Training',
     myReviews: 'My Reviews',
     myProfile: 'My Profile',
-    guideForAuthors: 'Guide for Authors',
+    guideForWriters: 'Guide for Writers',
     templates: 'Templates',
     checkStatus: 'Check Status',
     latestArticles: 'Latest Articles',
@@ -326,7 +327,7 @@ export default {
     },
     recentJournals: {
       title: 'Recent Submissions',
-      author: 'Writer',
+      writer: 'Writer',
       date: 'Date',
       status: 'Status'
     }
@@ -402,6 +403,14 @@ export default {
       commentRequired: 'Comments are required',
       allDimensionsRequired: 'Please evaluate all dimensions',
       decisionRequired: 'Please select a recommendation',
+    }
+  },
+  manuscriptData: {
+    errors: {
+      noWriter: 'Please add at least one writer',
+      noCorresponding: 'Please select a corresponding writer',
+      noFirst: 'Please select a first writer',
+      noFunding: 'Please add funding information or select "No funding"',
     }
   }
 }

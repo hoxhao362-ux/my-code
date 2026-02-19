@@ -41,7 +41,17 @@ const filteredJournals = computed(() => {
 
 // 统计信息
 const totalJournals = computed(() => filteredJournals.value.length)
-const pendingJournals = computed(() => filteredJournals.value.filter(j => j.status === '待审核' || j.status === '审稿中').length)
+const pendingJournals = computed(() => filteredJournals.value.filter(j => 
+  j.status === 'Pending' || 
+  j.status === 'Under Review' || 
+  j.status === '待审核' || 
+  j.status === '审稿中' ||
+  j.status === 'pending_initial_review' ||
+  j.status === 'initial_review_passed' ||
+  j.status === 'under_peer_review' ||
+  j.status === 'review_completed' ||
+  j.status === 'final_decision_pending'
+).length)
 const totalUsers = computed(() => 2345) // Mock
 const recentSubmissions = computed(() => 45) // Mock
 
@@ -62,6 +72,31 @@ const navigateTo = (path) => {
   // The simplest way for portal to catch this is if we use the same route mechanism.
   // The portal watches route changes.
   router.push(path)
+}
+
+// Helper for status display
+const getStatusLabel = (status) => {
+  if (status === 'Published' || status === '已发表' || status === 'accepted') return 'Accepted'
+  if (status === 'Pending' || status === '待审核' || status === 'pending_initial_review') return 'Pending'
+  if (status === 'initial_review_passed') return 'Screening Passed'
+  if (status === 'Under Review' || status === '审稿中' || status === 'under_peer_review') return 'Under Review'
+  if (status === 'review_completed') return 'Review Completed'
+  if (status === 'final_decision_pending') return 'Decision Pending'
+  if (status === 'Rejected' || status === '已拒稿' || status === 'rejected' || status === 'initial_review_rejected') return 'Rejected'
+  if (status === 'revision_required') return 'Revision Required'
+  return status
+}
+
+const getStatusClass = (status) => {
+  if (status === 'Published' || status === '已发表' || status === 'accepted') return 'published'
+  if (status === 'Pending' || status === '待审核' || status === 'pending_initial_review') return 'pending'
+  if (status === 'initial_review_passed') return 'pending'
+  if (status === 'Under Review' || status === '审稿中' || status === 'under_peer_review') return 'pending' // pending color (yellow)
+  if (status === 'review_completed') return 'pending'
+  if (status === 'final_decision_pending') return 'pending'
+  if (status === 'Rejected' || status === '已拒稿' || status === 'rejected' || status === 'initial_review_rejected') return 'rejected'
+  if (status === 'revision_required') return 'pending'
+  return ''
 }
 </script>
 
@@ -123,7 +158,7 @@ const navigateTo = (path) => {
             <div class="stat-icon">👍</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingRecommendations }}</h3>
-              <p class="stat-label">Author Recommendations</p>
+              <p class="stat-label">Writer Recommendations</p>
               <span class="action-hint">Pending Approval</span>
             </div>
           </div>
@@ -152,10 +187,10 @@ const navigateTo = (path) => {
           >
             <div class="journal-info">
               <h4 class="journal-title">{{ journal.title }}</h4>
-              <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+              <p class="journal-meta">Writer: {{ journal.writer || journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
             </div>
-            <div class="journal-status" :class="journal.status === '已发表' ? 'published' : journal.status === '待审核' ? 'pending' : 'rejected'">
-              {{ journal.status === '已发表' ? 'Published' : journal.status === '待审核' ? 'Pending' : journal.status === '审稿中' ? 'Under Review' : 'Rejected' }}
+            <div class="journal-status" :class="getStatusClass(journal.status)">
+              {{ getStatusLabel(journal.status) }}
             </div>
           </div>
         </div>

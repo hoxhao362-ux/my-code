@@ -1,5 +1,5 @@
 export const announcements = [
-  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear authors, the 2026 Journal Submission Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
+  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear writers, the 2026 Journal Submission Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
   { id: 2, title: 'System Update: New Review Reminder Feature Added', content: 'To better serve you, we have added a new review reminder feature. Please check your dashboard for details.', date: '2026-01-10' },
   { id: 3, title: 'Notice: Review Cycle Adjustment', content: 'Starting from Feb 1, 2026, the review cycle for general manuscripts will be shortened to 1-2 weeks.', date: '2026-01-12' }
 ]
@@ -26,10 +26,47 @@ export const modules = [
 ]
 
 export const journals = [
+  // Test data for New Submissions - Pending Screening
+  {
+    id: 20260001,
+    title: 'Efficacy of New Antiviral Drugs in COVID-19 Treatment',
+    writer: 'Jane Smith',
+    module: 'Clinical Research',
+    status: 'Pending Screening',
+    submissionDate: '2026-02-18',
+    abstract: 'This randomized controlled trial evaluates the efficacy and safety of novel antiviral drugs in the treatment of patients with moderate to severe COVID-19.',
+    keywords: 'Antiviral Drugs, COVID-19, Clinical Trial',
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 20260002,
+    title: 'Public Health Interventions During Pandemics: A Systematic Review',
+    writer: 'Michael Brown',
+    module: 'Public Health',
+    status: 'Pending Screening',
+    submissionDate: '2026-02-18',
+    abstract: 'This systematic review examines the effectiveness of various public health interventions implemented during recent pandemics, including social distancing, mask mandates, and vaccination campaigns.',
+    keywords: 'Public Health, Pandemics, Interventions',
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 20260003,
+    title: 'AI-Powered Diagnostic Tools in Radiology: Clinical Validation',
+    writer: 'David Chen',
+    module: 'Medical Imaging',
+    status: 'Pending Screening',
+    submissionDate: '2026-02-18',
+    abstract: 'This study validates the performance of AI-powered diagnostic tools in radiology practice, comparing accuracy rates with board-certified radiologists across different imaging modalities.',
+    keywords: 'AI, Radiology, Diagnostic Tools',
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
   {
     id: 1,
     title: 'Development Trends in Medical Imaging Technology',
-    author: 'author1',
+    writer: 'writer1',
     module: 'Medical Imaging',
     status: 'Published',
     submissionDate: '2026-01-10',
@@ -42,7 +79,7 @@ export const journals = [
   {
     id: 2,
     title: 'Deep Learning Approaches in Drug Discovery',
-    author: 'author2',
+    writer: 'writer2',
     module: 'Drug Discovery',
     status: 'Pending',
     submissionDate: '2026-01-12',
@@ -54,7 +91,7 @@ export const journals = [
   {
     id: 3,
     title: 'Big Data Analysis Methods in Clinical Research',
-    author: 'author3',
+    writer: 'writer3',
     module: 'Clinical Research',
     status: 'Under Review',
     submissionDate: '2026-01-08',
@@ -68,7 +105,7 @@ export const journals = [
   {
     id: 4,
     title: 'Construction of Public Health Emergency Management Systems',
-    author: 'author4',
+    writer: 'writer4',
     module: 'Public Health',
     status: 'Published',
     submissionDate: '2026-01-05',
@@ -83,7 +120,7 @@ export const journals = [
   {
     id: 5,
     title: 'Applications of Bioinformatics in Gene Sequencing',
-    author: 'author1',
+    writer: 'writer1',
     module: 'Bioinformatics',
     status: 'Published',
     submissionDate: '2026-01-03',
@@ -99,7 +136,7 @@ export const journals = [
   {
     id: 6,
     title: 'Epidemiology of Cardiovascular Diseases in Urban Populations',
-    author: 'author2',
+    writer: 'writer2',
     module: 'Public Health',
     status: 'Under Review', // Under Review
     reviewStage: 'Initial Review',
@@ -113,7 +150,7 @@ export const journals = [
   {
     id: 7,
     title: 'Public Health Policy Analysis: A Global Perspective',
-    author: 'author3',
+    writer: 'writer3',
     module: 'Public Health',
     status: 'Under Review', // Under Review
     reviewStage: 'Initial Review',
@@ -127,7 +164,7 @@ export const journals = [
   {
     id: 8,
     title: 'Advanced Cardiac Imaging Techniques: A Clinical Study',
-    author: 'author4',
+    writer: 'writer4',
     module: 'Medical Imaging',
     status: 'Under Review', // Under Review
     reviewStage: 'Re-review', // Re-review
@@ -144,7 +181,7 @@ export const journals = [
   {
     id: 9,
     title: 'R&D and Application of mRNA Vaccines',
-    author: 'author5',
+    writer: 'writer5',
     module: 'Drug Discovery',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -158,7 +195,7 @@ export const journals = [
   {
     id: 10,
     title: 'Development and Challenges of Telemedicine',
-    author: 'author6',
+    writer: 'writer6',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -172,7 +209,7 @@ export const journals = [
   {
     id: 11,
     title: 'AI Applications in Drug Discovery',
-    author: 'author11',
+    writer: 'writer11',
     module: 'Artificial Intelligence',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -187,7 +224,7 @@ export const journals = [
   {
     id: 12,
     title: 'Microbiome and Human Health',
-    author: 'author7',
+    writer: 'writer7',
     module: 'Bioinformatics',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -201,7 +238,7 @@ export const journals = [
   {
     id: 13,
     title: 'Clinical Applications of Precision Medicine',
-    author: 'author12',
+    writer: 'writer12',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -215,7 +252,7 @@ export const journals = [
   {
     id: 14,
     title: 'Recent Advances in Regenerative Medicine',
-    author: 'author13',
+    writer: 'writer13',
     module: 'Medical Imaging',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -230,7 +267,7 @@ export const journals = [
   {
     id: 15,
     title: 'Impact of Climate Change on Public Health',
-    author: 'author8',
+    writer: 'writer8',
     module: 'Public Health',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -244,7 +281,7 @@ export const journals = [
   {
     id: 16,
     title: 'Nanotechnology in Drug Delivery',
-    author: 'author9',
+    writer: 'writer9',
     module: 'Drug Discovery',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -258,7 +295,7 @@ export const journals = [
   {
     id: 17,
     title: 'Efficacy of CBT in Depression Treatment',
-    author: 'author10',
+    writer: 'writer10',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -273,7 +310,7 @@ export const journals = [
   {
     id: 18,
     title: 'Ethical Considerations of Gene Editing',
-    author: 'author14',
+    writer: 'writer14',
     module: 'Bioinformatics',
     status: 'Published',
     reviewStage: 'Final Decision',
@@ -290,7 +327,7 @@ export const journals = [
   {
     id: 19,
     title: 'Development Trends in Digital Health',
-    author: 'author15',
+    writer: 'writer15',
     module: 'Artificial Intelligence',
     status: 'Published',
     reviewStage: 'Final Decision',
@@ -307,7 +344,7 @@ export const journals = [
   {
     id: 20,
     title: 'Global Challenge of Antibiotic Resistance',
-    author: 'author16',
+    writer: 'writer16',
     module: 'Drug Discovery',
     status: 'Published',
     reviewStage: 'Final Decision',

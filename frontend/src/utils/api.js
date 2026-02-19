@@ -213,3 +213,27 @@ export const adminApi = {
     })
   }
 }
+
+// 编辑相关API
+export const editorApi = {
+  // 获取编辑列表
+  getEditorsList: () => {
+    return request('/editors/list')
+  },
+
+  // 分配编辑
+  assignEditor: (data) => {
+    return request('/manuscripts/assign-editor', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  // 分配任务
+  assignTask: (data) => {
+    return request('/tasks/assign-to-editor', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+}

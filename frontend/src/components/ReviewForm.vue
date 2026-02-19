@@ -203,7 +203,7 @@ const handleSubmit = () => {
         <li><strong>Scoring:</strong> Please rate each dimension from Excellent to Poor.</li>
         <li>Efficiency: Please complete your review within the due date.</li>
         <li>Priority: 'Originality' is the most critical dimension.</li>
-        <li>Response: Provide constructive feedback for the authors.</li>
+        <li>Response: Provide constructive feedback for the writers.</li>
       </ul>
     </div>
 
@@ -229,7 +229,7 @@ const handleSubmit = () => {
       </div>
       <div class="rules-grid" v-else>
         <div class="rule-item">
-          <strong>Focus:</strong> Evaluate if the author has addressed previous comments.
+          <strong>Focus:</strong> Evaluate if the writer has addressed previous comments.
         </div>
         <div class="rule-item">
           <strong>Changes:</strong> Check the diff view for specific modifications.

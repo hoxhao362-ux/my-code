@@ -190,10 +190,65 @@ const onDropItem = (dropIdx) => {
 // Reference Anonymization Logic
 const hasCheckedCitations = ref(false)
 
+const showSelfCitationModal = ref(false)
+const selfCitationResults = ref({
+  total: 0,
+  detected: 0,
+  items: []
+})
+
 const checkSelfCitations = () => {
   // Simulate scan
+  // Mock Data
+  const mockTotal = 45
+  const mockItems = [
+    {
+      id: 'ref-1',
+      text: 'Smith, A. B., et al. (2023). Study on X. Journal of Y, 10(1), 1–10.',
+      highlight: 'Smith, A. B.',
+      reason: 'Contains writer name(s) from your manuscript',
+      status: 'pending' // pending, anonymized
+    },
+    {
+      id: 'ref-2',
+      text: 'Research Group of Z University. (2022). Annual Report.',
+      highlight: 'Z University',
+      reason: 'Includes institutional affiliation from your manuscript',
+      status: 'pending'
+    }
+  ]
+  
+  selfCitationResults.value = {
+    total: mockTotal,
+    detected: mockItems.length,
+    items: mockItems
+  }
+  
   hasCheckedCitations.value = true
-  alert("Potential self-citations detected: 3 references need anonymization.")
+  showSelfCitationModal.value = true
+}
+
+const markAsAnonymized = (id) => {
+  const item = selfCitationResults.value.items.find(i => i.id === id)
+  if (item) {
+    item.status = 'anonymized'
+    // Update text to show it's anonymized (Mock)
+    item.text = item.text.replace(item.highlight, '[Anonymous]')
+  }
+}
+
+const downloadTemplate = () => {
+  alert('Downloading Anonymization Template...')
+}
+
+const allAnonymized = computed(() => {
+  return selfCitationResults.value.items.every(i => i.status === 'anonymized')
+})
+
+const closeSelfCitationModal = () => {
+  showSelfCitationModal.value = false
+  // If all anonymized, auto-check confirmation? No, let user do it.
+  // But we can show a success message or update the warning.
 }
 
 const handleAnonFileChange = (e) => {
@@ -326,9 +381,104 @@ const handleAnonFileChange = (e) => {
       
       <div class="check-action">
         <button class="btn-check" @click="checkSelfCitations">Check Self-Citations</button>
-        <span v-if="hasCheckedCitations" class="check-result warning">
-          ⚠️ Potential self-citations detected: 3 references need anonymization.
+        <span v-if="hasCheckedCitations && !allAnonymized" class="check-result warning">
+          ⚠️ Potential self-citations detected: {{ selfCitationResults.detected }} references need anonymization.
         </span>
+        <span v-if="hasCheckedCitations && allAnonymized" class="check-result success">
+          ✅ All self-citations marked as anonymized.
+        </span>
+      </div>
+
+      <!-- Self Citation Modal -->
+      <div v-if="showSelfCitationModal" class="modal-overlay" @click.self="closeSelfCitationModal">
+        <div class="modal-content large-modal">
+          <div class="modal-header">
+            <h3>Self-Citation Check Results</h3>
+            <button class="btn-close" @click="closeSelfCitationModal">×</button>
+          </div>
+          
+          <div class="modal-body">
+            <!-- Overview -->
+            <div class="sc-section overview">
+              <h4>Overview</h4>
+              <p>We have completed a self-citation check of your reference list.</p>
+              <div class="sc-stats">
+                <div class="stat-item">Total references checked: <strong>{{ selfCitationResults.total }}</strong></div>
+                <div class="stat-item">Potential self-citations detected: <strong>{{ selfCitationResults.detected }}</strong></div>
+              </div>
+              <div v-if="!allAnonymized" class="sc-alert">
+                ⚠️ If any self-citations are detected, they must be anonymized before you can confirm completion and proceed with submission.
+              </div>
+            </div>
+
+            <!-- Detected List -->
+            <div class="sc-section detected-list">
+              <h4>Detected Self-Citations</h4>
+              <p class="sc-subtitle">Each potential self-citation is listed below with details:</p>
+              
+              <div v-for="item in selfCitationResults.items" :key="item.id" class="sc-item" :class="{ 'is-anonymized': item.status === 'anonymized' }">
+                <div class="sc-item-header">
+                  <span class="sc-id">Reference ID: {{ item.id }}</span>
+                  <span class="sc-status" :class="item.status">{{ item.status === 'anonymized' ? 'Anonymized' : 'Requires Anonymization' }}</span>
+                </div>
+                <div class="sc-row">
+                  <span class="sc-label">Citation text:</span>
+                  <div class="sc-text" v-html="item.text.replace(item.highlight, `<span class='highlight'>${item.highlight}</span>`)"></div>
+                </div>
+                <div class="sc-row">
+                  <span class="sc-label">Reason flagged:</span>
+                  <div class="sc-reason">{{ item.reason }}</div>
+                </div>
+                <div class="sc-actions" v-if="item.status !== 'anonymized'">
+                  <button class="btn-sm btn-primary" @click="markAsAnonymized(item.id)">Mark as Anonymized</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Guidelines -->
+            <div class="sc-section guidelines">
+              <h4>Anonymization Guidelines</h4>
+              <p>To ensure blind review, please anonymize all self-citations using one of the following formats:</p>
+              
+              <div class="example-box">
+                <div class="example-title">Example 1:</div>
+                <div class="example-row">
+                  <span class="ex-label">Before (non-anonymized):</span>
+                  <span class="ex-text">Smith, A. B., et al. (2023). Study on X. Journal of Y, 10(1), 1–10.</span>
+                </div>
+                <div class="example-row">
+                  <span class="ex-label">After (anonymized):</span>
+                  <span class="ex-text"><strong>[Anonymous]</strong>, et al. (2023). Study on X. Journal of Y, 10(1), 1–10.</span>
+                </div>
+              </div>
+
+              <div class="example-box">
+                <div class="example-title">Example 2:</div>
+                <div class="example-row">
+                  <span class="ex-label">Before (non-anonymized):</span>
+                  <span class="ex-text">Smith, A. B., & Jones, C. D. (2022). Research on Z. Journal of W, 8(3), 201–215.</span>
+                </div>
+                <div class="example-row">
+                  <span class="ex-label">After (anonymized):</span>
+                  <span class="ex-text"><strong>A study on Z</strong> (2022). Journal of W, 8(3), 201–215.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer space-between">
+            <div class="footer-left">
+               <button class="btn btn-outline" @click="downloadTemplate">Download Anonymization Template</button>
+            </div>
+            <div class="footer-right">
+               <button class="btn btn-secondary" @click="closeSelfCitationModal">Close</button>
+            </div>
+          </div>
+          
+          <div class="modal-bottom-alert" v-if="!allAnonymized">
+             Important Note: All self-citations must be anonymized before you can confirm completion and proceed with submission.
+          </div>
+        </div>
       </div>
 
       <div class="upload-anon-file" v-if="hasCheckedCitations">
@@ -584,4 +734,166 @@ const handleAnonFileChange = (e) => {
   font-weight: 500;
   color: #333;
 }
-</style>
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content.large-modal {
+  width: 800px;
+  max-width: 95vw;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sc-section {
+  margin-bottom: 2rem;
+}
+
+.sc-section h4 {
+  font-size: 1rem;
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.sc-stats {
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
+  background: #f0f7ff;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.sc-alert {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.8rem;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.sc-item {
+  border: 1px solid #eee;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.sc-item.is-anonymized {
+  background: #f9fff9;
+  border-color: #d4edda;
+}
+
+.sc-item-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sc-id { font-weight: bold; color: #555; }
+.sc-status { padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+.sc-status.pending { background: #ffeeba; color: #856404; }
+.sc-status.anonymized { background: #d4edda; color: #155724; }
+
+.sc-row { margin-bottom: 0.5rem; }
+.sc-label { font-weight: 600; color: #666; display: block; font-size: 0.9rem; }
+.sc-text { background: #f9f9f9; padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
+.sc-reason { color: #e74c3c; font-size: 0.9rem; }
+
+:deep(.highlight) { background-color: #ffeeba; padding: 0 2px; }
+
+.sc-actions { margin-top: 1rem; text-align: right; }
+
+.example-box {
+  background: #f8f9fa;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid #3498db;
+}
+
+.example-title { font-weight: bold; margin-bottom: 0.5rem; color: #3498db; }
+.example-row { display: flex; margin-bottom: 0.3rem; font-size: 0.9rem; }
+.ex-label { width: 180px; color: #666; flex-shrink: 0; }
+.ex-text { font-family: monospace; }
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #ddd;
+  background: #f8f9fa;
+}
+
+.modal-footer.space-between {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-bottom-alert {
+  background: #C93737;
+  color: white;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.check-result.success {
+  color: #2ecc71;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.btn-sm { padding: 4px 12px; font-size: 0.85rem; }
+.btn-primary { background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-secondary { background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-outline { background: white; border: 1px solid #ccc; color: #333; border-radius: 4px; cursor: pointer; }</style>

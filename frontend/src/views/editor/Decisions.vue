@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '../../stores/user'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
@@ -15,10 +16,10 @@ const isReadOnly = computed(() => user.value?.role === 'advisory_editor' || user
 
 // Data
 const decisionTemplates = ref([
-  { id: 1, name: 'Accept', category: 'Accept', field: 'General', usage: 12, content: 'Dear {{author_name}},\n\nWe are pleased to accept your manuscript "{{manuscript_title}}" (ID: {{manuscript_id}}) for publication.\n\nBest regards,\n{{editor_name}}' },
-  { id: 2, name: 'Minor Revision', category: 'Minor Revision', field: 'General', usage: 45, content: 'Dear {{author_name}},\n\nYour manuscript "{{manuscript_title}}" requires minor revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
-  { id: 3, name: 'Major Revision', category: 'Major Revision', field: 'General', usage: 30, content: 'Dear {{author_name}},\n\nYour manuscript "{{manuscript_title}}" requires major revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
-  { id: 4, name: 'Reject', category: 'Reject', field: 'General', usage: 8, content: 'Dear {{author_name}},\n\nWe regret to inform you that we cannot accept your manuscript "{{manuscript_title}}" for publication at this time.\n\nBest regards,\n{{editor_name}}' }
+  { id: 1, name: 'Accept', category: 'Accept', field: 'General', usage: 12, content: 'Dear {{writer_name}},\n\nWe are pleased to accept your manuscript "{{manuscript_title}}" (ID: {{manuscript_id}}) for publication.\n\nBest regards,\n{{editor_name}}' },
+  { id: 2, name: 'Minor Revision', category: 'Minor Revision', field: 'General', usage: 45, content: 'Dear {{writer_name}},\n\nYour manuscript "{{manuscript_title}}" requires minor revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
+  { id: 3, name: 'Major Revision', category: 'Major Revision', field: 'General', usage: 30, content: 'Dear {{writer_name}},\n\nYour manuscript "{{manuscript_title}}" requires major revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
+  { id: 4, name: 'Reject', category: 'Reject', field: 'General', usage: 8, content: 'Dear {{writer_name}},\n\nWe regret to inform you that we cannot accept your manuscript "{{manuscript_title}}" for publication at this time.\n\nBest regards,\n{{editor_name}}' }
 ])
 
 const templateCategories = ['All', 'Accept', 'Minor Revision', 'Major Revision', 'Reject']
@@ -46,14 +47,47 @@ const templateHistory = ref([
   { version: 'v1.1', date: '2025-12-10', modifier: 'Admin', content: '...' }
 ])
 
-// Mock Manuscripts
-const manuscripts = ref([
-  { id: 'MS-001', title: 'Deep Learning in Medical Imaging', author: 'Dr. Alice', assignedTo: 'editor' },
-  { id: 'MS-002', title: 'Novel Drug Delivery Systems', author: 'Prof. Bob', assignedTo: 'ae_user' },
-  { id: 'MS-003', title: 'Clinical Trial Ethics', author: 'Dr. Carol', assignedTo: 'editor' },
-  { id: 'MS-004', title: 'AI Applications in Healthcare', author: 'Dr. David', assignedTo: 'ae_user' },
-  { id: 'MS-005', title: 'Genomic Sequencing Technologies', author: 'Prof. Eve', assignedTo: 'ae_user' }
-])
+// Mock Manuscripts - Sync with User Store
+const manuscripts = computed(() => {
+  return userStore.journals.filter(j => 
+    j.status === 'review_completed' || 
+    j.status === '已审核' ||
+    j.status === 'final_decision_pending' ||
+    // Include manuscripts with recent decisions for drafting letters
+    j.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ||
+    j.status === MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED ||
+    j.status === MANUSCRIPT_STATUS.FINAL_DECISION_REVISION ||
+    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION ||
+    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+  )
+})
+
+// Auto-load draft from Decision Making module
+onMounted(() => {
+  const drafts = userStore.decisionDrafts || []
+  if (drafts.length > 0) {
+    // Sort by lastUpdated desc
+    const sortedDrafts = [...drafts].sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+    const latestDraft = sortedDrafts[0]
+    
+    // Check if within 5 minutes (fresh context switch)
+    const diff = new Date() - new Date(latestDraft.lastUpdated)
+    if (diff < 5 * 60 * 1000) {
+      selectedManuscriptId.value = latestDraft.manuscriptId
+      decisionContent.value = latestDraft.content
+      
+      // Try to match template
+      const tpl = decisionTemplates.value.find(t => t.name === latestDraft.templateType || t.category === latestDraft.templateType)
+      if (tpl) {
+        selectedTemplate.value = tpl
+      }
+      
+      // Set status to Draft
+      approvalStatus.value = 'Draft'
+      autoSaveStatus.value = 'Draft loaded from Decision Making module'
+    }
+  }
+})
 
 // Mock Approval Queue Data
 const approvalQueue = ref([
@@ -140,7 +174,7 @@ const selectTemplate = (tpl) => {
 
 const fillTemplate = (content, ms) => {
   let text = content
-  text = text.replace(/{{author_name}}/g, ms.author)
+  text = text.replace(/{{writer_name}}/g, ms.author)
   text = text.replace(/{{manuscript_title}}/g, ms.title)
   text = text.replace(/{{manuscript_id}}/g, ms.id)
   text = text.replace(/{{editor_name}}/g, user.value?.username || 'Editor')
@@ -189,6 +223,18 @@ const handleSend = () => {
     } else {
        // Direct Send
        approvalStatus.value = 'Approved' // Sent implies approved
+       
+       // Update Journal Status in Store
+       if (selectedManuscript.value) {
+         const updatedJournal = { ...selectedManuscript.value }
+         if (selectedTemplate.value.category === 'Accept') updatedJournal.status = 'accepted'
+         else if (selectedTemplate.value.category === 'Reject') updatedJournal.status = 'rejected'
+         else if (selectedTemplate.value.category.includes('Revision')) updatedJournal.status = 'revision_required'
+         else updatedJournal.status = 'final_decision_made' // Fallback
+         
+         userStore.updateJournal(updatedJournal)
+       }
+
        alert("Decision Letter Sent to Author.")
     }
     // Add to sent history
@@ -246,7 +292,7 @@ const handleCreateTemplate = () => {
   alert("Template creation functionality would open a form here.")
   // 模拟创建模板
   const mockName = "New Template " + Date.now()
-  decisionTemplates.value.push({ id: Date.now(), name: mockName, category: 'General', field: 'General', usage: 0, content: 'Dear {{author_name}}, ...' })
+  decisionTemplates.value.push({ id: Date.now(), name: mockName, category: 'General', field: 'General', usage: 0, content: 'Dear {{writer_name}}, ...' })
 }
 
 const handleEditTemplate = (tpl) => {

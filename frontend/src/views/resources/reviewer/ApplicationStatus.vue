@@ -75,13 +75,16 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 const router = useRouter()
 
-const status = ref('pending_review') // pending_review, rejected, withdrawn, approved
+// Get status from store, but also allow local override for debug if needed
+const status = computed(() => userStore.reviewerApplicationStatus)
 const submissionDate = ref('2023-10-27') // Mock date
 const showWithdrawModal = ref(false)
 
@@ -93,62 +96,71 @@ const form = reactive({
 })
 
 const statusDisplay = computed(() => {
-  if (status.value === 'pending_review') return 'Under Review'
+  if (status.value === 'pending_review') return 'Pending Review'
   if (status.value === 'rejected') return 'Rejected'
   if (status.value === 'withdrawn') return 'Withdrawn'
+  if (status.value === 'approved') return 'Active Reviewer'
   return 'Unknown'
 })
 
-const statusClass = computed(() => {
-  if (status.value === 'pending_review') return 'badge-orange'
-  if (status.value === 'rejected') return 'badge-red'
-  if (status.value === 'withdrawn') return 'badge-grey'
-  return ''
-})
-
 const statusDescription = computed(() => {
-  if (status.value === 'pending_review') return 'Your application is currently being reviewed by our editorial team. We will notify you via email once a decision has been made.'
+  if (status.value === 'pending_review') return 'Your application is being reviewed by the editorial office.'
   if (status.value === 'rejected') return 'Thank you for your interest. Unfortunately, your application was not approved at this time. Please see the email sent to you for more details.'
   if (status.value === 'withdrawn') return 'You have withdrawn your application.'
+  if (status.value === 'approved') return 'Congratulations! You have been approved as a reviewer. You can now access the Reviewer Dashboard.'
   return ''
 })
 
 const confirmWithdraw = () => {
-  status.value = 'withdrawn'
-  localStorage.setItem('reviewer_application_status', 'withdrawn')
+  userStore.withdrawReviewerApplication()
   showWithdrawModal.value = false
+  toastStore.info('Application withdrawn.')
 }
 
 const reapply = () => {
-  // Redirect to Become Reviewer page (it will load draft/existing data if we set it back to draft mode or just populate)
-  // We should put the data back into draft storage so BecomeReviewer can pick it up
-  localStorage.setItem('reviewer_application_draft', JSON.stringify(form))
+  userStore.reapplyReviewer()
   router.push('/resources/reviewer/become')
 }
 
 const debugApprove = () => {
-  localStorage.setItem('reviewer_application_status', 'approved')
-  // Update user role to reviewer
-  userStore.updateUserRole(user.value.id, 'reviewer')
-  userStore.user.role = 'reviewer'
-  userStore.user.status = 'active'
-  localStorage.setItem('user', JSON.stringify(userStore.user))
+  // Check if user ID exists (Strict check for null/undefined/empty string)
+  const userId = user.value?.id
+  const hasValidId = userId !== null && userId !== undefined && userId !== ''
+
+  if (hasValidId) {
+    // Directly update user role to demonstrate the fix
+    userStore.updateUserRole(userId, 'reviewer')
+    toastStore.success('Application Approved! You are now a reviewer.')
+  } else {
+    // Fallback for virtual accounts without ID
+    console.warn('Virtual account detected (ID missing). Executing debug role update locally.')
+    toastStore.warning('Virtual Account: Role updated in session only (ID missing).')
+  }
+
+  // Force update current user object in store to reflect role change immediately
+  // This ensures the flow continues regardless of ID presence
+  if (userStore.user) {
+    userStore.user.role = 'reviewer'
+    sessionStorage.setItem('readonly_user', JSON.stringify(userStore.user))
+  }
   
-  alert('Application Approved! You are now a reviewer.')
-  router.push('/reviewer/dashboard')
+  // Status should automatically update because it's computed from store.reviewerApplicationStatus which checks role
+  // But we need to ensure local status is also updated if store getter relies on it
+  userStore.reviewerApplication.status = 'approved'
+  localStorage.setItem('reviewer_application_status', 'approved')
 }
 
 onMounted(() => {
-  // Load status and data
-  const storedStatus = localStorage.getItem('reviewer_application_status')
-  if (storedStatus) {
-    status.value = storedStatus
-  }
-  
-  const storedData = localStorage.getItem('reviewer_application_data')
-  if (storedData) {
-    const data = JSON.parse(storedData)
+  // Load data
+  const data = userStore.reviewerApplication.data
+  if (data) {
     Object.assign(form, data)
+  } else if (user.value) {
+    // If approved via role but no application data (e.g. created by admin), prefill from user profile
+    form.name = user.value.username || ''
+    form.email = user.value.email || ''
+    form.orcid = user.value.orcid || '' // Assuming user object might have orcid
+    form.areas = user.value.expertise ? user.value.expertise.join(', ') : ''
   }
   
   // Set submission date to today if not stored (mock)
@@ -163,6 +175,7 @@ onMounted(() => {
   min-height: 100vh;
   padding-top: 0;
   margin-top: 80px;
+  background-color: #f9f9f9;
 }
 
 .sidebar-info {
@@ -173,27 +186,31 @@ onMounted(() => {
   height: calc(100vh - 80px);
   top: 80px;
   left: 0;
+  border-right: 1px solid #e0e0e0;
 }
 
 .sidebar-info h1 {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 600;
   color: #333;
   margin-bottom: 24px;
+  font-family: 'Georgia', serif;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 6px 16px;
-  border-radius: 4px;
+  padding: 8px 18px;
+  border-radius: 2px;
   color: white;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 14px;
   margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .badge-orange {
-  background-color: #FFA500;
+  background-color: #E67E22;
 }
 
 .badge-red {
@@ -201,7 +218,11 @@ onMounted(() => {
 }
 
 .badge-grey {
-  background-color: #999;
+  background-color: #7f8c8d;
+}
+
+.badge-green {
+  background-color: #27AE60;
 }
 
 .status-details p {
@@ -211,82 +232,86 @@ onMounted(() => {
 }
 
 .description {
-  font-size: 14px;
-  color: #666;
+  font-size: 15px;
+  color: #555;
   line-height: 1.6;
   margin-top: 24px;
   margin-bottom: 24px;
 }
 
 .link-brand {
-  color: #C93737;
+  color: #005696;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .form-area {
   margin-left: 30%;
   width: 70%;
-  padding: 48px;
+  padding: 60px 80px;
   background-color: white;
 }
 
 .form-container {
-  max-width: 600px;
+  max-width: 700px;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .form-group label {
   display: block;
   font-size: 14px;
-  font-weight: bold;
-  color: #999; /* Label grey for read-only */
+  font-weight: 600;
+  color: #777; /* Label grey for read-only */
   margin-bottom: 8px;
 }
 
 .read-only-field {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #E5E5E5; /* Read only border */
-  border-radius: 4px;
-  font-size: 14px;
-  background-color: #FAFAFA;
+  padding: 12px;
+  border: 1px solid #ddd; /* Read only border */
+  border-radius: 2px;
+  font-size: 15px;
+  background-color: #f9f9f9;
   color: #333;
 }
 
 .actions {
-  margin-top: 32px;
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .btn-withdraw {
   padding: 10px 24px;
-  background-color: #E5E5E5; /* Grey button */
+  background-color: #f0f0f0; /* Grey button */
   color: #333;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  transition: background-color 0.2s;
 }
 
 .btn-withdraw:hover {
-  background-color: #D5D5D5;
+  background-color: #e0e0e0;
 }
 
 .btn-reapply {
   padding: 10px 24px;
-  background-color: #C93737; /* Brand button */
+  background-color: #005696; /* Brand button */
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  transition: background-color 0.2s;
 }
 
 .btn-reapply:hover {
-  background-color: #A02C2C;
+  background-color: #00447a;
 }
 
 .btn-debug {
@@ -294,9 +319,9 @@ onMounted(() => {
   background-color: #333;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   margin-left: 10px;
 }
 
@@ -316,15 +341,15 @@ onMounted(() => {
 
 .modal-content {
   background: white;
-  padding: 32px;
-  border-radius: 8px;
+  padding: 40px;
+  border-radius: 4px;
   width: 450px;
-  border: 1px solid #E5E5E5;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 .modal-content h3 {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
+  font-weight: 600;
   color: #333;
   margin-top: 0;
   margin-bottom: 16px;
@@ -332,7 +357,7 @@ onMounted(() => {
 
 .modal-content p {
   color: #666;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
   line-height: 1.5;
 }
 
@@ -343,20 +368,22 @@ onMounted(() => {
 }
 
 .btn-cancel {
-  padding: 8px 16px;
-  background-color: #F5F5F5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 20px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 2px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .btn-confirm-withdraw {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background-color: #C93737;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
@@ -368,10 +395,13 @@ onMounted(() => {
     position: relative;
     height: auto;
     top: 0;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
   }
   .form-area {
     margin-left: 0;
     width: 100%;
+    padding: 32px;
   }
 }
 </style>

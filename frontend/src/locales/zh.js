@@ -3,6 +3,7 @@ export default {
     back: '返回',
     next: '下一步',
     proceed: '继续',
+    select: '请选择...',
     saveLater: '暂存 & 稍后提交',
     cancel: '取消',
     submit: '提交',
@@ -125,14 +126,14 @@ export default {
     abstract: '摘要',
     keywords: '关键词',
     keywordsPlaceholder: '请输入关键词，多个关键词用分号分隔',
-    authors: {
-      title: '作者',
-      add: '添加作者',
+    writers: {
+      title: '撰稿人',
+      add: '添加撰稿人',
       name: '姓名',
       institution: '机构',
       email: '邮箱',
-      corresponding: '通讯作者',
-      first: '第一作者',
+      corresponding: '通讯撰稿人',
+      first: '第一撰稿人',
     },
     funding: {
       title: '资助信息',
@@ -151,10 +152,10 @@ export default {
     },
     errors: {
       incomplete: '请完成所有必填项',
-      noAuthor: '请至少添加一位作者',
-      noCorresponding: '请选择通讯作者',
-      noFirst: '请选择第一作者',
-      noFunding: '请添加资助信息或选择“无资助信息”',
+      noWriter: '请至少添加一位撰稿人',
+      noCorresponding: '请选择通讯撰稿人',
+      noFirst: '请选择第一撰稿人',
+      noFunding: '请添加资助信息或选择"无资助信息"',
     },
     successMessage: '投稿已成功提交。请等待期刊初审',
   },
@@ -163,8 +164,8 @@ export default {
     intro: '提交前请仔细阅读以下指南...',
     format: '格式',
     formatDesc: 'PDF, Word, 或 LaTeX。',
-    authors: '作者',
-    authorsDesc: '确保列出所有作者并经其批准。',
+    writers: '撰稿人',
+    writersDesc: '确保列出所有撰稿人并经其批准。',
     originality: '原创性',
     originalityDesc: '内容必须是原创的。',
     start: '开始投稿'
@@ -198,7 +199,7 @@ export default {
       associate_editor: '副编辑工作台',
       ea_ae: '助理/顾问编辑工作台',
       reviewer: '审核员工作台',
-      author: '作者工作台'
+      writer: '投稿人工作台'
     },
     tasks: '审核任务',
     history: '审核记录',
@@ -224,7 +225,11 @@ export default {
     historySubmission: '历史投稿',
     submissionGuide: '投稿指南',
     onlineConsultation: '在线咨询',
-    permissionDenied: '权限不足，无法登录后台'
+    permissionDenied: '权限不足，无法登录后台',
+    writerResources: '投稿人资源',
+    guideForWriters: '投稿指南',
+    templates: '模板',
+    checkStatus: '状态查询'
   },
   submission: {
     login: {
@@ -232,7 +237,7 @@ export default {
       username: '用户名',
       password: '密码',
       btn: {
-        author: '作者登录',
+        author: '撰稿人登录',
         reviewer: '审稿人登录',
         editor: '总编辑登录'
       },
@@ -283,7 +288,7 @@ export default {
     },
     screening: {
       title: '初筛与分配',
-      searchPlaceholder: '搜索标题或作者...',
+      searchPlaceholder: '搜索标题或投稿人...',
       allModules: '所有模块',
       noJournals: '暂无待初筛稿件。',
       actions: {
@@ -325,7 +330,7 @@ export default {
       },
       recentJournals: {
         title: '近期投稿',
-        author: '作者',
+        writer: '撰稿人',
         date: '日期',
         status: '状态'
       }

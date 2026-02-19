@@ -182,18 +182,18 @@ const getStatusClass = (status) => {
                 type="date" 
                 v-model="logFilters.startDate" 
                 class="date-input"
-                placeholder="开始日期"
+                placeholder="Start Date"
               >
-              <span class="date-separator">至</span>
+              <span class="date-separator">to</span>
               <input 
                 type="date" 
                 v-model="logFilters.endDate" 
                 class="date-input"
-                placeholder="结束日期"
+                placeholder="End Date"
               >
             </div>
             
-            <button class="btn btn-reset" @click="resetFilters">重置筛选</button>
+            <button class="btn btn-reset" @click="resetFilters">Reset Filters</button>
           </div>
           
           <div class="log-actions">

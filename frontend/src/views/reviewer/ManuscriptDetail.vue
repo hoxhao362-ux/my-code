@@ -85,7 +85,7 @@ const displayContent = computed(() => {
   let content = journal.value.content
   if (isBlindReview.value) {
     // Simple mock anonymization
-    content = content.replace(/Author Name/g, '[Anonymized]')
+    content = content.replace(/Writer Name/g, '[Anonymized]')
     content = content.replace(/University of X/g, '[Anonymized Institution]')
   }
   return content
@@ -176,8 +176,8 @@ const confirmSubmit = () => {
   // If Accept, same.
   // In a real system, this depends on # of reviewers.
   // For this mock requirement: "task status becomes Completed, auto jump to Completed Reviews"
-  // We will set status to '已审核' (Completed) to match the store convention.
-  updatedJournal.status = '已审核'
+  // We will set status to 'review_completed' to match the Lancet convention.
+  updatedJournal.status = 'review_completed'
 
   userStore.updateJournal(updatedJournal)
   showSubmitModal.value = false
@@ -202,8 +202,8 @@ const downloadFile = (file) => {
   document.body.removeChild(link)
 }
 
-// Mock Author Response for Revision
-const authorResponse = ref(`
+// Mock Writer Response for Revision
+const writerResponse = ref(`
 Thank you for your valuable comments. We have revised the manuscript accordingly.
 1. Addressed the concern about sample size by adding 50 more participants.
 2. Clarified the methodology section as requested.
@@ -279,7 +279,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             </div>
 
             <div class="comments-block">
-              <h4>Comments to Author</h4>
+              <h4>Comments to Writer</h4>
               <div class="readonly-text">{{ review.comment || 'No comments provided.' }}</div>
             </div>
 
@@ -312,7 +312,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             <h1>{{ journal.title }}</h1>
             <span class="manuscript-id">ID: {{ journal.id }}</span>
             <span v-if="isRevision" class="revision-badge">Revision (Re-review)</span>
-            <span v-if="isBlindReview" class="blind-badge">Blind Review - Author Information Removed</span>
+            <span v-if="isBlindReview" class="blind-badge">Blind Review - Writer Information Removed</span>
           </div>
         </div>
 
@@ -337,10 +337,10 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="info-section">
             <h3>Basic Information</h3>
             <div class="info-grid">
-              <!-- Author Hidden for Blind Review -->
+              <!-- Writer Hidden for Blind Review -->
               <div class="info-item" v-if="!isBlindReview">
-                <label>Author:</label>
-                <span>{{ journal.author }}</span>
+                <label>Writer:</label>
+                <span>{{ journal.writer }}</span>
               </div>
               <div class="info-item">
                 <label>Title:</label>
@@ -400,7 +400,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="content-preview">
              <h3>Online Reading</h3>
              <div class="blind-notice" v-if="isBlindReview">
-               This is a blind review - author information has been anonymized. Self-citations are marked as 'Author et al.'
+               This is a blind review - writer information has been anonymized. Self-citations are marked as 'Writer et al.'
              </div>
              <div class="paper-content" v-if="displayContent" v-html="displayContent"></div>
              <div class="paper-content placeholder" v-else>
@@ -412,9 +412,9 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
         <!-- Revision Details (Only for Revision) -->
         <div v-if="activeTab === 'revision-details'" class="tab-pane">
           <section class="response-section">
-            <h3>Author's Response to Previous Review</h3>
+            <h3>Writer's Response to Previous Review</h3>
             <div class="response-box">
-              <pre>{{ authorResponse }}</pre>
+              <pre>{{ writerResponse }}</pre>
             </div>
           </section>
           

@@ -125,7 +125,7 @@ const forms = reactive({
     othersDetail: '' // for validation >= 20 chars
   },
   // New Action: Notify Author of Recommendation Results
-  notifyAuthorRecommendation: {
+  notifyWriterRecommendation: {
     subject: EMAIL_TEMPLATES.recommendationResults.subject,
     content: EMAIL_TEMPLATES.recommendationResults.content,
     channels: ['email', 'system_message'], // Default both selected
@@ -220,8 +220,8 @@ const isFormValid = computed(() => {
         return forms.batchMarkInactive.othersDetail.length >= 20
       }
       return !!forms.batchMarkInactive.reason
-    case 'notify_author_recommendation':
-      return forms.notifyAuthorRecommendation.subject && forms.notifyAuthorRecommendation.content && forms.notifyAuthorRecommendation.channels.length > 0
+    case 'notify_writer_recommendation':
+      return forms.notifyWriterRecommendation.subject && forms.notifyWriterRecommendation.content && forms.notifyWriterRecommendation.channels.length > 0
     default:
       return true
   }
@@ -282,7 +282,7 @@ const initData = () => {
   }
 
   // Notify Author Init
-  if (props.actionType === 'notify_author_recommendation' && props.reviewers) {
+  if (props.actionType === 'notify_writer_recommendation' && props.reviewers) {
     let content = EMAIL_TEMPLATES.recommendationResults.content
     
     // Replace Basic Info
@@ -349,10 +349,10 @@ const initData = () => {
        }
     }
     
-    forms.notifyAuthorRecommendation.content = content
+    forms.notifyWriterRecommendation.content = content
     
     // Set Subject
-    forms.notifyAuthorRecommendation.subject = EMAIL_TEMPLATES.recommendationResults.subject
+    forms.notifyWriterRecommendation.subject = EMAIL_TEMPLATES.recommendationResults.subject
       .replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
       .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
   }
@@ -408,7 +408,7 @@ const modalTitle = computed(() => {
     batch_remind: 'Batch Remind Reviewers',
     batch_mark_active: 'Batch Mark as Active',
     batch_mark_inactive: 'Batch Mark as Inactive',
-    notify_author_recommendation: 'Notify Author Recommendation Results'
+    notify_writer_recommendation: 'Notify Writer Recommendation Results'
   }
   let title = map[props.actionType] || 'Action'
   if (props.manuscript) {
@@ -741,22 +741,22 @@ const modalTitle = computed(() => {
          </div>
 
          <!-- 22. Notify Author Recommendation Results -->
-         <div v-if="actionType === 'notify_author_recommendation'">
+         <div v-if="actionType === 'notify_writer_recommendation'">
             <div class="info-block">
-               <p>Notify author about the decision on their recommended reviewers.</p>
+               <p>Notify writer about the decision on their recommended reviewers.</p>
             </div>
             
             <div class="form-group">
                <label class="required">Notification Channels</label>
                <div class="check-list horizontal">
-                  <label><input type="checkbox" v-model="forms.notifyAuthorRecommendation.channels" value="email"> Email</label>
-                  <label><input type="checkbox" v-model="forms.notifyAuthorRecommendation.channels" value="system_message"> Station Message</label>
+                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="email"> Email</label>
+                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="system_message"> Station Message</label>
                </div>
             </div>
 
             <div class="form-group">
               <label class="required">Email Subject</label>
-              <input v-model="forms.notifyAuthorRecommendation.subject" class="input-text">
+              <input v-model="forms.notifyWriterRecommendation.subject" class="input-text">
             </div>
             
             <div class="form-group">
@@ -769,12 +769,12 @@ const modalTitle = computed(() => {
                <!-- "Notify Author" -> "Preview content... optional input for additional notes" (User 5) -->
                
                <!-- So Content is Preview (Maybe ReadOnly), plus an Additional Note input -->
-               <div class="html-preview" v-html="forms.notifyAuthorRecommendation.content"></div>
+               <div class="html-preview" v-html="forms.notifyWriterRecommendation.content"></div>
             </div>
 
             <div class="form-group">
                <label>Additional Notes (Optional)</label>
-               <textarea v-model="forms.notifyAuthorRecommendation.additionalNote" rows="3" class="textarea-input" placeholder="Enter any additional explanation for the author..."></textarea>
+               <textarea v-model="forms.notifyWriterRecommendation.additionalNote" rows="3" class="textarea-input" placeholder="Enter any additional explanation for the writer..."></textarea>
             </div>
          </div>
         

@@ -32,7 +32,7 @@ const currentStep = computed(() => submissionStore.currentStep)
 // Navigation handlers
 const nextStep = () => submissionStore.nextStep()
 const prevStep = () => submissionStore.prevStep()
-const goToStep = (step) => submissionStore.setStep(step)
+const goToStep = (step) => submissionStore.goToStep(step)
 
 // Mock save for later
 const saveForLater = () => {

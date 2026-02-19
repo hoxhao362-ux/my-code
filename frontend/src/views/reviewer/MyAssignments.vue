@@ -50,14 +50,16 @@ const tabCounts = computed(() => {
       const overdue = isOverdue(j.date)
       const hasReviewed = (j.reviewHistory || j.reviews) && (j.reviewHistory || j.reviews).some(r => r.reviewer === user.value.username)
 
+      const isUnderReview = status === 'under_peer_review' || status === '审稿中' || status === 'Under Review'
+
       // Pending: Under Review, not Re-review, not overdue, not reviewed yet
-      if (status === '审稿中' && stage !== '复审' && !overdue && !hasReviewed) counts.pending++
+      if (isUnderReview && stage !== '复审' && !overdue && !hasReviewed) counts.pending++
       // Re-reviews: Under Review, Re-review stage, not overdue, not reviewed yet
-      if (status === '审稿中' && stage === '复审' && !overdue && !hasReviewed) counts['re-reviews']++
+      if (isUnderReview && stage === '复审' && !overdue && !hasReviewed) counts['re-reviews']++
       // Completed: User is in review history
       if (hasReviewed) counts.completed++
       // Overdue: Under Review and overdue, not reviewed yet
-      if (status === '审稿中' && overdue && !hasReviewed) counts.overdue++
+      if (isUnderReview && overdue && !hasReviewed) counts.overdue++
     })
   }
 
@@ -131,13 +133,14 @@ const assignments = computed(() => {
       const stage = j.reviewStage
       const overdue = isOverdue(j.date)
       const hasReviewed = (j.reviewHistory || j.reviews) && (j.reviewHistory || j.reviews).some(r => r.reviewer === user.value.username)
+      const isUnderReview = status === 'under_peer_review' || status === '审稿中' || status === 'Under Review'
       
       if (currentFilter.value === 'pending') {
-        return status === '审稿中' && stage !== '复审' && !overdue && !hasReviewed
+        return isUnderReview && stage !== '复审' && !overdue && !hasReviewed
       }
       
       if (currentFilter.value === 're-reviews') {
-         return status === '审稿中' && stage === '复审' && !overdue && !hasReviewed
+         return isUnderReview && stage === '复审' && !overdue && !hasReviewed
       }
       
       if (currentFilter.value === 'completed') {
@@ -145,7 +148,7 @@ const assignments = computed(() => {
       }
       
       if (currentFilter.value === 'overdue') {
-         return (status === '审稿中') && overdue && !hasReviewed
+         return isUnderReview && overdue && !hasReviewed
       }
       
       return false
@@ -221,9 +224,9 @@ const acceptInvitation = (item) => {
     module: item.module,
     date: new Date().toISOString().split('T')[0], // Reset due date start
     submissionDate: item.date,
-    status: '审稿中',
+    status: 'under_peer_review',
     reviewStage: '初审',
-    author: 'author_unknown', // Mock
+    writer: 'writer_unknown', // Mock
     abstract: 'This is a mock abstract for the newly accepted invitation.',
     keywords: 'Mock, Keywords',
     attachments: [],
@@ -261,14 +264,14 @@ const submitDecline = () => {
 }
 
 const getStatusDisplay = (status, stage) => {
-  if (status === '审稿中') {
+  if (status === 'under_peer_review' || status === '审稿中' || status === 'Under Review') {
     if (stage === '复审') return 'Revision Pending'
     return 'Under Review'
   }
   if (status === 'Invited') return 'Invited'
   if (status === 'Accepted') return 'Accepted'
   if (status === 'Declined') return 'Declined'
-  if (status === '已审核') return 'Completed'
+  if (status === 'review_completed' || status === '已审核') return 'Completed'
   return status
 }
 
@@ -338,7 +341,7 @@ const viewAssignment = (id) => {
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="Search by Manuscript ID, Title, Author..."
+            placeholder="Search by Manuscript ID, Title, Writer..."
             class="search-input"
           />
           <span v-if="searchQuery" class="clear-icon" @click="searchQuery = ''">×</span>
@@ -375,15 +378,15 @@ const viewAssignment = (id) => {
               </td>
               <td>
                 <span class="status-badge" :class="{
-                  'status-pending': item.status === '审稿中' && item.reviewStage !== '复审',
-                  'status-revision': item.status === '审稿中' && item.reviewStage === '复审',
+                  'status-pending': (item.status === 'under_peer_review' || item.status === '审稿中') && item.reviewStage !== '复审',
+                  'status-revision': (item.status === 'under_peer_review' || item.status === '审稿中') && item.reviewStage === '复审',
                   'status-invited': item.status === 'Invited',
                   'status-accepted': item.status === 'Accepted',
                   'status-declined': item.status === 'Declined',
-                  'status-completed': item.status === '已审核',
-                  'status-overdue': isOverdue(item.date) && item.status === '审稿中'
+                  'status-completed': item.status === 'review_completed' || item.status === '已审核',
+                  'status-overdue': isOverdue(item.date) && (item.status === 'under_peer_review' || item.status === '审稿中')
                 }">
-                  {{ isOverdue(item.date) && item.status === '审稿中' ? 'Overdue' : getStatusDisplay(item.status, item.reviewStage) }}
+                  {{ isOverdue(item.date) && (item.status === 'under_peer_review' || item.status === '审稿中') ? 'Overdue' : getStatusDisplay(item.status, item.reviewStage) }}
                 </span>
               </td>
               <td class="actions-cell">

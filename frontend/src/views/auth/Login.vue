@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { encryptPassword, decryptPassword } from '../../utils/encryption'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -32,6 +33,9 @@ onMounted(() => {
   if (savedUser) {
     const userData = JSON.parse(savedUser)
     username.value = userData.username || ''
+    if (userData.password) {
+      password.value = decryptPassword(userData.password)
+    }
     rememberMe.value = true
   }
   
@@ -58,7 +62,7 @@ const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
-const handleLogin = () => {
+const handleLogin = async () => {
   // Reset errors
   usernameError.value = ''
   passwordError.value = ''
@@ -80,42 +84,30 @@ const handleLogin = () => {
   // Loading State
   isLoading.value = true
   
-  // Mock Login Delay (1.5s)
-  setTimeout(() => {
-    // Mock Success (Pure Frontend)
-    // Create mock user data for Main Site Read-Only context
-    const mockUser = {
+  try {
+    // Call store action with password verification
+    await userStore.login({
       username: username.value,
-      role: 'user', // Basic user role for read-only
-      email: username.value.includes('@') ? username.value : `${username.value}@example.com`,
-      id: 'readonly_' + Date.now()
-    }
-    
-    // Update Store (Client-side only)
-    userStore.user = mockUser
-    // We do NOT save to the main 'user' localStorage to avoid conflict with Submit system if possible,
-    // BUT Navigation.vue checks localStorage('user') or store.
-    // The requirement says: "Remember me... store in localStorage... not cross with submit login".
-    // "Login success... jump to main site static home... no backend interface call".
+      password: password.value
+    })
     
     // To satisfy "Remember Me" requirement:
     if (rememberMe.value) {
-      localStorage.setItem('readOnlyUser', JSON.stringify({ username: username.value }))
+      localStorage.setItem('readOnlyUser', JSON.stringify({ 
+        username: username.value,
+        password: encryptPassword(password.value)
+      }))
     } else {
       localStorage.removeItem('readOnlyUser')
     }
     
-    // For session persistence (Read-Only Session), we might need to set 'user' in store.
-    // Since we can't touch backend, we just set the store state.
-    // If the app reloads, state is lost unless we save to localStorage.
-    // Standard 'user' key is used by main site. Submit system uses 'submissionUser'.
-    // So it is safe to use 'user' key for Main Site Read-Only session as long as it doesn't overwrite 'submissionUser'.
-    sessionStorage.setItem('readonly_user', JSON.stringify(mockUser))
-    sessionStorage.setItem('readonly_isLogin', 'true')
-    
-    isLoading.value = false
+    // Redirect
     router.push('/home')
-  }, 1500)
+  } catch (error) {
+    loginError.value = error.message || 'Login failed'
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const goToRegister = () => {

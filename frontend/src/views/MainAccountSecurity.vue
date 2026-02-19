@@ -148,6 +148,7 @@ const changeContact = () => {
     />
 
     <!-- Account Security Content -->
+    <div class="content">
       <div class="header">
         <h1>Account Security</h1>
         <p class="subtitle">Manage your account security settings</p>
@@ -268,7 +269,7 @@ const changeContact = () => {
           </div>
         </div>
       </section>
-    </main>
+    </div>
 
     <!-- 页脚 -->
     <footer class="footer">

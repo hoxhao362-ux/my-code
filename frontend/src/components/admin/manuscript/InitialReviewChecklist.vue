@@ -20,16 +20,16 @@ const checklistModules = reactive([
     desc: 'Verify that basic manuscript information is complete and accurate to avoid issues in subsequent processes.',
     items: [
       { id: '1-1', text: 'Manuscript title, abstract, and keywords are complete, standardized, without typos or ambiguity.', status: null, remark: '' },
-      { id: '1-2', text: 'Author count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
-      { id: '1-3', text: 'Corresponding author email and affiliation are valid and contactable.', status: null, remark: '' },
+      { id: '1-2', text: 'Writer count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
+      { id: '1-3', text: 'Corresponding writer email and affiliation are valid and contactable.', status: null, remark: '' },
       { id: '1-4', text: 'Submission type and research field are correctly selected and match manuscript content.', status: null, remark: '' },
-      { id: '1-5', text: 'Author submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
+      { id: '1-5', text: 'Writer submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
     ]
   },
   {
     id: 2,
     title: 'Double-Blind Review Anonymity Compliance',
-    desc: 'Verify that the manuscript is fully anonymized with no author identity leakage, strictly following double-blind review requirements.',
+    desc: 'Verify that the manuscript is fully anonymized with no writer identity leakage, strictly following double-blind review requirements.',
     items: [
       { id: '2-1', text: 'Main text contains no author names, affiliations, emails, or ORCID identifiers.', status: null, remark: '' },
       { id: '2-2', text: 'Figures, figure legends, table notes, headers, and footers contain no identity information.', status: null, remark: '' },

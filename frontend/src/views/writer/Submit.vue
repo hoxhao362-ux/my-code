@@ -13,7 +13,7 @@ const route = useRoute()
 // 表单数据
 const formData = ref({
   title: '',
-  author: userStore.user?.username || '',
+  writer: userStore.user?.username || '',
   abstract: '',
   keywords: '',
   content: '',
@@ -450,7 +450,7 @@ const modules = computed(() => userStore.modules)
 const handleSubmit = async () => {
   // 表单验证 - 处理Delta对象和HTML标签
   const hasTitle = !!formData.value.title
-  const hasAuthor = !!formData.value.author
+  const hasWriter = !!formData.value.writer
   
   // 处理摘要 - 可能是Delta对象或HTML字符串
   let hasAbstract = false
@@ -471,7 +471,7 @@ const handleSubmit = async () => {
   // 检查是否有附件
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
-  if (!hasTitle || !hasAuthor || !hasAbstract || (!hasContent && !hasAttachments)) {
+  if (!hasTitle || !hasWriter || !hasAbstract || (!hasContent && !hasAttachments)) {
     error.value = '请填写完整的投稿信息，正文和附件至少需要填写一项'
     return
   }
@@ -493,7 +493,7 @@ const handleSubmit = async () => {
     const newJournal = {
       id: Date.now().toString(),
       title: formData.value.title,
-      author: formData.value.author,
+      writer: formData.value.writer,
       abstract: convertToHTML(formData.value.abstract),
       keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
       content: convertToHTML(formData.value.content),
@@ -521,14 +521,14 @@ const handleSubmit = async () => {
     setTimeout(() => {
       formData.value = {
         title: '',
-        author: userStore.user?.username || '',
+        writer: userStore.user?.username || '',
         abstract: '',
         keywords: '',
         content: '',
         modules: ['all']
       }
       success.value = ''
-      router.push('/admin/author-dashboard')
+      router.push('/admin/writer-dashboard')
     }, 2000)
   } catch (err) {
     error.value = '投稿失败，请稍后重试'
@@ -538,7 +538,7 @@ const handleSubmit = async () => {
 }
 
 const goBack = () => {
-  router.push('/admin/author-dashboard')
+  router.push('/admin/writer-dashboard')
 }
 </script>
 
@@ -547,7 +547,7 @@ const goBack = () => {
     <!-- 导航栏 -->
     <Navigation 
       :user="userStore.user"
-      :current-page="'author-submit'"
+      :current-page="'writer-submit'"
       :toggle-directory="() => {}"
       :logout="userStore.logout"
     />
@@ -589,7 +589,7 @@ const goBack = () => {
             <div class="rules-section">
               <h3 class="section-subtitle">投稿流程</h3>
               <ol class="rules-list">
-                <li>登录期刊投稿平台作者后台</li>
+                <li>登录期刊投稿平台投稿人后台</li>
                 <li>进入在线投稿页面，填写论文基本信息</li>
                 <li>填写论文摘要，概述研究目的、方法、结果和结论</li>
                 <li>上传完整论文附件，支持.doc、.docx、.pdf格式</li>
@@ -614,7 +614,7 @@ const goBack = () => {
             </div>
             
             <div class="rules-actions">
-              <button class="btn btn-primary" @click="router.push('/admin/submit')">
+              <button class="btn btn-primary" @click="router.push('/admin/writer-submit')">
                 开始在线投稿
               </button>
               <button class="btn btn-secondary" @click="goBack">
@@ -648,12 +648,12 @@ const goBack = () => {
               </div>
               
               <div class="form-group">
-                <label for="author">作者 <span class="required">*</span></label>
+                <label for="writer">投稿人 <span class="required">*</span></label>
                 <input 
                   type="text" 
-                  id="author" 
-                  v-model="formData.author" 
-                  placeholder="请输入作者姓名"
+                  id="writer" 
+                  v-model="formData.writer" 
+                  placeholder="请输入投稿人姓名"
                   required
                   :disabled="submitting"
                 />

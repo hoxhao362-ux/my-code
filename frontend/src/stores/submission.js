@@ -23,6 +23,10 @@ export const useSubmissionStore = defineStore('submission', () => {
     
     // Step 2
     files: [], // { id, name, type, description, fileObj (raw), url }
+    referenceAnonymization: {
+      file: null,
+      confirmed: false
+    },
     
     // Step 3
     region: '',
@@ -54,7 +58,7 @@ export const useSubmissionStore = defineStore('submission', () => {
     title: '',
     abstract: '',
     keywords: '',
-    authors: [], // { id, name, institution, email, isCorresponding, isFirst }
+    writers: [], // { id, name, institution, email, isCorresponding, isFirst }
     funding: [], // { id, body, number }
     noFunding: false,
     publishingOption: '' // Subscription / Open Access
@@ -165,16 +169,16 @@ export const useSubmissionStore = defineStore('submission', () => {
         isValid = !!formData.value.coverLetter
         break
       case 6:
-        const hasAuthor = formData.value.authors.length > 0
-        const hasCorresponding = formData.value.authors.some(a => a.isCorresponding)
-        const hasFirst = formData.value.authors.some(a => a.isFirst)
+        const hasWriter = formData.value.writers.length > 0
+        const hasCorresponding = formData.value.writers.some(a => a.isCorresponding)
+        const hasFirst = formData.value.writers.some(a => a.isFirst)
         const hasFunding = formData.value.noFunding || formData.value.funding.length > 0
         
         const cleanTitle = formData.value.title.replace(/<[^>]*>/g, '').trim()
         const cleanAbstract = formData.value.abstract.replace(/<[^>]*>/g, '').trim()
         
         isValid = !!cleanTitle && !!cleanAbstract && !!formData.value.keywords &&
-                  hasAuthor && hasCorresponding && hasFirst && hasFunding
+                  hasWriter && hasCorresponding && hasFirst && hasFunding
         break
     }
     return isValid
@@ -254,10 +258,26 @@ export const useSubmissionStore = defineStore('submission', () => {
         // 1. Generate Mock Manuscript ID
         const manuscriptId = 20260000 + Math.floor(Math.random() * 10000)
         
-        // 2. Get Author Info
-        const authorId = userStore.submissionUser?.id || userStore.user?.id || 999
-        const authorName = userStore.submissionUser?.username || userStore.user?.username || (formData.value.authors[0]?.name || 'Unknown Author')
+        // 2. Get Writer Info
+        const writerId = userStore.submissionUser?.id || userStore.user?.id || 999
+        const writerName = userStore.submissionUser?.username || userStore.user?.username || (formData.value.writers[0]?.name || 'Unknown Writer')
         const title = formData.value.title ? formData.value.title.replace(/<[^>]*>/g, '').trim() : 'Untitled Manuscript'
+
+        // 2.5 Create and Save Journal Entry (Fix: Ensure manuscript is added to main list)
+        const newJournal = {
+            id: manuscriptId,
+            title: title,
+            writer: writerName,
+            author: writerName,
+            module: formData.value.classifications?.[0] || 'Others',
+            status: 'pending_initial_review',
+            submissionDate: new Date().toISOString().split('T')[0],
+            abstract: formData.value.abstract ? formData.value.abstract.replace(/<[^>]*>/g, '').trim() : '',
+            keywords: formData.value.keywords || '',
+            fileUrl: '/vite.svg',
+            reviews: []
+        }
+        userStore.addJournal(newJournal)
 
         // 3. Process Recommended Reviewers
         const recommended = formData.value.additionalInfo.recommendedReviewers || []
@@ -270,8 +290,8 @@ export const useSubmissionStore = defineStore('submission', () => {
                     id: Date.now() + index,
                     manuscriptId: manuscriptId,
                     manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
+                    writerId: writerId,
+                    writerName: writerName,
                     reviewerName: reviewer.name,
                     reviewerEmail: reviewer.email,
                     reviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A', 
@@ -302,8 +322,8 @@ export const useSubmissionStore = defineStore('submission', () => {
                     id: Date.now() + index + 100,
                     manuscriptId: manuscriptId,
                     manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
+                    writerId: writerId,
+                    writerName: writerName,
                     opposedReviewerName: reviewer.name,
                     opposedReviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A',
                     reasonType: reviewer.reasonType || 'Other',
@@ -321,7 +341,7 @@ export const useSubmissionStore = defineStore('submission', () => {
         // 5. Add System Log
         userStore.addSystemLog({
             type: 'operation',
-            user: authorName,
+            user: writerName,
             action: 'Submit Manuscript',
             target: `Manuscript ID: ${manuscriptId}`,
             ip: '127.0.0.1'

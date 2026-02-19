@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useI18n } from '../../../composables/useI18n'
@@ -10,6 +10,8 @@ const userStore = useUserStore()
 const { t } = useI18n()
 
 const user = computed(() => userStore.submissionUser)
+const showAboutMenu = ref(false)
+const showHelpMenu = ref(false)
 
 const goHome = () => {
   // Return to main site home, clears submission session if needed or just navigates
@@ -19,11 +21,11 @@ const goHome = () => {
 }
 
 const goSubmit = () => {
-  router.push('/submission/author/submit')
+  router.push('/submission/writer/submit')
 }
 
 const goMainMenu = () => {
-  router.push('/admin/author-dashboard')
+  router.push('/admin/writer-dashboard')
 }
 
 const handleLogout = () => {
@@ -52,8 +54,30 @@ const handleLogout = () => {
           <li class="menu-item"><a href="#" @click.prevent="goHome">Home</a></li>
           <li class="menu-item"><a href="#" @click.prevent="goMainMenu">Main Menu</a></li>
           <li class="menu-item active"><a href="#" @click.prevent="goSubmit">Submit a Manuscript</a></li>
-          <li class="menu-item"><a href="#">About ▼</a></li>
-          <li class="menu-item"><a href="#">Help ▼</a></li>
+          
+          <!-- About Dropdown -->
+          <li class="menu-item dropdown" 
+              @mouseenter="showAboutMenu = true" 
+              @mouseleave="showAboutMenu = false">
+            <a href="#">About ▼</a>
+            <ul class="dropdown-menu" v-if="showAboutMenu">
+              <li><a href="#" @click.prevent="router.push('/about/editorial-board')">Editorial Board</a></li>
+              <li><a href="#" @click.prevent="router.push('/about/journal-info')">Journal Info</a></li>
+              <li><a href="#" @click.prevent="router.push('/about/history')">History</a></li>
+            </ul>
+          </li>
+
+          <!-- Help Dropdown -->
+          <li class="menu-item dropdown" 
+              @mouseenter="showHelpMenu = true" 
+              @mouseleave="showHelpMenu = false">
+            <a href="#">Help ▼</a>
+            <ul class="dropdown-menu" v-if="showHelpMenu">
+              <li><a href="#" @click.prevent="router.push('/submission/help')">Help Center</a></li>
+              <li><a href="#" @click.prevent="router.push('/submission/submission-rules')">Submission Rules</a></li>
+              <li><a href="#" @click.prevent="router.push('/admin/help/feedback')">Feedback</a></li>
+            </ul>
+          </li>
         </ul>
       </div>
     </div>
@@ -120,6 +144,10 @@ const handleLogout = () => {
   padding: 0;
 }
 
+.menu-item {
+  position: relative;
+}
+
 .menu-item a {
   display: block;
   padding: 0.8rem 1.5rem;
@@ -135,5 +163,41 @@ const handleLogout = () => {
 
 .menu-item.active a {
   font-weight: bold;
+}
+
+/* Dropdown Styles */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.dropdown-menu li {
+  border-bottom: 1px solid #eee;
+}
+
+.dropdown-menu li:last-child {
+  border-bottom: none;
+}
+
+.dropdown-menu li a {
+  padding: 10px 15px;
+  color: #333;
+  font-size: 0.9rem;
+  display: block;
+  text-decoration: none;
+}
+
+.dropdown-menu li a:hover {
+  background-color: #f5f5f5;
+  color: #005696;
 }
 </style>

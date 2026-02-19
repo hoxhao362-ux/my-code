@@ -229,7 +229,7 @@ const getStatusText = (status) => {
       <!-- Header -->
       <div class="page-header">
         <h1 class="main-title">Opposed Reviewers Management</h1>
-        <p class="warning-text">Review and manage reviewers opposed by authors for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
+        <p class="warning-text">Review and manage reviewers opposed by writers for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
         
         <div class="filter-bar">
           <select v-model="selectedStatus">
@@ -340,7 +340,7 @@ const getStatusText = (status) => {
           <div class="section">
             <h4>Manuscript Information</h4>
             <p><strong>Title:</strong> {{ currentItem?.manuscriptTitle }}</p>
-            <p><strong>Author:</strong> {{ currentItem?.authorName }}</p>
+            <p><strong>Writer:</strong> {{ currentItem?.writerName }}</p>
           </div>
           
           <div class="section">

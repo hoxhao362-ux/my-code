@@ -74,7 +74,7 @@ const selectedItemKey = ref(null)
 // Handle item click
 const handleItemClick = (item) => {
   if (item.action === 'submit') {
-    router.push('/submission/author/submit')
+    router.push('/submission/writer/submit')
     return
   }
   
@@ -126,7 +126,7 @@ const openReviewerModal = (manuscript) => {
 const handleWithdrawRecommendation = (reviewer) => {
   if (!confirm('Are you sure you want to withdraw this recommendation?')) return
   
-  const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'author' }
+  const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'writer' }
   userStore.updateRecommendedReviewer(updated)
   alert('Recommendation withdrawn successfully.')
 }
@@ -134,7 +134,7 @@ const handleWithdrawRecommendation = (reviewer) => {
 </script>
 
 <template>
-  <div class="author-dashboard-container">
+  <div class="writer-dashboard-container">
     <!-- 替换为投稿专用导航 -->
     <SubmissionNavigation />
 
@@ -249,7 +249,7 @@ const handleWithdrawRecommendation = (reviewer) => {
 </template>
 
 <style scoped>
-.author-dashboard-container {
+.writer-dashboard-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;

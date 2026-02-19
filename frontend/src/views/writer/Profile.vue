@@ -200,7 +200,7 @@ const verifyPassword = () => {
     <!-- 导航栏 -->
     <Navigation 
       :user="userStore.user"
-      :current-page="'author-profile'"
+      :current-page="'writer-profile'"
       :toggle-directory="() => {}"
       :navigate-to="() => {}"
       :logout="userStore.logout"
@@ -287,7 +287,7 @@ const verifyPassword = () => {
               <p class="user-role">
                 {{ userStore.user?.role === 'admin' ? 'Admin' : 
                    userStore.user?.role === 'reviewer' ? 'Reviewer' : 
-                   userStore.user?.role === 'author' ? 'Author' : 'User' }}
+                   userStore.user?.role === 'writer' ? 'Writer' : 'User' }}
               </p>
               
               <!-- View Mode -->

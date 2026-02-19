@@ -11,9 +11,16 @@ const user = computed(() => userStore.user)
 const activeTab = ref('pending') // 'pending', 'history'
 
 const myTasks = computed(() => {
-  // Mock logic: All active journals
+  if (!user.value) return []
   return userStore.journals.filter(j => 
-    ['Submitted', 'Pending Screening', 'Pending Assignment', 'Under Review', 'Revision Submitted'].includes(j.status)
+    // 1. Tasks assigned specifically to me
+    (j.status === 'assigned_to_editor' && j.assignedEditor === user.value.username) ||
+    // 2. Tasks in my workflow stages (Legacy/Simple logic)
+    ((j.writer === user.value.username || j.author === user.value.username) && ['Submitted', 'Revision Submitted'].includes(j.status)) ||
+    // 3. Reviewer tasks (if I am a reviewer)
+    (user.value.role === 'reviewer' && j.status === 'under_peer_review' && j.reviewers?.some(r => r.name === user.value.username)) ||
+    // 4. Legacy fallback
+    ['Pending Screening', 'Pending Assignment', 'Under Review'].includes(j.status)
   )
 })
 

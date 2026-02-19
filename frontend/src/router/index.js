@@ -15,9 +15,9 @@ const mainRoutes = [
   { path: '/account-security', name: 'account-security', component: () => import('../views/MainAccountSecurity.vue') },
   
   // Resources Submenu Routes
-  { path: '/resources/author/guide', name: 'resources-author-guide', component: () => import('../views/resources/author/Guide.vue') },
-  { path: '/resources/author/templates', name: 'resources-author-templates', component: () => import('../views/resources/author/Templates.vue') },
-  { path: '/resources/author/status', name: 'resources-author-status', component: () => import('../views/resources/author/Status.vue') },
+  { path: '/resources/writer/guide', name: 'resources-writer-guide', component: () => import('../views/resources/writer/Guide.vue') },
+  { path: '/resources/writer/templates', name: 'resources-writer-templates', component: () => import('../views/resources/writer/Templates.vue') },
+  { path: '/resources/writer/status', name: 'resources-writer-status', component: () => import('../views/resources/writer/Status.vue') },
   { path: '/resources/reviewer/become', name: 'resources-reviewer-become', component: () => import('../views/resources/reviewer/BecomeReviewer.vue') },
   { path: '/reviewer/application-status', name: 'resources-reviewer-status', component: () => import('../views/resources/reviewer/ApplicationStatus.vue') },
   { path: '/resources/reviewer/guidelines', name: 'resources-reviewer-guidelines', component: () => import('../views/resources/reviewer/Guidelines.vue') },
@@ -56,11 +56,11 @@ const adminRoutes = [
   { path: '/submission', name: 'submission-index', component: () => import('../views/submission/Index.vue') },
   { path: '/submission/about', name: 'submission-about', component: () => import('../views/submission/About.vue') },
   { path: '/submission/help', name: 'submission-help', component: () => import('../views/submission/Help.vue') },
-  { path: '/submission/help/feedback', name: 'submission-help-feedback', component: () => import('../views/submission/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
-  { path: '/submission/system-status', name: 'submission-system-status', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/submission/help/feedback', name: 'submission-help-feedback', component: () => import('../views/submission/Feedback.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/submission/system-status', name: 'submission-system-status', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
   
   // 投稿专属路由 (Submission Process) - 独立于 Dashboard
-  { path: '/submission/author/submit', name: 'submission-process', component: () => import('../views/submission/SubmissionProcess.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'editor', 'admin'] } },
+  { path: '/submission/writer/submit', name: 'submission-process', component: () => import('../views/submission/SubmissionProcess.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'editor', 'admin'] } },
 
   // 编辑系统路由 (Unified Editorial System) - Replaces Admin Dashboard
   { path: '/editor/dashboard', name: 'editor-dashboard', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
@@ -135,20 +135,20 @@ const adminRoutes = [
   { path: '/admin/audit-list', name: 'admin-audit-list', component: () => import('../views/reviewer/Pending.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/admin/audit-history', name: 'admin-audit-history', component: () => import('../views/reviewer/History.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   
-  // 作者路由
-  { path: '/admin/author-dashboard', name: 'admin-author-dashboard', component: () => import('../views/author/Dashboard.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/author-submit', name: 'admin-author-submit', component: () => import('../views/author/Submit.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/submission-rules', name: 'admin-submission-rules', component: () => import('../views/author/Submit.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/author-history', name: 'admin-author-history', component: () => import('../views/author/History.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/author-profile', name: 'admin-author-profile', component: () => import('../views/author/Profile.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
+  // 作者路由 (Changed to Writer)
+  { path: '/admin/writer-dashboard', name: 'admin-writer-dashboard', component: () => import('../views/writer/Dashboard.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/writer-submit', name: 'admin-writer-submit', component: () => import('../views/writer/Submit.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/submission-rules', name: 'admin-submission-rules', component: () => import('../views/writer/Submit.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/writer-history', name: 'admin-writer-history', component: () => import('../views/writer/History.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/writer-profile', name: 'admin-writer-profile', component: () => import('../views/writer/Profile.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   
   // 稿件管理子路由
   { path: '/editor/manuscript/screening', name: 'editor-manuscript-screening', component: () => import('../views/admin/manuscript/Screening.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/admin/manuscript/screening', redirect: '/editor/manuscript/screening' },
   
-  { path: '/admin/manuscript/my', name: 'admin-manuscript-my', component: () => import('../views/admin/manuscript/MyManuscripts.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/manuscript/progress', name: 'admin-manuscript-progress', component: () => import('../views/admin/manuscript/ManuscriptProgress.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
-  { path: '/admin/manuscript/history', name: 'admin-manuscript-history', component: () => import('../views/admin/manuscript/ManuscriptHistory.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
+  { path: '/admin/manuscript/my', name: 'admin-manuscript-my', component: () => import('../views/admin/manuscript/MyManuscripts.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/manuscript/progress', name: 'admin-manuscript-progress', component: () => import('../views/admin/manuscript/ManuscriptProgress.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
+  { path: '/admin/manuscript/history', name: 'admin-manuscript-history', component: () => import('../views/admin/manuscript/ManuscriptHistory.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
   
   // 个人中心子路由
   { path: '/editor/settings', name: 'editor-settings', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
@@ -160,17 +160,17 @@ const adminRoutes = [
   { path: '/admin/feedback-management', redirect: '/editor/dashboard' },
   
   // 投稿指南路由
-  { path: '/admin/guide/instructions', name: 'admin-guide-instructions', component: () => import('../views/admin/guide/Instructions.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/guide/faq', name: 'admin-guide-faq', component: () => import('../views/admin/guide/FAQ.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/guide/instructions', name: 'admin-guide-instructions', component: () => import('../views/admin/guide/Instructions.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/guide/faq', name: 'admin-guide-faq', component: () => import('../views/admin/guide/FAQ.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   
   // 帮助中心路由
-  { path: '/admin/help/consultation', name: 'admin-help-consultation', component: () => import('../views/admin/help/Consultation.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
-  { path: '/admin/help/feedback', name: 'admin-help-feedback', component: () => import('../views/admin/help/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/help/consultation', name: 'admin-help-consultation', component: () => import('../views/admin/help/Consultation.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/help/feedback', name: 'admin-help-feedback', component: () => import('../views/admin/help/Feedback.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   
   // 公共后台路由
-  { path: '/admin/review-records/:id', name: 'admin-review-records', component: () => import('../views/ReviewRecords.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
+  { path: '/admin/review-records/:id', name: 'admin-review-records', component: () => import('../views/ReviewRecords.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   // 后台稿件详情路由
-  { path: '/admin/journal/:id', name: 'admin-journal-detail', component: () => import('../views/AdminJournalDetail.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } }
+  { path: '/admin/journal/:id', name: 'admin-journal-detail', component: () => import('../views/AdminJournalDetail.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } }
 ]
 
 // 创建路由实例
@@ -183,6 +183,14 @@ const router = createRouter({
 })
 
 // 导航守卫 - 实现权限控制和路由隔离
+let lastAlertTime = 0
+const protectedAlert = (msg) => {
+  if (Date.now() - lastAlertTime > 2000) { // 2s debounce
+    alert(msg)
+    lastAlertTime = Date.now()
+  }
+}
+
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
@@ -213,7 +221,7 @@ router.beforeEach((to, from, next) => {
       if (to.path === '/submission' && submissionUser) {
         userStore.syncUserContext('submission')
         
-        if (submissionUser.role === 'author') next({ name: 'admin-author-dashboard' })
+        if (submissionUser.role === 'writer') next({ name: 'admin-writer-dashboard' })
         else if (submissionUser.role === 'reviewer') next({ name: 'reviewer-dashboard' })
         else if (['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(submissionUser.role)) next({ name: 'editor-dashboard' })
         else next()
@@ -238,15 +246,17 @@ router.beforeEach((to, from, next) => {
       const currentRole = submissionUser.role
       
       // Strict Dashboard Redirection Logic
-      if (currentRole === 'reviewer' && (to.path.startsWith('/editor') || to.path.startsWith('/admin/'))) {
-         alert(`Access denied: This page requires appropriate submit system privileges.`)
+      // Only block /editor/ paths which are strictly for editorial staff. 
+      // /admin/ paths are mixed and should be handled by meta.roles check below.
+      if (currentRole === 'reviewer' && to.path.startsWith('/editor')) {
+         protectedAlert(`Access denied: This page requires appropriate submit system privileges.`)
          next({ name: 'reviewer-dashboard' })
          return
       }
       
-      if (currentRole === 'author' && (to.path.startsWith('/editor') || to.path.startsWith('/reviewer') || to.path.startsWith('/admin/'))) {
-         alert(`Access denied: This page requires appropriate submit system privileges.`)
-         next({ name: 'admin-author-dashboard' })
+      if (currentRole === 'writer' && (to.path.startsWith('/editor') || to.path.startsWith('/reviewer'))) {
+         protectedAlert(`Access denied: This page requires appropriate submit system privileges.`)
+         next({ name: 'admin-writer-dashboard' })
          return
       }
       
@@ -255,7 +265,7 @@ router.beforeEach((to, from, next) => {
         next()
       } else {
         // Permission denied fallback
-        if (currentRole === 'author') next({ name: 'admin-author-dashboard' })
+        if (currentRole === 'writer') next({ name: 'admin-writer-dashboard' })
         else if (currentRole === 'reviewer') next({ name: 'reviewer-dashboard' })
         else if (['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(currentRole)) next({ name: 'editor-dashboard' })
         else next({ name: 'submission-login' })

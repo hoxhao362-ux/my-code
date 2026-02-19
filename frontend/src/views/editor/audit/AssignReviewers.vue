@@ -12,6 +12,12 @@ const user = computed(() => userStore.user)
 // Filter for manuscripts waiting for assignment
 const assignmentJournals = computed(() => {
   return userStore.journals.filter(journal => 
+    // Public Pool
+    journal.status === 'reviewer_assignment_pending' || 
+    journal.status === 'initial_review_passed' || 
+    // Assigned specifically to current user (or Admin sees all)
+    (journal.status === 'assigned_to_editor' && (journal.assignedEditor === user.value?.username || user.value?.role === 'admin')) ||
+    // Legacy support
     journal.status === 'Pending Assignment'
   )
 })
@@ -26,7 +32,7 @@ const filterMethod = ref('all') // 'field', 'method'
 const searchQuery = ref('')
 const activeTab = ref('recommended') // 'manual', 'smart', 'recommended'
 
-const authorRecommendedReviewers = computed(() => {
+const writerRecommendedReviewers = computed(() => {
   if (!currentJournal.value) return []
   // Get accepted recommendations for this manuscript
   return userStore.recommendedReviewers.filter(r => 
@@ -48,7 +54,7 @@ const openAssignModal = (journal) => {
   currentJournal.value = journal
   selectedReviewerIds.value = []
   
-  // Check if there are author recommendations
+  // Check if there are writer recommendations
   const hasRecommendations = userStore.recommendedReviewers.some(r => 
     String(r.manuscriptId) === String(journal.id) && 
     r.status === 'accepted'
@@ -85,7 +91,7 @@ const confirmAssignment = () => {
   }
   
   const journal = { ...currentJournal.value }
-  journal.status = 'Under Review' // English status
+  journal.status = 'under_peer_review'
   
   // Mix of Real Users (Manual/Smart) and Recommended Reviewers
   const newReviewers = selectedReviewerIds.value.map(id => {
@@ -143,7 +149,7 @@ const handleReinvite = (journal) => {
           <div class="journal-info">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>Writer:</strong> {{ journal.author }}</span>
+              <span><strong>Writer:</strong> {{ journal.writer }}</span>
               <span><strong>Module:</strong> {{ journal.module }}</span>
             </div>
             <div class="tags">
@@ -173,8 +179,8 @@ const handleReinvite = (journal) => {
             :class="{ active: activeTab === 'recommended' }"
             @click="activeTab = 'recommended'"
           >
-            👤 Author Recommended
-            <span v-if="authorRecommendedReviewers.length" class="badge-count">{{ authorRecommendedReviewers.length }}</span>
+            👤 Writer Recommended
+            <span v-if="writerRecommendedReviewers.length" class="badge-count">{{ writerRecommendedReviewers.length }}</span>
           </button>
           <button 
             class="tab-btn" 
@@ -192,14 +198,14 @@ const handleReinvite = (journal) => {
           </button>
         </div>
 
-        <!-- Author Recommended Tab -->
+        <!-- Writer Recommended Tab -->
         <div v-if="activeTab === 'recommended'" class="tab-content">
-          <div v-if="authorRecommendedReviewers.length === 0" class="no-data-tab">
-            No approved author recommendations for this manuscript.
+          <div v-if="writerRecommendedReviewers.length === 0" class="no-data-tab">
+            No approved writer recommendations for this manuscript.
             <p class="hint">Please check "Recommended Reviewers" audit page first.</p>
           </div>
           <div v-else class="reviewer-list">
-             <div v-for="reviewer in authorRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
+             <div v-for="reviewer in writerRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
                <label>
                  <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds" disabled> <!-- ID might not match user ID, handling below -->
                  <!-- Wait, recommendedReviewers might not have a user ID if they are external. 

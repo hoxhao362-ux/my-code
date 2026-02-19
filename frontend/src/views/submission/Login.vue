@@ -39,7 +39,8 @@ const handleLogin = async (role) => {
       router.push('/submission')
     }
   } catch (error) {
-    errorMessage.value = t('submission.login.error.failed')
+    // Show specific error from store (e.g. password mismatch, lockout)
+    errorMessage.value = error.message || t('submission.login.error.failed')
   }
 }
 

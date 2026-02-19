@@ -2,11 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 
 const props = defineProps({
-  authorName: {
+  writerName: {
     type: String,
     required: true
   },
-  authorAffiliation: {
+  writerAffiliation: {
     type: String,
     default: ''
   },
@@ -26,9 +26,9 @@ const issues = ref([])
 
 // Mock COI Database
 const mockPaperDatabase = [
-  { title: "Study on X", authors: ["Zhang San", "Li Si", "Wang Wu"], year: 2024 },
-  { title: "Research on Y", authors: ["Li Si", "Zhao Liu"], year: 2023 },
-  { title: "Analysis of Z", authors: ["Chen Yi", "Lin Er"], year: 2025 }
+  { title: "Study on X", writers: ["Zhang San", "Li Si", "Wang Wu"], year: 2024 },
+  { title: "Research on Y", writers: ["Li Si", "Zhao Liu"], year: 2023 },
+  { title: "Analysis of Z", writers: ["Chen Yi", "Lin Er"], year: 2025 }
 ]
 
 // Mock Integrity Database (Blacklist)
@@ -62,8 +62,8 @@ const checkCOI = () => {
     }
 
     // 1. Institution Check (Fuzzy Match)
-    if (props.authorAffiliation && props.reviewer.affiliation) {
-      const authAff = props.authorAffiliation.toLowerCase()
+    if (props.writerAffiliation && props.reviewer.affiliation) {
+      const authAff = props.writerAffiliation.toLowerCase()
       const revAff = props.reviewer.affiliation.toLowerCase()
       // Simple inclusion check
       if (authAff.includes(revAff) || revAff.includes(authAff)) {
@@ -77,10 +77,10 @@ const checkCOI = () => {
     }
 
     // 2. Co-author Check (Last 3 Years)
-    // Check if authorName and reviewer.username appear in same paper
+    // Check if writerName and reviewer.username appear in same paper
     const coAuthoredPaper = mockPaperDatabase.find(paper => {
-      const hasAuthor = paper.authors.some(a => a.includes(props.authorName) || props.authorName.includes(a))
-      const hasReviewer = paper.authors.some(a => a.includes(props.reviewer.username) || props.reviewer.username.includes(a))
+      const hasAuthor = paper.writers.some(a => a.includes(props.writerName) || props.writerName.includes(a))
+      const hasReviewer = paper.writers.some(a => a.includes(props.reviewer.username) || props.reviewer.username.includes(a))
       return hasAuthor && hasReviewer
     })
 

@@ -69,7 +69,7 @@ const viewJournalDetail = (id) => {
     <!-- 导航栏 -->
     <Navigation 
       :user="userStore.user"
-      :current-page="'author-history'"
+      :current-page="'writer-history'"
       :toggle-directory="() => {}"
       :navigate-to="() => {}"
       :logout="userStore.logout"

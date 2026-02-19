@@ -172,21 +172,21 @@ const handleInviteSubmit = (payload) => {
   }
 }
 
-const openNotifyAuthorModal = () => {
-  currentActionType.value = 'notify_author_recommendation'
+const openNotifyWriterModal = () => {
+  currentActionType.value = 'notify_writer_recommendation'
   showActionModal.value = true
 }
 
-const handleNotifyAuthorSubmit = (payload) => {
-  addLog('Notified author about reviewer recommendation results', 'recommended')
+const handleNotifyWriterSubmit = (payload) => {
+  addLog('Notified writer about reviewer recommendation results', 'recommended')
   alert('Notification sent successfully!')
 }
 
 const handleActionSubmit = (payload) => {
   if (payload.type === 'invite_reviewer') {
     handleInviteSubmit(payload)
-  } else if (payload.type === 'notify_author_recommendation') {
-    handleNotifyAuthorSubmit(payload)
+  } else if (payload.type === 'notify_writer_recommendation') {
+    handleNotifyWriterSubmit(payload)
   }
 }
 
@@ -306,20 +306,20 @@ const copyToClipboard = (text) => {
     <!-- 1. Author Recommended Reviewers -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Author Recommended Reviewers</h2>
+        <h2 class="module-title">Writer Recommended Reviewers</h2>
         <div class="header-actions">
            <button 
              v-if="isAllRecommendedProcessed" 
              class="btn-action btn-red" 
-             @click="openNotifyAuthorModal"
-             title="Notify Author of Results"
+             @click="openNotifyWriterModal"
+             title="Notify Writer of Results"
            >
-             Notify Author of Results
+             Notify Writer of Results
            </button>
         </div>
       </div>
       <div class="module-stats">{{ recommendedStats }}</div>
-      <p class="module-desc">Review and manage reviewers recommended by the authors. Approved reviewers can be invited to participate in the peer review process.</p>
+      <p class="module-desc">Review and manage reviewers recommended by the writers. Approved reviewers can be invited to participate in the peer review process.</p>
       
       <div class="table-container">
         <table class="lancet-table">
@@ -399,10 +399,10 @@ const copyToClipboard = (text) => {
     <!-- 2. Author Avoidance Requests -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Author Avoidance Requests</h2>
+        <h2 class="module-title">Writer Avoidance Requests</h2>
         <div class="module-stats">{{ avoidanceStats }}</div>
       </div>
-      <p class="module-desc">Review and evaluate requests from authors to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
+      <p class="module-desc">Review and evaluate requests from writers to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
       
       <div class="table-container">
         <table class="lancet-table">
@@ -481,13 +481,13 @@ const copyToClipboard = (text) => {
           <button class="btn-action btn-gray btn-sm" @click="reCheckAll" style="margin-left: 10px;">One-click Re-check</button>
         </div>
       </div>
-      <p class="module-desc">Automatically check for potential conflicts of interest between authors and reviewers. Editors can manually confirm and mark conflict status.</p>
+      <p class="module-desc">Automatically check for potential conflicts of interest between writers and reviewers. Editors can manually confirm and mark conflict status.</p>
       
       <div class="coi-container">
         
         <!-- Sub 1: Recommended -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Author vs Recommended Reviewers</h3>
+          <h3 class="coi-subtitle">Writer vs Recommended Reviewers</h3>
           <div v-for="item in conflictResults.recommended" :key="item.reviewerId" class="coi-card">
             <div class="coi-card-header">
               Reviewer: {{ item.name }} ({{ item.affiliation }})
@@ -519,7 +519,7 @@ const copyToClipboard = (text) => {
 
         <!-- Sub 2: Excluded -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Author vs Excluded Reviewers</h3>
+          <h3 class="coi-subtitle">Writer vs Excluded Reviewers</h3>
           <div v-for="item in conflictResults.excluded" :key="item.requestId" class="coi-card">
              <div class="coi-card-header">
               Excluded Reviewer: {{ item.name }} ({{ item.affiliation }})

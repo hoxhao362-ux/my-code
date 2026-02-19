@@ -3,18 +3,38 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
 // Filter for manuscripts ready for decision
-// For demo, let's say 'Under Review' journals with at least 1 review can be decided, OR explicit status
+// Updated to match actual system status 'review_completed' and ensure assignment correctness
 const decisionJournals = computed(() => {
-  return userStore.journals.filter(journal => 
-    // Logic: Has reviews OR status indicates ready
-    (journal.reviews && journal.reviews.length > 0) || journal.status === 'Reviews Completed'
-  )
+  if (!user.value) return []
+  
+  return userStore.journals.filter(journal => {
+    // 1. Status Check: Must be 'review_completed' (or legacy 'Reviews Completed')
+    const isStatusReady = journal.status === 'review_completed' || journal.status === 'Reviews Completed'
+    
+    // 2. Assignment Check: Must be assigned to current editor
+    // If assignedEditor is present, it must match current user
+    const isAssignedToMe = journal.assignedEditor === user.value.username
+    
+    // 3. Data Check: Should have reviews (from reviewHistory preferably)
+    const hasReviews = (journal.reviewHistory && journal.reviewHistory.length > 0) || 
+                       (journal.reviews && journal.reviews.length > 0)
+    
+    // Log for debugging if needed (console.log)
+    if (isStatusReady && !isAssignedToMe && journal.assignedEditor) {
+      console.warn(`Journal ${journal.id} is ready but assigned to ${journal.assignedEditor}, not current user ${user.value.username}`)
+    }
+
+    // Return true if status is ready AND assigned to me (or not assigned specifically)
+    // We enforce assignment check if the field exists
+    return isStatusReady && (!journal.assignedEditor || isAssignedToMe)
+  })
 })
 
 const showModal = ref(false)
@@ -36,20 +56,46 @@ const submitDecision = () => {
   }
   
   const journal = { ...currentJournal.value }
-  journal.status = decisionType.value === 'Accept' ? 'Accepted' : 
-                   decisionType.value === 'Reject' ? 'Rejected' : 
-                   decisionType.value === 'Transfer' ? 'Transfer Suggested' :
-                   'Revision Requested' // For Minor/Major Revision
-                   
+  let newStatus = ''
+  
+  // Update status based on decision type using standard constants
+  if (decisionType.value === 'Accept') {
+    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+  } else if (decisionType.value === 'Reject') {
+    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+  } else if (decisionType.value === 'Minor Revision' || decisionType.value === 'Major Revision') {
+    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
+  } else if (decisionType.value === 'Transfer') {
+    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED // Transfer is treated as reject in workflow
+  } else {
+    newStatus = 'final_decision_made'
+  }
+  
+  journal.status = newStatus
+  
   journal.decision = {
     type: decisionType.value,
     comments: decisionComments.value,
     date: new Date().toISOString()
   }
   
+  // Save to Journal Store
   userStore.updateJournal(journal)
+  
+  // Save Draft for Decisions Module (Critical for workflow continuity)
+  const draft = {
+    manuscriptId: journal.id,
+    manuscriptTitle: journal.title,
+    content: decisionComments.value,
+    templateType: decisionType.value,
+    status: 'Draft',
+    author: journal.writer || journal.author
+  }
+  userStore.saveDecisionDraft(draft)
+  
   showModal.value = false
-  alert(`Decision recorded: ${decisionType.value}. Email sent to writer.`)
+  // Updated alert to guide user to next step
+  alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module. Please review and send.`)
 }
 
 </script>
@@ -72,9 +118,28 @@ const submitDecision = () => {
           </div>
           
           <div class="reviews-summary">
-            <h4>Reviews Received ({{ journal.reviews ? journal.reviews.length : 0 }})</h4>
-            <div v-if="journal.reviews && journal.reviews.length > 0" class="reviews-list">
-               <div v-for="(review, idx) in journal.reviews" :key="idx" class="review-item">
+            <h4>Reviews Received ({{ (journal.reviewHistory && journal.reviewHistory.length) || (journal.reviews && journal.reviews.length) || 0 }})</h4>
+            
+            <!-- Priority: Review History (New System) -->
+            <div v-if="journal.reviewHistory && journal.reviewHistory.length > 0" class="reviews-list">
+               <div v-for="(review, idx) in journal.reviewHistory" :key="'h-'+idx" class="review-item">
+                 <div class="review-header">
+                   <strong>Reviewer {{ idx + 1 }} ({{ review.reviewer }})</strong>
+                   <!-- Display Decision as Recommendation -->
+                   <span class="rating" :class="{'accept': review.decision === 'Accept', 'reject': review.decision === 'Reject'}">
+                     {{ review.decision }}
+                   </span>
+                 </div>
+                 <p class="review-content">{{ review.comment }}</p>
+                 <div v-if="review.confidentialComments" class="confidential-note">
+                   <small>Confidential: {{ review.confidentialComments }}</small>
+                 </div>
+               </div>
+            </div>
+            
+            <!-- Fallback: Old Reviews -->
+            <div v-else-if="journal.reviews && journal.reviews.length > 0" class="reviews-list">
+               <div v-for="(review, idx) in journal.reviews" :key="'r-'+idx" class="review-item">
                  <div class="review-header">
                    <strong>Reviewer {{ idx + 1 }} ({{ review.reviewer }})</strong>
                    <span class="rating">Rating: {{ review.rating }}/5</span>
@@ -82,6 +147,7 @@ const submitDecision = () => {
                  <p class="review-content">{{ review.comment }}</p>
                </div>
             </div>
+            
             <div v-else class="no-reviews">No reviews submitted yet.</div>
           </div>
           
@@ -143,6 +209,11 @@ const submitDecision = () => {
 .review-item { background: white; padding: 1rem; border: 1px solid #eee; margin-bottom: 0.5rem; border-radius: 4px; }
 .review-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; }
 .review-content { margin: 0; color: #666; font-size: 0.9rem; }
+
+.rating { font-weight: bold; color: #f1c40f; }
+.rating.accept { color: #27ae60; }
+.rating.reject { color: #c0392b; }
+.confidential-note { background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; color: #856404; }
 
 .actions { display: flex; justify-content: flex-end; }
 .btn { padding: 0.6rem 1.2rem; border-radius: 4px; border: none; cursor: pointer; font-weight: 500; color: white; transition: 0.2s; }

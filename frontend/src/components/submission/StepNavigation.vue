@@ -36,7 +36,7 @@ const handleBack = () => {
 const handleSave = () => {
   if (store.saveDraft()) {
     alert(t('common.draftSaved'))
-    router.push('/')
+    // Stay on current page
   }
 }
 

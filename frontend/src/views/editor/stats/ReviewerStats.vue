@@ -132,7 +132,7 @@ const exportReport = () => {
               <div class="progress-bg">
                 <div class="progress-fill green" :style="{ width: (stats.adoption.recommended.adopted / stats.adoption.recommended.total * 100) + '%' }"></div>
               </div>
-              <p class="chart-hint">Percentage of author-recommended reviewers invited by editors.</p>
+              <p class="chart-hint">Percentage of writer-recommended reviewers invited by editors.</p>
             </div>
 
             <!-- Opposed Reviewers Respected -->
@@ -144,7 +144,7 @@ const exportReport = () => {
               <div class="progress-bg">
                 <div class="progress-fill blue" :style="{ width: (stats.adoption.opposed.respected / stats.adoption.opposed.total * 100) + '%' }"></div>
               </div>
-              <p class="chart-hint">Percentage of author-opposed reviewers successfully excluded.</p>
+              <p class="chart-hint">Percentage of writer-opposed reviewers successfully excluded.</p>
             </div>
           </div>
         </div>

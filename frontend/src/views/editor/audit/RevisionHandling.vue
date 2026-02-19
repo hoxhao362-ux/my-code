@@ -4,13 +4,17 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 
+import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
+
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
 const revisionJournals = computed(() => {
   return userStore.journals.filter(journal => 
-    journal.status === 'Revision Submitted'
+    journal.status === 'Revision Submitted' || 
+    journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_REVISION ||
+    journal.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION
   )
 })
 
@@ -44,7 +48,7 @@ const viewComparison = (journal) => {
     <main class="content">
       <div class="header">
         <h1>Revision Handling</h1>
-        <p class="subtitle">Review Author Revisions</p>
+        <p class="subtitle">Review Writer Revisions</p>
       </div>
 
       <div class="journals-list">
@@ -52,11 +56,11 @@ const viewComparison = (journal) => {
           <div class="journal-info">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>Writer:</strong> {{ journal.author }}</span>
+              <span><strong>Writer:</strong> {{ journal.writer }}</span>
               <span><strong>Revision Date:</strong> {{ journal.date }}</span>
             </div>
             <div class="revision-note" v-if="journal.revisionNote">
-              <strong>Author Response:</strong> {{ journal.revisionNote }}
+              <strong>Writer Response:</strong> {{ journal.revisionNote }}
             </div>
           </div>
           

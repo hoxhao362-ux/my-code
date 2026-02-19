@@ -10,7 +10,10 @@ const user = computed(() => userStore.user)
 
 const monitoringJournals = computed(() => {
   return userStore.journals.filter(journal => 
-    journal.status === 'Under Review' || journal.status === '审稿中' // Handle both En and legacy Zh status
+    journal.status === 'under_peer_review' || 
+    // Legacy support
+    journal.status === 'Under Review' || 
+    journal.status === '审稿中'
   )
 })
 
@@ -51,7 +54,7 @@ const handleExtend = (journal) => {
           <div class="journal-main">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-               <span><strong>Writer:</strong> {{ journal.author }}</span>
+               <span><strong>Writer:</strong> {{ journal.writer }}</span>
                <span><strong>Sent to Review:</strong> {{ journal.date }}</span> <!-- Mock date -->
             </div>
           </div>

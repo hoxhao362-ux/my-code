@@ -70,7 +70,7 @@ onMounted(() => {
       <div class="manuscript-header">
         <h2>{{ currentManuscript.title }}</h2>
         <div class="manuscript-meta">
-          <span class="meta-item">{{ t('dashboard.recentJournals.author').replace('Author', 'Writer') }}: {{ currentManuscript.author }}</span>
+          <span class="meta-item">{{ t('dashboard.recentJournals.author').replace('Author', 'Writer') }}: {{ currentManuscript.writer }}</span>
           <span class="meta-item">Module: {{ currentManuscript.module }}</span>
           <span class="meta-item">Status: <span class="status-badge" :class="currentManuscript.status.toLowerCase().replace(/\s/g, '-')">{{ currentManuscript.status }}</span></span>
           <span class="meta-item">Date: {{ currentManuscript.date || currentManuscript.submissionDate }}</span>
