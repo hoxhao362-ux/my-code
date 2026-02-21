@@ -405,12 +405,5 @@ export default {
       decisionRequired: 'Please select a recommendation',
     }
   },
-  manuscriptData: {
-    errors: {
-      noWriter: 'Please add at least one writer',
-      noCorresponding: 'Please select a corresponding writer',
-      noFirst: 'Please select a first writer',
-      noFunding: 'Please add funding information or select "No funding"',
-    }
-  }
+
 }

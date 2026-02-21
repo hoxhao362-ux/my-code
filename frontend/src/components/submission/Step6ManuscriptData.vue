@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import StepNavigation from './StepNavigation.vue'
@@ -10,9 +11,11 @@ import { useErrorScroll } from '../../composables/useErrorScroll'
 import { validateORCID, validateDOI, searchInstitutions } from '../../utils/validators'
 
 const store = useSubmissionStore()
+const router = useRouter()
 const { t } = useI18n()
 const submitting = ref(false)
 const showPublishingModal = ref(false)
+const showSuccessToast = ref(false) // Lancet Standard Toast State
 const { scrollToError } = useErrorScroll()
 
 // Helper: Institution Search
@@ -177,10 +180,40 @@ const generatePDF = () => {
 
 // Submit Flow
 const handlePreSubmit = () => {
-  if (store.validateCurrentStep()) {
+  // Trigger full process validation
+  if (store.validateAllSteps()) {
     showPublishingModal.value = true
   } else {
-    window.scrollTo(0, 0)
+    // Find first error step
+    const failedStep = store.steps.find(s => s.status === 'error')
+    if (failedStep) {
+      store.goToStep(failedStep.id)
+      
+      // Lancet Standard Validation Messages
+      let msg = 'Please complete all required sections (Article Title, Corresponding Author Info, Copyright Agreement) before submission.'
+      
+      if (failedStep.id === 4) {
+         const info = store.formData.additionalInfo
+         
+         // Check Reviewers
+         let hasReviewerIssue = false
+         if (info.recommendedReviewers && info.recommendedReviewers.length > 0) {
+             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+             hasReviewerIssue = info.recommendedReviewers.some(r => !r.name || !r.email || !emailRegex.test(r.email) || !r.coiDeclared)
+         }
+         
+         // Check Blind Review
+         const hasBlindIssue = !info.blindReview.confirmed
+         
+         if (hasReviewerIssue) {
+             msg = 'Please complete all required fields for Suggested Reviewers (Full Name, Email, Conflict of Interest Declaration).'
+         } else if (hasBlindIssue) {
+             msg = 'Please complete the Manuscript Anonymization Check and confirm no identifiable information is included.'
+         }
+      }
+      
+      alert(msg)
+    }
   }
 }
 
@@ -194,11 +227,23 @@ const confirmSubmit = async () => {
   showPublishingModal.value = false
   
   try {
-    await store.submitManuscript()
-    alert(t('manuscriptData.successMessage'))
-    window.location.href = '/' 
+    const manuscriptId = await store.submitManuscript()
+    
+    // Lancet Standard: Pure Frontend Cleanup Feedback
+    showSuccessToast.value = true
+    // Store ID for display if needed, though toast uses fixed text per requirements "Submission successful..."
+    // Wait, user said "Submitted status: show ... 'Submitted (Manuscript ID: ${ID})'". 
+    // This probably refers to the status label, not the toast.
+    // The toast text requirement: "Submission successful. All draft data has been cleared for your next submission."
+    
+    setTimeout(() => {
+      showSuccessToast.value = false
+      router.push({ name: 'admin-writer-dashboard' })
+    }, 3000)
+    
   } catch (e) {
-    alert('Submission failed')
+    console.error(e)
+    alert('Submission failed. Please try again.') 
   } finally {
     submitting.value = false
   }
@@ -427,10 +472,74 @@ const confirmSubmit = async () => {
         </div>
       </div>
     </div>
+    <!-- Lancet Standard Success Toast -->
+    <div v-if="showSuccessToast" class="lancet-toast-overlay">
+      <div class="lancet-toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-content">
+          <h4>Submission successful</h4>
+          <p>All draft data has been cleared for your next submission.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.lancet-toast-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Center screen or top? Lancet usually center or top. Let's do top-center like a toast */
+  align-items: flex-start;
+  padding-top: 50px;
+  pointer-events: none; /* Let clicks pass through if needed, but usually blocks interaction */
+}
+
+.lancet-toast {
+  background: #333;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 300px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.toast-icon {
+  background: #27ae60;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.toast-content h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.toast-content p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .step-container {
   max-width: 900px;
   margin: 0 auto;

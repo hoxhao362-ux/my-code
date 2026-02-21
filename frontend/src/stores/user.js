@@ -34,12 +34,8 @@ export const useUserStore = defineStore('user', {
     // Invitation Codes
     invitationCodes: JSON.parse(localStorage.getItem('invitationCodes')) || mockUserData.invitationCodes,
     
-    // Journal List (for Home Display) - Always load from mock data to ensure reset on restart
-    journals: (() => {
-      // Clear any existing localStorage data to ensure clean reset
-      localStorage.removeItem('journals_v2');
-      return mockJournalData.journals;
-    })(),
+    // Journal List (for Home Display)
+    journals: mockJournalData.journals,
     
     // Invitations (Mock Data for Reviewer System)
     invitations: JSON.parse(localStorage.getItem('invitations_v2')) || mockJournalData.invitations,
@@ -192,7 +188,10 @@ export const useUserStore = defineStore('user', {
     ],
 
     // Decision Drafts
-    decisionDrafts: JSON.parse(localStorage.getItem('decisionDrafts')) || []
+    decisionDrafts: JSON.parse(localStorage.getItem('decisionDrafts')) || [],
+
+    // Notifications
+    notifications: JSON.parse(localStorage.getItem('notifications')) || []
   }),
 
   getters: {
@@ -336,8 +335,8 @@ export const useUserStore = defineStore('user', {
                    credentials.username === 'editorial_assistant' ? 'editorial_assistant' : 
                    credentials.username === 'ea_ae' ? 'ea_ae' : 
                    credentials.username === 'advisory_editor' ? 'advisory_editor' :
-                   credentials.username === 'reviewer' ? 'reviewer' : 
-                   credentials.username === 'writer' ? 'writer' : 
+                   credentials.username === 'reviewer' || credentials.username.startsWith('reviewer') ? 'reviewer' : 
+                   credentials.username === 'writer' || credentials.username.startsWith('writer') ? 'writer' : 
                    'user')
         
         const userData = {
@@ -448,8 +447,8 @@ export const useUserStore = defineStore('user', {
                      credentials.username === 'editorial_assistant' ? 'editorial_assistant' : 
                      credentials.username === 'ea_ae' ? 'ea_ae' : 
                      credentials.username === 'advisory_editor' ? 'advisory_editor' :
-                     credentials.username === 'reviewer' ? 'reviewer' : 
-                     credentials.username === 'writer' ? 'writer' : 
+                     credentials.username === 'reviewer' || credentials.username.startsWith('reviewer') ? 'reviewer' : 
+                     credentials.username === 'writer' || credentials.username.startsWith('writer') ? 'writer' : 
                      'user')
           
           userData = {
@@ -481,12 +480,9 @@ export const useUserStore = defineStore('user', {
     // Refresh Journals from LocalStorage
     refreshJournals() {
       try {
-        const journalsFromStorage = localStorage.getItem('journals_v2')
-        if (journalsFromStorage) {
-          this.journals = JSON.parse(journalsFromStorage)
-        } else {
-          localStorage.setItem('journals_v2', JSON.stringify(this.journals))
-        }
+        // Always use mock data to ensure consistency
+        this.journals = mockJournalData.journals
+        localStorage.setItem('journals_v2', JSON.stringify(this.journals))
       } catch (error) {
         console.error('Failed to refresh journals:', error)
       }
@@ -899,7 +895,8 @@ export const useUserStore = defineStore('user', {
   
   // Update Journal
     updateJournal(updatedJournal) {
-      const journalIndex = this.journals.findIndex(journal => journal.id === updatedJournal.id)
+      // Use loose equality to handle string/number ID mismatch
+      const journalIndex = this.journals.findIndex(journal => String(journal.id) === String(updatedJournal.id))
       if (journalIndex !== -1) {
         // Use splice to ensure reactivity
         this.journals.splice(journalIndex, 1, updatedJournal)
@@ -1096,6 +1093,69 @@ export const useUserStore = defineStore('user', {
          console.error('Assign task failed:', error)
          throw error
        }
+    },
+
+    // Add Notification
+    addNotification(notification) {
+      const newNotification = {
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+        isRead: false,
+        ...notification
+      }
+      this.notifications.unshift(newNotification)
+      // Keep only last 100 notifications
+      if (this.notifications.length > 100) {
+        this.notifications = this.notifications.slice(0, 100)
+      }
+      localStorage.setItem('notifications', JSON.stringify(this.notifications))
+      return newNotification
+    },
+
+    // Mark Notification as Read
+    markNotificationAsRead(id) {
+        const index = this.notifications.findIndex(n => n.id === id)
+        if (index !== -1) {
+            this.notifications[index].isRead = true
+            localStorage.setItem('notifications', JSON.stringify(this.notifications))
+        }
+    },
+
+    // 临时模拟方法 - 待后端提供 /api/revision/update-status 后替换
+    // 更新稿件状态
+    updateManuscriptStatus(manuscriptId, newStatus) {
+      const journalIndex = this.journals.findIndex(journal => String(journal.id) === String(manuscriptId))
+      if (journalIndex !== -1) {
+        const updatedJournal = { ...this.journals[journalIndex] }
+        updatedJournal.status = newStatus
+        updatedJournal.lastUpdated = new Date().toISOString()
+        this.journals.splice(journalIndex, 1, updatedJournal)
+        localStorage.setItem('journals_v2', JSON.stringify(this.journals))
+        return true
+      }
+      return false
+    },
+
+    // 临时模拟方法 - 待后端提供 /api/revision/sync-status 后替换
+    // 同步更新稿件状态
+    syncStatus() {
+      // 模拟同步操作，实际实现中可能需要从后端拉取最新状态
+      // 这里只是简单返回当前状态
+      return this.journals
+    },
+
+    // Return to Reviewer (Mock)
+    returnToReviewer(manuscriptId) {
+      const journalIndex = this.journals.findIndex(journal => String(journal.id) === String(manuscriptId))
+      if (journalIndex !== -1) {
+        const updatedJournal = { ...this.journals[journalIndex] }
+        updatedJournal.status = 'under_peer_review'
+        updatedJournal.lastUpdated = new Date().toISOString()
+        this.journals.splice(journalIndex, 1, updatedJournal)
+        localStorage.setItem('journals_v2', JSON.stringify(this.journals))
+        return true
+      }
+      return false
     }
   }
 })

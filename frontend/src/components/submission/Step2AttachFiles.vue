@@ -15,6 +15,10 @@ const uploadError = ref('')
 const uploadProgress = ref(0)
 const isUploading = ref(false)
 
+// Custom confirmation dialog
+const showDeleteConfirm = ref(false)
+const fileToDelete = ref(null)
+
 onMounted(() => {
   if (store.steps[1].status === 'error') {
     scrollToError()
@@ -153,10 +157,28 @@ const handleBulkUpdate = () => {
 }
 
 const removeFile = (id) => {
-  if (confirm(t('attachFiles.confirmDelete'))) {
-    const idx = store.formData.files.findIndex(f => f.id === id)
-    if (idx !== -1) store.formData.files.splice(idx, 1)
+  // Show custom confirmation dialog
+  fileToDelete.value = id
+  showDeleteConfirm.value = true
+}
+
+const confirmDelete = () => {
+  // Only delete if user confirmed
+  if (fileToDelete.value) {
+    const fileIndex = store.formData.files.findIndex(file => file.id === fileToDelete.value)
+    if (fileIndex !== -1) {
+      store.formData.files.splice(fileIndex, 1)
+    }
+    // Close dialog
+    showDeleteConfirm.value = false
+    fileToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  // Close dialog without deleting
+  showDeleteConfirm.value = false
+  fileToDelete.value = null
 }
 
 const downloadFile = (file) => {
@@ -503,6 +525,27 @@ const handleAnonFileChange = (e) => {
       </div>
     </div>
 
+    <!-- Custom Delete Confirmation Dialog -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="cancelDelete">
+      <div class="modal-content small-modal">
+        <div class="modal-header">
+          <h3>Confirm Delete</h3>
+          <button class="btn-close" @click="cancelDelete">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <p>Are you sure you want to delete this file? This action cannot be undone.</p>
+        </div>
+
+        <div class="modal-footer">
+          <div class="footer-actions">
+            <button class="btn btn-secondary" @click="cancelDelete">Cancel</button>
+            <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <StepNavigation />
   </div>
 </template>
@@ -758,6 +801,58 @@ const handleAnonFileChange = (e) => {
   background: white;
   border-radius: 4px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-content.small-modal {
+  width: 400px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
 }
 
 .modal-header {

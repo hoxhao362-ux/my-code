@@ -121,7 +121,7 @@ const getWorkloadClass = (tasks) => {
         
         <div class="card-main">
           <div class="reviewer-header">
-            <h4>{{ reviewer.username }}</h4>
+            <h4>{{ reviewer.fullName }}</h4>
             <span class="affiliation">{{ reviewer.email }}</span>
           </div>
           

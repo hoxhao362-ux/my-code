@@ -38,6 +38,17 @@ const goToStep = (step) => submissionStore.goToStep(step)
 const saveForLater = () => {
   alert('Progress saved!')
 }
+
+// Lancet Standard Status Label
+const statusText = computed(() => {
+  const steps1to5 = submissionStore.steps.slice(0, 5)
+  const ready = steps1to5.every(s => s.status === 'completed') && submissionStore.currentStep === 6
+  return ready ? 'Ready for Submission' : 'Draft (Incomplete)'
+})
+
+const statusClass = computed(() => {
+  return statusText.value === 'Ready for Submission' ? 'status-ready' : 'status-draft'
+})
 </script>
 
 <template>
@@ -45,6 +56,11 @@ const saveForLater = () => {
     <SubmissionNavigation />
     
     <main class="process-container">
+      <!-- Status Label -->
+      <div class="status-header">
+        <span class="status-badge" :class="statusClass">{{ statusText }}</span>
+      </div>
+
       <!-- Progress Bar -->
       <ProgressBar 
         :steps="steps" 
@@ -82,5 +98,27 @@ const saveForLater = () => {
   margin-top: 2rem;
   background: #fff;
   /* padding: 2rem; */ /* MainSubmit components have their own padding usually */
+}
+
+.status-header {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  color: white;
+}
+
+.status-draft {
+  background-color: #999; /* Grey */
+}
+
+.status-ready {
+  background-color: #28A745; /* Green */
 }
 </style>

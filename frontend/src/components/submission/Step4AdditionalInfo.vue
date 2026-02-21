@@ -254,24 +254,26 @@ const removeAvoidedReviewer = (index) => {
 }
 
 // Validation Helpers
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // Removed per requirements
 
 const isFieldInvalid = (value, type, minLength = 0) => {
   if (store.steps[3].status !== 'error') return false
   
   if (!value) return true // Required check
   
-  if (type === 'email') {
-    return !emailRegex.test(value)
-  }
+  // Removed Email Format Check
+  // if (type === 'email') {
+  //   return !emailRegex.test(value)
+  // }
 
   if (type === 'coi') {
     return value !== true
   }
   
-  if (minLength > 0) {
-    return value.length < minLength
-  }
+  // Removed Min Length Check
+  // if (minLength > 0) {
+  //   return value.length < minLength
+  // }
   
   return false
 }
@@ -281,25 +283,18 @@ const getFieldError = (value, type, minLength = 0) => {
   
   if (!value) {
     if (type === 'name') return "Please enter the reviewer's full name"
-    if (type === 'email') return "Please enter a valid email address" // Empty is also invalid for required
+    if (type === 'email') return "Please enter the reviewer's email address"
     if (type === 'reasonType') {
        return "Please select a reason category"
     }
     
     if (type === 'reason') {
-        if (minLength === 50) return "Reason must be at least 50 characters"
-        if (minLength === 80) return "Reason must be at least 80 characters and explain a valid conflict"
+        return "Please provide a justification"
     }
   }
 
-  if (type === 'email' && !emailRegex.test(value)) {
-    return "Please enter a valid email address"
-  }
-  
-  if (minLength > 0 && value.length < minLength) {
-    if (minLength === 50) return "Reason must be at least 50 characters"
-    if (minLength === 80) return "Reason must be at least 80 characters and explain a valid conflict"
-  }
+  // Lancet Standard: If any required field is missing, the popup handles the main message.
+  // Inline errors remain specific but aligned with the requirement "Complete all required fields".
   
   return ''
 }
@@ -521,8 +516,8 @@ const handleConfirmAnonymization = () => {
     <!-- Recommended Reviewers Section -->
     <div class="reviewers-section">
       <div class="section-header">
-        <h3 class="section-title">Recommended Reviewers (Optional, 1-3 reviewers)</h3>
-        <p class="section-helper">Please recommend 1-3 potential reviewers for your manuscript. All recommendations will be reviewed by the editorial team.</p>
+        <h3 class="section-title">Suggested Reviewers (Optional, 1–3 reviewers)</h3>
+        <p class="section-helper">You may suggest 1–3 potential reviewers for your manuscript. All suggestions are subject to review and final approval by the editorial team.</p>
       </div>
 
       <div v-for="(reviewer, index) in store.formData.additionalInfo.recommendedReviewers" :key="'rec-' + index" class="reviewer-row">
@@ -559,7 +554,7 @@ const handleConfirmAnonymization = () => {
 
             <!-- Affiliation -->
             <div class="form-group-item">
-                <label class="field-label">Affiliation</label>
+                <label class="field-label">Affiliation (Institution & Department)</label>
                 <div style="position: relative;">
                     <input 
                         type="text" 
@@ -576,16 +571,16 @@ const handleConfirmAnonymization = () => {
 
             <!-- Reason -->
             <div class="form-group-item full-width">
-                <label class="field-label">Reason for Recommendation <span class="required">*</span></label>
+                <label class="field-label">Justification for Suggestion <span class="required">*</span></label>
                 <textarea 
                     v-model="reviewer.reason" 
                     class="form-textarea"
                     rows="2"
-                    :class="{ 'input-error': isFieldInvalid(reviewer.reason, 'reason', 50) }"
+                    :class="{ 'input-error': isFieldInvalid(reviewer.reason, 'reason') }"
                     placeholder="Explain why this reviewer is suitable (e.g., expertise in cardiovascular research)"
                 ></textarea>
-                <div v-if="isFieldInvalid(reviewer.reason, 'reason', 50)" class="error-text">
-                    {{ getFieldError(reviewer.reason, 'reason', 50) }}
+                <div v-if="isFieldInvalid(reviewer.reason, 'reason')" class="error-text">
+                    {{ getFieldError(reviewer.reason, 'reason') }}
                 </div>
             </div>
 
@@ -594,7 +589,7 @@ const handleConfirmAnonymization = () => {
               <label class="checkbox-label" :class="{ 'error-text': isFieldInvalid(reviewer.coiDeclared, 'coi') }">
                 <input type="checkbox" v-model="reviewer.coiDeclared">
                 <span class="checkbox-text" style="color: #333; font-weight: normal; margin-left: 8px;">
-                  I declare that I have no conflict of interest with this reviewer (e.g., no recent collaboration, mentorship, or shared affiliation). <span class="required">*</span>
+                  I confirm that I have no conflict of interest with this reviewer (e.g., no recent collaboration, mentorship, or shared institutional affiliation). <span class="required">*</span>
                 </span>
               </label>
               <div v-if="isFieldInvalid(reviewer.coiDeclared, 'coi')" class="error-text" style="margin-left: 24px;">

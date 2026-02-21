@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
+import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -64,7 +65,7 @@ const handlePrevPage = () => {
 }
 
 const toggleFullScreen = () => {
-  const elem = document.querySelector('.manuscript-viewer')
+  const elem = document.querySelector('.modal-content')
   if (!document.fullscreenElement) {
     elem.requestFullscreen().catch(err => {
       alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`)
@@ -370,7 +371,7 @@ const sendTransfer = () => {
 
 // --- Reject Logic ---
 const rejectForm = ref({
-  reason: '',
+  reasons: [],
   otherReason: '',
   comments: '',
   template: 'Standard Template'
@@ -379,7 +380,7 @@ const rejectForm = ref({
 const openRejectModal = (journal) => {
   currentJournal.value = journal
   rejectForm.value = {
-    reason: '',
+    reasons: [],
     otherReason: '',
     comments: '',
     template: 'Standard Template'
@@ -388,22 +389,27 @@ const openRejectModal = (journal) => {
 }
 
 const confirmReject = () => {
-  if (!rejectForm.value.reason || !rejectForm.value.comments) {
+  if (rejectForm.value.reasons.length === 0 || !rejectForm.value.comments) {
     alert('Please fill in all required fields.')
     return
   }
   
-  if (rejectForm.value.reason === 'Other' && !rejectForm.value.otherReason) {
+  if (rejectForm.value.reasons.includes('Other') && !rejectForm.value.otherReason) {
     alert('Please specify the other reason.')
     return
   }
 
   const updatedJournal = { ...currentJournal.value }
-  updatedJournal.status = 'rejected_after_initial_screen'
+  // Update status to 'initial_review_rejected' so it correctly appears in "Submissions with a Decision"
+  // and flows to Decisions module as a completed decision
+  updatedJournal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+  
+  updatedJournal.screeningNotes = `[Initial Screening Rejection]\nReasons: ${rejectForm.value.reasons.join(', ')}\nComments: ${rejectForm.value.comments}`
+  
   userStore.updateJournal(updatedJournal)
 
   showRejectModal.value = false
-  alert('Rejection confirmed. Notification sent to writer.')
+  alert('Rejection confirmed. Manuscript marked as Desk Rejected.')
 }
 
 const viewDetail = (id) => {
@@ -597,8 +603,8 @@ const viewDetail = (id) => {
                 <strong>Scope & Novelty</strong> {{ activeRejectGroup === 'Scope & Novelty' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Scope & Novelty'" class="group-content">
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Out of scope"> Out of scope for this journal</label>
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Insufficient novelty"> Insufficient novelty or originality</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Out of scope"> Out of scope for this journal</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Insufficient novelty"> Insufficient novelty or originality</label>
               </div>
             </div>
 
@@ -608,8 +614,8 @@ const viewDetail = (id) => {
                 <strong>Methodology</strong> {{ activeRejectGroup === 'Methodology' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Methodology'" class="group-content">
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Major methodological flaws"> Major methodological flaws</label>
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Statistical errors"> Statistical errors</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Major methodological flaws"> Major methodological flaws</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Statistical errors"> Statistical errors</label>
               </div>
             </div>
 
@@ -619,9 +625,9 @@ const viewDetail = (id) => {
                 <strong>Presentation & Other</strong> {{ activeRejectGroup === 'Presentation' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Presentation'" class="group-content">
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Poor presentation"> Poor presentation or language quality</label>
-                <label class="radio-item"><input type="radio" v-model="rejectForm.reason" value="Other"> Other</label>
-                 <div v-if="rejectForm.reason === 'Other'" class="sub-option">
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Poor presentation"> Poor presentation or language quality</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Other"> Other</label>
+                 <div v-if="rejectForm.reasons.includes('Other')" class="sub-option">
                    <input v-model="rejectForm.otherReason" placeholder="Specify other reason" class="lancet-input" />
                 </div>
               </div>
@@ -644,7 +650,7 @@ const viewDetail = (id) => {
 
         <div class="modal-footer fixed-footer">
           <button class="btn btn-secondary" @click="showRejectModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmReject" :disabled="!rejectForm.reason || !rejectForm.comments">Confirm Rejection</button>
+          <button class="btn btn-primary" @click="confirmReject" :disabled="rejectForm.reasons.length === 0 || !rejectForm.comments">Confirm Rejection</button>
         </div>
       </div>
     </div>
@@ -686,8 +692,16 @@ const viewDetail = (id) => {
             <p>Rendering manuscript content for: {{ currentJournal?.title }}</p>
             <div class="abstract-preview">
               <h3>Abstract</h3>
-              <p>{{ currentJournal?.abstract }}</p>
-              <p v-for="i in 5" :key="i">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+              <p v-if="currentJournal?.abstract && currentJournal.abstract.trim()" class="content-text">{{ currentJournal.abstract }}</p>
+              <p v-else class="placeholder-text">Author's abstract will be displayed here once the manuscript is submitted successfully.</p>
+              
+              <h3>Manuscript Content</h3>
+              <p v-if="currentJournal?.content && currentJournal.content.trim()" class="content-text">{{ currentJournal.content }}</p>
+              <p v-else class="placeholder-text">Manuscript content will be displayed here after submission and verification.</p>
+              
+              <h3>References</h3>
+              <p v-if="currentJournal?.references && currentJournal.references.trim()" class="content-text">{{ currentJournal.references }}</p>
+              <p v-else class="placeholder-text">References will be listed here once provided by the author.</p>
             </div>
           </div>
         </div>
@@ -1173,6 +1187,16 @@ textarea.lancet-input {
   margin-top: 30px;
   text-align: left;
   color: #333;
+}
+
+.placeholder-text {
+  color: #666;
+  font-style: italic;
+}
+
+.content-text {
+  color: #000;
+  font-style: normal;
 }
 .attachments-list {
   display: flex;

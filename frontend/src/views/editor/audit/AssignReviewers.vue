@@ -34,10 +34,9 @@ const activeTab = ref('recommended') // 'manual', 'smart', 'recommended'
 
 const writerRecommendedReviewers = computed(() => {
   if (!currentJournal.value) return []
-  // Get accepted recommendations for this manuscript
+  // Get all recommendations for this manuscript (Removed 'accepted' filter per requirements)
   return userStore.recommendedReviewers.filter(r => 
-    String(r.manuscriptId) === String(currentJournal.value.id) && 
-    r.status === 'accepted'
+    String(r.manuscriptId) === String(currentJournal.value.id)
   )
 })
 
@@ -101,7 +100,7 @@ const confirmAssignment = () => {
       return {
         id: realUser.id,
         name: realUser.username,
-        status: 'Invited',
+        status: 'Pending', // Lancet Standard
         invitedAt: new Date().toISOString()
       }
     }
@@ -113,7 +112,7 @@ const confirmAssignment = () => {
          id: 'rec-' + recReviewer.id, // Temporary ID
          name: recReviewer.reviewerName,
          email: recReviewer.reviewerEmail,
-         status: 'Invited (External)',
+         status: 'Pending', // Lancet Standard
          invitedAt: new Date().toISOString(),
          isExternal: true
        }
@@ -201,39 +200,18 @@ const handleReinvite = (journal) => {
         <!-- Writer Recommended Tab -->
         <div v-if="activeTab === 'recommended'" class="tab-content">
           <div v-if="writerRecommendedReviewers.length === 0" class="no-data-tab">
-            No approved writer recommendations for this manuscript.
-            <p class="hint">Please check "Recommended Reviewers" audit page first.</p>
+            No writer recommendations found for this manuscript.
+            <p class="hint">Please ensure the author has submitted suggestions, or use Smart Recommendation / Manual Search.</p>
           </div>
           <div v-else class="reviewer-list">
              <div v-for="reviewer in writerRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
                <label>
-                 <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds" disabled> <!-- ID might not match user ID, handling below -->
-                 <!-- Wait, recommendedReviewers might not have a user ID if they are external. 
-                      Ideally they should have been registered or linked. 
-                      If status is 'accepted', they might just be approved for invitation. 
-                      The logic in RecommendedReviewers says: "accepted" -> Just status change.
-                      They might NOT be in the main user list yet if they haven't registered.
-                      Requirement: "If not in system -> Send invitation".
-                      "If already in system -> Assign".
-                      
-                      Here we are ASSIGNING.
-                      If they are external, we can't assign them until they register?
-                      Or we invite them to register?
-                      
-                      Let's assume for now we just invite them via email if they are selected here.
-                      So we use their email.
-                 -->
                  <div class="reviewer-info">
                    <span class="r-name">{{ reviewer.reviewerName }}</span>
+                   <span class="r-email">{{ reviewer.reviewerEmail }}</span>
                    <span class="r-aff">{{ reviewer.reviewerAffiliation }}</span>
                    <div class="r-reason">Reason: {{ reviewer.recommendationReason }}</div>
                  </div>
-                 <button class="btn-select-rec" 
-                   @click="handleSelectRecommended(reviewer)"
-                   :class="{ 'selected': selectedReviewerIds.includes(reviewer.id) }"
-                 >
-                   {{ selectedReviewerIds.includes(reviewer.id) ? 'Selected' : 'Select' }}
-                 </button>
                </label>
             </div>
           </div>
@@ -260,7 +238,7 @@ const handleReinvite = (journal) => {
             <div v-for="reviewer in filteredReviewers" :key="reviewer.id" class="reviewer-item">
                <label>
                  <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds">
-                 <span class="r-name">{{ reviewer.username }}</span>
+                 <span class="r-name">{{ reviewer.fullName }}</span>
                  <span class="r-email">{{ reviewer.email }}</span>
                </label>
             </div>
@@ -304,14 +282,13 @@ const handleReinvite = (journal) => {
 .no-data-tab { text-align: center; padding: 2rem; color: #999; }
 .hint { font-size: 0.9rem; color: #3498db; margin-top: 0.5rem; }
 .badge-count { background: #3498db; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; margin-left: 5px; }
-.reviewer-item.recommended-item label { align-items: flex-start; }
-.reviewer-info { flex: 1; display: flex; flex-direction: column; }
+.reviewer-info { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 6px; background-color: #f9f9f9; }
 .r-aff { font-size: 0.85rem; color: #666; }
-.r-reason { font-size: 0.85rem; color: #27ae60; margin-top: 4px; font-style: italic; background: #f0fdf4; padding: 4px; border-radius: 4px; }
-.btn-select-rec { padding: 4px 12px; border: 1px solid #3498db; color: #3498db; background: white; border-radius: 4px; cursor: pointer; }
-.btn-select-rec.selected { background: #3498db; color: white; }
-.btn-select-rec:hover { background: #e1f5fe; }
-.btn-select-rec.selected:hover { background: #2980b9; }
+.r-email { font-size: 0.85rem; color: #888; }
+.r-reason { font-size: 0.85rem; color: #27ae60; font-style: italic; background: #f0fdf4; padding: 6px; border-radius: 4px; word-wrap: break-word; white-space: normal; }
+.reviewer-item.recommended-item { padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+.reviewer-item.recommended-item label { display: flex; align-items: flex-start; }
+.reviewer-item.recommended-item .reviewer-info { flex: 1; min-width: 0; }
 
 /* Modal */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }

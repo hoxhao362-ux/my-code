@@ -4,6 +4,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import Navigation from '../components/Navigation.vue'
+import { MANUSCRIPT_STATUS, STATUS_LABELS } from '../constants/manuscriptStatus'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -497,7 +498,7 @@ const saveModifications = () => {
   // 创建修改记录
   const modificationRecord = {
     stage: rejectedStage, // 使用被拒绝的具体阶段
-    status: '修改提交',
+    status: STATUS_LABELS[MANUSCRIPT_STATUS.REVISION_SUBMITTED] || 'Revision Submitted',
     reviewer: currentUsername.value,
     date: new Date().toISOString().split('T')[0],
     comment: modificationDescription.value,
@@ -505,14 +506,15 @@ const saveModifications = () => {
   }
   
   // 根据被拒绝的阶段设置相应的待审核状态
-  let newStatus = '待审核' // 默认状态
-  if (rejectedStage === '初审') {
-    newStatus = '待初审'
-  } else if (rejectedStage === '复审') {
-    newStatus = '待复审'
-  } else if (rejectedStage === '终审') {
-    newStatus = '待终审'
-  }
+  let newStatus = MANUSCRIPT_STATUS.REVISION_SUBMITTED // Use standardized status
+  
+  // Notify Responsible Editor
+  userStore.addNotification({
+    title: 'Revision Submitted',
+    content: `Author ${userStore.user?.username || 'Unknown'} submitted a revision for "${editedJournal.value.title}".`,
+    targetRole: 'editor',
+    manuscriptId: journal.value.id
+  })
 
   // Save Revision Recommended Reviewers
   if (revisionRecommended.value.length > 0) {

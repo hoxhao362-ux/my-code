@@ -171,13 +171,25 @@ const confirmSubmit = () => {
 
   updatedJournal.reviewHistory.push(reviewRecord)
   
-  // Update Global Status logic for mock:
-  // If decision is Reject, we might mark as Completed immediately.
-  // If Accept, same.
-  // In a real system, this depends on # of reviewers.
-  // For this mock requirement: "task status becomes Completed, auto jump to Completed Reviews"
-  // We will set status to 'review_completed' to match the Lancet convention.
-  updatedJournal.status = 'review_completed'
+  // Update Global Status logic:
+  // Only mark as 'review_completed' when all reviewers have completed their reviews
+  // First, determine how many reviewers are assigned to this manuscript
+  // For mock purposes, we'll assume all reviewers in reviewHistory are assigned reviewers
+  // Get unique reviewers from reviewHistory
+  const uniqueReviewers = [...new Set(updatedJournal.reviewHistory.map(r => r.reviewer))]
+  
+  // In a real system, we would check against the actual assigned reviewers list
+  // For now, we'll assume that once all reviewers in the history have completed, we're done
+  // Since we're adding a new review, we need to check if this is the last reviewer
+  // For mock purposes, we'll check if there are at least 2 unique reviewers who have completed
+  // This is a simple heuristic to simulate multiple reviewers
+  if (uniqueReviewers.length >= 2) {
+    // All reviewers have completed, mark as review_completed
+    updatedJournal.status = 'review_completed'
+  } else {
+    // Still waiting for other reviewers, keep as under_peer_review
+    updatedJournal.status = 'under_peer_review'
+  }
 
   userStore.updateJournal(updatedJournal)
   showSubmitModal.value = false
@@ -348,7 +360,8 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
               </div>
               <div class="info-item">
                 <label>Abstract:</label>
-                <p class="abstract-text">{{ journal.abstract }}</p>
+                <p v-if="journal.abstract && journal.abstract.trim()" class="abstract-text content-text">{{ journal.abstract }}</p>
+                <p v-else class="abstract-text placeholder-text">Author's abstract will be displayed here once the manuscript is submitted successfully.</p>
               </div>
               <div class="info-item">
                 <label>Keywords:</label>
@@ -722,6 +735,16 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
 .abstract-text {
   line-height: 1.6;
   color: #333;
+}
+
+.placeholder-text {
+  color: #666;
+  font-style: italic;
+}
+
+.content-text {
+  color: #000;
+  font-style: normal;
 }
 
 .status-badge {

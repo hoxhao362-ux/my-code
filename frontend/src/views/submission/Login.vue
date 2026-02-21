@@ -19,18 +19,24 @@ const handleLogin = async (role) => {
   }
 
   try {
+    // Map submission role to internal role
+    let internalRole = role
+    if (role === 'author') {
+      internalRole = 'writer'
+    }
+    
     // Attempt login with specific role for Submission Module
     await userStore.loginSubmission({
       username: username.value,
       password: password.value,
-      role: role
+      role: internalRole
     })
     
     // 登录成功后根据角色跳转到对应仪表盘
     if (role === 'author') {
       // Author logs in to submit, go to submission process directly if no pending tasks? 
       // User requested: "After login... must go directly to submission exclusive route... /submission/author/submit"
-      router.push('/submission/author/submit')
+      router.push('/submission/writer/submit')
     } else if (role === 'reviewer') {
       router.push('/admin/audit-dashboard')
     } else if (role === 'editor' || role === 'admin') {

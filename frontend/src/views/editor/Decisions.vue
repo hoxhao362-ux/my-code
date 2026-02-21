@@ -53,6 +53,7 @@ const manuscripts = computed(() => {
     j.status === 'review_completed' || 
     j.status === '已审核' ||
     j.status === 'final_decision_pending' ||
+    j.status === 'rejected_after_initial_screen' || // Include legacy/screened-out manuscripts
     // Include manuscripts with recent decisions for drafting letters
     j.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ||
     j.status === MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED ||

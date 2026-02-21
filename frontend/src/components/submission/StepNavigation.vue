@@ -56,7 +56,7 @@ const handleCancel = () => {
         @click="handleBack"
         :disabled="store.currentStep === 1 || loading"
       >
-        {{ t('common.back') }}
+        {{ store.currentStep >= 3 ? 'Save as Draft & Previous Step' : t('common.back') }}
       </button>
     </div>
     
@@ -73,7 +73,13 @@ const handleCancel = () => {
         :disabled="loading"
       >
         <span v-if="loading">{{ t('common.loading') }}</span>
-        <span v-else>{{ isFinal ? t('common.submit') : (store.currentStep === 1 || store.currentStep === 4 ? t('common.proceed') : t('common.next')) }}</span>
+        <span v-else>
+          {{ 
+            isFinal 
+              ? 'Submit Manuscript' 
+              : (store.currentStep >= 3 ? 'Save as Draft & Next Step' : (store.currentStep === 1 || store.currentStep === 4 ? t('common.proceed') : t('common.next'))) 
+          }}
+        </span>
       </button>
     </div>
   </div>

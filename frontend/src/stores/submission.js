@@ -199,59 +199,77 @@ export const useSubmissionStore = defineStore('submission', () => {
     return isValid
   }
 
+  // 验证所有步骤
+  const validateAllSteps = () => {
+    let allValid = true
+    for (const step of steps.value) {
+      const isValid = validateStep(step.id)
+      if (!isValid) {
+        step.status = 'error'
+        allValid = false
+      } else {
+        step.status = 'completed'
+      }
+    }
+    return allValid
+  }
+
   // 导航
   const nextStep = () => {
-    if (validateCurrentStep()) {
-      if (currentStep.value < 6) {
-        steps.value[currentStep.value - 1].status = 'completed'
-        currentStep.value++
-        steps.value[currentStep.value - 1].status = 'current'
-        window.scrollTo(0, 0)
-        saveDraft() 
-        return true
-      }
+    // Save draft regardless of validation
+    saveDraft()
+    
+    // Validate current step to update status, but DO NOT block navigation
+    // Per requirements: "Trigger full process mandatory item verification only after clicking 'Submit Manuscript'"
+    validateCurrentStep() 
+    
+    if (currentStep.value < 6) {
+      currentStep.value++
+      // Set new step as current
+      steps.value.forEach(s => {
+         if (s.id === currentStep.value) s.status = 'current'
+         // Previous steps remain as they were (completed or error or pending)
+      })
+      window.scrollTo(0, 0)
+      return true
     }
     return false
   }
 
   const prevStep = () => {
     if (currentStep.value > 1) {
-      validateCurrentStep()
-      currentStep.value--
-      steps.value[currentStep.value - 1].status = 'current'
-      window.scrollTo(0, 0)
+      // Save draft
       saveDraft()
+      
+      // Update status of current step before leaving
+      validateCurrentStep()
+      
+      currentStep.value--
+      steps.value.forEach(s => {
+         if (s.id === currentStep.value) s.status = 'current'
+      })
+      window.scrollTo(0, 0)
     }
   }
   
   const goToStep = (targetStep) => {
+    saveDraft()
     validateCurrentStep()
     currentStep.value = targetStep
     
-    steps.value.forEach((s, index) => {
-       if (index + 1 === targetStep) {
+    steps.value.forEach((s) => {
+       if (s.id === targetStep) {
          s.status = 'current'
-       } else {
-         const valid = validateStep(index + 1)
-         if (!valid) {
-             if (index + 1 < targetStep) s.status = 'error'
-             else s.status = 'pending' 
-             if (s.status === 'error') s.status = 'error' 
-         } else {
-             s.status = 'completed'
-         }
        }
     })
     
-    steps.value[targetStep - 1].status = 'current'
     window.scrollTo(0, 0)
-    saveDraft()
   }
 
   // 提交
   const submitManuscript = async () => {
     // 模拟提交
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
         const userStore = useUserStore()
         
@@ -347,9 +365,36 @@ export const useSubmissionStore = defineStore('submission', () => {
             ip: '127.0.0.1'
         })
 
-        // 清除草稿
+        // 清除草稿 (Lancet Standard Cleanup)
         localStorage.removeItem('submission_draft')
-        resolve(true)
+        
+        // Reset Store State (Pure Frontend Cleanup)
+        currentStep.value = 1
+        steps.value.forEach(s => s.status = s.id === 1 ? 'current' : 'pending')
+        formData.value = {
+            articleType: '',
+            files: [],
+            referenceAnonymization: { file: null, confirmed: false },
+            region: '',
+            classifications: [],
+            additionalInfo: {
+                q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
+                ssrn: false, socialMedia: '', conference: 'No',
+                recommendedReviewers: [],
+                avoidedReviewers: [],
+                blindReview: { enabled: true, confirmed: false }
+            },
+            coverLetter: '',
+            title: '',
+            abstract: '',
+            keywords: '',
+            writers: [],
+            funding: [],
+            noFunding: false,
+            publishingOption: ''
+        }
+        
+        resolve(manuscriptId)
       }, 1500)
     })
   }
@@ -361,6 +406,7 @@ export const useSubmissionStore = defineStore('submission', () => {
     init,
     saveDraft,
     validateCurrentStep,
+    validateAllSteps,
     nextStep,
     prevStep,
     goToStep,

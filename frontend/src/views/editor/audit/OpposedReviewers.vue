@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { truncateText, wrapText } from '../../../utils/helpers.js'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
@@ -308,7 +309,7 @@ const getStatusText = (status) => {
               <span class="category-badge">{{ item.reasonType || 'General' }}</span>
             </td>
             <td class="reason-cell" :title="item.opposedReason">
-              {{ item.opposedReason.length > 50 ? item.opposedReason.substring(0, 50) + '...' : item.opposedReason }}
+              {{ wrapText(truncateText(item.opposedReason, 30), 30) }}
             </td>
             <td>
               <span class="status-badge" :class="getStatusClass(item.status)">
@@ -511,6 +512,7 @@ const getStatusText = (status) => {
 .reason-cell {
   max-width: 300px;
   color: #555;
+  white-space: pre-line;
 }
 
 .status-badge {
