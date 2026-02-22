@@ -373,7 +373,7 @@ const goToFullText = (id) => {
 .page-wrapper {
   background-color: #f9f9f9;
   min-height: 100vh;
-  padding-top: 80px; /* Nav height */
+  padding-top: 120px; /* Nav height, increased to avoid content being blocked */
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: #333;
 }

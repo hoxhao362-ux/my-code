@@ -50,9 +50,9 @@ const adminRoutes = [
   { path: '/submission/login', name: 'submission-login', component: () => import('../views/submission/Login.vue') },
   { path: '/admin/login', redirect: '/submission/login' }, // Redirect old admin login
   { path: '/editor/login', redirect: '/submission/login' }, // Redirect editor login
-  { path: '/submission/register', name: 'submission-register', component: () => import('../views/auth/AdminRegister.vue') },
-  { path: '/admin/register', redirect: '/submission/register' },
-  { path: '/editor/register', redirect: '/submission/register' },
+  { path: '/submission/register', redirect: '/submission' }, // Redirect to submission index
+  { path: '/admin/register', redirect: '/submission' },
+  { path: '/editor/register', redirect: '/submission' },
   { path: '/submission', name: 'submission-index', component: () => import('../views/submission/Index.vue') },
   { path: '/submission/about', name: 'submission-about', component: () => import('../views/submission/About.vue') },
   { path: '/submission/help', name: 'submission-help', component: () => import('../views/submission/Help.vue') },
@@ -128,6 +128,7 @@ const adminRoutes = [
   // 审核员路由
   { path: '/reviewer/dashboard', name: 'reviewer-dashboard', component: () => import('../views/reviewer/Dashboard.vue'), meta: { requiresAuth: true, roles: ['reviewer'] } },
   { path: '/reviewer/assignments', name: 'reviewer-assignments', component: () => import('../views/reviewer/MyAssignments.vue'), meta: { requiresAuth: true, roles: ['reviewer'] } },
+  { path: '/reviewer/letters', name: 'reviewer-letters', component: () => import('../views/reviewer/Letters.vue'), meta: { requiresAuth: true, roles: ['reviewer'] } },
   { path: '/reviewer/manuscript/:id', name: 'reviewer-manuscript-detail', component: () => import('../views/reviewer/ManuscriptDetail.vue'), meta: { requiresAuth: true, roles: ['reviewer'] } },
   { path: '/reviewer/profile', name: 'reviewer-profile', component: () => import('../views/reviewer/Profile.vue'), meta: { requiresAuth: true, roles: ['reviewer'] } },
   
@@ -137,6 +138,7 @@ const adminRoutes = [
   
   // 作者路由 (Changed to Writer)
   { path: '/admin/writer-dashboard', name: 'admin-writer-dashboard', component: () => import('../views/writer/Dashboard.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
+  { path: '/writer/letters', name: 'writer-letters', component: () => import('../views/writer/Letters.vue'), meta: { requiresAuth: true, roles: ['writer'] } },
   { path: '/admin/writer-submit', name: 'admin-writer-submit', component: () => import('../views/writer/Submit.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   { path: '/admin/submission-rules', name: 'admin-submission-rules', component: () => import('../views/writer/Submit.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   { path: '/admin/writer-history', name: 'admin-writer-history', component: () => import('../views/writer/History.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
@@ -145,6 +147,27 @@ const adminRoutes = [
   // 稿件管理子路由
   { path: '/editor/manuscript/screening', name: 'editor-manuscript-screening', component: () => import('../views/admin/manuscript/Screening.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   { path: '/admin/manuscript/screening', redirect: '/editor/manuscript/screening' },
+  
+  // 出版管理路由 (New)
+  { 
+    path: '/editor/publication', 
+    name: 'editor-publication-management', 
+    component: () => import('../views/editor/EditorPortal.vue'), 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+  },
+  { 
+    path: '/editor/publication/:id', 
+    name: 'editor-publication-process', 
+    component: () => import('../views/admin/manuscript/PublicationProcess.vue'), 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+  },
+  // 作者端 - 出版状态查看 (New)
+  { 
+    path: '/writer/publication/:id', 
+    name: 'writer-publication-status', 
+    component: () => import('../views/writer/PublicationStatus.vue'), 
+    meta: { requiresAuth: true, roles: ['writer'] } 
+  },
   
   { path: '/admin/manuscript/my', name: 'admin-manuscript-my', component: () => import('../views/admin/manuscript/MyManuscripts.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor'] } },
   { path: '/admin/manuscript/progress', name: 'admin-manuscript-progress', component: () => import('../views/admin/manuscript/ManuscriptProgress.vue'), meta: { requiresAuth: true, roles: ['writer', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },

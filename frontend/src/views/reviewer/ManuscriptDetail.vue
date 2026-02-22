@@ -174,21 +174,27 @@ const confirmSubmit = () => {
   // Update Global Status logic:
   // Only mark as 'review_completed' when all reviewers have completed their reviews
   // First, determine how many reviewers are assigned to this manuscript
-  // For mock purposes, we'll assume all reviewers in reviewHistory are assigned reviewers
-  // Get unique reviewers from reviewHistory
   const uniqueReviewers = [...new Set(updatedJournal.reviewHistory.map(r => r.reviewer))]
   
-  // In a real system, we would check against the actual assigned reviewers list
-  // For now, we'll assume that once all reviewers in the history have completed, we're done
-  // Since we're adding a new review, we need to check if this is the last reviewer
-  // For mock purposes, we'll check if there are at least 2 unique reviewers who have completed
-  // This is a simple heuristic to simulate multiple reviewers
-  if (uniqueReviewers.length >= 2) {
-    // All reviewers have completed, mark as review_completed
-    updatedJournal.status = 'review_completed'
+  // Check if this manuscript has assigned reviewers information
+  const totalAssignedReviewers = updatedJournal.assignedReviewers ? updatedJournal.assignedReviewers.length : 1
+  
+  // If no assigned reviewers information, assume single reviewer setup
+  // Mark as review_completed when:
+  // 1. There are assigned reviewers and all have completed (uniqueReviewers.length >= totalAssignedReviewers)
+  // 2. No assigned reviewers information and at least one reviewer has completed
+  if (updatedJournal.assignedReviewers) {
+    if (uniqueReviewers.length >= totalAssignedReviewers) {
+      // All assigned reviewers have completed
+      updatedJournal.status = 'review_completed'
+    } else {
+      // Still waiting for other reviewers
+      updatedJournal.status = 'under_peer_review'
+    }
   } else {
-    // Still waiting for other reviewers, keep as under_peer_review
-    updatedJournal.status = 'under_peer_review'
+    // Single reviewer setup or no assigned reviewers info
+    // Mark as completed once any reviewer submits
+    updatedJournal.status = 'review_completed'
   }
 
   userStore.updateJournal(updatedJournal)

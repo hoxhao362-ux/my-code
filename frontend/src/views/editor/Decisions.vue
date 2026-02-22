@@ -65,28 +65,28 @@ const manuscripts = computed(() => {
 
 // Auto-load draft from Decision Making module
 onMounted(() => {
+  // Use direct data source from store instead of relying on time-sensitive context switch
+  // This ensures data is always available regardless of when the switch happened
   const drafts = userStore.decisionDrafts || []
   if (drafts.length > 0) {
     // Sort by lastUpdated desc
     const sortedDrafts = [...drafts].sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
     const latestDraft = sortedDrafts[0]
     
-    // Check if within 5 minutes (fresh context switch)
-    const diff = new Date() - new Date(latestDraft.lastUpdated)
-    if (diff < 5 * 60 * 1000) {
-      selectedManuscriptId.value = latestDraft.manuscriptId
-      decisionContent.value = latestDraft.content
-      
-      // Try to match template
-      const tpl = decisionTemplates.value.find(t => t.name === latestDraft.templateType || t.category === latestDraft.templateType)
-      if (tpl) {
-        selectedTemplate.value = tpl
-      }
-      
-      // Set status to Draft
-      approvalStatus.value = 'Draft'
-      autoSaveStatus.value = 'Draft loaded from Decision Making module'
+    // Always load the latest draft if available, removing the 5-minute restriction
+    // This allows users to return to their draft at any time
+    selectedManuscriptId.value = latestDraft.manuscriptId
+    decisionContent.value = latestDraft.content
+    
+    // Try to match template
+    const tpl = decisionTemplates.value.find(t => t.name === latestDraft.templateType || t.category === latestDraft.templateType)
+    if (tpl) {
+      selectedTemplate.value = tpl
     }
+    
+    // Set status to Draft
+    approvalStatus.value = 'Draft'
+    autoSaveStatus.value = 'Draft loaded from Decision Making module'
   }
 })
 
@@ -228,10 +228,28 @@ const handleSend = () => {
        // Update Journal Status in Store
        if (selectedManuscript.value) {
          const updatedJournal = { ...selectedManuscript.value }
-         if (selectedTemplate.value.category === 'Accept') updatedJournal.status = 'accepted'
-         else if (selectedTemplate.value.category === 'Reject') updatedJournal.status = 'rejected'
-         else if (selectedTemplate.value.category.includes('Revision')) updatedJournal.status = 'revision_required'
-         else updatedJournal.status = 'final_decision_made' // Fallback
+         
+         // Determine status based on template category
+         let newStatus = 'final_decision_made'
+         if (selectedTemplate.value.category === 'Accept') {
+           newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+           updatedJournal.reviewStage = '终审'
+         } else if (selectedTemplate.value.category === 'Reject') {
+           newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+         } else if (selectedTemplate.value.category.includes('Revision')) {
+           newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
+         }
+         
+         updatedJournal.status = newStatus
+         
+         // Create Decision Object
+         updatedJournal.decision = {
+           type: selectedTemplate.value.name, // Accept, Reject, Revision
+           date: new Date().toISOString(),
+           comments: decisionContent.value,
+           editor: user.value?.username || 'Editor',
+           status: 'sent' // Indicate the letter has been sent
+         }
          
          userStore.updateJournal(updatedJournal)
        }

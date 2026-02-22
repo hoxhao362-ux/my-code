@@ -17,67 +17,67 @@ const toggleDirectory = () => {
 const faqs = ref([
   {
     id: 1,
-    category: '投稿流程',
+    category: 'Submission Process',
     questions: [
       {
-        question: '如何进行投稿？',
-        answer: '登录平台后，点击顶部导航栏的"投稿中心"->"在线投稿"，填写论文信息并提交即可。'
+        question: 'How to submit a manuscript?',
+        answer: 'After logging in, click "Submission Center" -> "Online Submission" in the top navigation bar, fill in the paper information and submit.'
       },
       {
-        question: '投稿需要什么格式？',
-        answer: '请参考"投稿中心"->"投稿须知"中的格式要求，包括标题、摘要、关键词、正文等格式规范。'
+        question: 'What format is required for submission?',
+        answer: 'Please refer to the format requirements in "Submission Center" -> "Submission Guidelines", including title, abstract, keywords, main text and other format specifications.'
       },
       {
-        question: '可以同时投稿多篇论文吗？',
-        answer: '可以，平台支持同时投稿多篇论文，每篇论文需要单独提交。'
+        question: 'Can I submit multiple papers at the same time?',
+        answer: 'Yes, the platform supports submitting multiple papers at the same time, each paper needs to be submitted separately.'
       },
       {
-        question: '投稿后可以修改吗？',
-        answer: '投稿后在审核状态下，您可以在个人中心查看稿件状态，部分情况下支持修改。'
+        question: 'Can I modify my submission after submission?',
+        answer: 'After submission, you can check the manuscript status in your personal center during the review process, and modifications are supported in some cases.'
       }
     ]
   },
   {
     id: 2,
-    category: '查稿流程',
+    category: 'Manuscript Tracking',
     questions: [
       {
-        question: '如何查询稿件状态？',
-        answer: '登录平台后，进入"个人中心"，在"我的投稿"中可以查看所有投稿的状态。'
+        question: 'How to check manuscript status?',
+        answer: 'After logging in, enter "Personal Center" and you can check the status of all submissions in "My Submissions".'
       },
       {
-        question: '审稿周期一般是多久？',
-        answer: '审稿周期一般为1-2周，具体时间根据稿件情况和审稿人安排而定。'
+        question: 'What is the typical review period?',
+        answer: 'The review period is generally 1-2 weeks, the specific time depends on the manuscript situation and reviewer arrangement.'
       },
       {
-        question: '如果稿件被拒，还可以再次投稿吗？',
-        answer: '可以，根据审稿意见修改后，可以再次投稿。'
+        question: 'If my manuscript is rejected, can I submit it again?',
+        answer: 'Yes, after modifying according to the review comments, you can submit it again.'
       },
       {
-        question: '如何查看审稿意见？',
-        answer: '在个人中心的"我的投稿"中，点击对应稿件，即可查看详细的审稿意见。'
+        question: 'How to view review comments?',
+        answer: 'In "My Submissions" in your personal center, click on the corresponding manuscript to view detailed review comments.'
       }
     ]
   },
   {
     id: 3,
-    category: '账号管理',
+    category: 'Account Management',
     questions: [
       {
-        question: '如何注册账号？',
-        answer: '点击平台右上角的"注册"按钮，填写相关信息即可注册账号。'
+        question: 'How to register an account?',
+        answer: 'Click the "Register" button in the upper right corner of the platform and fill in the relevant information to register an account.'
       },
       {
-        question: '忘记密码怎么办？',
-        answer: '在登录页面点击"忘记密码"，按照提示重置密码。'
+        question: 'What to do if I forget my password?',
+        answer: 'Click "Forgot Password" on the login page and follow the instructions to reset your password.'
       },
       {
-        question: '如何修改个人信息？',
-        answer: '登录后进入"个人中心"->"个人信息"，点击"编辑信息"即可修改。'
+        question: 'How to modify personal information?',
+        answer: 'After logging in, enter "Personal Center" -> "Personal Information", click "Edit Information" to modify.'
       },
       {
-        question: '如何升级账号角色？',
-        answer: '联系平台管理员，提供相关资质证明，审核通过后可以升级角色。'
+        question: 'How to upgrade account role?',
+        answer: 'Contact the platform administrator, provide relevant qualification certificates, and the role can be upgraded after approval.'
       }
     ]
   }
@@ -106,8 +106,8 @@ const toggleQuestion = (id) => {
     <main class="main-content">
       <div class="faq-wrapper">
         <div class="header">
-          <h1>常见问题</h1>
-          <p class="subtitle">解答您在使用平台过程中遇到的常见问题</p>
+          <h1>Frequently Asked Questions</h1>
+          <p class="subtitle">Answers to common questions you may encounter while using the platform</p>
         </div>
 
         <section class="faq-section">
@@ -163,7 +163,7 @@ const toggleQuestion = (id) => {
 .main-content {
   flex: 1;
   max-width: 1200px;
-  margin: 80px auto 0;
+  margin: 100px auto 0;
   padding: 2rem;
   width: 100%;
 }

@@ -315,6 +315,8 @@ export default {
     auditRecommendedReviewers: 'Recommended Reviewers',
     auditOpposedReviewers: 'Opposed Reviewers',
     auditMyTasks: 'My Tasks',
+    letters: 'Letters',
+    lettersAndInvitations: 'Letters & Invitations',
   },
   dashboard: {
     title: 'Dashboard',

@@ -229,7 +229,9 @@ export default {
     writerResources: '投稿人资源',
     guideForWriters: '投稿指南',
     templates: '模板',
-    checkStatus: '状态查询'
+    checkStatus: '状态查询',
+    letters: '信件中心',
+    lettersAndInvitations: '信件与邀请',
   },
   submission: {
     login: {

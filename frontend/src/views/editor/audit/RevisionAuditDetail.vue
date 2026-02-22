@@ -412,7 +412,7 @@ const confirmReject = () => {
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" v-model="editorialDeclarations.deadlineGuidelines">
-                <span>The revision deadline is set in accordance with The Lancet's editorial guidelines.</span>
+                <span>The revision deadline is set in accordance with the Journal Submission Platform's editorial guidelines.</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" v-model="editorialDeclarations.scopePolicy">

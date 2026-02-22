@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import InitialReviewModal from '../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../components/admin/manuscript/AssignReviewersModal.vue'
@@ -14,6 +14,7 @@ import RevisionCheck from '../../components/admin/manuscript/RevisionCheck.vue'
 import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
@@ -99,6 +100,11 @@ onMounted(() => {
     if (history) {
       searchHistory.value = JSON.parse(history)
     }
+    
+    // Check query param for status filter
+    if (route.query.status) {
+      selectedStatus.value = route.query.status
+    }
   })
 
 const activeTab = ref('all')
@@ -153,6 +159,13 @@ const calculateDateRange = () => {
 
 // Watch for date range option changes
 watch(selectedDateRange, calculateDateRange)
+
+// Watch for route query changes to update status filter
+watch(() => route.query.status, (newStatus) => {
+  if (newStatus) {
+    selectedStatus.value = newStatus
+  }
+})
 
 const statusOptions = [
   { label: 'All Statuses', value: 'All Statuses' },
@@ -483,11 +496,8 @@ const handleStartPublication = (id) => {
   const journal = manuscripts.value.find(m => m.id === id)
   if (!journal) return
   
-  // Logic: Send Notice -> Pending Acceptance Confirmation
-  // Mocking transition
-  const index = manuscripts.value.findIndex(m => m.id === id)
-  manuscripts.value[index].status = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
-  alert("Acceptance Notice Sent. Waiting for Author Confirmation.")
+  // Navigate to publication process page
+  router.push({ name: 'editor-publication-process', params: { id } })
 }
 
 </script>
@@ -616,19 +626,21 @@ const handleStartPublication = (id) => {
 
       <div class="manuscript-list">
         <div v-if="filteredManuscripts.length === 0" class="empty-state">
-          <p>No manuscripts match your filter criteria</p>
-          <button class="btn-text" @click="resetFilters">Clear Filters</button>
+          <p>没有找到符合条件的稿件</p>
+          <button class="btn-text" @click="resetFilters">清除筛选</button>
         </div>
         <div v-else v-for="ms in filteredManuscripts" :key="ms.id" class="manuscript-card">
           <div class="ms-header">
             <span class="ms-id">{{ ms.id }}</span>
             <span class="ms-status-badge" :style="{ backgroundColor: getStatusColor(ms.status), color: 'white' }">{{ getStatusLabel(ms.status) }}</span>
           </div>
-          <h3 class="ms-title">{{ ms.title }}</h3>
+          <h3 class="ms-title clickable-title" @click="router.push({ name: 'admin-journal-detail', params: { id: ms.id } })">
+            {{ ms.title }}
+          </h3>
           <div class="ms-meta">
-            <span>Writer: {{ ms.writer || ms.author }}</span>
-            <span>Field: {{ ms.field }}</span>
-            <span>Date: {{ ms.submittedDate }}</span>
+            <span>作者: {{ ms.writer || ms.author }}</span>
+            <span>领域: {{ ms.field }}</span>
+            <span>日期: {{ ms.submittedDate }}</span>
           </div>
           
           <div class="ms-actions" v-if="!isReadOnly">
@@ -685,15 +697,23 @@ const handleStartPublication = (id) => {
             <!-- 7. Final Decision Passed (Accepted) -->
             <template v-if="ms.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED">
                <div class="action-row left">
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Send Acceptance Notice</button>
+                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Start Publication Process</button>
                </div>
             </template>
 
-             <!-- 8. Pending Acceptance Confirmation -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION">
+            <!-- 8. Publication Phase (New) -->
+            <template v-if="[
+                MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
+                MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
+                MANUSCRIPT_STATUS.PENDING_PROOF, 
+                MANUSCRIPT_STATUS.PENDING_PUBLICATION,
+                MANUSCRIPT_STATUS.PUBLISHED
+              ].includes(ms.status)">
                <div class="action-row left">
-                 <button class="action-btn gray">Check Notification Status</button>
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Resend Notice</button>
+                 <button class="action-btn red" @click="handleStartPublication(ms.id)">
+                   {{ ms.status === MANUSCRIPT_STATUS.PUBLISHED ? 'View Publication Details' : 'Continue Publication Process' }}
+                 </button>
+                 <span class="hint-text">Current Stage: {{ getStatusLabel(ms.status) }}</span>
                </div>
             </template>
 
@@ -874,6 +894,8 @@ const handleStartPublication = (id) => {
 .ms-id { font-family: monospace; color: #888; }
 .ms-status-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 .ms-title { margin: 0.5rem 0; color: #2c3e50; }
+.clickable-title { cursor: pointer; transition: color 0.2s; }
+.clickable-title:hover { color: #C93737; text-decoration: underline; }
 .ms-meta { font-size: 0.9rem; color: #666; display: flex; gap: 2rem; margin-bottom: 1.5rem; }
 .ms-actions { display: flex; flex-direction: column; gap: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0; }
 

@@ -88,7 +88,7 @@ const archivedManuscripts = computed(() => {
 
 // 查看稿件详情
 const viewManuscript = (id) => {
-  router.push(`/admin/review-records/${id}`)
+  router.push(`/admin/journal/${id}`)
 }
 </script>
 

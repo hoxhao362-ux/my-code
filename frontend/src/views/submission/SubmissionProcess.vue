@@ -19,12 +19,12 @@ const { t } = useI18n()
 
 // Steps configuration
 const steps = computed(() => [
-  { id: 1, label: t('submission.steps.step1') }, // Article Type Selection
-  { id: 2, label: t('submission.steps.step2') }, // Attach Files
-  { id: 3, label: t('submission.steps.step3') }, // General Information
-  { id: 4, label: t('submission.steps.step4') }, // Additional Information
-  { id: 5, label: t('submission.steps.step5') }, // Comments
-  { id: 6, label: t('submission.steps.step6') }  // Manuscript Data
+  { id: 1, label: t('progress.step1') }, // Article Type Selection
+  { id: 2, label: t('progress.step2') }, // Attach Files
+  { id: 3, label: t('progress.step3') }, // General Information
+  { id: 4, label: t('progress.step4') }, // Additional Information
+  { id: 5, label: t('progress.step5') }, // Comments
+  { id: 6, label: t('progress.step6') }  // Manuscript Data
 ])
 
 const currentStep = computed(() => submissionStore.currentStep)
@@ -90,8 +90,8 @@ const statusClass = computed(() => {
 
 .process-container {
   max-width: 1000px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0 auto 2rem; /* Remove top margin */
+  padding: 2rem 1rem 0; /* Add top padding to match Dashboard gap */
 }
 
 .step-content {

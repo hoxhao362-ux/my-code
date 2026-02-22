@@ -36,7 +36,7 @@ const progressStages = computed(() => [
 
 // 查看稿件详情
 const viewManuscript = (id) => {
-  router.push(`/admin/review-records/${id}`)
+  router.push(`/admin/journal/${id}`)
 }
 
 // 初始化时，如果有稿件，默认选择第一个

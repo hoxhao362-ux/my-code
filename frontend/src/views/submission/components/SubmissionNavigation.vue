@@ -21,7 +21,7 @@ const goHome = () => {
 }
 
 const goSubmit = () => {
-  router.push('/submission/writer/submit')
+  router.push({ name: 'submission-process' })
 }
 
 const goMainMenu = () => {
@@ -52,8 +52,9 @@ const handleLogout = () => {
       <div class="menu-container">
         <ul class="menu-list">
           <li class="menu-item"><a href="#" @click.prevent="goHome">Home</a></li>
-          <li class="menu-item"><a href="#" @click.prevent="goMainMenu">Main Menu</a></li>
-          <li class="menu-item active"><a href="#" @click.prevent="goSubmit">Submit a Manuscript</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/admin/writer-dashboard' }"><a href="#" @click.prevent="goMainMenu">Main Menu</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/submission/writer/submit' }"><a href="#" @click.prevent="goSubmit">Submit a Manuscript</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/writer/letters' }"><a href="#" @click.prevent="router.push('/writer/letters')">Letters</a></li>
           
           <!-- About Dropdown -->
           <li class="menu-item dropdown" 

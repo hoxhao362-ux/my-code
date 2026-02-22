@@ -26,6 +26,52 @@ export const modules = [
 ]
 
 export const journals = [
+  // Test data for Publication module
+  {
+    id: 1001,
+    title: 'Novel Therapeutic Approaches for Alzheimer\'s Disease',
+    writer: 'John Doe',
+    module: 'Clinical Research',
+    status: 'accepted',
+    submissionDate: '2026-02-10',
+    abstract: 'This study explores innovative therapeutic strategies for the treatment of Alzheimer\'s disease, including targeted drug delivery systems and non-pharmacological interventions.',
+    keywords: 'Alzheimer\'s Disease, Therapeutics, Drug Delivery',
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer1', status: 'Reviewed', comment: 'Novel approach with significant potential', rating: 5 },
+      { reviewer: 'reviewer2', status: 'Reviewed', comment: 'Well-designed study with robust methodology', rating: 4 }
+    ]
+  },
+  {
+    id: 1002,
+    title: 'Genomic Biomarkers in Cancer Diagnosis',
+    writer: 'Jane Smith',
+    module: 'Bioinformatics',
+    status: 'accepted',
+    submissionDate: '2026-02-08',
+    abstract: 'This research identifies key genomic biomarkers for early detection of various cancer types, improving diagnostic accuracy and patient outcomes.',
+    keywords: 'Genomics, Biomarkers, Cancer Diagnosis',
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer3', status: 'Reviewed', comment: 'Groundbreaking findings with clinical relevance', rating: 5 },
+      { reviewer: 'reviewer4', status: 'Reviewed', comment: 'Comprehensive analysis with validated results', rating: 4 }
+    ]
+  },
+  {
+    id: 1003,
+    title: 'Artificial Intelligence in Medical Imaging',
+    writer: 'David Johnson',
+    module: 'Artificial Intelligence',
+    status: 'accepted',
+    submissionDate: '2026-02-05',
+    abstract: 'This paper evaluates the effectiveness of AI algorithms in interpreting medical images, including X-rays, MRIs, and CT scans, compared to board-certified radiologists.',
+    keywords: 'AI, Medical Imaging, Diagnostic Accuracy',
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer5', status: 'Reviewed', comment: 'Innovative application of AI in healthcare', rating: 4 },
+      { reviewer: 'reviewer6', status: 'Reviewed', comment: 'Thorough evaluation with clinical validation', rating: 5 }
+    ]
+  },
   // Test data for New Submissions - Pending Screening
   {
     id: 20260001,

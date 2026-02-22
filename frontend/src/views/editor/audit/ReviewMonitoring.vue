@@ -93,7 +93,7 @@ const handleExtend = (journal) => {
 
 <style scoped>
 .audit-container { min-height: 100vh; background: #f5f7fa; display: flex; flex-direction: column; }
-.content { flex: 1; max-width: 1200px; margin: 80px auto 0; padding: 2rem; width: 100%; }
+.content { flex: 1; max-width: 1200px; margin: 60px auto 0; padding: 2rem; width: 100%; }
 .header { margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; }
 .header h1 { font-size: 1.8rem; color: #2c3e50; margin: 0; }
 .subtitle { color: #7f8c8d; margin-top: 0.5rem; }

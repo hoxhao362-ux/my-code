@@ -125,28 +125,24 @@ const getStatusClass = (status) => {
       <section class="stats-section">
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">📚</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalJournals }}</h3>
               <p class="stat-label">Total Manuscripts</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">⏳</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingJournals }}</h3>
               <p class="stat-label">Pending Reviews</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">👥</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalUsers }}</h3>
               <p class="stat-label">Registered Users</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">📝</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ recentSubmissions }}</h3>
               <p class="stat-label">Recent Submissions</p>
@@ -155,7 +151,6 @@ const getStatusClass = (status) => {
           
           <!-- New Widgets for Reviewer Management -->
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/recommended-reviewers')">
-            <div class="stat-icon">👍</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingRecommendations }}</h3>
               <p class="stat-label">Writer Recommendations</p>
@@ -164,7 +159,6 @@ const getStatusClass = (status) => {
           </div>
           
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/opposed-reviewers')">
-            <div class="stat-icon">🚫</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingOppositions }}</h3>
               <p class="stat-label">Avoidance Requests</p>
@@ -267,48 +261,38 @@ const getStatusClass = (status) => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
   background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
 }
 
 .stat-card.action-card {
   cursor: pointer;
-  border-left: 4px solid #3498db;
+  border-left: 3px solid #3498db;
 }
 
 .stat-card.action-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
   background-color: #f8fbfe;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  margin-right: 1rem;
+  background-color: #f9f9f9;
 }
 
 .stat-content {
-  flex: 1;
+  text-align: center;
 }
 
 .stat-number {
-  font-size: 1.8rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #2c3e50;
   margin: 0;
 }
@@ -316,18 +300,18 @@ const getStatusClass = (status) => {
 .stat-label {
   color: #7f8c8d;
   margin: 0.25rem 0 0 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .action-hint {
   display: inline-block;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
   color: #e67e22;
   background: #fff3e0;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
 }
 
 /* 近期投稿部分 */

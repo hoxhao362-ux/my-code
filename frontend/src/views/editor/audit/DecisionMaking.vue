@@ -26,6 +26,21 @@ const decisionJournals = computed(() => {
   })
 })
 
+// Filter for pending final decision journals (only accessible by editors)
+const pendingFinalDecisionJournals = computed(() => {
+  if (!user.value || !['editor', 'admin'].includes(user.value.role)) return []
+  return userStore.journals.filter(journal => {
+    const isPendingFinalDecision = journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
+    const isAssignedToMe = !journal.assignedEditor || journal.assignedEditor === user.value.username
+    return isPendingFinalDecision && isAssignedToMe
+  })
+})
+
+// Combined list for display
+const allDecisionJournals = computed(() => {
+  return [...decisionJournals.value, ...pendingFinalDecisionJournals.value]
+})
+
 // 2. Consensus Meeting Queue: Manuscripts requiring discussion
 const consensusJournals = computed(() => {
   if (!user.value) return []
@@ -68,6 +83,12 @@ const meetingAgenda = ref({
 })
 
 const openDecisionModal = (journal) => {
+  // Permission check: only editor or admin can handle pending final decision manuscripts
+  if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION && !['editor', 'admin'].includes(user.value?.role)) {
+    alert('Only editors can handle manuscripts pending final decision.')
+    return
+  }
+  
   currentJournal.value = journal
   decisionType.value = 'Minor Revision' // default
   decisionComments.value = ''
@@ -101,7 +122,20 @@ const submitDecision = () => {
   
   // Standard Decision Types
   if (decisionType.value === 'Accept') {
-    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+    // Check current status for special handling
+    if (journal.status === 'review_completed' || journal.status === 'Reviews Completed') {
+      // If in completed status, move to pending final decision for editor-in-chief
+      newStatus = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
+      journal.reviewStage = '待终审'
+    } else if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION || journal.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION) {
+      // If already in final decision stage, move to production process
+      newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
+      journal.reviewStage = '生产流程'
+    } else {
+      // Default case: move to production process
+      newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
+      journal.reviewStage = '生产流程'
+    }
   } else if (decisionType.value === 'Reject') {
     newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
   } else if (decisionType.value === 'Minor Revision' || decisionType.value === 'Major Revision') {
@@ -145,7 +179,15 @@ const submitDecision = () => {
   userStore.saveDecisionDraft(draft)
   
   showModal.value = false
-  alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module.`)
+  
+  // Show different messages based on status transition
+  if (newStatus === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION) {
+    alert(`Decision recorded: ${decisionType.value}. \nManuscript sent to Editor-in-Chief for final decision.`)
+  } else if (newStatus === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
+    alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module.`)
+  } else {
+    alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module.`)
+  }
 }
 
 // --- Meeting Functions ---
@@ -199,10 +241,10 @@ const assignIndependentReviewer = (journal) => {
 
       <!-- Tab 1: Review Consolidation -->
       <div v-if="activeTab === 'consolidation'" class="tab-pane">
-        <div v-if="decisionJournals.length === 0" class="no-data">
+        <div v-if="allDecisionJournals.length === 0" class="no-data">
           No manuscripts pending consolidation.
         </div>
-        <div v-for="journal in decisionJournals" :key="journal.id" class="journal-item">
+        <div v-for="journal in allDecisionJournals" :key="journal.id" class="journal-item">
           <div class="journal-header">
              <div class="header-left">
                <h3 class="journal-title">{{ journal.title }}</h3>
@@ -355,7 +397,7 @@ const assignIndependentReviewer = (journal) => {
 
 <style scoped>
 .audit-container { min-height: 100vh; background: #f5f7fa; display: flex; flex-direction: column; }
-.content { flex: 1; max-width: 1400px; margin: 80px auto 0; padding: 2rem; width: 100%; }
+.content { flex: 1; max-width: 1400px; margin: 60px auto 0; padding: 2rem; width: 100%; }
 .header { margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; }
 .header h1 { font-size: 2rem; color: #2c3e50; margin: 0; font-family: 'Georgia', serif; }
 .subtitle { color: #7f8c8d; margin-top: 0.5rem; font-style: italic; }

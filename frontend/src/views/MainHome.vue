@@ -52,6 +52,13 @@ const showSearchResults = ref(false)
 
 <template>
   <div class="home-container">
+    <!-- 顶部极窄顶条 -->
+    <div class="top-bar">
+      <div class="top-bar-content">
+        <span>Trusted academic publishing platform since 2026</span>
+      </div>
+    </div>
+
     <!-- 导航栏 -->
     <Navigation 
       :user="user"
@@ -59,128 +66,197 @@ const showSearchResults = ref(false)
       :logout="userStore.logout"
     />
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Platform Stats -->
-      <section class="stats-section">
-        <h2 class="section-title">Platform Statistics</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">📚</div>
-            <div class="stat-content">
-              <h3 class="stat-number">{{ stats.totalJournals }}</h3>
-              <p class="stat-label">Total Submissions</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">⏳</div>
-            <div class="stat-content">
-              <h3 class="stat-number">{{ stats.pendingReviews }}</h3>
-              <p class="stat-label">Pending Reviews</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-content">
-              <h3 class="stat-number">{{ stats.totalUsers }}</h3>
-              <p class="stat-label">Registered Users</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📝</div>
-            <div class="stat-content">
-              <h3 class="stat-number">{{ stats.recentSubmissions }}</h3>
-              <p class="stat-label">Recent Submissions</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Announcements -->
-      <section class="announcements-section">
-        <h2 class="section-title">Announcements</h2>
-        <div class="announcements-list">
-          <div 
-            v-for="announcement in announcements" 
-            :key="announcement.id" 
-            class="announcement-item"
-          >
-            <div class="announcement-header">
-              <h3 class="announcement-title">{{ announcement.title }}</h3>
-              <span class="announcement-date">{{ announcement.date }}</span>
-            </div>
-            <p class="announcement-content">{{ announcement.content }}</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Recent Submissions -->
-      <section class="journals-section">
-        <div class="section-header">
-          <h2 class="section-title">Recent Submissions</h2>
+    <!-- 首屏核心视觉区 -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1 class="hero-title">Journal Submission Platform</h1>
+          <p class="hero-subtitle">A trusted platform for academic publishing and peer review</p>
           <button 
-            class="submit-btn"
+            class="hero-submit-btn"
             @click="goToSubmit"
           >
             Submit your paper
           </button>
         </div>
-        <div class="journals-list">
+        <div class="hero-graphic">
+          <!-- 学术类抽象图形占位 -->
+          <div class="graphic-placeholder"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- 最新文章 -->
+      <section class="latest-articles-section">
+        <h2 class="section-title">Latest Articles</h2>
+        <div class="articles-grid">
           <div 
             v-for="journal in recentJournals" 
             :key="journal.id" 
-            class="journal-item"
+            class="article-card"
           >
-            <div class="journal-info">
-              <h3 class="journal-title">{{ journal.title }}</h3>
-              <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+            <div class="article-category">{{ journal.module || 'Research' }}</div>
+            <h3 class="article-title">{{ journal.title }}</h3>
+            <p class="article-meta">Journal Submission Platform | {{ journal.date || journal.submissionDate }}</p>
+            <p class="article-author">Author: {{ journal.author }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 期刊家族 -->
+      <section class="journal-family-section">
+        <h2 class="section-title">Journal Family</h2>
+        <div class="journal-family-grid">
+          <div class="journal-family-item">
+            <h3 class="journal-family-name">Main Journal</h3>
+          </div>
+          <div class="journal-family-item">
+            <h3 class="journal-family-name">Research Letters</h3>
+          </div>
+          <div class="journal-family-item">
+            <h3 class="journal-family-name">Reviews</h3>
+          </div>
+          <div class="journal-family-item">
+            <h3 class="journal-family-name">Case Reports</h3>
+          </div>
+        </div>
+      </section>
+
+      <!-- 专题合集 -->
+      <section class="special-collections-section">
+        <div class="special-collections-content">
+          <div class="special-collection-main">
+            <h3 class="special-collection-title">Special Collection: Emerging Research</h3>
+          </div>
+          <div class="special-collection-side">
+            <div class="special-collection-item">
+              <h4 class="special-collection-item-title">Research Methods</h4>
             </div>
-            <div class="journal-status" :class="journal.status.toLowerCase().replace(' ', '-')">
-              {{ journal.status }}
+            <div class="special-collection-item">
+              <h4 class="special-collection-item-title">Clinical Trials</h4>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Top Viewed -->
-      <section class="top-journals-section">
-        <div class="section-header">
-          <h2 class="section-title">Popular Articles</h2>
-          <p class="section-subtitle">Top 4 most viewed articles</p>
-        </div>
-        <div class="journals-grid">
-          <div 
-            v-for="journal in topViewedJournals" 
-            :key="journal.id" 
-            class="top-journal-item"
-          >
-            <div class="top-journal-info">
-              <h3 class="top-journal-title">{{ journal.title }}</h3>
-              <p class="top-journal-meta">Author: {{ journal.author }} | Module: {{ journal.module }}</p>
-              <p class="top-journal-meta">Date: {{ journal.date || journal.submissionDate }} | Views: {{ journal.viewCount || 0 }}</p>
-            </div>
-            <div class="top-journal-status" :class="journal.status.toLowerCase().replace(' ', '-')">
-              {{ journal.status }}
+      <!-- 新闻与观点 -->
+      <section class="news-views-section">
+        <div class="news-views-content">
+          <div class="news-main">
+            <h3 class="news-title">Announcements</h3>
+            <div 
+              v-for="announcement in announcements.slice(0, 1)" 
+              :key="announcement.id" 
+              class="news-item"
+            >
+              <h4 class="news-item-title">{{ announcement.title }}</h4>
+              <p class="news-item-content">{{ announcement.content }}</p>
             </div>
           </div>
+          <div class="news-side">
+            <h3 class="news-side-title">Latest Updates</h3>
+            <div 
+              v-for="announcement in announcements.slice(1, 3)" 
+              :key="announcement.id" 
+              class="news-side-item"
+            >
+              <h4 class="news-side-item-title">{{ announcement.title }}</h4>
+              <p class="news-side-item-date">{{ announcement.date }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 订阅/推广区块 -->
+      <section class="subscribe-section">
+        <div class="subscribe-content">
+          <h2 class="subscribe-title">Stay Updated</h2>
+          <p class="subscribe-text">Subscribe to our newsletter for the latest publications and platform updates</p>
         </div>
       </section>
     </main>
 
-    <!-- Footer -->
+    <!-- 底部区域 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3 class="footer-column-title">About</h3>
+            <ul class="footer-links">
+              <li><a href="#">About Us</a></li>
+              <li><a href="#">Mission</a></li>
+              <li><a href="#">Team</a></li>
+              <li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3 class="footer-column-title">Journals</h3>
+            <ul class="footer-links">
+              <li><a href="#">Main Journal</a></li>
+              <li><a href="#">Research Letters</a></li>
+              <li><a href="#">Reviews</a></li>
+              <li><a href="#">Case Reports</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3 class="footer-column-title">Authors</h3>
+            <ul class="footer-links">
+              <li><a href="#">Instructions for Authors</a></li>
+              <li><a href="#">Submission Guidelines</a></li>
+              <li><a href="#">Peer Review Process</a></li>
+              <li><a href="#">Publication Ethics</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3 class="footer-column-title">Resources</h3>
+            <ul class="footer-links">
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Help Center</a></li>
+              <li><a href="#">Privacy Policy</a></li>
+              <li><a href="#">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
+/* 整体容器 */
 .home-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #FFFFFF;
+  color: #333333;
+}
+
+/* 顶部极窄顶条 */
+.top-bar {
+  background-color: #003366;
+  height: 18px;
+  width: 100%;
+}
+
+.top-bar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.top-bar-content span {
+  font-size: 12px;
+  color: #FFFFFF;
+  font-family: Arial, sans-serif;
 }
 
 /* 主内容 */
@@ -190,298 +266,484 @@ const showSearchResults = ref(false)
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
-  margin-top: 80px; /* 为固定导航栏留出空间 */
+  margin-top: 60px; /* 为导航栏留出空间 */
+}
+
+/* 首屏核心视觉区 */
+.hero-section {
+  width: 100%;
+  padding: 7rem 0 6rem;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #F5F5F5;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+
+.hero-text {
+  flex: 6;
+}
+
+.hero-title {
+  font-size: 52px;
+  font-weight: bold;
+  color: #003366;
+  margin: 0 0 25px 0;
+  line-height: 1.2;
+  font-family: Arial, sans-serif;
+}
+
+.hero-subtitle {
+  font-size: 20px;
+  color: #555555;
+  margin: 0;
+  line-height: 1.6;
+  font-family: Arial, sans-serif;
+  max-width: 80%;
+}
+
+.hero-graphic {
+  flex: 4;
+}
+
+.graphic-placeholder {
+  width: 100%;
+  height: 240px;
+  background-color: #F5F5F5;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.graphic-placeholder::after {
+  content: "Academic Research Visualization";
+  font-size: 14px;
+  color: #777777;
+  font-family: Arial, sans-serif;
+}
+
+/* 首屏提交按钮 */
+.hero-submit-btn {
+  background-color: #003366;
+  color: #FFFFFF;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: Arial, sans-serif;
+  margin-top: 2rem;
+}
+
+.hero-submit-btn:hover {
+  background-color: #002244;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+}
+
+/* 区块标题 */
+.section-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 30px;
+  font-family: Arial, sans-serif;
+}
+
+/* 最新文章 */
+.latest-articles-section {
+  margin-bottom: 60px;
+  padding-top: 1rem;
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: 28px;
   font-weight: bold;
-  margin-bottom: 1.5rem;
-  color: #2c3e50;
+  color: #000000;
+  margin-bottom: 35px;
+  font-family: Arial, sans-serif;
+  position: relative;
+  padding-bottom: 10px;
 }
 
-/* 统计部分 */
-.stats-section {
-  margin-bottom: 2rem;
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background-color: #003366;
 }
 
-.stats-grid {
+.articles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 35px;
 }
 
-.stat-card {
-  background: white;
+.article-card {
+  width: 100%;
+  min-height: 140px;
   padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  margin-right: 1rem;
-}
-
-.stat-number {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #2c3e50;
-  margin: 0;
-}
-
-.stat-label {
-  color: #7f8c8d;
-  margin: 0.25rem 0 0 0;
-  font-size: 0.9rem;
-}
-
-/* 近期投稿 */
-.journals-section {
-  margin-bottom: 2rem;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.submit-btn {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
+  background-color: #FFFFFF;
+  border: 1px solid #F5F5F5;
+  border-radius: 4px;
   transition: all 0.3s ease;
 }
 
-.submit-btn:hover {
-  background: #2980b9;
+.article-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
 
-.journals-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.article-category {
+  font-size: 11px;
+  font-weight: bold;
+  color: #003366;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  font-family: Arial, sans-serif;
+  letter-spacing: 0.5px;
 }
 
-.journal-item {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.3s ease;
-}
-
-.journal-item:hover {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-}
-
-.journal-info {
-  flex: 1;
-}
-
-.journal-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0 0 0.5rem 0;
-  cursor: pointer;
+.article-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #000000;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  font-family: Arial, sans-serif;
   transition: color 0.3s ease;
 }
 
-.journal-title:hover {
-  color: #3498db;
-  text-decoration: underline;
+.article-card:hover .article-title {
+  color: #003366;
 }
 
-.journal-meta {
-  color: #7f8c8d;
+.article-meta {
+  font-size: 13px;
+  color: #777777;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+  font-family: Arial, sans-serif;
+}
+
+.article-author {
+  font-size: 11px;
+  color: #999999;
   margin: 0;
-  font-size: 0.9rem;
+  line-height: 1.2;
+  font-family: Arial, sans-serif;
 }
 
-.journal-status {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
-  min-width: 80px;
+/* 期刊家族 */
+.journal-family-section {
+  margin-bottom: 60px;
+  padding-top: 2rem;
 }
 
-.journal-status.已通过 {
-  background: #2ecc71;
-  color: white;
+.journal-family-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
 }
 
-.journal-status.审稿中 {
-  background: #3498db;
-  color: white;
-}
-
-.journal-status.未通过 {
-  background: #e74c3c;
-  color: white;
-}
-
-/* 平台公告样式 */
-.announcements-section {
-  margin-bottom: 2rem;
-}
-
-.announcements-list {
+.journal-family-item {
+  background-color: #F5F5F5;
+  height: 90px;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.announcement-item {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #f39c12;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.announcement-item:hover {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+.journal-family-item:hover {
+  background-color: #E8E8E8;
   transform: translateY(-2px);
 }
 
-.announcement-header {
+.journal-family-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #003366;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+/* 专题合集 */
+.special-collections-section {
+  margin-bottom: 60px;
+  padding-top: 2rem;
+}
+
+.special-collections-content {
   display: flex;
-  justify-content: space-between;
+  gap: 35px;
+}
+
+.special-collection-main {
+  flex: 7;
+  height: 220px;
+  background-color: #F5F5F5;
+  display: flex;
   align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.announcement-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0;
-}
-
-.announcement-date {
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  background: #f8f9fa;
-  padding: 0.3rem 0.8rem;
-  border-radius: 15px;
-}
-
-.announcement-content {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #555;
-  margin: 0;
-}
-
-/* 热门作品样式 */
-.top-journals-section {
-  margin-bottom: 2rem;
-}
-
-.section-subtitle {
-  font-size: 1rem;
-  color: #7f8c8d;
-  margin: 0.5rem 0 1.5rem 0;
-  font-weight: 400;
-}
-
-.journals-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-.top-journal-item {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  justify-content: center;
+  border-radius: 4px;
   transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.special-collection-main::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 51, 102, 0.05);
+  transition: all 0.3s ease;
+}
+
+.special-collection-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.special-collection-main:hover::before {
+  background-color: rgba(0, 51, 102, 0.08);
+}
+
+.special-collection-title {
+  font-size: 30px;
+  font-weight: bold;
+  color: #003366;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.special-collection-side {
+  flex: 3;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 24px;
 }
 
-.top-journal-item:hover {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-5px);
+.special-collection-item {
+  height: 105px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  background-color: #FFFFFF;
+  border: 1px solid #F5F5F5;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.top-journal-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
+.special-collection-item:hover {
+  background-color: #F9FAFB;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.special-collection-item-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000000;
   margin: 0;
+  font-family: Arial, sans-serif;
+  transition: color 0.3s ease;
+}
+
+.special-collection-item:hover .special-collection-item-title {
+  color: #003366;
+}
+
+/* 新闻与观点 */
+.news-views-section {
+  margin-bottom: 60px;
+  padding-top: 2rem;
+}
+
+.news-views-content {
+  display: flex;
+  gap: 35px;
+}
+
+.news-main {
+  flex: 6;
+  height: 280px;
+  padding: 1.5rem;
+  background-color: #FFFFFF;
+  border: 1px solid #F5F5F5;
+  border-radius: 4px;
+}
+
+.news-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #003366;
+  margin: 0 0 1.5rem 0;
+  font-family: Arial, sans-serif;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.news-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background-color: #003366;
+}
+
+.news-item-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000000;
+  margin: 0 0 0.8rem 0;
+  font-family: Arial, sans-serif;
+  line-height: 1.4;
+}
+
+.news-item-content {
+  font-size: 15px;
+  color: #555555;
+  margin: 0;
+  line-height: 1.6;
+  font-family: Arial, sans-serif;
+}
+
+.news-side {
+  flex: 4;
+  height: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.news-side-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #003366;
+  margin: 0 0 1.2rem 0;
+  font-family: Arial, sans-serif;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.news-side-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background-color: #003366;
+}
+
+.news-side-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 1rem;
+  background-color: #FFFFFF;
+  border: 1px solid #F5F5F5;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.news-side-item:hover {
+  background-color: #F9FAFB;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.news-side-item-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000000;
+  margin: 0;
+  font-family: Arial, sans-serif;
   line-height: 1.4;
   transition: color 0.3s ease;
-  cursor: pointer;
 }
 
-.top-journal-title:hover {
-  color: #3498db;
+.news-side-item:hover .news-side-item-title {
+  color: #003366;
 }
 
-.top-journal-meta {
-  font-size: 0.9rem;
-  color: #7f8c8d;
+.news-side-item-date {
+  font-size: 12px;
+  color: #999999;
   margin: 0;
-  line-height: 1.5;
+  font-family: Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.top-journal-status {
-  align-self: flex-start;
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-transform: capitalize;
+/* 订阅/推广区块 */
+.subscribe-section {
+  background-color: #003366;
+  width: 100%;
+  padding: 4rem 0;
+  margin-bottom: 0;
 }
 
-.top-journal-status.已通过 {
-  background: #2ecc71;
-  color: white;
-}
-
-.top-journal-status.审稿中 {
-  background: #3498db;
-  color: white;
-}
-
-.top-journal-status.未通过 {
-  background: #e74c3c;
-  color: white;
-}
-
-/* 页脚 */
-.footer {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem 0;
+.subscribe-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
   text-align: center;
+}
+
+.subscribe-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #FFFFFF;
+  margin: 0 0 20px 0;
+  font-family: Arial, sans-serif;
+}
+
+.subscribe-text {
+  font-size: 16px;
+  color: #E6E6E6;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  max-width: 60%;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* 底部区域 */
+.footer {
+  background-color: #F9FAFB;
+  width: 100%;
+  padding: 3rem 0 2rem;
+  border-top: 1px solid #E5E7EB;
   margin-top: auto;
 }
 
@@ -491,45 +753,115 @@ const showSearchResults = ref(false)
   padding: 0 2rem;
 }
 
-.footer-content p {
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 2.5rem;
+}
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.footer-column-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #003366;
   margin: 0;
-  font-size: 0.9rem;
+  font-family: Arial, sans-serif;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.footer-column-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background-color: #003366;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-links li a {
+  font-size: 13px;
+  color: #555555;
+  text-decoration: none;
+  line-height: 1.8;
+  font-family: Arial, sans-serif;
+  transition: color 0.3s ease;
+}
+
+.footer-links li a:hover {
+  color: #003366;
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid #E5E7EB;
+  padding-top: 1.5rem;
+}
+
+.footer-bottom p {
+  font-size: 11px;
+  color: #777777;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .announcement-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .journals-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .stat-card {
+  .hero-content {
     flex-direction: column;
     text-align: center;
   }
   
-  .stat-icon {
-    margin-right: 0;
-    margin-bottom: 1rem;
+  .hero-text,
+  .hero-graphic {
+    flex: 1;
+    width: 100%;
   }
   
-  /* 目录响应式调整 */
-  .journal-directory-item {
+  .special-collections-content,
+  .news-views-content {
     flex-direction: column;
-    gap: 1rem;
   }
   
-  .journal-directory-actions {
-    align-items: stretch;
+  .special-collection-main,
+  .special-collection-side,
+  .news-main,
+  .news-side {
+    flex: 1;
+    width: 100%;
+  }
+  
+  .articles-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .journal-family-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

@@ -62,8 +62,11 @@ const filterByTimeRange = (journals, dateField = 'date') => {
 
 // 待审稿件（从真实期刊数据中筛选，根据角色显示对应阶段）
 const pendingJournals = computed(() => {
-  // 基础筛选：只显示审稿中的稿件
-  let journals = props.journals.filter(journal => journal.status === '审稿中')
+  // 基础筛选：显示审稿中的稿件和已接受进入终审的稿件
+  let journals = props.journals.filter(journal => 
+    journal.status === '审稿中' || 
+    journal.status === 'final_decision_accepted'
+  )
   
   // 角色筛选：根据用户角色显示对应阶段的稿件
   if (props.user.role === 'admin') {

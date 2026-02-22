@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
@@ -337,26 +337,31 @@ const confirmScreen = async () => {
 }
 
 // --- Suggest Transfer Logic ---
-const transferForm = ref({
+const transferForm = reactive({
   reason: '',
-  targetJournal: 'Lancet Digital Health',
+  targetJournal: 'Journal of Medical Science',
   letter: ''
 })
 
-const transferJournals = ['Lancet Digital Health', 'Journal of Medical Imaging', 'Lancet Global Health']
+const transferJournals = ['Journal of Medical Science', 'Journal of Medical Imaging', 'Global Health Journal']
 
 const openTransferModal = (journal) => {
   currentJournal.value = journal
-  transferForm.value = {
+  Object.assign(transferForm, {
     reason: '',
     targetJournal: 'Lancet Digital Health',
-    letter: `Dear ${journal.writer},\n\nWe have reviewed your manuscript "${journal.title}". While it is of high quality, we believe it would be better suited for our sister journal, Lancet Digital Health.\n\nBest regards,\nThe Lancet Editorial Team`
-  }
+    letter: `Dear ${journal.writer},
+
+We have reviewed your manuscript "${journal.title}". While it is of high quality, we believe it would be better suited for our sister journal, Journal of Medical Science.
+
+Best regards,
+The Journal Submission Platform Editorial Team`
+  })
   showTransferModal.value = true
 }
 
 const sendTransfer = () => {
-  if (!transferForm.value.reason) {
+  if (!transferForm.reason) {
     alert('Please enter a reason for transfer.')
     return
   }
@@ -846,12 +851,11 @@ const viewDetail = (id) => {
   display: flex;
   flex-direction: column;
   background: #f5f7fa;
-  font-family: 'Times New Roman', Times, serif;
 }
 .content {
   flex: 1;
   max-width: 1200px;
-  margin: 80px auto 0;
+  margin: 60px auto 0;
   padding: 2rem;
   width: 100%;
 }
@@ -932,7 +936,6 @@ const viewDetail = (id) => {
   border: none;
   border-radius: 2px;
   cursor: pointer;
-  font-family: 'Times New Roman', Times, serif;
   font-size: 14px;
   font-weight: bold;
   transition: all 0.2s;
@@ -1035,7 +1038,6 @@ const viewDetail = (id) => {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 0;
-  font-family: 'Times New Roman', Times, serif;
   font-size: 14px;
   width: 100%;
   box-sizing: border-box;
@@ -1352,7 +1354,6 @@ textarea.lancet-input {
   position: relative;
   width: 100%;
   cursor: pointer;
-  font-family: 'Times New Roman', Times, serif;
   margin-top: 5px;
 }
 .dropdown-header {
@@ -1444,7 +1445,6 @@ textarea.lancet-input {
   color: #333;
   padding: 5px 20px;
   cursor: pointer;
-  font-family: 'Times New Roman', Times, serif;
   font-size: 14px;
 }
 .btn-text-only-bordered:hover {

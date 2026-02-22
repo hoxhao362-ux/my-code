@@ -24,7 +24,7 @@ const emit = defineEmits(['navigate'])
 
 const handleNav = (key, path) => {
   if (props.customNavigation) {
-    emit('navigate', key)
+    emit('navigate', key, path)
   } else {
     router.push(path)
   }
@@ -66,6 +66,12 @@ const showReviewerMenu = ref(false)
 const showUserMenu = ref(false)
 // Control Mobile Menu
 const showMobileMenu = ref(false)
+// Control Review Process Menu
+const showReviewProcessMenu = ref(false)
+// Control Publication & Analytics Menu
+const showPubAnalyticsMenu = ref(false)
+// Control Admin Tools Menu
+const showAdminToolsMenu = ref(false)
 // User Menu Ref
 const userMenuRef = ref(null)
 
@@ -253,6 +259,27 @@ const toggleAuditTasksMenu = (event) => {
   closeOtherMenus('auditTasks')
 }
 
+// 切换Review Process子菜单
+const toggleReviewProcessMenu = (event) => {
+  if (event) event.stopPropagation()
+  showReviewProcessMenu.value = !showReviewProcessMenu.value
+  closeOtherMenus('reviewProcess')
+}
+
+// 切换Publication & Analytics子菜单
+const togglePubAnalyticsMenu = (event) => {
+  if (event) event.stopPropagation()
+  showPubAnalyticsMenu.value = !showPubAnalyticsMenu.value
+  closeOtherMenus('pubAnalytics')
+}
+
+// 切换Admin Tools子菜单
+const toggleAdminToolsMenu = (event) => {
+  if (event) event.stopPropagation()
+  showAdminToolsMenu.value = !showAdminToolsMenu.value
+  closeOtherMenus('adminTools')
+}
+
 // 关闭其他菜单
 const closeOtherMenus = (current) => {
   if (current !== 'journals') showJournalsMenu.value = false
@@ -269,6 +296,9 @@ const closeOtherMenus = (current) => {
   if (current !== 'guide') showGuideMenu.value = false
   if (current !== 'writerHelp') showWriterHelpMenu.value = false
   if (current !== 'auditTasks') showAuditTasksMenu.value = false
+  if (current !== 'reviewProcess') showReviewProcessMenu.value = false
+  if (current !== 'pubAnalytics') showPubAnalyticsMenu.value = false
+  if (current !== 'adminTools') showAdminToolsMenu.value = false
 }
 
 // 关闭所有子菜单
@@ -287,6 +317,9 @@ const closeAllMenus = () => {
   showGuideMenu.value = false
   showWriterHelpMenu.value = false
   showAuditTasksMenu.value = false
+  showReviewProcessMenu.value = false
+  showPubAnalyticsMenu.value = false
+  showAdminToolsMenu.value = false
 }
 
 // 点击页面其他部分关闭子菜单
@@ -686,115 +719,42 @@ const handleLogout = () => {
 
             <!-- Desktop Menu -->
             <ul class="navbar-menu desktop-only">
-              <!-- 1. Home -->
+              <!-- 1. Dashboard -->
               <li class="nav-item">
-                <a href="#" class="nav-link" :class="{ active: currentPage === 'home' }" @click.prevent="goToHome">
-                  {{ t('nav.home') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-dashboard' }" @click.prevent="router.push('/reviewer/dashboard')">
+                  {{ t('nav.dashboard') }}
                 </a>
               </li>
 
-              <!-- 2. Journals -->
+              <!-- 2. My Assignments -->
               <li class="nav-item">
-                <a href="#" class="nav-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
-                  {{ t('nav.journals') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-assignments' }" @click.prevent="router.push('/reviewer/assignments')">
+                  My Assignments
                 </a>
               </li>
 
-              <!-- 3. Submit (Button) -->
+              <!-- 2.5 Letters & Invitations -->
               <li class="nav-item">
-                <a href="#" class="nav-link btn-submit-nav" @click.prevent="goToSubmit()">
-                  {{ t('nav.submit') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-letters' }" @click.prevent="router.push('/reviewer/letters')">
+                  {{ t('nav.lettersAndInvitations') }}
+                </a>
+              </li>
+
+              <!-- 3. Profile -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-profile' }" @click.prevent="router.push('/reviewer/profile')">
+                  {{ t('nav.profile') }}
                 </a>
               </li>
 
               <!-- 4. Resources -->
               <li class="nav-item dropdown" @mouseenter="handleHover('resources', true)" @mouseleave="handleHover('resources', false)">
                 <div class="dropdown-toggle" @click="toggleResourcesMenu">
-                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('resources-') }">{{ t('nav.resources') }} ▼</a>
+                  <a href="#" class="nav-link">{{ t('nav.resources') }} ▼</a>
                 </div>
                 <ul class="dropdown-menu" v-if="showResourcesMenu">
-                  <li class="dropdown-header">{{ t('nav.writerResources') }}</li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/guide'); closeAllMenus()">{{ t('nav.guideForWriters') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
-                  <li><div class="dropdown-divider"></div></li>
-                  <li class="dropdown-header">{{ t('nav.reviewerResources') }}</li>
-                  <li>
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      :class="{ 'disabled-link': applicationStatus === 'pending_review' }"
-                      :title="applicationStatus === 'pending_review' ? 'Your application is currently under review' : ''"
-                      @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()"
-                    >
-                      {{ t('nav.becomeReviewer') }}
-                    </a>
-                  </li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
-                  <li><div class="dropdown-divider"></div></li>
-                  <li class="dropdown-header">{{ t('nav.newsEvents') }}</li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/latest'); closeAllMenus()">{{ t('nav.latestArticles') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/calls'); closeAllMenus()">{{ t('nav.callForPapers') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/events'); closeAllMenus()">{{ t('nav.upcomingEvents') }}</a></li>
-                </ul>
-              </li>
-
-              <!-- 5. Reviewer Dropdown (Visible for Reviewers OR Applicants) -->
-              <li v-if="user && (user.role === 'reviewer' || applicationStatus)" class="nav-item dropdown" @mouseenter="handleHover('reviewer', true)" @mouseleave="handleHover('reviewer', false)">
-                <div class="dropdown-toggle" @click="toggleReviewerMenu">
-                  <a href="#" class="nav-link">{{ t('nav.reviewer') }} ▼</a>
-                </div>
-                <ul class="dropdown-menu reviewer-menu" v-if="showReviewerMenu">
-                  <li>
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      :class="{ 'disabled-link': applicationStatus === 'pending_review' }"
-                      :title="applicationStatus === 'pending_review' ? 'Your application is currently under review' : ''"
-                      @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()"
-                    >
-                      {{ t('nav.becomeReviewer') }}
-                    </a>
-                  </li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
-                  <li><div class="dropdown-divider"></div></li>
-                  
-                  <!-- My Reviews -->
-                  <li v-if="user.role === 'reviewer'">
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      :class="{ 'disabled-link': user?.status !== 'active' }"
-                      @click.prevent="handleMyReviewsClick"
-                    >
-                      {{ t('nav.myReviews') }}
-                    </a>
-                  </li>
-                  
-                  <!-- My Profile -->
-                  <li v-if="user.role === 'reviewer'">
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()"
-                    >
-                      {{ t('nav.myProfile') }}
-                    </a>
-                  </li>
-                </ul>
-              </li>
-
-              <!-- 6. More -->
-              <li class="nav-item dropdown" @mouseenter="handleHover('more', true)" @mouseleave="handleHover('more', false)">
-                <div class="dropdown-toggle" @click="toggleMoreMenu">
-                  <a href="#" class="nav-link">{{ t('nav.more') }} ▼</a>
-                </div>
-                <ul class="dropdown-menu" v-if="showMoreMenu">
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/editorial-board'); closeAllMenus()">{{ t('nav.editorialBoard') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/journal-info'); closeAllMenus()">{{ t('nav.journalInfo') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/history'); closeAllMenus()">{{ t('nav.history') }}</a></li>
                 </ul>
               </li>
 
@@ -812,6 +772,7 @@ const handleLogout = () => {
         <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
+          <!-- Core Navigation -->
           <li class="nav-item">
             <a 
               href="#" 
@@ -834,11 +795,11 @@ const handleLogout = () => {
             </a>
           </li>
 
-          <!-- Audit Tasks Menu (Added) -->
+          <!-- Audit Tasks Menu (Top-level) -->
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleAuditTasksMenu">
               <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('audit-') }">
-                {{ t('nav.tasks') }} ▼
+                Audit Tasks ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showAuditTasksMenu">
@@ -854,37 +815,30 @@ const handleLogout = () => {
             </ul>
           </li>
 
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-reviewers' }"
-              @click.prevent="handleNav('editor-reviewers', '/editor/reviewers')"
-            >
-              {{ t('nav.reviewers') }}
-            </a>
+          <!-- Review Process Dropdown -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleReviewProcessMenu">
+              <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-reviewers' || currentPage === 'editor-decisions' }">
+                Review Process ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showReviewProcessMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-reviewers', '/editor/reviewers'); closeAllMenus()">{{ t('nav.reviewers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-decisions', '/editor/decisions'); closeAllMenus()">{{ t('nav.decisionsLetters') }}</a></li>
+            </ul>
           </li>
 
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-decisions' }"
-              @click.prevent="handleNav('editor-decisions', '/editor/decisions')"
-            >
-              {{ t('nav.decisionsLetters') }}
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-statistics' }"
-              @click.prevent="handleNav('editor-statistics', '/editor/statistics')"
-            >
-              Data Statistics
-            </a>
+          <!-- Publication & Analytics Dropdown -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="togglePubAnalyticsMenu">
+              <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-publication-management' || currentPage === 'editor-statistics' }">
+                Publication & Analytics ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showPubAnalyticsMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-publication-management', '/editor/publication'); closeAllMenus()">Publication</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-statistics', '/editor/statistics'); closeAllMenus()">Data Statistics</a></li>
+            </ul>
           </li>
 
           <!-- Board Management (Editor Only) -->
@@ -901,49 +855,38 @@ const handleLogout = () => {
 
           <!-- Admin Only Menu Items -->
           <template v-if="user?.role === 'admin'">
-             <li class="nav-item dropdown">
-              <div class="dropdown-toggle" @click="toggleRoleMenu">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'editor-users' }"
-                >
-                  {{ t('nav.editorManagement') }} ▼
-                </a>
-              </div>
-              <ul class="dropdown-menu" v-if="showRoleMenu">
-                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-users', '/editor/users'); closeAllMenus()">{{ t('nav.userList') }}</a></li>
-                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); closeAllMenus()">{{ t('nav.accountStatus') }}</a></li>
-              </ul>
-            </li>
-
             <li class="nav-item dropdown">
-              <div class="dropdown-toggle" @click="toggleSystemMenu">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage.startsWith('editor-system') }"
-                >
-                  {{ t('nav.journalSettings') }} ▼
+              <div class="dropdown-toggle" @click="toggleAdminToolsMenu">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-users' || currentPage.startsWith('editor-system') }">
+                  Admin Tools ▼
                 </a>
               </div>
-              <ul class="dropdown-menu" v-if="showSystemMenu">
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); closeAllMenus()">{{ t('nav.basicConfig') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); closeAllMenus()">{{ t('nav.moduleManagement') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); closeAllMenus()">{{ t('nav.inviteCodeManagement') }}</a></li>
+              <ul class="dropdown-menu" v-if="showAdminToolsMenu">
+                <!-- Editor Management -->
+                <li class="dropdown-submenu">
+                  <div class="dropdown-toggle" @click.stop="toggleRoleMenu">
+                    <a href="#" class="nav-link">{{ t('nav.editorManagement') }} ▶</a>
+                  </div>
+                  <ul class="dropdown-menu submenu-level-2" v-if="showRoleMenu">
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-users', '/editor/users'); closeAllMenus()">{{ t('nav.userList') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); closeAllMenus()">{{ t('nav.accountStatus') }}</a></li>
+                  </ul>
+                </li>
+                <!-- Journal Settings -->
+                <li class="dropdown-submenu">
+                  <div class="dropdown-toggle" @click.stop="toggleSystemMenu">
+                    <a href="#" class="nav-link">{{ t('nav.journalSettings') }} ▶</a>
+                  </div>
+                  <ul class="dropdown-menu submenu-level-2" v-if="showSystemMenu">
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); closeAllMenus()">{{ t('nav.basicConfig') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); closeAllMenus()">{{ t('nav.moduleManagement') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); closeAllMenus()">{{ t('nav.inviteCodeManagement') }}</a></li>
+                  </ul>
+                </li>
+                <!-- Log Management -->
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-logs', '/editor/system/logs'); closeAllMenus()">{{ t('nav.logManagement') }}</a></li>
               </ul>
-            </li>
-
-            <li class="nav-item">
-               <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'editor-system-logs' }"
-                  @click.prevent="handleNav('editor-system-logs', '/editor/system/logs')"
-                >
-                  {{ t('nav.logManagement') }}
-                </a>
             </li>
           </template>
 
@@ -1050,6 +993,16 @@ const handleLogout = () => {
                   @click.prevent="router.push('/admin/manuscript/history'); closeAllMenus()"
                 >
                   {{ t('nav.historySubmission') }}
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'writer-letters' }"
+                  @click.prevent="router.push('/writer/letters'); closeAllMenus()"
+                >
+                  {{ t('nav.letters') }}
                 </a>
               </li>
             </ul>
@@ -1288,9 +1241,9 @@ const handleLogout = () => {
           <li class="sidebar-item">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-manuscripts', '/editor/manuscripts'); showMobileMenu = false">{{ t('nav.manuscripts') }}</a>
           </li>
-          <!-- Tasks -->
+          <!-- Audit Tasks -->
           <li class="sidebar-item has-submenu">
-            <div class="sidebar-link" @click="toggleAuditTasksMenu">{{ t('nav.tasks') }} <span class="arrow">▼</span></div>
+            <div class="sidebar-link" @click="toggleAuditTasksMenu">Audit Tasks <span class="arrow">▼</span></div>
             <ul class="sidebar-submenu" v-if="showAuditTasksMenu">
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-new-submissions', '/editor/audit/new-submissions'); showMobileMenu = false">{{ t('nav.auditNewSubmissions') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-assign-reviewers', '/editor/audit/assign-reviewers'); showMobileMenu = false">{{ t('nav.auditAssignReviewers') }}</a></li>
@@ -1374,6 +1327,7 @@ const handleLogout = () => {
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/my'); showMobileMenu = false">{{ t('nav.myManuscripts') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/progress'); showMobileMenu = false">{{ t('nav.manuscriptProgress') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/history'); showMobileMenu = false">{{ t('nav.historySubmission') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/writer/letters'); showMobileMenu = false">{{ t('nav.letters') }}</a></li>
             </ul>
           </li>
            <!-- Profile -->
@@ -2099,6 +2053,24 @@ const handleLogout = () => {
 .submenu-link.disabled {
   color: #999;
   cursor: not-allowed;
+}
+
+/* Dropdown Submenu Styles */
+.dropdown-submenu {
+  position: relative;
+}
+
+.dropdown-submenu .dropdown-menu.submenu-level-2 {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-top: -1px;
+  min-width: 200px;
+  display: block;
+}
+
+.dropdown-submenu:hover .dropdown-menu.submenu-level-2 {
+  display: block;
 }
 
 /* Hamburger default hidden on PC */

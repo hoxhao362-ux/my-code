@@ -66,19 +66,11 @@ const isDecisionMade = (status) => {
   if (!status) return false
   return [
     MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED,
-    MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED,
-    MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
-    // Include all post-acceptance statuses to ensure "Decision Made" count persists
-    MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
-    MANUSCRIPT_STATUS.PENDING_COPYRIGHT,
-    MANUSCRIPT_STATUS.PENDING_PROOF,
-    MANUSCRIPT_STATUS.PENDING_PUBLICATION,
-    MANUSCRIPT_STATUS.PUBLISHED
+    MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
   ].includes(status)
 }
 
 const isInProduction = (status) => [
-  MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
   MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
   MANUSCRIPT_STATUS.PENDING_COPYRIGHT,
   MANUSCRIPT_STATUS.PENDING_PROOF,
@@ -205,6 +197,10 @@ const handleHistory = (manuscript) => {
   showHistoryModal.value = true
 }
 
+const handleViewPublicationStatus = (manuscript) => {
+  router.push({ name: 'writer-publication-status', params: { id: manuscript.id } })
+}
+
 const handleReviewers = (manuscript) => {
   // Check if status is appropriate for checking reviewers (Under Review)
   if (!isUnderReview(manuscript.status) && !isDecisionMade(manuscript.status)) {
@@ -305,6 +301,16 @@ const handleWithdrawRecommendation = (reviewer) => {
                    <div class="card-actions">
                      <button class="action-btn" @click="handleViewSubmission(manuscript)">View Submission</button>
                      <button class="action-btn" @click="handleHistory(manuscript)">History</button>
+                     
+                     <!-- New Publication Status Button -->
+                     <button 
+                       v-if="isInProduction(manuscript.status)"
+                       class="action-btn btn-primary"
+                       @click="handleViewPublicationStatus(manuscript)"
+                     >
+                       Check Publication Status
+                     </button>
+
                      <button 
                        class="action-btn" 
                        :class="{ 'disabled': !isUnderReview(manuscript.status) && !isDecisionMade(manuscript.status) }"

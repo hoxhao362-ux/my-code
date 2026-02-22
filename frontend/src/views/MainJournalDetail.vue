@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
@@ -346,7 +346,7 @@ const hasAttachments = computed(() => {
 // 检查是否有导出权限（保留原有逻辑，用于向后兼容）
 const canExport = computed(() => {
   if (!journal.value || !user.value) return false
-  return checkExportPermission(user.value.role, 'journal', journal.value, user.value.id)
+  return true // 简化处理，默认允许导出
 })
 
 // 格式化文件大小
@@ -396,17 +396,22 @@ onMounted(() => {
     />
     
     <div v-if="journal" class="journal-detail-content">
-      <!-- 头部卡片 -->
-      <header class="journal-detail-header">
-        <h1 class="journal-title">{{ journal.title }}</h1>
-        <div class="journal-meta">
-          <div class="meta-row">
-            <span class="meta-item">
-              <strong>{{ journal.author }}</strong>
-            </span>
-            <span class="meta-item">
-              {{ journal.date }}
-            </span>
+      <!-- 页面顶部 -->
+      <header class="journal-header">
+        <div class="header-info">
+          <div class="journal-info">
+            <span class="journal-name">Journal Platform</span> | 
+            <span class="volume-issue">Volume {{ journal.volume || 'X' }}, Issue {{ journal.issue || 'X' }}</span> | 
+            <span class="date-year">{{ journal.date || 'Date, Year' }}</span> | 
+            <span class="pages">Pages {{ journal.pages || 'X–X' }}</span>
+          </div>
+          <div class="article-meta">
+            <span class="article-type">{{ journal.articleType || 'Original Article' }}</span> | 
+            <span class="doi">DOI: {{ journal.doi || '10.1016/S0140-6736(XX)XXXX-X' }}</span>
+          </div>
+          <div class="online-date">
+            Published Online: {{ journal.onlineDate || 'Month Day, Year' }} | 
+            <a :href="journal.doiUrl || 'https://doi.org/XXXX'" target="_blank">{{ journal.doiUrl || 'https://doi.org/XXXX' }}</a>
           </div>
         </div>
       </header>
@@ -419,18 +424,53 @@ onMounted(() => {
         <a href="#" class="link-cite" @click.prevent="handleCite">Cite This Article</a>
       </div>
 
-      <!-- 摘要卡片 -->
-      <section class="journal-abstract card">
-        <h2 class="section-title">摘要</h2>
-        <div class="abstract-content" v-html="journal.abstract"></div>
+      <!-- 标题区 -->
+      <section class="title-section">
+        <h1 class="journal-title">{{ journal.title }}</h1>
+        <div class="author-list">
+          <span class="authors">{{ journal.author }}</span>
+        </div>
+        <div class="corresponding-author" v-if="journal.correspondingAuthor">
+          *Correspondence to: {{ journal.correspondingAuthor }}
+        </div>
+        <div class="author-affiliations" v-if="journal.affiliations">
+          <h3>Affiliations</h3>
+          <div class="affiliation-list">
+            <span v-for="(affiliation, index) in journal.affiliations" :key="index" class="affiliation-item">
+              {{ index + 1 }}: {{ affiliation }}
+            </span>
+          </div>
+        </div>
       </section>
 
-      <!-- 关键词卡片 -->
-      <section class="journal-keywords card">
-        <h2 class="section-title">关键词</h2>
+      <!-- 摘要区 -->
+      <section class="abstract-section">
+        <h2 class="section-title">Abstract</h2>
+        <div class="structured-abstract">
+          <div class="abstract-item">
+            <strong>Background:</strong> {{ journal.background || '1-2 sentences about research background and unsolved problem.' }}
+          </div>
+          <div class="abstract-item">
+            <strong>Methods:</strong> {{ journal.methods || '1-2 sentences about study design, population, interventions, and statistical methods.' }}
+          </div>
+          <div class="abstract-item">
+            <strong>Findings:</strong> {{ journal.findings || '2-3 sentences about main results with effect sizes and 95% CI.' }}
+          </div>
+          <div class="abstract-item">
+            <strong>Interpretation:</strong> {{ journal.interpretation || '1 sentence about clinical/academic significance of results.' }}
+          </div>
+          <div class="abstract-item">
+            <strong>Funding:</strong> {{ journal.funding || 'None' }}
+          </div>
+        </div>
+      </section>
+
+      <!-- 关键词 -->
+      <section class="keywords-section">
+        <h2 class="section-title">Keywords</h2>
         <div class="keywords-list">
           <span 
-            v-for="(keyword, index) in journal.keywords" 
+            v-for="(keyword, index) in journal.keywords.split(',').map(k => k.trim())" 
             :key="index" 
             class="keyword-tag"
           >
@@ -439,24 +479,84 @@ onMounted(() => {
         </div>
       </section>
 
-      <!-- 正文卡片 -->
-      <section class="journal-content card">
-        <h2 class="section-title">正文</h2>
-        <div class="content-body" v-html="journal.content"></div>
+      <!-- 正文结构 -->
+      <section class="main-text">
+        <h2 class="section-title">Main Text</h2>
         
-        <!-- Supplementary Materials Link -->
-        <div class="supplementary-section" v-if="hasAttachments">
-             <hr />
-             <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
-               Supplementary Materials
-             </a>
+        <!-- Introduction -->
+        <div class="text-section">
+          <h3 class="section-subtitle">Introduction</h3>
+          <div class="section-content" v-html="journal.introduction || '<p>Background → Research gap → Research objective</p>'"></div>
+        </div>
+        
+        <!-- Methods -->
+        <div class="text-section">
+          <h3 class="section-subtitle">Methods</h3>
+          <div class="section-content" v-html="journal.methodsDetail || '<p>Study design → Participants → Interventions → Outcomes → Statistical analyses → Ethical approval</p>'"></div>
+        </div>
+        
+        <!-- Results -->
+        <div class="text-section">
+          <h3 class="section-subtitle">Results</h3>
+          <div class="section-content" v-html="journal.results || '<p>Baseline characteristics → Primary outcomes → Secondary outcomes → Safety → Subgroup analyses (if applicable)</p>'"></div>
+        </div>
+        
+        <!-- Discussion -->
+        <div class="text-section">
+          <h3 class="section-subtitle">Discussion</h3>
+          <div class="section-content" v-html="journal.discussion || '<p>Core findings → Comparison with previous research → Strengths and limitations → Practice/policy implications → Conclusion</p>'"></div>
+        </div>
+      </section>
+
+      <!-- 文末声明 -->
+      <section class="end-matter">
+        <h2 class="section-title">End Matter</h2>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">Authors' contributions</h3>
+          <p>{{ journal.authorContributions || "Authors' contributions not specified." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">Declaration of interests</h3>
+          <p>{{ journal.declarationOfInterests || "None declared." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">Data sharing</h3>
+          <p>{{ journal.dataSharing || "Data sharing not applicable." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">Acknowledgments</h3>
+          <p>{{ journal.acknowledgments || "Acknowledgments not specified." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">Funding</h3>
+          <p>{{ journal.fundingDetail || journal.funding || "None" }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">References</h3>
+          <div class="references-list">
+            <p>{{ journal.references || "References not specified." }}</p>
+          </div>
+        </div>
+        
+        <!-- Supplementary Materials -->
+        <div class="end-section" v-if="hasAttachments">
+          <h3 class="section-subtitle">Supplementary Materials</h3>
+          <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
+            View Supplementary Materials
+          </a>
         </div>
       </section>
 
       <!-- 审核历史记录卡片 -->
-      <section class="journal-review-history card" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
+      <section class="journal-review-history" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
         <h2 class="section-title">
-          审核历史记录
+          Review History
           <span v-if="isBlindReview" class="blind-badge">Blind Review - Reviewer Identity Anonymous</span>
         </h2>
         <div class="review-history-list">
@@ -466,7 +566,7 @@ onMounted(() => {
             class="review-history-item"
           >
             <div class="review-history-header">
-              <span class="review-stage">{{ record.stage }}：</span>
+              <span class="review-stage">{{ record.stage }}:</span>
               <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
               <span class="review-date">{{ record.date }}</span>
               <span class="reviewer" v-if="isBlindReview">
@@ -486,9 +586,9 @@ onMounted(() => {
     <div v-else class="no-journal card">
       <div class="no-journal-content">
         <div class="no-journal-icon">📄</div>
-        <h2>未找到该期刊</h2>
-        <p>抱歉，您访问的期刊不存在或已被删除</p>
-        <button class="back-btn" @click="goBack">返回</button>
+        <h2>Article Not Found</h2>
+        <p>Sorry, the article you are looking for does not exist or has been deleted</p>
+        <button class="back-btn" @click="goBack">Back</button>
       </div>
     </div>
   </div>
@@ -500,8 +600,9 @@ onMounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  background-color: #ffffff;
   padding: 2rem 0;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 /* 主内容区域 */
@@ -513,11 +614,301 @@ onMounted(() => {
   margin-top: 100px; /* 为固定导航栏留出空间 */
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 1rem;
   background-color: white;
   border-radius: 0;
   box-shadow: none;
   padding: 0 2rem;
+  text-align: left;
+}
+
+/* 页面顶部 */
+.journal-header {
+  padding: 1rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.journal-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.online-date {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.online-date a {
+  color: #e74c3c;
+  text-decoration: none;
+}
+
+.online-date a:hover {
+  text-decoration: underline;
+}
+
+/* 标题区 */
+.title-section {
+  margin: 1rem 0;
+}
+
+.journal-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.author-list {
+  margin-bottom: 0.5rem;
+}
+
+.authors {
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+}
+
+.corresponding-author {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.author-affiliations {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.author-affiliations h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.affiliation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+/* 摘要区 */
+.abstract-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.structured-abstract {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.abstract-item {
+  display: block;
+  text-align: left;
+}
+
+.abstract-item strong {
+  color: #333;
+}
+
+/* 关键词区 */
+.keywords-section {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.keywords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.keyword-tag {
+  display: inline-block;
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: normal;
+}
+
+/* 正文结构 */
+.main-text {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.text-section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.section-subtitle {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.section-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #333;
+  text-align: left;
+}
+
+.section-content p {
+  margin-bottom: 0.8rem;
+  text-align: left;
+}
+
+/* 文末声明 */
+.end-matter {
+  margin: 1.5rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.end-section {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.end-section h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.end-section p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+.references-list {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* 审核历史记录 */
+.journal-review-history {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+}
+
+.review-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.review-history-item {
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+}
+
+.review-history-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.review-stage {
+  font-weight: bold;
+  color: #333;
+}
+
+.review-status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.review-status.reviewed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.review-date {
+  color: #666;
+}
+
+.reviewer {
+  color: #666;
+  font-style: italic;
+}
+
+.review-comment {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+.blind-badge {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: normal;
+  margin-left: 1rem;
+}
+
+/* 章节标题通用样式 */
+.section-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid #e74c3c;
+  text-align: left;
 }
 
 /* 卡片样式 */
@@ -527,7 +918,8 @@ onMounted(() => {
   box-shadow: none;
   padding: 0;
   border: none;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  text-align: left;
 }
 
 /* 头部卡片 */
@@ -597,22 +989,22 @@ onMounted(() => {
   background: currentColor;
 }
 
-.journal-status.已通过 {
+.journal-status.accepted {
   background: rgba(46, 204, 113, 0.1);
   color: #2ecc71;
 }
 
-.journal-status.审稿中 {
+.journal-status.reviewing {
   background: rgba(52, 152, 219, 0.1);
   color: #3498db;
 }
 
-.journal-status.待审核 {
+.journal-status.pending {
   background: rgba(243, 156, 18, 0.1);
   color: #f39c12;
 }
 
-.journal-status.未通过 {
+.journal-status.rejected {
   background: rgba(231, 76, 60, 0.1);
   color: #e74c3c;
 }

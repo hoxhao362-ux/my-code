@@ -278,7 +278,7 @@ const downloadReceipt = () => {
               </div>
               <div class="checkbox-item">
                 <input type="checkbox" id="dec5" v-model="declarations.dataSharing">
-                <label for="dec5">The manuscript complies with The Lancet's data sharing policy.</label>
+                <label for="dec5">The manuscript complies with the Journal Submission Platform's data sharing policy.</label>
               </div>
             </div>
           </div>
@@ -345,7 +345,7 @@ const downloadReceipt = () => {
         <h3 class="text-success">Submission Successful</h3>
       </div>
       <div class="modal-content">
-        <p>Your revision has been submitted to The Lancet editorial team.</p>
+        <p>Your revision has been submitted to The Journal Submission Platform editorial team.</p>
         <p><strong>Manuscript ID:</strong> {{ metadata.id }}</p>
         <p>A confirmation email has been sent to the corresponding author ({{ metadata.author }}).</p>
         <p>Your manuscript is now in the Revision Handling queue for editorial review.</p>

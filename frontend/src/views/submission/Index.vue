@@ -1,24 +1,28 @@
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Login from './Login.vue'
+import AdminRegister from '../auth/AdminRegister.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 // Use store state for reactivity
 const submissionUser = computed(() => userStore.submissionUser)
 
+// State to control login/register view
+const showRegister = ref(false)
+
 // Redirect to dashboard if already logged in
 const checkLoginAndRedirect = () => {
   if (submissionUser.value) {
     const role = submissionUser.value.role
-    if (role === 'author') {
-      router.push('/submission/author/submit')
+    if (role === 'author' || role === 'writer') {
+      router.push('/admin/writer-dashboard')
     } else if (role === 'reviewer') {
-      router.push('/submission/reviewer/dashboard')
-    } else if (role === 'editor' || role === 'admin') { // Renamed from admin to editor
-      router.push('/submission/editor/dashboard')
+      router.push('/reviewer/dashboard')
+    } else if (['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(role)) {
+      router.push('/editor/dashboard')
     }
   }
 }
@@ -44,6 +48,16 @@ const goAbout = () => {
 
 const goHelp = () => {
   router.push('/submission/help')
+}
+
+// Toggle between login and register
+const toggleRegister = () => {
+  showRegister.value = !showRegister.value
+}
+
+// Go back to login
+const goToLogin = () => {
+  showRegister.value = false
 }
 </script>
 
@@ -101,7 +115,8 @@ const goHelp = () => {
           </div>
           
           <div v-if="!submissionUser" class="login-wrapper">
-            <Login />
+            <Login v-if="!showRegister" @toggle-register="toggleRegister" />
+            <AdminRegister v-else @go-to-login="goToLogin" />
           </div>
         </div>
       </div>

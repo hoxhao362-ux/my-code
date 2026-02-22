@@ -97,7 +97,7 @@ const handleOrcidLogin = () => {
       <div class="login-footer">
         <a href="#">{{ t('submission.login.link.sendDetails') }}</a>
         <span class="divider">|</span>
-        <a href="#">{{ t('submission.login.link.register') }}</a>
+        <a href="#" @click.prevent="$emit('toggle-register')">{{ t('submission.login.link.register') }}</a>
         <span class="divider">|</span>
         <a href="#">{{ t('submission.login.link.help') }}</a>
       </div>
