@@ -16,7 +16,7 @@ class DatabaseInfo:
     """数据库信息配置"""
     name: str
     file_name: str
-    db_type: str = "sqlite"
+    db_type: str = "postgreSQL"
     description: str = ""
     tables: Optional[List[str]] = None
     auto_create: bool = True
@@ -132,6 +132,16 @@ class DatabaseConfig:
             file_name=files_config.get('invitation_code_db', 'invitation_code.db'),
             description='邀请码管理数据库',
             tables=['invitation_codes', 'invitation_code_usage'],
+            auto_create=True,
+            backup_enabled=True
+        )
+
+        # 支付订单数据库
+        configs['payment_order'] = DatabaseInfo(
+            name='payment_order',
+            file_name=files_config.get('payment_order_db', 'payment_order.db'),
+            description='支付订单信息数据库',
+            tables=['payment_orders'],
             auto_create=True,
             backup_enabled=True
         )

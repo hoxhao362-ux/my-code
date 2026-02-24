@@ -16,6 +16,8 @@ from core.service_manager import service_manager
 # 显式导入单例，触发它们向 service_manager 注册
 from database.service.database_service import db_manager
 from utils.redis import redis_client
+from utils.kafka import kafka_service
+from utils.payment import payment_manager
 
 from api.v1.user import user_router
 from api.v1.submit import submit_router
@@ -72,8 +74,12 @@ async def lifespan(app: FastAPI):
                 (uid_hash, admin_username, hashed_password, admin_email, 'admin', create_time)
             )
             global_logger.info('main', f"初始管理员创建成功: 用户名={admin_username}")
+            
+        # 初始化支付服务
+        payment_manager.initialize()
+            
     except Exception as e:
-        global_logger.error('main', f"创建初始管理员失败: {e}")
+        global_logger.error('main', f"创建初始管理员或初始化服务失败: {e}")
     
     global_logger.info('main', "初始化检查完成")
     
