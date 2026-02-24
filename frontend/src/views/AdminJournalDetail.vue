@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import Navigation from '../components/Navigation.vue'
@@ -106,18 +106,18 @@ const previewAttachment = (attachment) => {
               text-align: center;
             }
             .btn-primary {
-              background: #3498db;
+              background: #0056B3;
               color: white;
             }
             .btn-primary:hover {
-              background: #2980b9;
+              background: #004494;
             }
             .btn-secondary {
-              background: #95a5a6;
+              background: #6c757d;
               color: white;
             }
             .btn-secondary:hover {
-              background: #7f8c8d;
+              background: #5a6268;
             }
             .preview-container {
               height: calc(100% - 60px);
@@ -564,6 +564,12 @@ onMounted(() => {
   border: 1px solid #e0e0e0;
 }
 
+.manuscript-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-color: #0056B3;
+}
+
 /* 头部卡片 */
 .journal-detail-header {
   background: white;
@@ -597,12 +603,12 @@ onMounted(() => {
 }
 
 .tab-btn.active {
-  color: #C93737;
-  border-bottom-color: #C93737;
+  color: #0056B3;
+  border-bottom-color: #0056B3;
 }
 
 .tab-btn:hover {
-  color: #C93737;
+  color: #0056B3;
 }
 
 /* Audit Styles */
@@ -639,14 +645,18 @@ onMounted(() => {
 .item-name { font-weight: 500; color: #333; }
 .ref-check { margin-top: 5px; }
 .btn-text { background: none; border: none; color: #3498db; cursor: pointer; text-decoration: underline; padding: 0; font-size: 0.9rem; }
-.feedback-text { color: #C93737; font-size: 0.9rem; margin-top: 5px; }
+.feedback-text {
+  color: #dc3545;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
 
 .status-pass { color: #2ecc71; font-weight: bold; }
 .status-fail { color: #e74c3c; font-weight: bold; }
 .status-pending { color: #f39c12; font-weight: bold; }
 
 .btn-approve {
-  background: #C93737;
+  background: #0056B3;
   color: white;
   border: none;
   padding: 6px 12px;

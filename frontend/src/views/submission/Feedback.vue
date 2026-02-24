@@ -2,9 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 const user = ref(userStore.user)
 
 // --- State ---
@@ -14,7 +16,7 @@ const successMessage = ref('')
 const selectedFeedback = ref(null) // For viewing details
 
 const form = ref({
-  type: 'Feature Suggestion',
+  type: t('submission.feedback.form.types.suggestion'),
   title: '',
   description: '',
   attachments: [],
@@ -26,7 +28,12 @@ const form = ref({
 const feedbacks = ref([])
 
 // --- Data Options ---
-const feedbackTypes = ['Feature Suggestion', 'Bug Report', 'Usage Question', 'Others']
+const feedbackTypes = [
+  t('submission.feedback.form.types.suggestion'),
+  t('submission.feedback.form.types.bug'),
+  t('submission.feedback.form.types.question'),
+  t('submission.feedback.form.types.others')
+]
 
 // --- Computed ---
 const myFeedbacks = computed(() => {
@@ -43,13 +50,13 @@ const isEditor = computed(() => ['editor', 'admin'].includes(user.value?.role))
 const handleFileUpload = (event) => {
   const files = Array.from(event.target.files)
   if (files.length > 3) {
-    alert('Maximum 3 files allowed')
+    alert(t('submission.feedback.alert.maxFiles'))
     return
   }
   // Check size 5MB
   const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024)
   if (validFiles.length < files.length) {
-    alert('Some files exceed 5MB limit')
+    alert(t('submission.feedback.alert.fileSize'))
   }
   form.value.attachments = validFiles
 }
@@ -81,11 +88,11 @@ const submitFeedback = () => {
     saveFeedbacks()
 
     submitting.value = false
-    successMessage.value = 'Feedback submitted. We will reply within 2 business days. ID: ' + newFeedback.id
+    successMessage.value = t('submission.feedback.alert.success', { id: newFeedback.id })
     
     // Reset form
     form.value = {
-      type: 'Feature Suggestion',
+      type: t('submission.feedback.form.types.suggestion'),
       title: '',
       description: '',
       attachments: [],
@@ -161,13 +168,13 @@ const formatDate = (isoString) => {
 <template>
   <div class="feedback-page">
     <div class="container">
-      <h1>Feedback</h1>
+      <h1>{{ t('submission.feedback.title') }}</h1>
       
       <!-- Tabs -->
       <div class="tabs">
-        <button :class="{ active: activeTab === 'submit' }" @click="activeTab = 'submit'">Submit Feedback</button>
-        <button :class="{ active: activeTab === 'my-feedback' }" @click="activeTab = 'my-feedback'">My Feedback</button>
-        <button v-if="isEditor" :class="{ active: activeTab === 'all-feedback' }" @click="activeTab = 'all-feedback'">All Feedback (Editor)</button>
+        <button :class="{ active: activeTab === 'submit' }" @click="activeTab = 'submit'">{{ t('submission.feedback.tabs.submit') }}</button>
+        <button :class="{ active: activeTab === 'my-feedback' }" @click="activeTab = 'my-feedback'">{{ t('submission.feedback.tabs.my') }}</button>
+        <button v-if="isEditor" :class="{ active: activeTab === 'all-feedback' }" @click="activeTab = 'all-feedback'">{{ t('submission.feedback.tabs.all') }}</button>
       </div>
 
       <!-- Submit Form -->
@@ -176,24 +183,24 @@ const formatDate = (isoString) => {
         
         <form @submit.prevent="submitFeedback" class="feedback-form">
           <div class="form-group">
-            <label>Feedback Type</label>
+            <label>{{ t('submission.feedback.form.type') }}</label>
             <select v-model="form.type">
-              <option v-for="t in feedbackTypes" :key="t" :value="t">{{ t }}</option>
+              <option v-for="t_opt in feedbackTypes" :key="t_opt" :value="t_opt">{{ t_opt }}</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label>Title (Required, &le;50 chars)</label>
-            <input type="text" v-model="form.title" maxlength="50" required placeholder="Brief summary">
+            <label>{{ t('submission.feedback.form.title') }}</label>
+            <input type="text" v-model="form.title" maxlength="50" required :placeholder="t('submission.feedback.form.placeholder.title')">
           </div>
 
           <div class="form-group">
-            <label>Detailed Description (Required, &ge;20 chars)</label>
-            <textarea v-model="form.description" minlength="20" rows="6" required placeholder="Describe your issue or suggestion..."></textarea>
+            <label>{{ t('submission.feedback.form.description') }}</label>
+            <textarea v-model="form.description" minlength="20" rows="6" required :placeholder="t('submission.feedback.form.placeholder.description')"></textarea>
           </div>
 
           <div class="form-group">
-            <label>Attachments (Max 3, JPG/PNG/PDF, &le;5MB each)</label>
+            <label>{{ t('submission.feedback.form.attachments') }}</label>
             <input type="file" multiple accept=".jpg,.png,.pdf" @change="handleFileUpload">
             <div class="file-list">
               <span v-for="file in form.attachments" :key="file.name" class="file-tag">{{ file.name }}</span>
@@ -201,12 +208,12 @@ const formatDate = (isoString) => {
           </div>
 
           <div class="form-group">
-            <label>Contact Email</label>
+            <label>{{ t('submission.feedback.form.contact') }}</label>
             <input type="email" v-model="form.contact" required>
           </div>
 
-          <button type="submit" class="btn-submit" :disabled="submitting">
-            {{ submitting ? 'Submitting...' : 'Submit Feedback' }}
+          <button type="submit" class="submit-btn" :disabled="submitting">
+            {{ submitting ? t('common.loading') : t('common.submit') }}
           </button>
         </form>
       </div>

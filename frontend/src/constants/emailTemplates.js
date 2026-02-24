@@ -94,7 +94,7 @@ export const EMAIL_TEMPLATES = {
               Dear Dr. [Reviewer Full Name],
             </p>
             <p style="font-size: 14px; margin-bottom: 15px;">
-              We are writing on behalf of the <strong>${PLATFORM_NAME} Editorial Team</strong> to invite you to review a manuscript, which was recommended by the authors as a potential reviewer due to your expertise in [Relevant Field, e.g., cardiovascular research].
+              We are writing on behalf of the <strong>${PLATFORM_NAME} Editorial Team</strong> to invite you to review a manuscript, which was recommended by the writers as a potential reviewer due to your expertise in [Relevant Field, e.g., cardiovascular research].
             </p>
             
             <p style="font-size: 14px; margin-bottom: 15px;">
@@ -105,7 +105,7 @@ export const EMAIL_TEMPLATES = {
               <p style="margin: 5px 0; font-size: 14px;"><strong>Manuscript ID:</strong> [Manuscript ID]</p>
               <p style="margin: 5px 0; font-size: 14px;"><strong>Manuscript Title:</strong> [Manuscript Title]</p>
               <p style="margin: 5px 0; font-size: 14px;"><strong>Submission Date:</strong> [Submission Date]</p>
-              <p style="margin: 5px 0; font-size: 14px;"><strong>Review Type:</strong> Double-Blind Peer Review (All author identifying information has been fully anonymized)</p>
+              <p style="margin: 5px 0; font-size: 14px;"><strong>Review Type:</strong> Double-Blind Peer Review (All writer identifying information has been fully anonymized)</p>
               <p style="margin: 5px 0; font-size: 14px;"><strong>Review Due Date:</strong> [Due Date]</p>
               <p style="margin: 5px 0; font-size: 14px;"><strong>Expected Time Commitment:</strong> Approximately 2–3 hours to complete the review form and submit professional feedback</p>
             </div>
@@ -147,7 +147,7 @@ export const EMAIL_TEMPLATES = {
     `
   },
 
-  // Author Recommendation Results Notification Email
+  // Writer Recommendation Results Notification Email
   recommendationResults: {
     subject: `Reviewer Recommendation Decision – Manuscript [Manuscript ID]: [Manuscript Title] - ${PLATFORM_NAME}`,
     content: `
@@ -174,7 +174,7 @@ export const EMAIL_TEMPLATES = {
 
           <div style="padding: 20px 0;">
             <p style="font-size: 14px; margin-bottom: 15px;">
-              Dear [Corresponding Author Full Name],
+              Dear [Corresponding Writer Full Name],
             </p>
             <p style="font-size: 14px; margin-bottom: 15px;">
               We have completed the editorial review of the reviewers you recommended for your manuscript submitted to <strong>${PLATFORM_NAME}</strong>. The detailed decision results are as follows:

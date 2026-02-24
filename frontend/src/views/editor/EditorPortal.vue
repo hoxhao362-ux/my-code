@@ -2,7 +2,9 @@
 import { ref, computed, shallowRef, onMounted, watch } from 'vue'
 import Navigation from '../../components/Navigation.vue'
 import { useUserStore } from '../../stores/user'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Import components
 import Dashboard from '../admin/Dashboard.vue'
@@ -18,7 +20,7 @@ import NotificationConfig from '../admin/system/NotificationConfig.vue'
 import Modules from '../admin/Modules.vue'
 import InvitationCodes from '../admin/InvitationCodes.vue'
 import LogsManagement from '../admin/system/LogsManagement.vue'
-import AuthorProfile from '../author/Profile.vue'
+import WriterProfile from '../writer/Profile.vue'
 import ProfileSecurity from '../admin/ProfileSecurity.vue'
 import Notifications from '../admin/Notifications.vue'
 import Help from '../submission/Help.vue'
@@ -41,6 +43,9 @@ import DataStatistics from './DataStatistics.vue'
 import BoardManagement from './board/BoardManagement.vue'
 // Submission components
 import SystemStatus from '../submission/SystemStatus.vue'
+// Publication components
+import PublicationProcess from '../admin/manuscript/PublicationProcess.vue'
+import PublicationManagement from './PublicationManagement.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -101,10 +106,16 @@ onMounted(() => {
     currentViewKey.value = 'editor-statistics'
   } else if (path === '/editor/board') {
     currentViewKey.value = 'editor-board'
+  } else if (path === '/editor/publication') {
+    currentViewKey.value = 'editor-publication-management'
   } else if (path === '/admin/profile-manuscript-status') {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (path === '/submission/system-status') {
     currentViewKey.value = 'submission-system-status'
+  }
+  // Handle Publication route
+  else if (path.startsWith('/editor/publication/')) {
+    currentViewKey.value = 'editor-publication-process'
   }
 })
 
@@ -162,10 +173,16 @@ watch(() => route.path, (newPath) => {
     currentViewKey.value = 'editor-statistics'
   } else if (newPath === '/editor/board') {
     currentViewKey.value = 'editor-board'
+  } else if (newPath === '/editor/publication') {
+    currentViewKey.value = 'editor-publication-management'
   } else if (newPath === '/admin/profile-manuscript-status') {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (newPath === '/submission/system-status') {
     currentViewKey.value = 'submission-system-status'
+  }
+  // Handle Publication route
+  else if (newPath.startsWith('/editor/publication/')) {
+    currentViewKey.value = 'editor-publication-process'
   }
 })
 
@@ -185,8 +202,10 @@ const componentMap = {
   'editor-reviewer-management': ReviewerManagementAudit,
   'editor-journals': Journals,
   'editor-modules': Modules,
-  'editor-statistics': ReviewerStats,
+  'editor-statistics': DataStatistics,
   'editor-board': BoardManagement,
+  'editor-publication-management': PublicationManagement,
+  'editor-publication-process': PublicationProcess,
   'audit-new-submissions': NewSubmissions,
   'audit-assign-reviewers': AssignReviewers,
   'audit-review-monitoring': ReviewMonitoring,
@@ -198,7 +217,7 @@ const componentMap = {
   'audit-my-tasks': MyTasksHistory,
   'admin-profile-manuscript-status': ProfileManuscriptStatus,
   'submission-system-status': SystemStatus,
-  'submission-author-profile': AuthorProfile,
+  'submission-writer-profile': WriterProfile,
   'submission-profile-security': ProfileSecurity,
   'submission-notifications': Notifications,
   'submission-help': Help,
@@ -207,10 +226,13 @@ const componentMap = {
 
 const currentComponent = computed(() => componentMap[currentViewKey.value] || Dashboard)
 
-const handleNavigate = (key) => {
+const handleNavigate = (key, path) => {
   currentViewKey.value = key
-  // Optional: Update URL query param without full reload if desired, 
-  // but requirements say "no route jump", so internal state is fine.
+  // Ensure component is properly loaded by forcing a re-render
+  if (path) {
+    // Update URL without full reload
+    router.push(path)
+  }
 }
 </script>
 
@@ -220,7 +242,7 @@ const handleNavigate = (key) => {
       :user="userStore.user"
       :current-page="currentViewKey"
       :custom-navigation="true"
-      @navigate="handleNavigate"
+      @navigate="(key, path) => handleNavigate(key, path)"
       :logout="userStore.logout"
     />
     <div class="portal-content">
@@ -243,6 +265,129 @@ const handleNavigate = (key) => {
 .portal-content {
   flex: 1;
   width: 100%;
-  margin-top: 80px; /* Fixed Navigation height */
+  margin-top: 100px; /* Fixed Navigation height + system banner */
+  padding: 20px;
+}
+
+/* Publication Management Styles */
+.publication-management {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.publication-management .page-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #333;
+}
+
+.publication-management .page-header h2 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.publication-management .page-header p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.manuscripts-list h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.manuscripts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.manuscript-card {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.manuscript-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-color: #0056B3;
+}
+
+.manuscript-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.manuscript-id {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+}
+
+.manuscript-status {
+  font-size: 12px;
+  font-weight: bold;
+  color: #28A745;
+  background: #e8f5e8;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.manuscript-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.manuscript-meta {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.manuscript-meta p {
+  margin: 5px 0;
+}
+
+.manuscript-actions {
+  text-align: center;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+  background: #0056B3;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #004494;
 }
 </style>

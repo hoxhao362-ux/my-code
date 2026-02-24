@@ -8,43 +8,19 @@
     </div>
     <div class="notifications-content">
       <div class="notification-list">
-        <!-- 通知项示例 -->
-        <div class="notification-item">
-          <div class="notification-header">
-            <div class="notification-title">稿件审核结果通知</div>
-            <div class="notification-time">2024-01-15 14:30</div>
-          </div>
-          <div class="notification-content">
-            您的稿件《基于深度学习的图像识别技术研究》已通过初审，请查看详情。
-          </div>
-          <div class="notification-actions">
-            <button class="action-button">查看详情</button>
-          </div>
+        <div v-if="notifications.length === 0" class="no-notifications">
+          暂无消息通知
         </div>
-        
-        <div class="notification-item">
+        <div v-for="notification in notifications" :key="notification.id" class="notification-item">
           <div class="notification-header">
-            <div class="notification-title">系统更新通知</div>
-            <div class="notification-time">2024-01-10 09:00</div>
+            <div class="notification-title">{{ notification.title }}</div>
+            <div class="notification-time">{{ formatDate(notification.createdAt) }}</div>
           </div>
           <div class="notification-content">
-            期刊投稿平台已完成系统更新，新增了稿件进度实时查询功能。
+            {{ notification.content }}
           </div>
-          <div class="notification-actions">
-            <button class="action-button">了解更多</button>
-          </div>
-        </div>
-        
-        <div class="notification-item">
-          <div class="notification-header">
-            <div class="notification-title">审稿意见反馈</div>
-            <div class="notification-time">2024-01-05 16:45</div>
-          </div>
-          <div class="notification-content">
-            您的稿件《基于深度学习的图像识别技术研究》需要进行修改，请查看详细修改意见。
-          </div>
-          <div class="notification-actions">
-            <button class="action-button">查看修改意见</button>
+          <div class="notification-actions" v-if="notification.actionLabel">
+            <button class="action-button" @click="notification.action && notification.action()">{{ notification.actionLabel }}</button>
           </div>
         </div>
       </div>
@@ -53,9 +29,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '../../stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const props = defineProps({
   embedded: {
@@ -64,8 +43,34 @@ const props = defineProps({
   }
 })
 
+const notifications = computed(() => {
+  // Simple filter: show all for now, or filter by user if needed
+  // In a real app, the backend would filter this.
+  // For this mock, we can filter by targetUser if present
+  const currentUser = userStore.user?.username
+  const currentRole = userStore.user?.role
+  
+  return userStore.notifications.filter(n => {
+    // If no target specified, show to everyone (or admin)
+    if (!n.targetUser && !n.targetRole) return true
+    
+    // Check target user
+    if (n.targetUser && n.targetUser === currentUser) return true
+    
+    // Check target role
+    if (n.targetRole && n.targetRole === currentRole) return true
+    
+    return false
+  })
+})
+
 const goBack = () => {
   router.back()
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 

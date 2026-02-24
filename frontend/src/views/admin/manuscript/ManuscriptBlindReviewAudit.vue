@@ -39,8 +39,8 @@ const refAudit = ref({
     },
     { 
       id: 2, 
-      original: 'Brown K. 2023. Previous studies on heart failure. Lancet. 301:112.', 
-      anonymized: 'Brown K. 2023. Previous studies on heart failure. Lancet. 301:112.',
+      original: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.', 
+      anonymized: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.',
       isSelfCite: false 
     },
     { 
@@ -175,8 +175,8 @@ const reDetectSelfCite = () => {
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveScan">Approve Anonymization</button>
-        <button class="btn-action btn-gray" @click="requestScanRevision">Request Revision</button>
+        <button class="btn-action btn-primary" @click="approveScan">Approve Anonymization</button>
+        <button class="btn-action btn-secondary" @click="requestScanRevision">Request Revision</button>
       </div>
     </section>
 
@@ -222,7 +222,7 @@ const reDetectSelfCite = () => {
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveRef">Approve Anonymization</button>
+        <button class="btn-action btn-primary" @click="approveRef">Approve Anonymization</button>
         <button class="btn-action btn-gray" @click="requestRefRevision">Request Revision</button>
       </div>
     </section>
@@ -264,7 +264,7 @@ const reDetectSelfCite = () => {
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveSelfCite">Approve</button>
+        <button class="btn-action btn-primary" @click="approveSelfCite">Approve</button>
         <button class="btn-action btn-gray" @click="requestSelfCiteReverify">Request Re-verification</button>
         <button class="btn-action btn-gray" @click="reDetectSelfCite">Re-detect</button>
       </div>
@@ -288,7 +288,7 @@ const reDetectSelfCite = () => {
 <style scoped>
 .blind-review-audit {
   padding: 1rem 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .audit-section {
@@ -316,7 +316,7 @@ const reDetectSelfCite = () => {
   font-weight: bold;
 }
 .status-tag.passed, .status-tag.approved { color: #28A745; background: rgba(40, 167, 69, 0.1); }
-.status-tag.needs-revision { color: #C93737; background: rgba(201, 55, 55, 0.1); }
+.status-tag.needs-revision { color: #dc3545; background: rgba(201, 55, 55, 0.1); }
 
 .info-grid {
   display: flex;
@@ -350,7 +350,7 @@ const reDetectSelfCite = () => {
   margin-bottom: 1.5rem;
 }
 .risk-item { font-size: 14px; color: #333; margin-bottom: 8px; }
-.risk-dot { color: #C93737; margin-right: 8px; }
+.risk-dot { color: #dc3545; margin-right: 8px; }
 .risk-content { font-weight: bold; }
 .success-message { color: #28A745; font-size: 14px; margin-bottom: 1.5rem; font-weight: 500; }
 
@@ -385,9 +385,9 @@ const reDetectSelfCite = () => {
   color: #333;
 }
 .col.original { border-right: 1px solid #eee; }
-.text-red { color: #C93737; }
+.text-red { color: #dc3545; }
 .text-green { color: #28A745; }
-.self-cite-mark { color: #C93737; margin-right: 4px; font-weight: bold; }
+.self-cite-mark { color: #dc3545; margin-right: 4px; font-weight: bold; }
 
 /* Potential Check List */
 .sub-title { font-size: 15px; color: #333; margin-bottom: 10px; }
@@ -425,8 +425,10 @@ const reDetectSelfCite = () => {
   font-weight: 500;
   transition: all 0.2s;
 }
-.btn-red { background: #C93737; color: white; }
-.btn-red:hover { background: #B02E2E; }
+.btn-primary { background: #0056B3; color: white; }
+.btn-primary:hover { background: #004494; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5a6268; }
 .btn-gray { background: #E0E0E0; color: #333; }
 .btn-gray:hover { background: #D0D0D0; }
 

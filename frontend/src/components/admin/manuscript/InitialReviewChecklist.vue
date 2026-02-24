@@ -20,16 +20,16 @@ const checklistModules = reactive([
     desc: 'Verify that basic manuscript information is complete and accurate to avoid issues in subsequent processes.',
     items: [
       { id: '1-1', text: 'Manuscript title, abstract, and keywords are complete, standardized, without typos or ambiguity.', status: null, remark: '' },
-      { id: '1-2', text: 'Author count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
-      { id: '1-3', text: 'Corresponding author email and affiliation are valid and contactable.', status: null, remark: '' },
+      { id: '1-2', text: 'Writer count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
+      { id: '1-3', text: 'Corresponding writer email and affiliation are valid and contactable.', status: null, remark: '' },
       { id: '1-4', text: 'Submission type and research field are correctly selected and match manuscript content.', status: null, remark: '' },
-      { id: '1-5', text: 'Author submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
+      { id: '1-5', text: 'Writer submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
     ]
   },
   {
     id: 2,
     title: 'Double-Blind Review Anonymity Compliance',
-    desc: 'Verify that the manuscript is fully anonymized with no author identity leakage, strictly following double-blind review requirements.',
+    desc: 'Verify that the manuscript is fully anonymized with no writer identity leakage, strictly following double-blind review requirements.',
     items: [
       { id: '2-1', text: 'Main text contains no author names, affiliations, emails, or ORCID identifiers.', status: null, remark: '' },
       { id: '2-2', text: 'Figures, figure legends, table notes, headers, and footers contain no identity information.', status: null, remark: '' },
@@ -156,7 +156,7 @@ const handleSave = () => {
     <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <h2 class="title">Structured Initial Review Checklist (Lancet Compliance)</h2>
+        <h2 class="title">Structured Initial Review Checklist (Journal Platform Compliance)</h2>
         <p class="subtitle">Please check item by item. All items must be verified. Remarks required for non-compliant items.</p>
       </div>
       <div class="header-right">
@@ -317,7 +317,7 @@ const handleSave = () => {
 .module-header { margin-bottom: 1rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
 .module-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; }
 .module-desc { font-size: 12px; color: #999; margin: 2px 0 0 0; }
-.required { color: #C93737; }
+.required { color: #dc3545; }
 
 /* Items */
 .checklist-item {
@@ -356,7 +356,7 @@ const handleSave = () => {
 .status-btn:hover { border-color: #999; }
 
 .status-btn.yes.active { background: #28A745; border-color: #28A745; color: white; }
-.status-btn.no.active { background: #C93737; border-color: #C93737; color: white; }
+.status-btn.no.active { background: #dc3545; border-color: #dc3545; color: white; }
 .status-btn.na.active { background: #4A90E2; border-color: #4A90E2; color: white; }
 
 .item-text {
@@ -365,7 +365,7 @@ const handleSave = () => {
   color: #333;
   flex: 1;
 }
-.text-red { color: #C93737; }
+.text-red { color: #dc3545; }
 
 .remark-container {
   margin-left: 115px; /* Align with text */
@@ -374,7 +374,7 @@ const handleSave = () => {
 
 .remark-label {
   font-size: 12px;
-  color: #C93737;
+  color: #dc3545;
   font-weight: bold;
   margin-right: 10px;
 }
@@ -382,14 +382,14 @@ const handleSave = () => {
 .remark-input {
   width: 300px;
   padding: 5px;
-  border: 1px solid #C93737;
+  border: 1px solid #dc3545;
   border-radius: 4px;
   font-family: inherit;
   font-size: 13px;
 }
 
 .error-text {
-  color: #C93737;
+  color: #dc3545;
   font-size: 12px;
   margin-top: 2px;
 }
@@ -457,10 +457,10 @@ const handleSave = () => {
 }
 
 .btn-submit {
-  background: #C93737;
+  background: #0056B3;
   color: white;
 }
-.btn-submit:hover { background: #B02E2E; }
+.btn-submit:hover { background: #004494; }
 .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
 
 .btn-save {

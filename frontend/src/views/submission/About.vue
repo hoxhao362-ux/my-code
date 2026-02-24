@@ -1,9 +1,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const goHome = () => {
   userStore.logoutSubmission()
@@ -17,20 +19,20 @@ const goHelp = () => router.push('/submission/help')
   <div class="submission-module">
     <header class="subnav">
       <div class="subnav-container">
-        <div class="brand">Submission Module</div>
+        <div class="brand">{{ t('submission.brand') }}</div>
         <ul class="nav">
-          <li><a href="#" @click.prevent="goHome">Home</a></li>
-          <li><a href="#" @click.prevent="goAbout">About</a></li>
-          <li><a href="#" @click.prevent="goHelp">Help</a></li>
+          <li><a href="#" @click.prevent="goHome">{{ t('submission.nav.home') }}</a></li>
+          <li><a href="#" @click.prevent="goAbout">{{ t('submission.nav.about') }}</a></li>
+          <li><a href="#" @click.prevent="goHelp">{{ t('submission.nav.help') }}</a></li>
         </ul>
       </div>
     </header>
     <main class="page">
-      <h2>About the Submission System</h2>
-      <p>This module is dedicated to manuscript submission, peer review, and editorial workflows.</p>
+      <h2>{{ t('submission.about.title') }}</h2>
+      <p>{{ t('submission.about.description') }}</p>
     </main>
   </div>
-  </template>
+</template>
 
 <style scoped>
 .submission-module {

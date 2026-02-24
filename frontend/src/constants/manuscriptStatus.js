@@ -7,7 +7,11 @@ export const MANUSCRIPT_STATUS = {
   INITIAL_REVIEW_REJECTED: 'initial_review_rejected', // 初审拒稿
 
   // 2. Peer Review Phase
+  PENDING_PEER_REVIEW: 'pending_peer_review', // 待同行评审
   UNDER_PEER_REVIEW: 'under_peer_review', // 同行评审中
+  REVIEW_COMPLETED: 'review_completed', // 评审完成 (待编辑处理)
+  REVISION_REQUIRED: 'revision_required', // 需要修稿 (待作者修改)
+  REVISION_SUBMITTED: 'revision_submitted', // 修订稿已提交
 
   // 3. Final Decision Phase
   PENDING_FINAL_DECISION: 'pending_final_decision', // 待终审 (Ready for EiC)
@@ -31,6 +35,9 @@ export const STATUS_LABELS = {
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED]: 'Initial Review Passed',
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION]: 'Initial Review Revision',
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED]: 'Desk Rejected',
+  [MANUSCRIPT_STATUS.REVIEW_COMPLETED]: 'Review Completed',
+  [MANUSCRIPT_STATUS.REVISION_REQUIRED]: 'Revision Required',
+  [MANUSCRIPT_STATUS.REVISION_SUBMITTED]: 'Revision Submitted',
   [MANUSCRIPT_STATUS.UNDER_PEER_REVIEW]: 'Under Peer Review',
   [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION]: 'Pending Final Decision',
   [MANUSCRIPT_STATUS.UNDER_FINAL_DECISION]: 'Under Final Decision',
@@ -51,6 +58,9 @@ export const AUTHOR_STATUS_MAP = {
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED]: 'Initial Review Passed',
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION]: 'Revision Required',
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED]: 'Rejected',
+  [MANUSCRIPT_STATUS.REVIEW_COMPLETED]: 'Under Review', // Hide internal detail
+  [MANUSCRIPT_STATUS.REVISION_REQUIRED]: 'Revision Required',
+  [MANUSCRIPT_STATUS.REVISION_SUBMITTED]: 'Revision Submitted',
   [MANUSCRIPT_STATUS.UNDER_PEER_REVIEW]: 'Under Peer Review',
   [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION]: 'Pending Final Decision',
   [MANUSCRIPT_STATUS.UNDER_FINAL_DECISION]: 'Pending Final Decision', // Hide internal
@@ -71,6 +81,9 @@ export const STATUS_COLORS = {
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED]: '#28A745', // Green
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION]: '#F5A623', // Orange
   [MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED]: '#C93737', // Red
+  [MANUSCRIPT_STATUS.REVIEW_COMPLETED]: '#4A90E2', // Light Blue
+  [MANUSCRIPT_STATUS.REVISION_REQUIRED]: '#F5A623', // Orange
+  [MANUSCRIPT_STATUS.REVISION_SUBMITTED]: '#4A90E2', // Light Blue
   [MANUSCRIPT_STATUS.UNDER_PEER_REVIEW]: '#4A90E2', // Light Blue
   [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION]: '#999999', // Light Gray
   [MANUSCRIPT_STATUS.UNDER_FINAL_DECISION]: '#4A90E2', // Light Blue

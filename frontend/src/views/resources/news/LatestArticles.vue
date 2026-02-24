@@ -24,7 +24,7 @@
       <div v-for="article in filteredArticles" :key="article.id" class="article-item">
         <h2 class="article-title" @click="viewAbstract(article.id)">{{ article.title }}</h2>
         <div class="article-meta">
-          <span>{{ article.authors }}</span> | <span>{{ article.date }}</span>
+          <span>{{ article.writers }}</span> | <span>{{ article.date }}</span>
         </div>
         <p class="article-abstract">{{ article.abstract }}</p>
         
@@ -68,7 +68,7 @@ const generateArticles = (count) => {
     newArticles.push({
       id,
       title: `Global Health Impact of Climate Change: A Systematic Review (Part ${id})`,
-      authors: 'Smith J., Doe A., et al.',
+      writers: 'Smith J., Doe A., et al.',
       date: '2026-02-01',
       abstract: 'This study explores the correlation between rising temperatures and vector-borne diseases...',
       subject: id % 2 === 0 ? 'medicine' : 'biology',

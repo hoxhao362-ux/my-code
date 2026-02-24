@@ -44,15 +44,15 @@ const handleLogout = () => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
-          <h1>期刊投稿平台</h1>
+          <h1>Journal Platform</h1>
         </div>
         <ul class="navbar-menu">
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">首页</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="toggleDirectory">目录</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('submit')">投稿</a></li>
-          <li v-if="user?.role === 'admin'" class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('review')">审稿</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
-          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">退出登录</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">Home</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="toggleDirectory">Directory</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('submit')">Submit</a></li>
+          <li v-if="user?.role === 'admin'" class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('review')">Review</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">Profile</a></li>
+          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">Logout</a></li>
         </ul>
       </div>
     </nav>
@@ -60,46 +60,56 @@ const handleLogout = () => {
     <!-- 稿件详情内容 -->
     <main class="journal-detail-content">
       <div class="journal-detail-wrapper">
-        <button class="back-btn" @click="goBack">← 返回</button>
+        <div class="article-actions">
+          <button class="back-btn" @click="goBack">← Back</button>
+          <div class="action-buttons">
+            <button class="action-btn pdf-btn">Download PDF</button>
+            <button class="action-btn cite-btn">Cite This Article</button>
+          </div>
+        </div>
         
         <div class="journal-detail-header">
           <h2 class="journal-title">{{ journal.title }}</h2>
           <div class="journal-meta">
-            <span class="meta-item">作者：{{ journal.author }}</span>
-            <span class="meta-item">投稿日期：{{ journal.date }}</span>
+            <span class="meta-item">Authors: {{ journal.author }}</span>
+            <span class="meta-item">Submission Date: {{ journal.date }}</span>
             <span class="meta-item status" :class="journal.status.toLowerCase()">{{ journal.status }}</span>
-            <span class="meta-item">审稿阶段：{{ journal.reviewStage || '未明确' }}</span>
+            <span class="meta-item">Review Stage: {{ journal.reviewStage || 'Not specified' }}</span>
           </div>
         </div>
 
         <div class="journal-detail-body">
           <!-- 左侧：论文详情 -->
           <div class="journal-main-content">
-            <section class="detail-section">
-              <h3 class="section-title">摘要</h3>
-              <div class="section-content" v-html="journal.abstract"></div>
+            <section class="detail-section abstract-section">
+              <h3 class="section-title">Abstract</h3>
+              <div class="section-content abstract-content" v-html="journal.abstract"></div>
             </section>
 
-            <section class="detail-section">
-              <h3 class="section-title">关键词</h3>
-              <p class="section-content keywords">{{ journal.keywords }}</p>
+            <section class="detail-section keywords-section">
+              <h3 class="section-title">Keywords</h3>
+              <div class="section-content keywords-content">
+                <span v-for="(keyword, index) in journal.keywords.split(',').map(k => k.trim())" :key="index" class="keyword-tag">
+                  {{ keyword }}
+                </span>
+              </div>
             </section>
 
-            <section class="detail-section">
-              <h3 class="section-title">正文</h3>
-              <div class="section-content content" v-html="journal.content"></div>
+            <section class="detail-section article-section">
+              <h3 class="section-title">Article</h3>
+              <div class="section-content article-content" v-html="journal.content"></div>
             </section>
           </div>
           
           <!-- 右侧：审核记录 -->
           <div class="journal-sidebar">
             <div class="review-records-section">
-              <h3 class="section-title">审核记录</h3>
+              <h3 class="section-title">Review Records</h3>
               
               <!-- 审核记录列表 -->
               <div class="review-records-list">
                 <div v-if="journalReviewRecords.length === 0" class="no-records">
-                  <p>暂无审核记录</p>
+                  <p>No review records</p>
                 </div>
                 
                 <div 
@@ -109,17 +119,15 @@ const handleLogout = () => {
                 >
                   <div class="record-header">
                     <div class="record-stage">{{ record.reviewStage }}</div>
-                    <div class="record-result" :class="record.reviewResult.toLowerCase()">
-                      {{ record.reviewResult }}
-                    </div>
+                    <div class="record-result" :class="record.reviewResult.toLowerCase()">{{ record.reviewResult }}</div>
                   </div>
                   <div class="record-content">
                     <div class="record-meta">
-                      <div class="reviewer-info">审核人：{{ record.reviewerId }}</div>
-                      <div class="review-date">审核日期：{{ new Date(record.reviewDate).toLocaleDateString() }}</div>
+                      <div class="reviewer-info">Reviewer: {{ record.reviewerId }}</div>
+                      <div class="review-date">Review Date: {{ new Date(record.reviewDate).toLocaleDateString() }}</div>
                     </div>
                     <div class="review-comments">
-                      <h4>审核建议：</h4>
+                      <h4>Review Comments:</h4>
                       <p>{{ record.reviewComments }}</p>
                     </div>
                   </div>
@@ -134,7 +142,7 @@ const handleLogout = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -145,12 +153,12 @@ const handleLogout = () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #ffffff;
 }
 
-/* 导航栏样式（与其他页面保持一致） */
+/* 导航栏样式 */
 .navbar {
-  background: #2c3e50;
+  background: #0056B3;
   color: white;
   padding: 1rem 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -169,6 +177,7 @@ const handleLogout = () => {
   font-size: 1.8rem;
   font-weight: bold;
   margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .navbar-menu {
@@ -192,15 +201,16 @@ const handleLogout = () => {
 
 .nav-link:hover,
 .nav-link.active {
-  color: #3498db;
+  color: #ecf0f1;
+  text-decoration: underline;
 }
 
 .nav-link.logout {
-  color: #e74c3c;
+  color: #ecf0f1;
 }
 
 .nav-link.logout:hover {
-  color: #c0392b;
+  color: #bdc3c7;
 }
 
 /* 稿件详情内容 */
@@ -215,8 +225,15 @@ const handleLogout = () => {
 .journal-detail-wrapper {
   background: white;
   padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+/* 文章操作按钮 */
+.article-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .back-btn {
@@ -224,30 +241,63 @@ const handleLogout = () => {
   color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 5px;
+  border-radius: 3px;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
 }
 
 .back-btn:hover {
   background: #7f8c8d;
-  transform: translateY(-2px);
 }
 
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.action-btn {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pdf-btn {
+  background: #0056B3;
+  color: white;
+}
+
+.pdf-btn:hover {
+  background: #004494;
+}
+
+.cite-btn {
+  background: #34495e;
+  color: white;
+}
+
+.cite-btn:hover {
+  background: #5a6268;
+}
+
+/* 文章标题和元数据 */
 .journal-detail-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #eee;
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .journal-title {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: bold;
   color: #2c3e50;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
   line-height: 1.3;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .journal-meta {
@@ -255,17 +305,19 @@ const handleLogout = () => {
   flex-wrap: wrap;
   gap: 1.5rem;
   align-items: center;
+  font-size: 0.95rem;
+  color: #7f8c8d;
 }
 
 .meta-item {
-  color: #7f8c8d;
-  font-size: 0.95rem;
+  display: inline-block;
 }
 
 .meta-item.status {
   font-weight: 600;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
+  padding: 0.2rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
 }
 
 .meta-item.待审核 {
@@ -291,7 +343,7 @@ const handleLogout = () => {
 /* 详情内容 - 左右分栏布局 */
 .journal-detail-body {
   display: flex;
-  gap: 2rem;
+  gap: 3rem;
   align-items: flex-start;
 }
 
@@ -303,11 +355,9 @@ const handleLogout = () => {
 
 /* 右侧边栏 */
 .journal-sidebar {
-  width: 350px;
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  width: 320px;
+  border-left: 1px solid #e0e0e0;
+  padding-left: 2rem;
   position: sticky;
   top: 100px;
   height: fit-content;
@@ -320,6 +370,7 @@ const handleLogout = () => {
 
 .review-records-section .section-title {
   margin-bottom: 1.5rem;
+  font-size: 1.1rem;
 }
 
 .review-records-list {
@@ -330,10 +381,10 @@ const handleLogout = () => {
 
 /* 审核记录项 */
 .review-record-item {
-  background: white;
+  background: #f9f9f9;
   padding: 1.2rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
 }
 
 /* 记录头部 */
@@ -343,19 +394,19 @@ const handleLogout = () => {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .record-stage {
   font-weight: 600;
   color: #2c3e50;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .record-result {
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  padding: 0.2rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
 }
@@ -391,6 +442,7 @@ const handleLogout = () => {
   gap: 0.3rem;
   margin-bottom: 0.8rem;
   color: #666;
+  font-size: 0.85rem;
 }
 
 .reviewer-info {
@@ -398,7 +450,7 @@ const handleLogout = () => {
 }
 
 .review-date {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .review-comments h4 {
@@ -412,6 +464,7 @@ const handleLogout = () => {
   margin: 0;
   line-height: 1.5;
   color: #555;
+  font-size: 0.85rem;
 }
 
 /* 无记录状态 */
@@ -420,136 +473,156 @@ const handleLogout = () => {
   padding: 2rem;
   color: #999;
   font-style: italic;
-  background: white;
-  border-radius: 8px;
-  border: 1px dashed #ddd;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
 }
 
 /* 详情部分通用样式 */
 .detail-section {
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .section-title {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #2c3e50;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid #0056B3;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .section-content {
-  color: #555;
-  line-height: 1.6;
+  color: #333;
+  line-height: 1.7;
   margin: 0;
   font-size: 1rem;
 }
 
-.section-content.keywords {
-  background: #f8f9fa;
-  padding: 0.8rem;
-  border-radius: 5px;
-  font-weight: 500;
+/* 摘要部分 */
+.abstract-content {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #333;
 }
 
-.section-content.content {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 5px;
+/* 关键词部分 */
+.keywords-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.keyword-tag {
+  background: #f0f0f0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  color: #555;
+  border: 1px solid #e0e0e0;
+}
+
+/* 文章内容部分 */
+.article-content {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #333;
 }
 
 /* 富文本格式支持 */
-.section-content.content h1,
-.section-content.content h2,
-.section-content.content h3,
-.section-content.content h4,
-.section-content.content h5,
-.section-content.content h6 {
-  margin: 1.5rem 0 1rem 0;
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  margin: 2rem 0 1rem 0;
   font-weight: 600;
   line-height: 1.3;
+  color: #2c3e50;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.section-content.content h1 {
-  font-size: 2rem;
+.article-content h1 {
+  font-size: 1.8rem;
 }
 
-.section-content.content h2 {
-  font-size: 1.75rem;
-}
-
-.section-content.content h3 {
+.article-content h2 {
   font-size: 1.5rem;
 }
 
-.section-content.content h4 {
-  font-size: 1.25rem;
+.article-content h3 {
+  font-size: 1.3rem;
 }
 
-.section-content.content h5 {
+.article-content h4 {
   font-size: 1.1rem;
 }
 
-.section-content.content h6 {
+.article-content h5 {
   font-size: 1rem;
 }
 
-.section-content.content p {
-  margin: 0 0 1rem 0;
-  line-height: 1.6;
+.article-content h6 {
+  font-size: 0.9rem;
 }
 
-.section-content.content ul,
-.section-content.content ol {
-  margin: 0 0 1rem 1.5rem;
+.article-content p {
+  margin: 0 0 1.2rem 0;
+  line-height: 1.7;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 0 0 1.2rem 1.5rem;
   padding: 0;
 }
 
-.section-content.content ul {
+.article-content ul {
   list-style-type: disc;
 }
 
-.section-content.content ol {
+.article-content ol {
   list-style-type: decimal;
 }
 
-.section-content.content li {
+.article-content li {
   margin: 0.5rem 0;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* 对齐样式 */
-.section-content.content .ql-align-center {
+.article-content .ql-align-center {
   text-align: center;
 }
 
-.section-content.content .ql-align-right {
+.article-content .ql-align-right {
   text-align: right;
 }
 
-.section-content.content .ql-align-justify {
+.article-content .ql-align-justify {
   text-align: justify;
 }
 
-.section-content.content .ql-align-left {
+.article-content .ql-align-left {
   text-align: left;
 }
 
 /* 缩进样式 */
-.section-content.content .ql-indent-1 {
+.article-content .ql-indent-1 {
   margin-left: 2rem;
 }
 
-.section-content.content .ql-indent-2 {
+.article-content .ql-indent-2 {
   margin-left: 4rem;
 }
 
-.section-content.content .ql-indent-3 {
+.article-content .ql-indent-3 {
   margin-left: 6rem;
 }
 
-.section-content.content pre {
+.article-content pre {
   margin: 0;
   white-space: pre-wrap;
   font-family: inherit;
@@ -558,48 +631,51 @@ const handleLogout = () => {
 }
 
 /* 链接样式 */
-.section-content.content a {
-  color: #3498db;
-  text-decoration: underline;
+.article-content a {
+  color: #0056B3;
+  text-decoration: none;
+  border-bottom: 1px solid #0056B3;
 }
 
-.section-content.content a:hover {
-  color: #2980b9;
+.article-content a:hover {
+  color: #004494;
+  border-bottom: 1px solid #004494;
 }
 
 /* 图片样式 */
-.section-content.content img {
+.article-content img {
   max-width: 100%;
   height: auto;
-  margin: 1rem 0;
-  border-radius: 5px;
+  margin: 1.5rem 0;
+  border: 1px solid #e0e0e0;
 }
 
 /* 代码块样式 */
-.section-content.content pre.ql-syntax {
+.article-content pre.ql-syntax {
   background-color: #f5f5f5;
   padding: 1rem;
-  border-radius: 5px;
+  border-radius: 3px;
   font-family: monospace;
   font-size: 0.9rem;
   line-height: 1.5;
   overflow-x: auto;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  border: 1px solid #e0e0e0;
 }
 
 /* 块引用样式 */
-.section-content.content blockquote {
-  border-left: 4px solid #3498db;
+.article-content blockquote {
+  border-left: 4px solid #0056B3;
   padding-left: 1rem;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
   font-style: italic;
   color: #666;
 }
 
 /* 水平分隔线样式 */
-.section-content.content hr {
+.article-content hr {
   border: none;
-  border-top: 2px solid #eee;
+  border-top: 1px solid #e0e0e0;
   margin: 2rem 0;
 }
 
@@ -612,14 +688,35 @@ const handleLogout = () => {
   .journal-sidebar {
     width: 100%;
     position: static;
+    border-left: none;
+    border-top: 1px solid #e0e0e0;
+    padding-left: 0;
+    padding-top: 2rem;
+    margin-top: 2rem;
+  }
+  
+  .article-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .action-btn {
+    flex: 1;
+    text-align: center;
   }
 }
 
 /* 页脚样式 */
 .footer {
-  background: #2c3e50;
+  background: #34495e;
   color: white;
-  padding: 1rem 0;
+  padding: 1.5rem 0;
   text-align: center;
   margin-top: auto;
 }

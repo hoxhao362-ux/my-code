@@ -1,85 +1,38 @@
-<template>
-  <div class="page-container">
-    <Navigation 
-      :user="user" 
-      :current-page="'about-history'"
-      :logout="userStore.logout"
-    />
-    
-    <div class="content-area">
-      <div class="header">
-        <h1>Journal History</h1>
-        <p class="intro">Tracing the legacy of medical excellence since 1823.</p>
-      </div>
-
-      <div class="timeline">
-        <div v-for="event in events" :key="event.year" class="timeline-item">
-          <div class="timeline-marker"></div>
-          <div class="timeline-content">
-            <div class="time">{{ event.year }}</div>
-            <h3 class="title" @click="toggleDetails(event.year)">
-              {{ event.title }}
-              <span class="toggle-icon">{{ event.expanded ? '▲' : '▼' }}</span>
-            </h3>
-            <p class="desc">{{ event.description }}</p>
-            
-            <div v-if="event.expanded" class="details">
-              <p>{{ event.details }}</p>
-              <div v-if="event.image" class="image-wrapper" @click="openImage(event.image)">
-                <div class="image-placeholder">Cover Image</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-link">
-        <a href="#">View Full Archives</a>
-      </div>
-    </div>
-
-    <!-- Image Modal -->
-    <div v-if="showModal" class="modal-overlay" @click="showModal = false">
-      <div class="modal-content">
-        <div class="modal-image-placeholder">Full Size Image</div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import { useI18n } from '../../composables/useI18n'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
+const { t } = useI18n()
 
 const showModal = ref(false)
 
 const events = reactive([
   {
-    year: '2025',
-    title: 'Impact Factor Reaches 168.9',
-    description: 'The Lancet continues to lead as one of the world\'s most influential medical journals.',
-    details: 'This milestone reflects the high quality of research published and its global impact on clinical practice and health policy.',
+    year: '2026',
+    titleKey: 'about.history.events.2026.title',
+    descKey: 'about.history.events.2026.desc',
+    detailsKey: 'about.history.events.2026.details',
     expanded: false,
-    image: 'cover-2025.jpg'
+    image: 'cover-2026.jpg'
   },
   {
-    year: '2020',
-    title: 'COVID-19 Response',
-    description: 'Published critical early research on SARS-CoV-2.',
-    details: 'The journal accelerated its review process to disseminate vital information during the pandemic.',
+    year: '2025',
+    titleKey: 'about.history.events.2025.title',
+    descKey: 'about.history.events.2025.desc',
+    detailsKey: 'about.history.events.2025.details',
     expanded: false
   },
   {
-    year: '1823',
-    title: 'Founded by Thomas Wakley',
-    description: 'The first issue was published on October 5th.',
-    details: 'Wakley named the journal after the surgical instrument, symbolizing its mission to cut out corruption in medicine.',
+    year: '2024',
+    titleKey: 'about.history.events.2024.title',
+    descKey: 'about.history.events.2024.desc',
+    detailsKey: 'about.history.events.2024.details',
     expanded: false,
-    image: 'cover-1823.jpg'
+    image: 'cover-2024.jpg'
   }
 ])
 
@@ -94,6 +47,55 @@ const openImage = (img) => {
   showModal.value = true
 }
 </script>
+
+<template>
+  <div class="page-container">
+    <Navigation 
+      :user="user" 
+      :current-page="'about-history'"
+      :logout="userStore.logout"
+    />
+    
+    <div class="content-area">
+      <div class="header">
+        <h1>{{ t('about.history.title') }}</h1>
+        <p class="intro">{{ t('about.history.intro') }}</p>
+      </div>
+
+      <div class="timeline">
+        <div v-for="event in events" :key="event.year" class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="time">{{ event.year }}</div>
+            <h3 class="title" @click="toggleDetails(event.year)">
+              {{ t(event.titleKey) }}
+              <span class="toggle-icon">{{ event.expanded ? '▲' : '▼' }}</span>
+            </h3>
+            <p class="desc">{{ t(event.descKey) }}</p>
+            
+            <div v-if="event.expanded" class="details">
+              <p>{{ t(event.detailsKey) }}</p>
+              <div v-if="event.image" class="image-wrapper" @click="openImage(event.image)">
+                <div class="image-placeholder">{{ t('about.history.coverImage') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-link">
+        <a href="#">{{ t('about.history.viewArchives') }}</a>
+      </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div v-if="showModal" class="modal-overlay" @click="showModal = false">
+      <div class="modal-content">
+        <div class="modal-image-placeholder">{{ t('about.history.fullSizeImage') }}</div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .page-container {
@@ -129,7 +131,7 @@ h1 {
 .timeline {
   position: relative;
   padding-left: 20px;
-  border-left: 2px solid #C93737;
+  border-left: 2px solid #0056B3;
   margin-left: 20px;
 }
 
@@ -146,7 +148,7 @@ h1 {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #C93737;
+  background-color: #0056B3;
   border: 2px solid white;
 }
 
@@ -158,7 +160,7 @@ h1 {
 .time {
   font-size: 14px;
   font-weight: bold;
-  color: #C93737;
+  color: #0056B3;
   margin-bottom: 4px;
 }
 
@@ -213,7 +215,7 @@ h1 {
 }
 
 .footer-link a {
-  color: #C93737;
+  color: #0056B3;
   text-decoration: none;
   font-weight: bold;
 }

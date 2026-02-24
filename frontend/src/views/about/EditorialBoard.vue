@@ -1,121 +1,20 @@
-<template>
-  <div class="page-container">
-    <Navigation 
-      :user="user" 
-      :current-page="'about-editorial-board'"
-      :logout="userStore.logout"
-    />
-    <div class="sidebar">
-      <nav class="sidebar-nav">
-        <a 
-          v-for="item in navItems" 
-          :key="item.id" 
-          :href="'#' + item.id" 
-          class="nav-item"
-          :class="{ active: activeSection === item.id }"
-          @click.prevent="scrollToSection(item.id)"
-        >
-          {{ item.label }}
-        </a>
-      </nav>
-      <a href="#" class="contact-link" @click.prevent="scrollToSection('contact')">Contact Editorial Office</a>
-    </div>
-
-    <div class="content-area">
-      <div id="editor-in-chief" class="section">
-        <h1>Editor-in-Chief</h1>
-        <div class="card chief-card">
-          <div class="chief-info">
-            <div class="avatar-wrapper">
-              <div class="avatar-placeholder">Photo</div>
-            </div>
-            <div class="info-text">
-              <h2>Dr. Richard Horton</h2>
-              <p class="position">Editor-in-Chief, The Lancet</p>
-              <p class="field">Global Health, Public Health</p>
-              <a href="#" class="orcid-link">ORCID: 0000-0000-0000-0000</a>
-            </div>
-          </div>
-          <div class="message-box">
-            <p>"The Lancet is committed to applying science to the betterment of society and the improvement of human health."</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="deputy-editors" class="section">
-        <h1>Deputy Editors</h1>
-        <div class="cards-grid">
-          <div v-for="editor in deputyEditors" :key="editor.id" class="card member-card">
-            <div class="member-info">
-              <div class="avatar-wrapper small">
-                <div class="avatar-placeholder"></div>
-              </div>
-              <h3>{{ editor.name }}</h3>
-              <p class="position">{{ editor.position }}</p>
-              <p class="field">{{ editor.field }}</p>
-              <a href="#" class="orcid-link">ORCID</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="editorial-board" class="section">
-        <h1>Editorial Board</h1>
-        <div class="filter-bar">
-          <select v-model="selectedCategory">
-            <option value="all">All Categories</option>
-            <option value="Oncology">Oncology</option>
-            <option value="Neurology">Neurology</option>
-            <option value="Cardiology">Cardiology</option>
-          </select>
-        </div>
-        <div class="cards-grid compact">
-          <div v-for="member in filteredBoardMembers" :key="member.id" class="card member-card">
-            <h3>{{ member.name }}</h3>
-            <p class="position">{{ member.institution }}</p>
-            <p class="field">{{ member.category }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="youth-editorial-board" class="section">
-        <h1>Youth Editorial Board</h1>
-        <div class="cards-grid">
-          <div v-for="member in youthMembers" :key="member.id" class="card member-card">
-            <h3>{{ member.name }}</h3>
-            <p class="position">{{ member.institution }}</p>
-            <p class="field">Focus: {{ member.focus }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="contact" class="section">
-        <h1>Contact</h1>
-        <div class="contact-info">
-          <p><strong>Email:</strong> editorial@thelancet.com</p>
-          <p><strong>Address:</strong> 125 London Wall, London, EC2Y 5AS, UK</p>
-          <p><strong>Office Hours:</strong> Monday to Friday 09:00 - 17:00 GMT</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import { useI18n } from '../../composables/useI18n'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
+const { t } = useI18n()
 
-const navItems = [
-  { id: 'editor-in-chief', label: 'Editor-in-Chief' },
-  { id: 'deputy-editors', label: 'Deputy Editors' },
-  { id: 'editorial-board', label: 'Editorial Board' },
-  { id: 'youth-editorial-board', label: 'Youth Editorial Board' },
-  { id: 'contact', label: 'Contact' }
-]
+const navItems = computed(() => [
+  { id: 'editor-in-chief', label: t('about.editorialBoard.editorInChief') },
+  { id: 'deputy-editors', label: t('about.editorialBoard.deputyEditors') },
+  { id: 'editorial-board', label: t('about.editorialBoard.editorialBoard') },
+  { id: 'youth-editorial-board', label: t('about.editorialBoard.youthEditorialBoard') },
+  { id: 'contact', label: t('about.editorialBoard.contact') }
+])
 
 const activeSection = ref('editor-in-chief')
 const selectedCategory = ref('all')
@@ -171,7 +70,7 @@ onMounted(() => {
     })
   }, { threshold: 0.2, rootMargin: "-80px 0px 0px 0px" })
 
-  navItems.forEach(item => {
+  navItems.value.forEach(item => {
     const el = document.getElementById(item.id)
     if (el) observer.observe(el)
   })
@@ -181,6 +80,109 @@ onUnmounted(() => {
   if (observer) observer.disconnect()
 })
 </script>
+
+<template>
+  <div class="page-container">
+    <Navigation 
+      :user="user" 
+      :current-page="'about-editorial-board'"
+      :logout="userStore.logout"
+    />
+    <div class="sidebar">
+      <nav class="sidebar-nav">
+        <a 
+          v-for="item in navItems" 
+          :key="item.id" 
+          :href="'#' + item.id" 
+          class="nav-item"
+          :class="{ active: activeSection === item.id }"
+          @click.prevent="scrollToSection(item.id)"
+        >
+          {{ item.label }}
+        </a>
+      </nav>
+      <a href="#" class="contact-link" @click.prevent="scrollToSection('contact')">{{ t('about.editorialBoard.contactEditorialOffice') }}</a>
+    </div>
+
+    <div class="content-area">
+      <div id="editor-in-chief" class="section">
+        <h1>{{ t('about.editorialBoard.editorInChief') }}</h1>
+        <div class="card chief-card">
+          <div class="chief-info">
+            <div class="avatar-wrapper">
+              <div class="avatar-placeholder">{{ t('about.editorialBoard.photo') }}</div>
+            </div>
+            <div class="info-text">
+              <h2>Dr. James Wilson</h2>
+              <p class="position">{{ t('about.editorialBoard.editorInChief') }}, {{ t('nav.logo') }}</p>
+              <p class="field">{{ t('about.editorialBoard.globalHealth') }}</p>
+              <a href="#" class="orcid-link">{{ t('about.editorialBoard.orcid') }}: 0000-0000-0000-0000</a>
+            </div>
+          </div>
+          <div class="message-box">
+            <p>{{ t('about.editorialBoard.message') }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="deputy-editors" class="section">
+        <h1>{{ t('about.editorialBoard.deputyEditors') }}</h1>
+        <div class="cards-grid">
+          <div v-for="editor in deputyEditors" :key="editor.id" class="card member-card">
+            <div class="member-info">
+              <div class="avatar-wrapper small">
+                <div class="avatar-placeholder"></div>
+              </div>
+              <h3>{{ editor.name }}</h3>
+              <p class="position">{{ editor.position }}</p>
+              <p class="field">{{ editor.field }}</p>
+              <a href="#" class="orcid-link">{{ t('about.editorialBoard.orcid') }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="editorial-board" class="section">
+        <h1>{{ t('about.editorialBoard.editorialBoard') }}</h1>
+        <div class="filter-bar">
+          <select v-model="selectedCategory">
+            <option value="all">{{ t('about.editorialBoard.allCategories') }}</option>
+            <option value="Oncology">{{ t('about.editorialBoard.categories.oncology') }}</option>
+            <option value="Neurology">{{ t('about.editorialBoard.categories.neurology') }}</option>
+            <option value="Cardiology">{{ t('about.editorialBoard.categories.cardiology') }}</option>
+          </select>
+        </div>
+        <div class="cards-grid compact">
+          <div v-for="member in filteredBoardMembers" :key="member.id" class="card member-card">
+            <h3>{{ member.name }}</h3>
+            <p class="position">{{ member.institution }}</p>
+            <p class="field">{{ member.category }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="youth-editorial-board" class="section">
+        <h1>{{ t('about.editorialBoard.youthEditorialBoard') }}</h1>
+        <div class="cards-grid">
+          <div v-for="member in youthMembers" :key="member.id" class="card member-card">
+            <h3>{{ member.name }}</h3>
+            <p class="position">{{ member.institution }}</p>
+            <p class="field">{{ t('about.editorialBoard.focus') }}: {{ member.focus }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="contact" class="section">
+        <h1>{{ t('about.editorialBoard.contact') }}</h1>
+        <div class="contact-info">
+          <p><strong>{{ t('about.editorialBoard.email') }}:</strong> editorial@journalplatform.com</p>
+          <p><strong>{{ t('about.editorialBoard.address') }}:</strong> {{ t('about.editorialBoard.addressValue') }}</p>
+          <p><strong>{{ t('about.editorialBoard.officeHours') }}:</strong> {{ t('about.editorialBoard.officeHoursValue') }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .page-container {
@@ -316,7 +318,7 @@ h2 {
 }
 
 .orcid-link {
-  color: #C93737;
+  color: #0056B3;
   font-size: 14px;
   text-decoration: none;
 }

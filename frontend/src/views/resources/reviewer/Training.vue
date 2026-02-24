@@ -133,7 +133,7 @@ const questions = [
     explanation: "Any potential bias compromises the integrity of the review."
   },
   // Adding placeholders for 3-10 to meet the "10 questions" requirement
-  { id: 3, text: "Is the reviewer's identity revealed to the author?", options: [{value:'a', text:'Yes'}, {value:'b', text:'No (Double-blind)'}], correct: 'b', explanation: "The Lancet uses double-blind peer review." },
+  { id: 3, text: "Is the reviewer's identity revealed to the author?", options: [{value:'a', text:'Yes'}, {value:'b', text:'No (Double-blind)'}], correct: 'b', explanation: "Journal Platform uses double-blind peer review." },
   { id: 4, text: "What should be the tone of the report?", options: [{value:'a', text:'Aggressive'}, {value:'b', text:'Constructive and professional'}], correct: 'b', explanation: "Comments should be helpful, not hostile." },
   { id: 5, text: "Can you share the manuscript with a colleague?", options: [{value:'a', text:'Yes, for help'}, {value:'b', text:'No, it is confidential'}], correct: 'b', explanation: "Manuscripts are confidential documents." },
   { id: 6, text: "Which section explains the study design?", options: [{value:'a', text:'Methods'}, {value:'b', text:'Discussion'}], correct: 'a', explanation: "Methods section details how the study was conducted." },
@@ -213,7 +213,7 @@ const submitQuiz = () => {
 
 .case-study.error {
   background-color: #FFF0F0;
-  color: #C93737;
+  color: #dc3545;
 }
 
 .case-study.correct {
@@ -278,7 +278,7 @@ const submitQuiz = () => {
 .btn-submit {
   width: 100%;
   padding: 12px;
-  background-color: #C93737;
+  background-color: #0056B3;
   color: white;
   border: none;
   border-radius: 4px;
@@ -306,8 +306,8 @@ const submitQuiz = () => {
 }
 
 .score-circle.fail {
-  border-color: #C93737;
-  color: #C93737;
+  border-color: #dc3545;
+  color: #dc3545;
 }
 
 .quiz-result {
@@ -326,7 +326,7 @@ const submitQuiz = () => {
 }
 
 .correct { color: #2E8B57; }
-.incorrect { color: #C93737; }
+.incorrect { color: #dc3545; }
 .explanation { font-size: 12px; color: #666; margin-top: 4px; font-style: italic; }
 
 @media (max-width: 768px) {

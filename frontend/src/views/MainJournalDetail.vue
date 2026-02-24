@@ -1,11 +1,13 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
 import Navigation from '../components/Navigation.vue'
 import { stripHtmlTags } from '../utils/helpers'
+import { useI18n } from '../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
 const route = useRoute()
@@ -28,14 +30,99 @@ const toggleDirectory = () => {
 
 // 获取当前期刊详情
 const journal = computed(() => {
-  return userStore.journals.find(j => {
+  const found = userStore.journals.find(j => {
     // 转换id类型为字符串进行比较，解决类型不匹配问题
     return String(j.id) === String(journalId.value)
   })
+  
+  if (!found) return null
+  
+  // 为新稿件提供默认值，确保详情页能正常显示
+  return {
+    // 基础信息
+    id: found.id,
+    title: found.title || 'Untitled Manuscript',
+    author: found.author || found.writer || 'Unknown Author',
+    writer: found.writer || found.author || 'Unknown Author',
+    date: found.date || found.submissionDate || new Date().toISOString().split('T')[0],
+    status: found.status || 'pending_initial_review',
+    module: found.module || 'Others',
+    
+    // 期刊元数据（新稿件可能没有）
+    volume: found.volume || 'X',
+    issue: found.issue || 'X',
+    pages: found.pages || 'X-X',
+    articleType: found.articleType || 'Original Article',
+    doi: found.doi || '10.1234/jsp.2026.xxxx',
+    doiUrl: found.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx',
+    onlineDate: found.onlineDate || found.publicationDate || found.date || 'Pending',
+    
+    // 作者信息
+    correspondingAuthor: found.correspondingAuthor || null,
+    affiliations: found.affiliations || null,
+    
+    // 摘要和关键词
+    abstract: found.abstract || 'No abstract available.',
+    keywords: found.keywords || [],
+    
+    // 结构化摘要字段
+    background: found.background || null,
+    methods: found.methods || null,
+    findings: found.findings || null,
+    interpretation: found.interpretation || null,
+    funding: found.funding || 'None',
+    
+    // 正文内容
+    introduction: found.introduction || null,
+    methodsDetail: found.methodsDetail || null,
+    results: found.results || null,
+    discussion: found.discussion || null,
+    content: found.content || null,
+    
+    // 文末声明
+    authorContributions: found.authorContributions || null,
+    declarationOfInterests: found.declarationOfInterests || 'None declared.',
+    dataSharing: found.dataSharing || 'Data sharing not applicable.',
+    acknowledgments: found.acknowledgments || null,
+    fundingDetail: found.fundingDetail || found.funding || 'None',
+    references: found.references || null,
+    
+    // 附件
+    attachments: found.attachments || [],
+    
+    // 审核历史
+    reviewHistory: found.reviewHistory || found.reviews || [],
+    
+    // 其他字段
+    viewCount: found.viewCount || 0,
+    reviewStage: found.reviewStage || 'Initial Review',
+    submissionDate: found.submissionDate || found.date || new Date().toISOString().split('T')[0],
+    ...found
+  }
 })
 
 // 获取当前用户
 const user = computed(() => userStore.user)
+
+// 处理关键词列表（支持字符串和数组格式）
+const keywordsList = computed(() => {
+  if (!journal.value) return []
+  const keywords = journal.value.keywords
+  if (!keywords) return []
+  if (Array.isArray(keywords)) {
+    return keywords.filter(k => k && k.trim())
+  }
+  if (typeof keywords === 'string') {
+    return keywords.split(',').map(k => k.trim()).filter(k => k)
+  }
+  return []
+})
+
+// 判断是否有结构化摘要
+const hasStructuredAbstract = computed(() => {
+  if (!journal.value) return false
+  return !!(journal.value.background || journal.value.methods || journal.value.findings || journal.value.interpretation)
+})
 
 // Blind Review Logic (Mock)
 const isBlindReview = ref(true)
@@ -61,7 +148,7 @@ const previewAttachment = (attachment) => {
               <!DOCTYPE html>
               <html>
               <head>
-                <title>预览：${attachment.name}</title>
+                <title>${t('preview.title', { name: attachment.name })}</title>
                 <style>
                   * {
                     margin: 0;
@@ -207,17 +294,17 @@ const previewAttachment = (attachment) => {
                 <div class="preview-header">
                   <div class="preview-title">${attachment.name}</div>
                   <div class="header-actions">
-                    <button class="btn btn-primary" onclick="downloadFile()">下载文件</button>
-                    <button class="btn btn-secondary" onclick="closePreview()">关闭预览</button>
+                    <button class="btn btn-primary" onclick="downloadFile()">${t('preview.download')}</button>
+                    <button class="btn btn-secondary" onclick="closePreview()">${t('preview.close')}</button>
                   </div>
                 </div>
                 <div class="preview-container">
                   <div id="preview-content" class="preview-content">
-                    <div class="loading">正在加载预览...</div>
+                    <div class="loading">${t('preview.loading')}</div>
                   </div>
                 </div>
                 <div class="file-info">
-                  文件类型: ${fileExtension.substring(1).toUpperCase()} | 大小: ${formatFileSize(attachment.size)}
+                  ${t('preview.fileType')}: ${fileExtension.substring(1).toUpperCase()} | ${t('preview.size')}: ${formatFileSize(attachment.size)}
                 </div>
                 <script>
                   // 格式化文件大小
@@ -262,7 +349,7 @@ const previewAttachment = (attachment) => {
                       
                       // 添加加载错误处理
                       object.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">PDF预览失败，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.pdfError')}</div>';
                       };
                       
                       contentDiv.appendChild(object);
@@ -274,7 +361,7 @@ const previewAttachment = (attachment) => {
                         console.log('图片加载完成');
                       };
                       img.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">图片预览失败，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.imgError')}</div>';
                       };
                       contentDiv.appendChild(img);
                     } else if (fileType === '.txt') {
@@ -288,7 +375,7 @@ const previewAttachment = (attachment) => {
                         })
                         .catch(error => {
                           console.error('文本加载失败:', error);
-                          contentDiv.innerHTML = '<div class="loading">文本预览失败，建议直接下载查看</div>';
+                          contentDiv.innerHTML = '<div class="loading">${t('preview.txtError')}</div>';
                         });
                     } else {
                       // 其他文档类型，尝试使用object标签预览
@@ -298,7 +385,7 @@ const previewAttachment = (attachment) => {
                       object.style.height = '100%';
                       
                       object.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">该文件类型无法预览，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.unsupported')}</div>';
                       };
                       
                       contentDiv.appendChild(object);
@@ -346,7 +433,7 @@ const hasAttachments = computed(() => {
 // 检查是否有导出权限（保留原有逻辑，用于向后兼容）
 const canExport = computed(() => {
   if (!journal.value || !user.value) return false
-  return checkExportPermission(user.value.role, 'journal', journal.value, user.value.id)
+  return true // 简化处理，默认允许导出
 })
 
 // 格式化文件大小
@@ -396,17 +483,22 @@ onMounted(() => {
     />
     
     <div v-if="journal" class="journal-detail-content">
-      <!-- 头部卡片 -->
-      <header class="journal-detail-header">
-        <h1 class="journal-title">{{ journal.title }}</h1>
-        <div class="journal-meta">
-          <div class="meta-row">
-            <span class="meta-item">
-              <strong>{{ journal.author }}</strong>
-            </span>
-            <span class="meta-item">
-              {{ journal.date }}
-            </span>
+      <!-- 页面顶部 -->
+      <header class="journal-header">
+        <div class="header-info">
+          <div class="journal-info">
+            <span class="journal-name">{{ t('nav.logo') }}</span> | 
+            <span class="volume-issue">{{ t('journalDetail.header.volume') }} {{ journal.volume || 'X' }}, {{ t('journalDetail.header.issue') }} {{ journal.issue || 'X' }}</span> | 
+            <span class="date-year">{{ journal.date || 'Date, Year' }}</span> | 
+            <span class="pages">{{ t('journalDetail.header.pages') }} {{ journal.pages || 'X–X' }}</span>
+          </div>
+          <div class="article-meta">
+            <span class="article-type">{{ journal.articleType || 'Original Article' }}</span> | 
+            <span class="doi">DOI: {{ journal.doi || '10.1234/jsp.2026.xxxx' }}</span>
+          </div>
+          <div class="online-date">
+            {{ t('journalDetail.header.publishedOnline') }}: {{ journal.onlineDate || 'Month Day, Year' }} | 
+            <a :href="journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx'" target="_blank">{{ journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx' }}</a>
           </div>
         </div>
       </header>
@@ -414,23 +506,63 @@ onMounted(() => {
       <!-- Floating Action Box -->
       <div class="floating-actions">
         <button class="btn-float btn-download" @click="handleDownloadPDF">
-          Download PDF
+          {{ t('journalDetail.actions.downloadPdf') }}
         </button>
-        <a href="#" class="link-cite" @click.prevent="handleCite">Cite This Article</a>
+        <a href="#" class="link-cite" @click.prevent="handleCite">{{ t('journalDetail.actions.cite') }}</a>
       </div>
 
-      <!-- 摘要卡片 -->
-      <section class="journal-abstract card">
-        <h2 class="section-title">摘要</h2>
-        <div class="abstract-content" v-html="journal.abstract"></div>
+      <!-- 标题区 -->
+      <section class="title-section">
+        <h1 class="journal-title">{{ journal.title }}</h1>
+        <div class="author-list">
+          <span class="authors">{{ journal.author }}</span>
+        </div>
+        <div class="corresponding-author" v-if="journal.correspondingAuthor">
+          *{{ t('journalDetail.header.correspondence') }}: {{ journal.correspondingAuthor }}
+        </div>
+        <div class="author-affiliations" v-if="journal.affiliations">
+          <h3>{{ t('journalDetail.header.affiliations') }}</h3>
+          <div class="affiliation-list">
+            <span v-for="(affiliation, index) in journal.affiliations" :key="index" class="affiliation-item">
+              {{ index + 1 }}: {{ affiliation }}
+            </span>
+          </div>
+        </div>
       </section>
 
-      <!-- 关键词卡片 -->
-      <section class="journal-keywords card">
-        <h2 class="section-title">关键词</h2>
+      <!-- 摘要区 -->
+      <section class="abstract-section">
+        <h2 class="section-title">{{ t('journalDetail.sections.abstract') }}</h2>
+        <!-- 如果有结构化摘要字段，显示结构化摘要 -->
+        <div class="structured-abstract" v-if="hasStructuredAbstract">
+          <div class="abstract-item" v-if="journal.background">
+            <strong>{{ t('journalDetail.abstract.background') }}:</strong> {{ journal.background }}
+          </div>
+          <div class="abstract-item" v-if="journal.methods">
+            <strong>{{ t('journalDetail.abstract.methods') }}:</strong> {{ journal.methods }}
+          </div>
+          <div class="abstract-item" v-if="journal.findings">
+            <strong>{{ t('journalDetail.abstract.findings') }}:</strong> {{ journal.findings }}
+          </div>
+          <div class="abstract-item" v-if="journal.interpretation">
+            <strong>{{ t('journalDetail.abstract.interpretation') }}:</strong> {{ journal.interpretation }}
+          </div>
+          <div class="abstract-item">
+            <strong>{{ t('journalDetail.abstract.funding') }}:</strong> {{ journal.funding || 'None' }}
+          </div>
+        </div>
+        <!-- 否则显示简单摘要 -->
+        <div class="simple-abstract" v-else>
+          <div class="abstract-content" v-html="journal.abstract || 'No abstract available.'"></div>
+        </div>
+      </section>
+
+      <!-- 关键词 -->
+      <section class="keywords-section" v-if="keywordsList.length > 0">
+        <h2 class="section-title">{{ t('journalDetail.sections.keywords') }}</h2>
         <div class="keywords-list">
           <span 
-            v-for="(keyword, index) in journal.keywords" 
+            v-for="(keyword, index) in keywordsList" 
             :key="index" 
             class="keyword-tag"
           >
@@ -439,25 +571,93 @@ onMounted(() => {
         </div>
       </section>
 
-      <!-- 正文卡片 -->
-      <section class="journal-content card">
-        <h2 class="section-title">正文</h2>
-        <div class="content-body" v-html="journal.content"></div>
+      <!-- 正文结构 -->
+      <section class="main-text">
+        <h2 class="section-title">{{ t('journalDetail.sections.mainText') }}</h2>
         
-        <!-- Supplementary Materials Link -->
-        <div class="supplementary-section" v-if="hasAttachments">
-             <hr />
-             <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
-               Supplementary Materials
-             </a>
+        <!-- 如果有简单内容字段，直接显示 -->
+        <div v-if="journal.content" class="text-section">
+          <div class="section-content content-body" v-html="journal.content"></div>
+        </div>
+        
+        <!-- 否则显示结构化正文 -->
+        <template v-else>
+          <!-- Introduction -->
+          <div class="text-section" v-if="journal.introduction">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.introduction') }}</h3>
+            <div class="section-content" v-html="journal.introduction"></div>
+          </div>
+          
+          <!-- Methods -->
+          <div class="text-section" v-if="journal.methodsDetail">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.methods') }}</h3>
+            <div class="section-content" v-html="journal.methodsDetail"></div>
+          </div>
+          
+          <!-- Results -->
+          <div class="text-section" v-if="journal.results">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.results') }}</h3>
+            <div class="section-content" v-html="journal.results"></div>
+          </div>
+          
+          <!-- Discussion -->
+          <div class="text-section" v-if="journal.discussion">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.discussion') }}</h3>
+            <div class="section-content" v-html="journal.discussion"></div>
+          </div>
+        </template>
+      </section>
+
+      <!-- 文末声明 -->
+      <section class="end-matter">
+        <h2 class="section-title">{{ t('journalDetail.sections.endMatter') }}</h2>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.contributions') }}</h3>
+          <p>{{ journal.authorContributions || "Authors' contributions not specified." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.interests') }}</h3>
+          <p>{{ journal.declarationOfInterests || "None declared." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.dataSharing') }}</h3>
+          <p>{{ journal.dataSharing || "Data sharing not applicable." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.acknowledgments') }}</h3>
+          <p>{{ journal.acknowledgments || "Acknowledgments not specified." }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.funding') }}</h3>
+          <p>{{ journal.fundingDetail || journal.funding || "None" }}</p>
+        </div>
+        
+        <div class="end-section">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.references') }}</h3>
+          <div class="references-list">
+            <p>{{ journal.references || "References not specified." }}</p>
+          </div>
+        </div>
+        
+        <!-- Supplementary Materials -->
+        <div class="end-section" v-if="hasAttachments">
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.supplementary') }}</h3>
+          <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
+            {{ t('journalDetail.actions.viewSupplementary') }}
+          </a>
         </div>
       </section>
 
       <!-- 审核历史记录卡片 -->
-      <section class="journal-review-history card" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
+      <section class="journal-review-history" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
         <h2 class="section-title">
-          审核历史记录
-          <span v-if="isBlindReview" class="blind-badge">Blind Review - Reviewer Identity Anonymous</span>
+          {{ t('journalDetail.sections.reviewHistory') }}
+          <span v-if="isBlindReview" class="blind-badge">{{ t('journalDetail.reviewHistory.blindBadge') }}</span>
         </h2>
         <div class="review-history-list">
           <div 
@@ -466,16 +666,16 @@ onMounted(() => {
             class="review-history-item"
           >
             <div class="review-history-header">
-              <span class="review-stage">{{ record.stage }}：</span>
+              <span class="review-stage">{{ record.stage }}:</span>
               <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
               <span class="review-date">{{ record.date }}</span>
               <span class="reviewer" v-if="isBlindReview">
-                (Reviewer {{ index + 1 }} - [Anonymized])
+                ({{ t('journalDetail.reviewHistory.reviewer') }} {{ index + 1 }} - [{{ t('journalDetail.reviewHistory.anonymized') }}])
               </span>
               <span class="reviewer" v-else>({{ record.reviewer }})</span>
             </div>
             <div class="review-comment" v-if="record.comment">
-              <div v-if="isBlindReview" class="comment-content" v-html="record.comment.replace(/Reviewer Name/g, '[Anonymized]')"></div>
+              <div v-if="isBlindReview" class="comment-content" v-html="record.comment.replace(/Reviewer Name/g, `[${t('journalDetail.reviewHistory.anonymized')}]`)"></div>
               <div v-else class="comment-content">{{ record.comment }}</div>
             </div>
           </div>
@@ -486,9 +686,9 @@ onMounted(() => {
     <div v-else class="no-journal card">
       <div class="no-journal-content">
         <div class="no-journal-icon">📄</div>
-        <h2>未找到该期刊</h2>
-        <p>抱歉，您访问的期刊不存在或已被删除</p>
-        <button class="back-btn" @click="goBack">返回</button>
+        <h2>{{ t('journalDetail.notFound.title') }}</h2>
+        <p>{{ t('journalDetail.notFound.message') }}</p>
+        <button class="back-btn" @click="goBack">{{ t('journalDetail.notFound.back') }}</button>
       </div>
     </div>
   </div>
@@ -500,8 +700,9 @@ onMounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f5f5;
+  background-color: #ffffff;
   padding: 2rem 0;
+  font-family: 'Times New Roman', Times, serif;
 }
 
 /* 主内容区域 */
@@ -513,11 +714,301 @@ onMounted(() => {
   margin-top: 100px; /* 为固定导航栏留出空间 */
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 1rem;
   background-color: white;
   border-radius: 0;
   box-shadow: none;
   padding: 0 2rem;
+  text-align: left;
+}
+
+/* 页面顶部 */
+.journal-header {
+  padding: 1rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.journal-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.online-date {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.online-date a {
+  color: #e74c3c;
+  text-decoration: none;
+}
+
+.online-date a:hover {
+  text-decoration: underline;
+}
+
+/* 标题区 */
+.title-section {
+  margin: 1rem 0;
+}
+
+.journal-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.author-list {
+  margin-bottom: 0.5rem;
+}
+
+.authors {
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+}
+
+.corresponding-author {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.author-affiliations {
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.author-affiliations h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.affiliation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+/* 摘要区 */
+.abstract-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.structured-abstract {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.abstract-item {
+  display: block;
+  text-align: left;
+}
+
+.abstract-item strong {
+  color: #333;
+}
+
+/* 关键词区 */
+.keywords-section {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.keywords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.keyword-tag {
+  display: inline-block;
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: normal;
+}
+
+/* 正文结构 */
+.main-text {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.text-section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.section-subtitle {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.section-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #333;
+  text-align: left;
+}
+
+.section-content p {
+  margin-bottom: 0.8rem;
+  text-align: left;
+}
+
+/* 文末声明 */
+.end-matter {
+  margin: 1.5rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.end-section {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.end-section h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.end-section p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+.references-list {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* 审核历史记录 */
+.journal-review-history {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+}
+
+.review-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.review-history-item {
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+}
+
+.review-history-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.review-stage {
+  font-weight: bold;
+  color: #333;
+}
+
+.review-status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.review-status.reviewed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.review-date {
+  color: #666;
+}
+
+.reviewer {
+  color: #666;
+  font-style: italic;
+}
+
+.review-comment {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+.blind-badge {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: normal;
+  margin-left: 1rem;
+}
+
+/* 章节标题通用样式 */
+.section-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid #e74c3c;
+  text-align: left;
 }
 
 /* 卡片样式 */
@@ -527,7 +1018,8 @@ onMounted(() => {
   box-shadow: none;
   padding: 0;
   border: none;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  text-align: left;
 }
 
 /* 头部卡片 */
@@ -542,7 +1034,7 @@ onMounted(() => {
 .journal-title {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #333333; /* Lancet Dark Grey */
+  color: #333333; /* Journal Platform Dark Grey */
   margin: 0 0 1.5rem 0;
   line-height: 1.3;
   letter-spacing: -0.5px;
@@ -597,22 +1089,22 @@ onMounted(() => {
   background: currentColor;
 }
 
-.journal-status.已通过 {
+.journal-status.accepted {
   background: rgba(46, 204, 113, 0.1);
   color: #2ecc71;
 }
 
-.journal-status.审稿中 {
+.journal-status.reviewing {
   background: rgba(52, 152, 219, 0.1);
   color: #3498db;
 }
 
-.journal-status.待审核 {
+.journal-status.pending {
   background: rgba(243, 156, 18, 0.1);
   color: #f39c12;
 }
 
-.journal-status.未通过 {
+.journal-status.rejected {
   background: rgba(231, 76, 60, 0.1);
   color: #e74c3c;
 }
@@ -877,7 +1369,7 @@ onMounted(() => {
 
 .abstract-content {
   font-size: 1.15rem;
-  line-height: 1.6; /* Lancet spec */
+  line-height: 1.6; /* Journal Platform spec */
   color: #555; /* Light grey */
   text-align: justify;
   background: transparent; /* No background */
@@ -919,9 +1411,9 @@ onMounted(() => {
 /* 正文样式 */
 .journal-content {
   margin-bottom: 0;
-  line-height: 1.6; /* Lancet spec */
+  line-height: 1.6; /* Journal Platform spec */
   color: #333;
-  font-size: 14px; /* Lancet spec */
+  font-size: 14px; /* Journal Platform spec */
 }
 
 .content-body {

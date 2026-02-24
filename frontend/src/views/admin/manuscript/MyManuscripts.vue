@@ -32,7 +32,7 @@ const timePeriodOptions = [
 const manuscripts = computed(() => {
   return userStore.journals.filter(journal => {
     // 只显示当前用户的稿件
-    if (journal.author !== userStore.user?.username) {
+    if (journal.writer !== userStore.user?.username) {
       return false
     }
     
@@ -50,7 +50,7 @@ const manuscripts = computed(() => {
     if (searchKeyword.value) {
       const keyword = searchKeyword.value.toLowerCase()
       if (!journal.title.toLowerCase().includes(keyword) && 
-          !journal.author.toLowerCase().includes(keyword) && 
+          !journal.writer.toLowerCase().includes(keyword) && 
           !journal.keywords.toLowerCase().includes(keyword)) {
         return false
       }
@@ -88,7 +88,7 @@ const manuscripts = computed(() => {
 
 // 查看稿件详情
 const viewManuscript = (id) => {
-  router.push(`/admin/review-records/${id}`)
+  router.push(`/admin/journal/${id}`)
 }
 </script>
 
@@ -107,7 +107,7 @@ const viewManuscript = (id) => {
             type="text" 
             id="search-input" 
             v-model="searchKeyword" 
-            placeholder="Search Title, Author or Keywords" 
+            placeholder="Search Title, Writer or Keywords" 
             class="filter-control search-input"
           >
         </div>

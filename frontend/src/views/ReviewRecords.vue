@@ -4,6 +4,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import Navigation from '../components/Navigation.vue'
+import { MANUSCRIPT_STATUS, STATUS_LABELS } from '../constants/manuscriptStatus'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -42,7 +43,7 @@ const reviewRecords = computed(() => {
       reviewResult: record.status,
       reviewComments: record.comment,
       reviewDate: record.date,
-      journalAuthor: journal.value.author,
+      journalWriter: journal.value.writer,
       type: record.type
     }))
 })
@@ -61,7 +62,7 @@ const canViewFullRecords = () => {
 
 // 是否可以查看半公开记录（投稿人）
 const canViewPartialRecords = () => {
-  return journal.value?.author === currentUsername.value
+  return journal.value?.writer === currentUsername.value
 }
 
 // 添加新的审稿记录
@@ -73,7 +74,7 @@ const newRecord = ref({
   reviewResult: '',
   reviewComments: '',
   reviewDate: new Date().toISOString(),
-  journalAuthor: ''
+  journalWriter: ''
 })
 
 // 稿件编辑功能
@@ -497,7 +498,7 @@ const saveModifications = () => {
   // 创建修改记录
   const modificationRecord = {
     stage: rejectedStage, // 使用被拒绝的具体阶段
-    status: '修改提交',
+    status: STATUS_LABELS[MANUSCRIPT_STATUS.REVISION_SUBMITTED] || 'Revision Submitted',
     reviewer: currentUsername.value,
     date: new Date().toISOString().split('T')[0],
     comment: modificationDescription.value,
@@ -505,14 +506,15 @@ const saveModifications = () => {
   }
   
   // 根据被拒绝的阶段设置相应的待审核状态
-  let newStatus = '待审核' // 默认状态
-  if (rejectedStage === '初审') {
-    newStatus = '待初审'
-  } else if (rejectedStage === '复审') {
-    newStatus = '待复审'
-  } else if (rejectedStage === '终审') {
-    newStatus = '待终审'
-  }
+  let newStatus = MANUSCRIPT_STATUS.REVISION_SUBMITTED // Use standardized status
+  
+  // Notify Responsible Editor
+  userStore.addNotification({
+    title: 'Revision Submitted',
+    content: `Author ${userStore.user?.username || 'Unknown'} submitted a revision for "${editedJournal.value.title}".`,
+    targetRole: 'editor',
+    manuscriptId: journal.value.id
+  })
 
   // Save Revision Recommended Reviewers
   if (revisionRecommended.value.length > 0) {
@@ -522,8 +524,8 @@ const saveModifications = () => {
               id: Date.now() + index,
               manuscriptId: journal.value.id,
               manuscriptTitle: editedJournal.value.title,
-              authorId: userStore.user?.id || 999,
-              authorName: userStore.user?.username || 'Unknown',
+              writerId: userStore.user?.id || 999,
+              writerName: userStore.user?.username || 'Unknown',
               reviewerName: reviewer.name,
               reviewerEmail: reviewer.email,
               reviewerAffiliation: reviewer.affiliation || 'N/A',
@@ -546,8 +548,8 @@ const saveModifications = () => {
               id: Date.now() + index + 100,
               manuscriptId: journal.value.id,
               manuscriptTitle: editedJournal.value.title,
-              authorId: userStore.user?.id || 999,
-              authorName: userStore.user?.username || 'Unknown',
+              writerId: userStore.user?.id || 999,
+              writerName: userStore.user?.username || 'Unknown',
               opposedReviewerName: reviewer.name,
               opposedReviewerAffiliation: reviewer.affiliation || 'N/A',
               opposedReason: reviewer.reason,
@@ -595,7 +597,7 @@ const cancelEdit = () => {
 // 检查是否可以修改稿件
 const canModify = computed(() => {
   // 只有稿件作者可以修改
-  if (journal.value?.author !== currentUsername.value) return false
+  if (journal.value?.writer !== currentUsername.value) return false
   
   // 只有未通过或修改再审状态的稿件可以修改
   return ['已拒稿', '未通过', '修改再审'].includes(journal.value?.status || '')
@@ -606,7 +608,7 @@ const saveReviewRecord = () => {
   if (!journal.value) return
   
   // 设置期刊作者
-  newRecord.value.journalAuthor = journal.value.author
+  newRecord.value.journalWriter = journal.value.writer
   
   // 生成唯一ID
   newRecord.value.id = Date.now().toString()
@@ -641,7 +643,7 @@ const saveReviewRecord = () => {
     reviewResult: '',
     reviewComments: '',
     reviewDate: new Date().toISOString(),
-    journalAuthor: ''
+    journalWriter: ''
   }
 }
 
@@ -739,7 +741,7 @@ const goBack = () => {
             </div>
 
             <div class="meta-item">
-              <strong>作者：</strong>{{ journal.author }}
+              <strong>Writer:</strong>{{ journal.writer }}
             </div>
             <div class="meta-item">
               <strong>模块：</strong>

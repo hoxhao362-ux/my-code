@@ -155,8 +155,8 @@ onUnmounted(() => {
   background-color: #F5F5F5;
   padding: 32px 24px;
   position: fixed;
-  height: calc(100vh - 80px);
-  top: 80px;
+  height: calc(100vh - 120px);
+  top: 120px;
   left: 0;
 }
 
@@ -190,8 +190,8 @@ onUnmounted(() => {
   width: 20%;
   position: fixed;
   right: 0;
-  top: 80px;
-  height: calc(100vh - 80px);
+  top: 120px;
+  height: calc(100vh - 120px);
   padding: 32px 24px;
   background-color: #fff;
   border-left: 1px solid #F5F5F5;

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onUnmounted, watch } from 'vue'
-import { useUserStore } from '../../stores/user'
+import { useUserStore } from '../stores/user'
 
 const props = defineProps({
   visible: {

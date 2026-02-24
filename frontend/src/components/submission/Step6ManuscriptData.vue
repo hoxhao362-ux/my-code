@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import StepNavigation from './StepNavigation.vue'
@@ -10,9 +11,11 @@ import { useErrorScroll } from '../../composables/useErrorScroll'
 import { validateORCID, validateDOI, searchInstitutions } from '../../utils/validators'
 
 const store = useSubmissionStore()
+const router = useRouter()
 const { t } = useI18n()
 const submitting = ref(false)
 const showPublishingModal = ref(false)
+const showSuccessToast = ref(false) // Journal Platform Standard Toast State
 const { scrollToError } = useErrorScroll()
 
 // Helper: Institution Search
@@ -34,7 +37,7 @@ const handleInstSearch = async (query, index) => {
 }
 
 const selectInstitution = (index, inst) => {
-  store.formData.authors[index].institution = inst
+  store.formData.writers[index].institution = inst
   showInstSuggestions.value = null
 }
 
@@ -90,9 +93,9 @@ const quillOptions = {
   theme: 'snow'
 }
 
-// Author Management
-const addAuthor = () => {
-  store.formData.authors.push({
+// Writer Management
+const addWriter = () => {
+  store.formData.writers.push({
     id: Date.now(),
     name: '',
     institution: '',
@@ -102,25 +105,39 @@ const addAuthor = () => {
   })
 }
 
-const removeAuthor = (index) => {
-  store.formData.authors.splice(index, 1)
+const removeWriter = (index) => {
+  store.formData.writers.splice(index, 1)
 }
 
-const updateAuthorRole = (index, role) => {
+const updateWriterRole = (index, role) => {
   if (role === 'corresponding') {
-    store.formData.authors.forEach((a, i) => a.isCorresponding = i === index)
+    // If checking (turning on), uncheck all others
+    // If unchecking (turning off), just allow it
+    const willBeChecked = !store.formData.writers[index].isCorresponding
+    
+    if (willBeChecked) {
+      store.formData.writers.forEach((w, i) => w.isCorresponding = i === index)
+    } else {
+      store.formData.writers[index].isCorresponding = false
+    }
   } else if (role === 'first') {
-    store.formData.authors.forEach((a, i) => a.isFirst = i === index)
+    const willBeChecked = !store.formData.writers[index].isFirst
+    
+    if (willBeChecked) {
+      store.formData.writers.forEach((w, i) => w.isFirst = i === index)
+    } else {
+      store.formData.writers[index].isFirst = false
+    }
   }
 }
 
-// Drag Sort Authors
+// Drag Sort Writers
 const dragStartIdx = ref(null)
 const onDragStart = (idx) => { dragStartIdx.value = idx }
 const onDropItem = (dropIdx) => {
   if (dragStartIdx.value !== null && dragStartIdx.value !== dropIdx) {
-    const item = store.formData.authors.splice(dragStartIdx.value, 1)[0]
-    store.formData.authors.splice(dropIdx, 0, item)
+    const item = store.formData.writers.splice(dragStartIdx.value, 1)[0]
+    store.formData.writers.splice(dropIdx, 0, item)
   }
   dragStartIdx.value = null
 }
@@ -140,9 +157,9 @@ const generatePDF = () => {
       <h1>${store.formData.title.replace(/<[^>]*>/g, '')}</h1>
       <h3>${t('manuscriptData.pdf.abstract')}</h3>
       <div>${store.formData.abstract}</div>
-      <h3>${t('manuscriptData.pdf.authors')}</h3>
+      <h3>${t('manuscriptData.pdf.writers')}</h3>
       <ul>
-        ${store.formData.authors.map(a => `<li>${a.name} (${a.institution})</li>`).join('')}
+        ${store.formData.writers.map(w => `<li>${w.name} (${w.institution})</li>`).join('')}
       </ul>
       <h3>${t('manuscriptData.pdf.funding')}</h3>
       ${store.formData.noFunding ? t('manuscriptData.pdf.none') : `<ul>${store.formData.funding.map(f => `<li>${f.body} - ${f.number}</li>`).join('')}</ul>`}
@@ -163,10 +180,40 @@ const generatePDF = () => {
 
 // Submit Flow
 const handlePreSubmit = () => {
-  if (store.validateCurrentStep()) {
+  // Trigger full process validation
+  if (store.validateAllSteps()) {
     showPublishingModal.value = true
   } else {
-    window.scrollTo(0, 0)
+    // Find first error step
+    const failedStep = store.steps.find(s => s.status === 'error')
+    if (failedStep) {
+      store.goToStep(failedStep.id)
+      
+      // Journal Platform Standard Validation Messages
+      let msg = 'Please complete all required sections (Article Title, Corresponding Author Info, Copyright Agreement) before submission.'
+      
+      if (failedStep.id === 4) {
+         const info = store.formData.additionalInfo
+         
+         // Check Reviewers
+         let hasReviewerIssue = false
+         if (info.recommendedReviewers && info.recommendedReviewers.length > 0) {
+             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+             hasReviewerIssue = info.recommendedReviewers.some(r => !r.name || !r.email || !emailRegex.test(r.email) || !r.coiDeclared)
+         }
+         
+         // Check Blind Review
+         const hasBlindIssue = !info.blindReview.confirmed
+         
+         if (hasReviewerIssue) {
+             msg = 'Please complete all required fields for Suggested Reviewers (Full Name, Email, Conflict of Interest Declaration).'
+         } else if (hasBlindIssue) {
+             msg = 'Please complete the Manuscript Anonymization Check and confirm no identifiable information is included.'
+         }
+      }
+      
+      alert(msg)
+    }
   }
 }
 
@@ -180,11 +227,23 @@ const confirmSubmit = async () => {
   showPublishingModal.value = false
   
   try {
-    await store.submitManuscript()
-    alert(t('manuscriptData.successMessage'))
-    window.location.href = '/' 
+    const manuscriptId = await store.submitManuscript()
+    
+    // Journal Platform Standard: Pure Frontend Cleanup Feedback
+    showSuccessToast.value = true
+    // Store ID for display if needed, though toast uses fixed text per requirements "Submission successful..."
+    // Wait, user said "Submitted status: show ... 'Submitted (Manuscript ID: ${ID})'". 
+    // This probably refers to the status label, not the toast.
+    // The toast text requirement: "Submission successful. All draft data has been cleared for your next submission."
+    
+    setTimeout(() => {
+      showSuccessToast.value = false
+      router.push({ name: 'admin-writer-dashboard' })
+    }, 3000)
+    
   } catch (e) {
-    alert('Submission failed')
+    console.error(e)
+    alert('Submission failed. Please try again.') 
   } finally {
     submitting.value = false
   }
@@ -229,38 +288,38 @@ const confirmSubmit = async () => {
       </div>
     </div>
 
-    <!-- Authors -->
-    <div class="section author-section">
+    <!-- Writers -->
+    <div class="section writer-section">
       <div class="section-header">
-        <h3>{{ t('manuscriptData.authors.title') }}</h3>
-        <button class="btn-add" @click="addAuthor">+ {{ t('manuscriptData.authors.add') }}</button>
+        <h3>{{ t('manuscriptData.writers.title') }}</h3>
+        <button class="btn-add" @click="addWriter">+ {{ t('manuscriptData.writers.add') }}</button>
       </div>
       
-      <div class="author-list">
+      <div class="writer-list">
         <div 
-          v-for="(author, index) in store.formData.authors" 
-          :key="author.id"
-          class="author-card"
-          :class="{ 'error-border': store.steps[5].status === 'error' && (!author.name || !author.institution || !author.email) }"
+          v-for="(writer, index) in store.formData.writers" 
+          :key="writer.id"
+          class="writer-card"
+          :class="{ 'error-border': store.steps[5].status === 'error' && (!writer.name || !writer.institution || !writer.email) }"
           draggable="true"
           @dragstart="onDragStart(index)"
           @dragover.prevent
           @drop="onDropItem(index)"
         >
           <div class="card-header">
-            <span class="drag-handle">☰ {{ t('manuscriptData.authors.title') }} {{ index + 1 }}</span>
-            <button class="btn-delete" @click="removeAuthor(index)">×</button>
+            <span class="drag-handle">☰ {{ t('manuscriptData.writers.title') }} {{ index + 1 }}</span>
+            <button class="btn-delete" @click="removeWriter(index)">×</button>
           </div>
           
           <div class="card-body">
             <div class="form-row">
-              <input v-model="author.name" :placeholder="t('manuscriptData.authors.name')" class="form-input">
+              <input v-model="writer.name" :placeholder="t('manuscriptData.writers.name')" class="form-input">
               
               <div class="inst-search-wrapper" style="position: relative; width: 100%;">
                 <input 
-                  v-model="author.institution" 
+                  v-model="writer.institution" 
                   @input="e => handleInstSearch(e.target.value, index)"
-                  :placeholder="t('manuscriptData.authors.institution')" 
+                  :placeholder="t('manuscriptData.writers.institution')" 
                   class="form-input"
                 >
                 <ul v-if="showInstSuggestions === index && instSuggestions.length > 0" class="inst-suggestions">
@@ -269,11 +328,11 @@ const confirmSubmit = async () => {
               </div>
             </div>
             <div class="form-row">
-              <input v-model="author.email" :placeholder="t('manuscriptData.authors.email')" class="form-input">
+              <input v-model="writer.email" :placeholder="t('manuscriptData.writers.email')" class="form-input">
               <div class="orcid-wrapper" style="width: 100%;">
                 <input 
-                   v-model="author.orcid" 
-                   @blur="checkORCID(index, author.orcid)"
+                   v-model="writer.orcid" 
+                   @blur="checkORCID(index, writer.orcid)"
                    placeholder="ORCID (e.g. 0000-0000-0000-0000)" 
                    class="form-input"
                    :class="{'valid': orcidStatus[index]?.valid, 'invalid': orcidStatus[index]?.valid === false}"
@@ -284,32 +343,32 @@ const confirmSubmit = async () => {
               </div>
             </div>
             <div class="roles">
-              <label>
+              <label class="radio-label">
                 <input 
-                  type="radio" 
-                  name="corresponding" 
-                  :checked="author.isCorresponding"
-                  @change="updateAuthorRole(index, 'corresponding')"
+                  type="checkbox" 
+                  class="role-checkbox"
+                  :checked="writer.isCorresponding"
+                  @change="updateWriterRole(index, 'corresponding')"
                 > 
-                {{ t('manuscriptData.authors.corresponding') }}
+                {{ t('manuscriptData.writers.corresponding') }}
               </label>
-              <label>
+              <label class="radio-label">
                 <input 
-                  type="radio" 
-                  name="first" 
-                  :checked="author.isFirst"
-                  @change="updateAuthorRole(index, 'first')"
+                  type="checkbox" 
+                  class="role-checkbox"
+                  :checked="writer.isFirst"
+                  @change="updateWriterRole(index, 'first')"
                 > 
-                {{ t('manuscriptData.authors.first') }}
+                {{ t('manuscriptData.writers.first') }}
               </label>
             </div>
           </div>
         </div>
       </div>
       <div v-if="store.steps[5].status === 'error'" class="error-msg">
-        <div v-if="store.formData.authors.length === 0">{{ t('manuscriptData.errors.noAuthor') }}</div>
-        <div v-if="!store.formData.authors.some(a => a.isCorresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
-        <div v-if="!store.formData.authors.some(a => a.isFirst)">{{ t('manuscriptData.errors.noFirst') }}</div>
+        <div v-if="store.formData.writers.length === 0">{{ t('manuscriptData.errors.noWriter') }}</div>
+        <div v-if="!store.formData.writers.some(w => w.isCorresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
+        <div v-if="!store.formData.writers.some(w => w.isFirst)">{{ t('manuscriptData.errors.noFirst') }}</div>
       </div>
     </div>
 
@@ -413,13 +472,78 @@ const confirmSubmit = async () => {
         </div>
       </div>
     </div>
+    <!-- Journal Platform Standard Success Toast -->
+    <div v-if="showSuccessToast" class="jp-toast-overlay">
+      <div class="jp-toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-content">
+          <h4>Submission successful</h4>
+          <p>All draft data has been cleared for your next submission.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.jp-toast-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Center screen or top? Journal Platform usually center or top. Let's do top-center like a toast */
+  align-items: flex-start;
+  padding-top: 50px;
+  pointer-events: none; /* Let clicks pass through if needed, but usually blocks interaction */
+}
+
+.jp-toast {
+  background: #333;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 300px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.toast-icon {
+  background: #27ae60;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.toast-content h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.toast-content p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .step-container {
   max-width: 900px;
   margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .step-title {
@@ -442,7 +566,7 @@ const confirmSubmit = async () => {
   margin-bottom: 1.5rem;
   color: #2c3e50;
   font-size: 1.2rem;
-  border-left: 4px solid #3498db;
+  border-left: 4px solid #0056B3;
   padding-left: 10px;
 }
 
@@ -456,7 +580,7 @@ const confirmSubmit = async () => {
   font-weight: 600;
 }
 
-.required { color: #e74c3c; }
+.required { color: #dc3545; }
 
 .form-input, .form-select {
   width: 100%;
@@ -465,7 +589,7 @@ const confirmSubmit = async () => {
   border-radius: 4px;
 }
 
-/* Author Cards */
+/* Writer Cards */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -474,7 +598,7 @@ const confirmSubmit = async () => {
 }
 
 .btn-add {
-  background: #3498db;
+  background: #0056B3;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -482,12 +606,12 @@ const confirmSubmit = async () => {
   cursor: pointer;
 }
 
-.author-list {
+.writer-list {
   display: grid;
   gap: 1rem;
 }
 
-.author-card {
+.writer-card {
   border: 1px solid #eee;
   border-radius: 6px;
   padding: 1rem;
@@ -495,8 +619,8 @@ const confirmSubmit = async () => {
   cursor: move;
 }
 
-.author-card.error-border {
-  border-color: #e74c3c;
+.writer-card.error-border {
+  border-color: #dc3545;
   background: #fff5f5;
 }
 
@@ -633,9 +757,7 @@ const confirmSubmit = async () => {
 .inst-suggestions li {
   padding: 8px 12px;
   cursor: pointer;
-}
-
-.inst-suggestions li:hover {
+}.inst-suggestions li:hover {
   background: #f0f8ff;
 }
 
@@ -662,4 +784,46 @@ const confirmSubmit = async () => {
   display: flex;
   align-items: center;
 }
+
+/* Checkbox style to look like radio */.role-checkbox {
+  appearance: none;
+  background-color: #fff;
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 1.15em;
+  height: 1.15em;
+  border: 0.15em solid currentColor;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  margin-right: 0.5em;
+  cursor: pointer;
+}
+
+.role-checkbox::before {
+  content: "";
+  width: 0.65em;
+  height: 0.65em;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em #dc3545;
+}
+
+.role-checkbox:checked {
+  border-color: #dc3545;
+}
+
+.role-checkbox:checked::before {
+  transform: scale(1);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
 </style>

@@ -2,7 +2,10 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { encryptPassword, decryptPassword } from '../../utils/encryption'
+import { useI18n } from '../../composables/useI18n'
 
+const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -32,6 +35,9 @@ onMounted(() => {
   if (savedUser) {
     const userData = JSON.parse(savedUser)
     username.value = userData.username || ''
+    if (userData.password) {
+      password.value = decryptPassword(userData.password)
+    }
     rememberMe.value = true
   }
   
@@ -58,7 +64,7 @@ const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
-const handleLogin = () => {
+const handleLogin = async () => {
   // Reset errors
   usernameError.value = ''
   passwordError.value = ''
@@ -67,11 +73,11 @@ const handleLogin = () => {
   // Frontend Validation
   let hasError = false
   if (!username.value) {
-    usernameError.value = 'Please enter your email/username'
+    usernameError.value = t('auth.login.usernameError')
     hasError = true
   }
   if (!password.value) {
-    passwordError.value = 'Please enter your password'
+    passwordError.value = t('auth.login.passwordError')
     hasError = true
   }
   
@@ -80,42 +86,30 @@ const handleLogin = () => {
   // Loading State
   isLoading.value = true
   
-  // Mock Login Delay (1.5s)
-  setTimeout(() => {
-    // Mock Success (Pure Frontend)
-    // Create mock user data for Main Site Read-Only context
-    const mockUser = {
+  try {
+    // Call store action with password verification
+    await userStore.login({
       username: username.value,
-      role: 'user', // Basic user role for read-only
-      email: username.value.includes('@') ? username.value : `${username.value}@example.com`,
-      id: 'readonly_' + Date.now()
-    }
-    
-    // Update Store (Client-side only)
-    userStore.user = mockUser
-    // We do NOT save to the main 'user' localStorage to avoid conflict with Submit system if possible,
-    // BUT Navigation.vue checks localStorage('user') or store.
-    // The requirement says: "Remember me... store in localStorage... not cross with submit login".
-    // "Login success... jump to main site static home... no backend interface call".
+      password: password.value
+    })
     
     // To satisfy "Remember Me" requirement:
     if (rememberMe.value) {
-      localStorage.setItem('readOnlyUser', JSON.stringify({ username: username.value }))
+      localStorage.setItem('readOnlyUser', JSON.stringify({ 
+        username: username.value,
+        password: encryptPassword(password.value)
+      }))
     } else {
       localStorage.removeItem('readOnlyUser')
     }
     
-    // For session persistence (Read-Only Session), we might need to set 'user' in store.
-    // Since we can't touch backend, we just set the store state.
-    // If the app reloads, state is lost unless we save to localStorage.
-    // Standard 'user' key is used by main site. Submit system uses 'submissionUser'.
-    // So it is safe to use 'user' key for Main Site Read-Only session as long as it doesn't overwrite 'submissionUser'.
-    sessionStorage.setItem('readonly_user', JSON.stringify(mockUser))
-    sessionStorage.setItem('readonly_isLogin', 'true')
-    
-    isLoading.value = false
+    // Redirect
     router.push('/home')
-  }, 1500)
+  } catch (error) {
+    loginError.value = error.message || t('auth.login.failed')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const goToRegister = () => {
@@ -143,12 +137,12 @@ const goToForgotPassword = () => {
         </div>
 
         <h1 class="platform-title">
-          Journal <span class="highlight">Submission Platform</span>
+          {{ t('nav.logo') }}
         </h1>
-        <h2 class="login-subtitle">Login - Read-Only Access</h2>
+        <h2 class="login-subtitle">{{ t('auth.login.title') }}</h2>
         <p class="login-desc">
-          Access to view content only - no editing/submission permissions<br>
-          Separate from submit login system (second-tier access)
+          {{ t('auth.login.subtitle') }}<br>
+          {{ t('auth.login.desc') }}
         </p>
       </div>
 
@@ -156,11 +150,11 @@ const goToForgotPassword = () => {
       <div class="login-form">
         <!-- Username -->
         <div class="form-group" :class="{ 'has-error': usernameError }">
-          <label>Username / Email</label>
+          <label>{{ t('auth.login.usernameLabel') }}</label>
           <input 
             type="text" 
             v-model="username" 
-            placeholder="Enter your registered email/username"
+            :placeholder="t('auth.login.usernamePlaceholder')"
             :class="{ 'error-border': usernameError }"
           />
           <p v-if="usernameError" class="error-text">{{ usernameError }}</p>
@@ -168,12 +162,12 @@ const goToForgotPassword = () => {
 
         <!-- Password -->
         <div class="form-group" :class="{ 'has-error': passwordError }">
-          <label>Password</label>
+          <label>{{ t('auth.login.passwordLabel') }}</label>
           <div class="password-input-wrapper">
             <input 
               :type="showPassword ? 'text' : 'password'" 
               v-model="password" 
-              placeholder="Enter your password"
+              :placeholder="t('auth.login.passwordPlaceholder')"
               :class="{ 'error-border': passwordError }"
             />
             <span class="eye-icon" @click="togglePasswordVisibility">
@@ -187,9 +181,9 @@ const goToForgotPassword = () => {
         <div class="form-actions">
           <label class="remember-me">
             <input type="checkbox" v-model="rememberMe">
-            <span>Remember me for 30 days</span>
+            <span>{{ t('auth.login.rememberMe') }}</span>
           </label>
-          <a href="#" class="forgot-password" @click.prevent="goToForgotPassword">Forgot Password?</a>
+          <a href="#" class="forgot-password" @click.prevent="goToForgotPassword">{{ t('auth.login.forgotPassword') }}</a>
         </div>
 
         <!-- Login Error -->
@@ -202,25 +196,25 @@ const goToForgotPassword = () => {
           :disabled="isLoading"
           :class="{ 'loading': isLoading }"
         >
-          {{ isLoading ? 'Logging in...' : 'Login' }}
+          {{ isLoading ? t('auth.login.submitting') : t('auth.login.submit') }}
         </button>
 
         <!-- Register Link (Read-Only) -->
         <div class="register-link-wrapper">
-          <span class="register-text-label">Don’t have an account? </span>
-          <a href="#" class="register-link" @click.prevent="goToRegister">Register for Read-Only Access</a>
+          <span class="register-text-label">{{ t('auth.login.noAccount') }} </span>
+          <a href="#" class="register-link" @click.prevent="goToRegister">{{ t('auth.login.registerAction') }}</a>
         </div>
       </div>
 
       <!-- Footer Section -->
       <div class="login-footer">
         <div class="footer-links">
-          <a href="#" target="_blank">Privacy Policy</a>
+          <a href="#" target="_blank">{{ t('auth.footer.privacy') }}</a>
           <span class="separator">|</span>
-          <a href="#" target="_blank">Terms of Use</a>
+          <a href="#" target="_blank">{{ t('auth.footer.terms') }}</a>
         </div>
         <p class="copyright">
-          &copy; 2026 Journal Submission Platform. All rights reserved.
+          {{ t('auth.footer.copyright') }}
         </p>
       </div>
       </div>

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useI18n } from '../composables/useI18n'
+import { useUserStore } from '../stores/user'
 
 const props = defineProps({
   journal: Object,
@@ -20,6 +21,14 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'cancel'])
 const { t } = useI18n()
+const userStore = useUserStore()
+const user = computed(() => userStore.user)
+
+// Manuscript Info
+const manuscriptId = computed(() => props.journal?.id || 'N/A')
+const manuscriptTitle = computed(() => props.journal?.title || 'Untitled Manuscript')
+const reviewerFullName = computed(() => user.value?.fullName || user.value?.username || 'Unknown Reviewer')
+const reviewerAffiliation = computed(() => user.value?.institution || user.value?.affiliation || 'Unknown Affiliation')
 
 // Evaluation Dimensions
 const dimensions = computed(() => {
@@ -51,6 +60,7 @@ const confidentialComments = ref('')
 const decision = ref('')
 const uploadedFile = ref(null)
 const lastSaved = ref(null) // For auto-save feedback
+const showConfirmModal = ref(false)
 
 // Load Draft or Initial Data
 const loadData = () => {
@@ -89,8 +99,6 @@ const loadData = () => {
 loadData()
 
 // Auto-Save Logic
-import { watch } from 'vue'
-
 const saveDraft = () => {
   if (props.readonly || !props.journal) return
   
@@ -107,6 +115,7 @@ const saveDraft = () => {
 }
 
 // Watch changes
+let saveTimer = null
 watch(
   [ratings, comments, confidentialComments, decision],
   () => {
@@ -118,7 +127,6 @@ watch(
   { deep: true }
 )
 
-let saveTimer = null
 
 const errors = reactive({
   ratings: false,
@@ -148,11 +156,13 @@ const removeFile = () => {
 // Validation
 const validate = () => {
   let isValid = true
-  
+  let firstErrorElement = null
+
   // Check all dimensions rated
   if (Object.values(ratings).some(v => !v)) {
     errors.ratings = true
     isValid = false
+    if (!firstErrorElement) firstErrorElement = document.querySelector('.dimensions-grid')
   } else {
     errors.ratings = false
   }
@@ -161,6 +171,7 @@ const validate = () => {
   if (!comments.value.trim()) {
     errors.comments = true
     isValid = false
+    if (!firstErrorElement) firstErrorElement = document.querySelector('.comments-section textarea')
   } else {
     errors.comments = false
   }
@@ -169,8 +180,13 @@ const validate = () => {
   if (!decision.value) {
     errors.decision = true
     isValid = false
+    if (!firstErrorElement) firstErrorElement = document.querySelector('.decision-section select')
   } else {
     errors.decision = false
+  }
+
+  if (firstErrorElement) {
+    firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
   return isValid
@@ -178,24 +194,45 @@ const validate = () => {
 
 const handleSubmit = () => {
   if (validate()) {
-    // Clear draft on submit
-    if (props.journal) {
-      localStorage.removeItem(`review_draft_${props.journal.id}`)
-    }
-    
-    emit('submit', {
-      ratings: { ...ratings },
-      comments: comments.value,
-      confidentialComments: confidentialComments.value,
-      decision: decision.value,
-      file: uploadedFile.value
-    })
+    showConfirmModal.value = true
   }
+}
+
+const confirmSubmit = () => {
+  // Clear draft on submit
+  if (props.journal) {
+    localStorage.removeItem(`review_draft_${props.journal.id}`)
+  }
+  
+  emit('submit', {
+    ratings: { ...ratings },
+    comments: comments.value,
+    confidentialComments: confidentialComments.value,
+    decision: decision.value,
+    file: uploadedFile.value
+  })
+  showConfirmModal.value = false
 }
 </script>
 
 <template>
   <div class="review-form-container">
+    <!-- Manuscript Info Header -->
+    <div class="info-card manuscript-info-header">
+      <div class="info-row">
+        <span class="label">Manuscript ID:</span>
+        <span class="value">{{ manuscriptId }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Manuscript Title:</span>
+        <span class="value title-truncate" :title="manuscriptTitle">{{ manuscriptTitle }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Reviewer:</span>
+        <span class="value">{{ reviewerFullName }} ({{ reviewerAffiliation }})</span>
+      </div>
+    </div>
+
     <!-- Comparison Section -->
     <div class="info-card comparison-card">
       <h3>Review Guidelines</h3>
@@ -203,7 +240,7 @@ const handleSubmit = () => {
         <li><strong>Scoring:</strong> Please rate each dimension from Excellent to Poor.</li>
         <li>Efficiency: Please complete your review within the due date.</li>
         <li>Priority: 'Originality' is the most critical dimension.</li>
-        <li>Response: Provide constructive feedback for the authors.</li>
+        <li>Response: Provide constructive feedback for the writers.</li>
       </ul>
     </div>
 
@@ -229,7 +266,7 @@ const handleSubmit = () => {
       </div>
       <div class="rules-grid" v-else>
         <div class="rule-item">
-          <strong>Focus:</strong> Evaluate if the author has addressed previous comments.
+          <strong>Focus:</strong> Evaluate if the writer has addressed previous comments.
         </div>
         <div class="rule-item">
           <strong>Changes:</strong> Check the diff view for specific modifications.
@@ -244,6 +281,7 @@ const handleSubmit = () => {
     <div class="form-section">
       <div class="section-header">
         <h3>{{ t('review.title') }}</h3>
+        <span class="required-hint">* Required field</span>
         <span v-if="lastSaved && !readonly" class="save-status">Draft saved at {{ lastSaved }}</span>
       </div>
       
@@ -251,7 +289,7 @@ const handleSubmit = () => {
       <div class="dimensions-grid">
         <div v-for="dim in dimensions" :key="dim" class="dimension-item">
           <label :class="{ 'highlight': dim === 'Originality' || dim === 'Resolution of issues' }">
-            {{ dim }}
+            <span class="required">*</span> {{ dim }}
             <span v-if="dim === 'Originality' || dim === 'Resolution of issues'" class="badge">Highest Priority</span>
           </label>
           <select v-model="ratings[dim]" :class="{ 'error': errors.ratings && !ratings[dim] }" :disabled="readonly">
@@ -262,11 +300,11 @@ const handleSubmit = () => {
           </select>
         </div>
       </div>
-      <p v-if="errors.ratings && !readonly" class="error-text">All dimensions must be rated.</p>
+      <p v-if="errors.ratings && !readonly" class="error-text">Please select a rating level for all required review criteria.</p>
 
       <!-- Comments -->
       <div class="comments-section">
-        <label>Review Comments (To Author)</label>
+        <label><span class="required">*</span> Review Comments (To Author)</label>
         <textarea 
           v-model="comments" 
           rows="6" 
@@ -274,7 +312,7 @@ const handleSubmit = () => {
           :class="{ 'error': errors.comments }"
           :disabled="readonly"
         ></textarea>
-        <p v-if="errors.comments && !readonly" class="error-text">Review comments are required.</p>
+        <p v-if="errors.comments && !readonly" class="error-text">Please provide review comments for the author (Review Comments (To Author)).</p>
 
         <label>Confidential Comments (To Editor)</label>
         <textarea 
@@ -300,7 +338,7 @@ const handleSubmit = () => {
 
       <!-- Decision -->
       <div class="decision-section">
-        <label>Recommendation</label>
+        <label><span class="required">*</span> Recommendation</label>
         <select v-model="decision" :class="{ 'error': errors.decision }" :disabled="readonly">
           <option value="" disabled>Select Recommendation</option>
           <option value="Accept">Accept</option>
@@ -308,13 +346,25 @@ const handleSubmit = () => {
           <option value="Major Revision">Major Revision</option>
           <option value="Reject">Reject</option>
         </select>
-        <p v-if="errors.decision && !readonly" class="error-text">Recommendation is required.</p>
+        <p v-if="errors.decision && !readonly" class="error-text">Please select a final recommendation for the manuscript.</p>
       </div>
 
       <!-- Actions -->
       <div class="form-actions" v-if="!readonly">
         <button class="btn-cancel" @click="$emit('cancel')">Cancel</button>
         <button class="btn-submit" @click="handleSubmit">Submit Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div v-if="showConfirmModal" class="modal-overlay">
+    <div class="modal-container">
+      <h3>Confirm Submission</h3>
+      <p>Are you sure you want to submit this review? This action cannot be undone, and the review will be immediately available to the editorial team.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" @click="showConfirmModal = false">Cancel</button>
+        <button class="btn-submit" @click="confirmSubmit">Confirm Submit</button>
       </div>
     </div>
   </div>
@@ -333,6 +383,41 @@ const handleSubmit = () => {
   padding: 1.5rem;
   border-radius: 6px;
   margin-bottom: 1.5rem;
+}
+
+.manuscript-info-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.manuscript-info-header .info-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.manuscript-info-header .label {
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.manuscript-info-header .value {
+  color: #495057;
+  font-weight: 500;
+}
+
+.title-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 600px;
+  display: inline-block;
+  vertical-align: bottom;
 }
 
 .comparison-card {
@@ -531,5 +616,60 @@ textarea {
 
 .btn-cancel:hover {
   background: #7f8c8d;
+}
+
+.required {
+  color: #e74c3c;
+  margin-right: 4px;
+}
+
+.required-hint {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-left: 1rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-container h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-container p {
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
 }
 </style>

@@ -2,9 +2,11 @@
 import { ref, onMounted, onUnmounted, reactive, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 const router = useRouter()
@@ -62,11 +64,11 @@ const validateField = (field) => {
 }
 
 const saveDraft = () => {
-  localStorage.setItem('reviewer_application_draft', JSON.stringify(form))
-  // showToast('Draft saved successfully.') // Assuming toast component exists or reused
+  userStore.saveReviewerApplicationDraft(form)
+  toastStore.success('Draft saved successfully.')
 }
 
-const submitApplication = () => {
+const submitApplication = async () => {
   // 1. Frontend Validation
   validateField('name')
   validateField('email')
@@ -74,6 +76,7 @@ const submitApplication = () => {
   validateField('areas')
 
   if (errors.name || errors.email || errors.orcid || errors.areas) {
+    toastStore.error('Please fix the errors in the form.')
     return
   }
 
@@ -81,6 +84,7 @@ const submitApplication = () => {
   // Simulate backend check: if ORCID is '0000-0000-0000-0000', fail it.
   if (form.orcid === '0000-0000-0000-0000') {
     topError.value = 'This ORCID ID is already associated with another reviewer account'
+    toastStore.error(topError.value)
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
@@ -88,41 +92,57 @@ const submitApplication = () => {
   topError.value = ''
   isLoading.value = true
 
-  // Simulate API Call
-  setTimeout(() => {
+  try {
+    await userStore.submitReviewerApplication(form)
     isLoading.value = false
-    
-    // Save application data
-    localStorage.removeItem('reviewer_application_draft')
-    
-    // Update user status to 'pending_review' in store
-    // We assume user is logged in. If not, we might need to create one or store in session.
-    // For this demo, we assume the current user applies.
-    if (user.value) {
-       // Add 'reviewer_application' to user object or store separate state
-       // Updating status to a specific application state
-       // But 'status' usually means account status. 
-       // Let's use a specific flag in localStorage to track application state for the frontend demo.
-       localStorage.setItem('reviewer_application_status', 'pending_review')
-       localStorage.setItem('reviewer_application_data', JSON.stringify(form))
-    }
-    
     showSuccessModal.value = true
-  }, 1000)
+  } catch (error) {
+    isLoading.value = false
+    toastStore.error('Submission failed. Please try again.')
+    console.error(error)
+  }
 }
 
 const handleSuccessConfirm = () => {
   showSuccessModal.value = false
+  // 提交成功后：
+  // 按钮变为不可点击状态，文字改为已提交。
+  // 页面显示清晰提示：Your reviewer application has been submitted and is under review.
+  // 实际上跳转到 Application Status 页面是更好的体验，因为那里有完整状态展示。
+  // 根据需求文档： "保留查看申请、刷新状态功能，页面保持正常交互，不冻结。" -> ApplicationStatus 页面符合要求。
   router.push('/reviewer/application-status')
 }
 
-onMounted(() => {
-  const draft = localStorage.getItem('reviewer_application_draft')
-  if (draft) {
-    const data = JSON.parse(draft)
-    Object.assign(form, data)
-  }
-})
+  onMounted(() => {
+    // Check if already approved or pending
+    const status = userStore.reviewerApplicationStatus
+    if (status === 'approved' || status === 'pending_review') {
+      // If user is reviewer or already applied, redirect to status page
+      if (status === 'approved') {
+        toastStore.info('You are already a reviewer.')
+        router.push('/reviewer/application-status')
+        return
+      }
+      if (status === 'pending_review') {
+        router.push('/reviewer/application-status')
+        return
+      }
+    }
+    
+    // Virtual Account Check: If user role is already reviewer, skip application
+    if (userStore.user?.role === 'reviewer') {
+       toastStore.info('You are already a reviewer.')
+       router.push('/reviewer/application-status')
+       return
+    }
+
+    // Load draft
+    const draft = userStore.reviewerApplication.draft
+    if (draft) {
+      Object.assign(form, draft)
+      toastStore.info('Draft loaded.')
+    }
+  })
 </script>
 
 <template>
@@ -140,7 +160,7 @@ onMounted(() => {
 
     <div class="sidebar-info">
       <h1>Become a Reviewer</h1>
-      <p>Reviewing for The Lancet is a prestigious role that allows you to contribute to the scientific community. As a reviewer, you will:</p>
+      <p>Reviewing for the Journal Submission Platform is a prestigious role that allows you to contribute to the scientific community. As a reviewer, you will:</p>
       <ul>
         <li>Stay updated with the latest research in your field.</li>
         <li>Gain recognition for your service (Publons/Web of Science).</li>
@@ -199,6 +219,7 @@ onMounted(() => {
         <div class="actions">
           <button class="btn-save" @click="saveDraft">Save Draft</button>
           <button class="btn-submit" @click="submitApplication" :disabled="isLoading">
+            <span v-if="isLoading" class="spinner"></span>
             <span v-if="isLoading">Submitting...</span>
             <span v-else>Submit Application</span>
           </button>
@@ -228,6 +249,7 @@ onMounted(() => {
   padding-top: 0;
   margin-top: 80px;
   position: relative;
+  background-color: #f9f9f9;
 }
 
 .top-error-banner {
@@ -251,18 +273,20 @@ onMounted(() => {
   height: calc(100vh - 80px);
   top: 80px;
   left: 0;
+  border-right: 1px solid #e0e0e0;
 }
 
 .sidebar-info h1 {
-  font-size: 20px;
-  font-weight: bold;
+  font-size: 24px;
+  font-weight: 600;
   color: #333;
   margin-bottom: 24px;
+  font-family: 'Segoe UI', sans-serif; /* Journal Platform style font preference */
 }
 
 .sidebar-info p, .sidebar-info li {
-  font-size: 14px;
-  color: #333;
+  font-size: 15px;
+  color: #4a4a4a;
   line-height: 1.6;
   margin-bottom: 12px;
 }
@@ -281,37 +305,38 @@ onMounted(() => {
 .form-area {
   margin-left: 30%;
   width: 70%;
-  padding: 48px;
+  padding: 60px 80px;
   background-color: white;
 }
 
 .form-container {
-  max-width: 600px;
+  max-width: 700px;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .form-group label {
   display: block;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
   color: #333;
   margin-bottom: 8px;
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #E5E5E5;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px; /* Standard corners like Journal Platform */
+  font-size: 15px;
   outline: none;
+  transition: border-color 0.2s;
 }
 
 .form-group input:focus {
-  border-color: #333; /* Default focus */
+  border-color: #0056B3; /* Journal Platform Blue */
 }
 
 /* Error Styles */
@@ -321,49 +346,74 @@ onMounted(() => {
 
 .error-text {
   color: #C93737;
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
 .actions {
   display: flex;
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 40px;
+  align-items: center;
 }
 
 .btn-save {
-  padding: 10px 24px;
-  background-color: #E5E5E5;
+  padding: 12px 28px;
+  background-color: #f0f0f0;
   color: #333;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #ccc;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.2s;
+}
+
+.btn-save:hover {
+  background-color: #e0e0e0;
 }
 
 .btn-submit {
-  padding: 10px 24px;
-  background-color: #C93737;
+  padding: 12px 28px;
+  background-color: #0056B3; /* Journal Platform Blue */
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
 }
 
 .btn-submit:hover {
-  background-color: #A02C2C;
+  background-color: #00447a;
 }
 
 .btn-submit:disabled {
-  background-color: #fab1b1;
+  background-color: #8ab6d6;
   cursor: not-allowed;
 }
 
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .privacy-note {
-  font-size: 12px;
-  color: #999;
-  margin-top: 16px;
+  font-size: 13px;
+  color: #777;
+  margin-top: 24px;
 }
 
 /* Modal Styles */
@@ -382,25 +432,26 @@ onMounted(() => {
 
 .modal-content {
   background: white;
-  padding: 32px;
-  border-radius: 8px;
-  width: 450px;
-  border: 1px solid #E5E5E5;
+  padding: 40px;
+  border-radius: 4px;
+  width: 500px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   text-align: center;
 }
 
 .modal-content h3 {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 600;
   color: #333;
   margin-bottom: 16px;
   margin-top: 0;
 }
 
 .modal-content p {
-  color: #666;
-  margin-bottom: 24px;
-  line-height: 1.5;
+  color: #555;
+  margin-bottom: 30px;
+  line-height: 1.6;
+  font-size: 15px;
 }
 
 .modal-actions-center {
@@ -409,13 +460,14 @@ onMounted(() => {
 }
 
 .btn-confirm {
-  background: #C93737;
+  background: #005696;
   color: white;
   border: none;
-  padding: 10px 32px;
-  border-radius: 4px;
+  padding: 12px 36px;
+  border-radius: 2px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 15px;
 }
 
 @media (max-width: 768px) {
@@ -427,10 +479,13 @@ onMounted(() => {
     position: relative;
     height: auto;
     top: 0;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
   }
   .form-area {
     margin-left: 0;
     width: 100%;
+    padding: 32px;
   }
 }
 </style>

@@ -6,7 +6,7 @@ import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
 import { validateEmail, validatePhone, encryptPassword } from '../utils/encryption'
 
-// 邮箱加密函数：保留前2位和后4位，中间用*代替
+// Email encryption: Keep first 2 and last 4 chars (domain), mask middle with *
 const encryptEmail = (email) => {
   if (!email) return ''
   const [username, domain] = email.split('@')
@@ -14,7 +14,7 @@ const encryptEmail = (email) => {
   return `${username.slice(0, 2)}${'*'.repeat(username.length - 2)}@${domain}`
 }
 
-// 手机号加密函数：保留前3位和后4位，中间用*代替
+// Phone encryption: Keep first 3 and last 4 digits, mask middle with *
 const encryptPhone = (phone) => {
   if (!phone) return ''
   if (phone.length !== 11) return phone
@@ -27,112 +27,110 @@ const router = useRouter()
 const route = useRoute()
 const user = computed(() => userStore.user)
 
-// 组件挂载时处理路由参数
+// Handle route params on mount
 onMounted(() => {
-  // 检查是否有mode参数，如果是安全模式，则跳转到账号安全页面
+  // Check if mode param exists (e.g. security mode)
   const mode = route.query.mode
   if (mode === 'security') {
-    // 检查用户是否登录
+    // Check if user is logged in
     if (!user.value) {
-      // 未登录用户跳转到登录页面
       router.push('/login')
       return
     }
     
-    // 检查用户角色
+    // Check user role
     const userRole = user.value.role || 'user'
     
-    // 如果是后台角色，跳转到后台账号安全页面
+    // If admin/backend role, redirect to backend security page
     if (['admin', 'reviewer', 'author'].includes(userRole)) {
       router.push('/admin/profile-security')
     } else {
-      // 普通用户可以在主站添加一个简单的账号安全页面
-      // 或者提示没有权限
-      alert('您没有权限访问账号安全页面，请先登录后台账号')
+      // Normal user
+      alert('You do not have permission to access the security page. Please log in to the backend account first.')
       router.push('/profile')
     }
   }
 })
 
-// 头像弹窗状态
+// Avatar modal state
 const showAvatarModal = ref(false)
 const showAvatarActions = ref(false)
 const fileInput = ref(null)
 
-// 获取当前用户的投稿记录
+// Get current user's submission records
 const userJournals = computed(() => {
   if (!user.value) return []
   return userStore.journals.filter(journal => journal.author === user.value.username)
 })
 
-// 切换目录显示
+// Toggle directory display
 const toggleDirectory = () => {
   directoryStore.toggleDirectory()
 }
 
-// 查看信息状态
+// Contact info visibility state
 const showFullContactInfo = ref(false)
 
-// 切换查看信息状态
+// Toggle contact info visibility
 const toggleContactInfo = () => {
   showFullContactInfo.value = !showFullContactInfo.value
 }
 
-// 显示头像操作菜单
+// Show avatar action menu
 const showAvatarMenu = (event) => {
   event.stopPropagation()
   showAvatarActions.value = true
 }
 
-// 隐藏头像操作菜单
+// Hide avatar action menu
 const hideAvatarMenu = () => {
   showAvatarActions.value = false
 }
 
-// 查看头像
+// View avatar
 const viewAvatar = () => {
   showAvatarModal.value = true
   hideAvatarMenu()
 }
 
-// 关闭头像查看弹窗
+// Close avatar modal
 const closeAvatarModal = () => {
   showAvatarModal.value = false
 }
 
-// 触发文件选择
+// Trigger file selection
 const triggerFileSelect = () => {
   hideAvatarMenu()
   fileInput.value?.click()
 }
 
-// 处理头像上传
+// Handle avatar upload
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // 检查文件类型
+    // Check file type
     if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件')
+      alert('Please select an image file')
       return
     }
     
-    // 检查文件大小（限制为5MB）
+    // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过5MB')
+      alert('Image size cannot exceed 5MB')
       return
     }
     
-    // 读取文件并显示预览
+    // Read file and show preview
     const reader = new FileReader()
     reader.onload = (e) => {
       const imageUrl = e.target.result
-      // 更新用户头像
+      // Update user avatar
       userStore.updateUser({ avatar: imageUrl })
-      alert('头像更新成功')
+      alert('Avatar updated successfully')
     }
     reader.readAsDataURL(file)
     
-    // 清空文件输入，允许再次选择同一个文件
+    // Clear file input to allow selecting the same file again
     event.target.value = ''
   }
 }
@@ -142,7 +140,7 @@ const handleAvatarUpload = (event) => {
 
 <template>
   <div class="profile-container">
-    <!-- 导航栏 -->
+    <!-- Navigation -->
     <Navigation 
       :user="user"
       :current-page="'profile'"
@@ -150,12 +148,12 @@ const handleAvatarUpload = (event) => {
       :logout="userStore.logout"
     />
 
-    <!-- 个人中心内容 -->
+    <!-- Profile Content -->
     <main class="profile-content">
       <div class="profile-wrapper">
-        <!-- 用户信息卡片 -->
+        <!-- User Info Card -->
         <div class="user-card">
-          <!-- 头像位置 -->
+          <!-- Avatar Section -->
           <div class="avatar-section">
             <div 
               class="user-avatar-container"
@@ -174,7 +172,7 @@ const handleAvatarUpload = (event) => {
                 <span v-else>{{ user?.username?.charAt(0).toUpperCase() || 'U' }}</span>
               </div>
               
-              <!-- 头像操作菜单 -->
+              <!-- Avatar Action Menu -->
               <div 
                 v-if="showAvatarActions" 
                 class="avatar-actions-menu"
@@ -183,17 +181,17 @@ const handleAvatarUpload = (event) => {
                   class="btn btn-edit" 
                   @click="viewAvatar"
                 >
-                  查看头像
+                  View Avatar
                 </button>
                 <button 
                   class="btn btn-password" 
                   @click="triggerFileSelect"
                 >
-                  更改头像
+                  Change Avatar
                 </button>
               </div>
               
-              <!-- 隐藏的文件输入控件 -->
+              <!-- Hidden File Input -->
               <input 
                 type="file" 
                 ref="fileInput"
@@ -205,36 +203,36 @@ const handleAvatarUpload = (event) => {
           </div>
           
           <div class="user-card-header">
-            <h3 class="card-title">个人信息</h3>
+            <h3 class="card-title">Personal Information</h3>
             <div class="header-actions">
-              <!-- 只显示查看信息按钮 -->
+              <!-- View/Hide Info Button -->
               <button 
                 class="btn btn-view" 
                 @click="toggleContactInfo"
               >
-                {{ showFullContactInfo ? '隐藏信息' : '查看信息' }}
+                {{ showFullContactInfo ? 'Hide Details' : 'View Details' }}
               </button>
             </div>
           </div>
           
-          <!-- 用户信息 -->
+          <!-- User Details -->
           <div class="user-info">
             <div class="user-details">
-              <h2 class="user-name">{{ user?.username || '未知用户' }}</h2>
+              <h2 class="user-name">{{ user?.username || 'Unknown User' }}</h2>
               <p class="user-role">
-                {{ user?.role === 'admin' ? '管理员' : 
-                   user?.role === 'reviewer' ? '审核员' : 
-                   user?.role === 'author' ? '作者' : '普通用户' }}
+                {{ user?.role === 'admin' ? 'Admin' : 
+                   user?.role === 'reviewer' ? 'Reviewer' : 
+                   user?.role === 'author' ? 'Author' : 'User' }}
               </p>
               <div class="user-contact" v-if="showFullContactInfo">
-                <p v-if="user?.email"><strong>邮箱：</strong>{{ encryptEmail(user.email) }}</p>
-                <p v-if="user?.phone"><strong>手机号：</strong>{{ encryptPhone(user.phone) }}</p>
+                <p v-if="user?.email"><strong>Email:</strong> {{ encryptEmail(user.email) }}</p>
+                <p v-if="user?.phone"><strong>Phone:</strong> {{ encryptPhone(user.phone) }}</p>
               </div>
             </div>
           </div>
         </div>
         
-        <!-- 头像查看弹窗 -->
+        <!-- Avatar View Modal -->
         <div 
           v-if="showAvatarModal" 
           class="avatar-modal" 
@@ -246,14 +244,14 @@ const handleAvatarUpload = (event) => {
               <img :src="user?.avatar" :alt="user?.username" class="full-size-avatar" />
             </div>
             <div v-else class="no-avatar-message">
-              <p>您还没有上传头像</p>
+              <p>No avatar uploaded</p>
             </div>
           </div>
         </div>
         
-        <!-- 用户投稿记录 -->
+        <!-- User Submissions -->
         <div class="journals-section">
-          <h3 class="section-title">我的投稿</h3>
+          <h3 class="section-title">My Submissions</h3>
           <div v-if="userJournals.length > 0" class="journals-list">
             <div 
               v-for="journal in userJournals" 
@@ -265,39 +263,39 @@ const handleAvatarUpload = (event) => {
                   {{ journal.title }}
                 </h4>
                 <div class="journal-meta">
-                  <span>投稿日期：{{ journal.date }}</span>
-                  <span>模块：{{ journal.module }}</span>
-                  <span>状态：<span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span></span>
-                  <span>阅读量：{{ journal.viewCount }}</span>
+                  <span>Date: {{ journal.date }}</span>
+                  <span>Module: {{ journal.module }}</span>
+                  <span>Status: <span class="journal-status" :class="journal.status.toLowerCase()">{{ journal.status }}</span></span>
+                  <span>Views: {{ journal.viewCount }}</span>
                 </div>
               </div>
             </div>
           </div>
           <div v-else class="no-journals">
-            <p>暂无投稿记录</p>
+            <p>No submission records</p>
           </div>
         </div>
         
-        <!-- 操作按钮 -->
+        <!-- Action Buttons -->
         <div class="profile-actions">
           <button class="btn btn-primary" @click="$router.push('/submit')">
-            去投稿
+            Submit New Manuscript
           </button>
         </div>
       </div>
     </main>
 
-    <!-- 页脚 -->
+    <!-- Footer -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
 </template>
 
 <style scoped>
-/* 个人中心样式 */
+/* Profile Container */
 .profile-container {
   min-height: 100vh;
   display: flex;
@@ -305,14 +303,14 @@ const handleAvatarUpload = (event) => {
   background: #f5f7fa;
 }
 
-/* 主内容 */
+/* Main Content */
 .profile-content {
   flex: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
-  margin-top: 80px; /* 为固定导航栏留出空间 */
+  margin-top: 80px; /* Space for fixed navbar */
 }
 
 .profile-wrapper {
@@ -322,7 +320,7 @@ const handleAvatarUpload = (event) => {
   padding: 2rem;
 }
 
-/* 用户信息卡片 */
+/* User Card */
 .user-card {
   display: flex;
   flex-direction: column;
@@ -331,7 +329,7 @@ const handleAvatarUpload = (event) => {
   margin-bottom: 2rem;
 }
 
-/* 头像部分 */
+/* Avatar Section */
 .avatar-section {
   display: flex;
   justify-content: center;
@@ -373,7 +371,7 @@ const handleAvatarUpload = (event) => {
   display: block;
 }
 
-/* 头像操作菜单 */
+/* Avatar Actions Menu */
 .avatar-actions-menu {
   position: absolute;
   top: 100%;
@@ -407,7 +405,7 @@ const handleAvatarUpload = (event) => {
   min-width: 70px;
 }
 
-/* 用户卡片头部 */
+/* User Card Header */
 .user-card-header {
   display: flex;
   align-items: center;
@@ -448,7 +446,7 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
 }
 
-/* 隐藏文件输入控件 */
+/* Hidden File Input */
 .hidden-file-input {
   display: none;
 }
@@ -476,13 +474,13 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
 }
 
-/* 头部操作按钮 */
+/* Header Actions */
 .header-actions {
   display: flex;
   gap: 0.5rem;
 }
 
-/* 更改密码按钮 */
+/* Change Password Button */
 .btn-password {
   background: #f39c12;
   color: white;
@@ -494,7 +492,7 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
 }
 
-/* 保存按钮 */
+/* Save Button */
 .btn-save {
   background: #2ecc71;
   color: white;
@@ -506,7 +504,7 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
 }
 
-/* 主按钮 */
+/* Primary Button */
 .btn-primary {
   background: #3498db;
   color: white;
@@ -518,7 +516,7 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
 
-/* 身份验证部分 */
+/* Verification Section */
 .verification-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
@@ -581,7 +579,7 @@ const handleAvatarUpload = (event) => {
   border: 1px solid #ffeeba;
 }
 
-/* 编辑部分标题 */
+/* Edit Section Title */
 .edit-section-title {
   font-size: 1.2rem;
   font-weight: 600;
@@ -589,7 +587,7 @@ const handleAvatarUpload = (event) => {
   margin: 0 0 1.5rem 0;
 }
 
-/* 信息编辑和密码编辑区域 */
+/* Info Edit and Password Edit Sections */
 .info-edit-section,
 .password-edit-section {
   margin-top: 2rem;
@@ -603,7 +601,7 @@ const handleAvatarUpload = (event) => {
   border-left-color: #f39c12;
 }
 
-/* 密码要求 */
+/* Password Requirements */
 .password-requirements {
   margin-top: 1.5rem;
   padding: 1rem;
@@ -627,7 +625,7 @@ const handleAvatarUpload = (event) => {
   margin-left: -1rem;
 }
 
-/* 用户信息查看模式 */
+/* User Info View Mode */
 .user-info {
   width: 100%;
 }
@@ -663,7 +661,7 @@ const handleAvatarUpload = (event) => {
   color: #555;
 }
 
-/* 用户信息编辑模式 */
+/* User Info Edit Mode */
 .user-edit-form {
   width: 100%;
   max-width: 600px;
@@ -705,7 +703,7 @@ const handleAvatarUpload = (event) => {
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
-/* 投稿记录部分 */
+/* Journals Section */
 .journals-section {
   margin-top: 2rem;
   padding: 1.5rem;
@@ -775,7 +773,7 @@ const handleAvatarUpload = (event) => {
   gap: 0.25rem;
 }
 
-/* 期刊状态 */
+/* Journal Status */
 .journal-status {
   padding: 0.3rem 0.8rem;
   border-radius: 12px;
@@ -799,7 +797,7 @@ const handleAvatarUpload = (event) => {
   color: white;
 }
 
-/* 无投稿记录 */
+/* No Journals */
 .no-journals {
   text-align: center;
   padding: 2rem;
@@ -809,7 +807,7 @@ const handleAvatarUpload = (event) => {
   border: 1px dashed #dee2e6;
 }
 
-/* 操作按钮 */
+/* Action Buttons */
 .profile-actions {
   display: flex;
   gap: 1rem;
@@ -818,7 +816,7 @@ const handleAvatarUpload = (event) => {
   margin-top: 2rem;
 }
 
-/* 头像查看弹窗 */
+/* Avatar Modal */
 .avatar-modal {
   position: fixed;
   top: 0;
@@ -883,7 +881,7 @@ const handleAvatarUpload = (event) => {
   color: #7f8c8d;
 }
 
-/* 页脚 */
+/* Footer */
 .footer {
   background: #2c3e50;
   color: white;
@@ -903,7 +901,7 @@ const handleAvatarUpload = (event) => {
   font-size: 0.9rem;
 }
 
-/* 响应式设计 */
+/* Responsive Design */
 @media (max-width: 768px) {
   .profile-content {
     padding: 1.5rem;

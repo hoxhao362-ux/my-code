@@ -23,6 +23,10 @@ export const useSubmissionStore = defineStore('submission', () => {
     
     // Step 2
     files: [], // { id, name, type, description, fileObj (raw), url }
+    referenceAnonymization: {
+      file: null,
+      confirmed: false
+    },
     
     // Step 3
     region: '',
@@ -54,7 +58,7 @@ export const useSubmissionStore = defineStore('submission', () => {
     title: '',
     abstract: '',
     keywords: '',
-    authors: [], // { id, name, institution, email, isCorresponding, isFirst }
+    writers: [], // { id, name, institution, email, isCorresponding, isFirst }
     funding: [], // { id, body, number }
     noFunding: false,
     publishingOption: '' // Subscription / Open Access
@@ -113,6 +117,15 @@ export const useSubmissionStore = defineStore('submission', () => {
                 isValid = false
             }
         }
+        if (isValid) {
+          const requiredTypes = ['manuscript', 'contribution', 'conflict']
+          const hasAllRequired = requiredTypes.every(type => 
+            formData.value.files.some(f => f.type === type)
+          )
+          if (!hasAllRequired) {
+            isValid = false
+          }
+        }
         break
       case 3:
         isValid = !!formData.value.region && formData.value.classifications.length > 0
@@ -165,16 +178,16 @@ export const useSubmissionStore = defineStore('submission', () => {
         isValid = !!formData.value.coverLetter
         break
       case 6:
-        const hasAuthor = formData.value.authors.length > 0
-        const hasCorresponding = formData.value.authors.some(a => a.isCorresponding)
-        const hasFirst = formData.value.authors.some(a => a.isFirst)
+        const hasWriter = formData.value.writers.length > 0
+        const hasCorresponding = formData.value.writers.some(a => a.isCorresponding)
+        const hasFirst = formData.value.writers.some(a => a.isFirst)
         const hasFunding = formData.value.noFunding || formData.value.funding.length > 0
         
         const cleanTitle = formData.value.title.replace(/<[^>]*>/g, '').trim()
         const cleanAbstract = formData.value.abstract.replace(/<[^>]*>/g, '').trim()
         
         isValid = !!cleanTitle && !!cleanAbstract && !!formData.value.keywords &&
-                  hasAuthor && hasCorresponding && hasFirst && hasFunding
+                  hasWriter && hasCorresponding && hasFirst && hasFunding
         break
     }
     return isValid
@@ -195,69 +208,103 @@ export const useSubmissionStore = defineStore('submission', () => {
     return isValid
   }
 
+  // 验证所有步骤
+  const validateAllSteps = () => {
+    let allValid = true
+    for (const step of steps.value) {
+      const isValid = validateStep(step.id)
+      if (!isValid) {
+        step.status = 'error'
+        allValid = false
+      } else {
+        step.status = 'completed'
+      }
+    }
+    return allValid
+  }
+
   // 导航
   const nextStep = () => {
-    if (validateCurrentStep()) {
-      if (currentStep.value < 6) {
-        steps.value[currentStep.value - 1].status = 'completed'
-        currentStep.value++
-        steps.value[currentStep.value - 1].status = 'current'
-        window.scrollTo(0, 0)
-        saveDraft() 
-        return true
-      }
+    // Save draft regardless of validation
+    saveDraft()
+    
+    // Validate current step to update status, but DO NOT block navigation
+    // Per requirements: "Trigger full process mandatory item verification only after clicking 'Submit Manuscript'"
+    validateCurrentStep() 
+    
+    if (currentStep.value < 6) {
+      currentStep.value++
+      // Set new step as current
+      steps.value.forEach(s => {
+         if (s.id === currentStep.value) s.status = 'current'
+         // Previous steps remain as they were (completed or error or pending)
+      })
+      window.scrollTo(0, 0)
+      return true
     }
     return false
   }
 
   const prevStep = () => {
     if (currentStep.value > 1) {
-      validateCurrentStep()
-      currentStep.value--
-      steps.value[currentStep.value - 1].status = 'current'
-      window.scrollTo(0, 0)
+      // Save draft
       saveDraft()
+      
+      // Update status of current step before leaving
+      validateCurrentStep()
+      
+      currentStep.value--
+      steps.value.forEach(s => {
+         if (s.id === currentStep.value) s.status = 'current'
+      })
+      window.scrollTo(0, 0)
     }
   }
   
   const goToStep = (targetStep) => {
+    saveDraft()
     validateCurrentStep()
     currentStep.value = targetStep
     
-    steps.value.forEach((s, index) => {
-       if (index + 1 === targetStep) {
+    steps.value.forEach((s) => {
+       if (s.id === targetStep) {
          s.status = 'current'
-       } else {
-         const valid = validateStep(index + 1)
-         if (!valid) {
-             if (index + 1 < targetStep) s.status = 'error'
-             else s.status = 'pending' 
-             if (s.status === 'error') s.status = 'error' 
-         } else {
-             s.status = 'completed'
-         }
        }
     })
     
-    steps.value[targetStep - 1].status = 'current'
     window.scrollTo(0, 0)
-    saveDraft()
   }
 
   // 提交
   const submitManuscript = async () => {
     // 模拟提交
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
         const userStore = useUserStore()
         
         // 1. Generate Mock Manuscript ID
         const manuscriptId = 20260000 + Math.floor(Math.random() * 10000)
         
-        // 2. Get Author Info
-        const authorId = userStore.submissionUser?.id || userStore.user?.id || 999
-        const authorName = userStore.submissionUser?.username || userStore.user?.username || (formData.value.authors[0]?.name || 'Unknown Author')
+        // 2. Get Writer Info
+        const writerId = userStore.submissionUser?.id || userStore.user?.id || 999
+        const writerName = userStore.submissionUser?.username || userStore.user?.username || (formData.value.writers[0]?.name || 'Unknown Writer')
         const title = formData.value.title ? formData.value.title.replace(/<[^>]*>/g, '').trim() : 'Untitled Manuscript'
+
+        // 2.5 Create and Save Journal Entry (Fix: Ensure manuscript is added to main list)
+        const newJournal = {
+            id: manuscriptId,
+            title: title,
+            writer: writerName,
+            author: writerName,
+            module: formData.value.classifications?.[0] || 'Others',
+            status: 'pending_initial_review',
+            submissionDate: new Date().toISOString().split('T')[0],
+            abstract: formData.value.abstract ? formData.value.abstract.replace(/<[^>]*>/g, '').trim() : '',
+            keywords: formData.value.keywords || '',
+            fileUrl: '/vite.svg',
+            reviews: []
+        }
+        userStore.addJournal(newJournal)
 
         // 3. Process Recommended Reviewers
         const recommended = formData.value.additionalInfo.recommendedReviewers || []
@@ -270,8 +317,8 @@ export const useSubmissionStore = defineStore('submission', () => {
                     id: Date.now() + index,
                     manuscriptId: manuscriptId,
                     manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
+                    writerId: writerId,
+                    writerName: writerName,
                     reviewerName: reviewer.name,
                     reviewerEmail: reviewer.email,
                     reviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A', 
@@ -302,8 +349,8 @@ export const useSubmissionStore = defineStore('submission', () => {
                     id: Date.now() + index + 100,
                     manuscriptId: manuscriptId,
                     manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
+                    writerId: writerId,
+                    writerName: writerName,
                     opposedReviewerName: reviewer.name,
                     opposedReviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A',
                     reasonType: reviewer.reasonType || 'Other',
@@ -321,15 +368,42 @@ export const useSubmissionStore = defineStore('submission', () => {
         // 5. Add System Log
         userStore.addSystemLog({
             type: 'operation',
-            user: authorName,
+            user: writerName,
             action: 'Submit Manuscript',
             target: `Manuscript ID: ${manuscriptId}`,
             ip: '127.0.0.1'
         })
 
-        // 清除草稿
+        // 清除草稿 (Journal Platform Standard Cleanup)
         localStorage.removeItem('submission_draft')
-        resolve(true)
+        
+        // Reset Store State (Pure Frontend Cleanup)
+        currentStep.value = 1
+        steps.value.forEach(s => s.status = s.id === 1 ? 'current' : 'pending')
+        formData.value = {
+            articleType: '',
+            files: [],
+            referenceAnonymization: { file: null, confirmed: false },
+            region: '',
+            classifications: [],
+            additionalInfo: {
+                q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
+                ssrn: false, socialMedia: '', conference: 'No',
+                recommendedReviewers: [],
+                avoidedReviewers: [],
+                blindReview: { enabled: true, confirmed: false }
+            },
+            coverLetter: '',
+            title: '',
+            abstract: '',
+            keywords: '',
+            writers: [],
+            funding: [],
+            noFunding: false,
+            publishingOption: ''
+        }
+        
+        resolve(manuscriptId)
       }, 1500)
     })
   }
@@ -341,6 +415,7 @@ export const useSubmissionStore = defineStore('submission', () => {
     init,
     saveDraft,
     validateCurrentStep,
+    validateAllSteps,
     nextStep,
     prevStep,
     goToStep,

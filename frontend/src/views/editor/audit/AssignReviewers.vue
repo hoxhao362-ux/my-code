@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useI18n } from '../../../composables/useI18n'
 import Navigation from '../../../components/Navigation.vue'
 import IntelligentReviewerRecommendation from '../../../components/audit/IntelligentReviewerRecommendation.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
@@ -12,6 +14,12 @@ const user = computed(() => userStore.user)
 // Filter for manuscripts waiting for assignment
 const assignmentJournals = computed(() => {
   return userStore.journals.filter(journal => 
+    // Public Pool
+    journal.status === 'reviewer_assignment_pending' || 
+    journal.status === 'initial_review_passed' || 
+    // Assigned specifically to current user (or Admin sees all)
+    (journal.status === 'assigned_to_editor' && (journal.assignedEditor === user.value?.username || user.value?.role === 'admin')) ||
+    // Legacy support
     journal.status === 'Pending Assignment'
   )
 })
@@ -26,12 +34,11 @@ const filterMethod = ref('all') // 'field', 'method'
 const searchQuery = ref('')
 const activeTab = ref('recommended') // 'manual', 'smart', 'recommended'
 
-const authorRecommendedReviewers = computed(() => {
+const writerRecommendedReviewers = computed(() => {
   if (!currentJournal.value) return []
-  // Get accepted recommendations for this manuscript
+  // Get all recommendations for this manuscript (Removed 'accepted' filter per requirements)
   return userStore.recommendedReviewers.filter(r => 
-    String(r.manuscriptId) === String(currentJournal.value.id) && 
-    r.status === 'accepted'
+    String(r.manuscriptId) === String(currentJournal.value.id)
   )
 })
 
@@ -48,7 +55,7 @@ const openAssignModal = (journal) => {
   currentJournal.value = journal
   selectedReviewerIds.value = []
   
-  // Check if there are author recommendations
+  // Check if there are writer recommendations
   const hasRecommendations = userStore.recommendedReviewers.some(r => 
     String(r.manuscriptId) === String(journal.id) && 
     r.status === 'accepted'
@@ -80,12 +87,12 @@ const handleSelectRecommended = (reviewer) => {
 
 const confirmAssignment = () => {
   if (selectedReviewerIds.value.length < 1) {
-    alert('Please select at least one reviewer.')
+    alert(t('editor.audit.assignReviewers.alerts.selectAtLeastOne'))
     return
   }
   
   const journal = { ...currentJournal.value }
-  journal.status = 'Under Review' // English status
+  journal.status = 'under_peer_review'
   
   // Mix of Real Users (Manual/Smart) and Recommended Reviewers
   const newReviewers = selectedReviewerIds.value.map(id => {
@@ -95,7 +102,7 @@ const confirmAssignment = () => {
       return {
         id: realUser.id,
         name: realUser.username,
-        status: 'Invited',
+        status: 'Pending', // Journal Platform Standard
         invitedAt: new Date().toISOString()
       }
     }
@@ -107,7 +114,7 @@ const confirmAssignment = () => {
          id: 'rec-' + recReviewer.id, // Temporary ID
          name: recReviewer.reviewerName,
          email: recReviewer.reviewerEmail,
-         status: 'Invited (External)',
+         status: 'Pending', // Journal Platform Standard
          invitedAt: new Date().toISOString(),
          isExternal: true
        }
@@ -119,11 +126,11 @@ const confirmAssignment = () => {
   
   userStore.updateJournal(journal)
   showModal.value = false
-  alert(`Reviewers assigned. ${newReviewers.length} invitations sent. Manuscript moved to "Under Review".`)
+  alert(t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: newReviewers.length }))
 }
 
 const handleReinvite = (journal) => {
-  alert('Re-invitation feature would go here.')
+  alert(t('editor.audit.assignReviewers.alerts.reinviteHint'))
 }
 
 </script>
@@ -134,8 +141,8 @@ const handleReinvite = (journal) => {
     
     <main class="content">
       <div class="header">
-        <h1>Assign Reviewers</h1>
-        <p class="subtitle">Select and Invite Peer Reviewers</p>
+        <h1>{{ t('editor.audit.assignReviewers.title') }}</h1>
+        <p class="subtitle">{{ t('editor.audit.assignReviewers.subtitle') }}</p>
       </div>
 
       <div class="journals-list">
@@ -143,20 +150,20 @@ const handleReinvite = (journal) => {
           <div class="journal-info">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>Writer:</strong> {{ journal.author }}</span>
-              <span><strong>Module:</strong> {{ journal.module }}</span>
+              <span><strong>{{ t('editor.audit.assignReviewers.meta.writer') }}:</strong> {{ journal.writer }}</span>
+              <span><strong>{{ t('editor.audit.assignReviewers.meta.module') }}:</strong> {{ journal.module }}</span>
             </div>
             <div class="tags">
                <span class="tag">AI</span> <span class="tag">Imaging</span> <!-- Mock tags -->
             </div>
           </div>
           <div class="journal-actions">
-            <button class="btn btn-primary" @click="openAssignModal(journal)">Assign Reviewers</button>
-            <button class="btn btn-secondary" @click="handleReinvite(journal)">Re-invite</button>
+            <button class="btn btn-primary" @click="openAssignModal(journal)">{{ t('editor.audit.assignReviewers.actions.assign') }}</button>
+            <button class="btn btn-secondary" @click="handleReinvite(journal)">{{ t('editor.audit.assignReviewers.actions.reinvite') }}</button>
           </div>
         </div>
         <div v-if="assignmentJournals.length === 0" class="no-data">
-          No manuscripts waiting for reviewer assignment.
+          {{ t('editor.audit.assignReviewers.noManuscripts') }}
         </div>
       </div>
     </main>
@@ -164,7 +171,7 @@ const handleReinvite = (journal) => {
     <!-- Modal -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
-        <h2>Select Reviewers</h2>
+        <h2>{{ t('editor.audit.assignReviewers.modalTitle') }}</h2>
         
         <!-- Tabs -->
         <div class="modal-tabs">
@@ -173,61 +180,40 @@ const handleReinvite = (journal) => {
             :class="{ active: activeTab === 'recommended' }"
             @click="activeTab = 'recommended'"
           >
-            👤 Author Recommended
-            <span v-if="authorRecommendedReviewers.length" class="badge-count">{{ authorRecommendedReviewers.length }}</span>
+            👤 {{ t('editor.audit.assignReviewers.tabs.writerRecommended') }}
+            <span v-if="writerRecommendedReviewers.length" class="badge-count">{{ writerRecommendedReviewers.length }}</span>
           </button>
           <button 
             class="tab-btn" 
             :class="{ active: activeTab === 'smart' }"
             @click="activeTab = 'smart'"
           >
-            🤖 Smart Recommendation
+            🤖 {{ t('editor.audit.assignReviewers.tabs.smartRecommendation') }}
           </button>
           <button 
             class="tab-btn" 
             :class="{ active: activeTab === 'manual' }"
             @click="activeTab = 'manual'"
           >
-            🔍 Manual Search
+            🔍 {{ t('editor.audit.assignReviewers.tabs.manualSearch') }}
           </button>
         </div>
 
-        <!-- Author Recommended Tab -->
+        <!-- Writer Recommended Tab -->
         <div v-if="activeTab === 'recommended'" class="tab-content">
-          <div v-if="authorRecommendedReviewers.length === 0" class="no-data-tab">
-            No approved author recommendations for this manuscript.
-            <p class="hint">Please check "Recommended Reviewers" audit page first.</p>
+          <div v-if="writerRecommendedReviewers.length === 0" class="no-data-tab">
+            {{ t('editor.audit.assignReviewers.noWriterRecommendations') }}
+            <p class="hint">{{ t('editor.audit.assignReviewers.writerRecommendationHint') }}</p>
           </div>
           <div v-else class="reviewer-list">
-             <div v-for="reviewer in authorRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
+             <div v-for="reviewer in writerRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
                <label>
-                 <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds" disabled> <!-- ID might not match user ID, handling below -->
-                 <!-- Wait, recommendedReviewers might not have a user ID if they are external. 
-                      Ideally they should have been registered or linked. 
-                      If status is 'accepted', they might just be approved for invitation. 
-                      The logic in RecommendedReviewers says: "accepted" -> Just status change.
-                      They might NOT be in the main user list yet if they haven't registered.
-                      Requirement: "If not in system -> Send invitation".
-                      "If already in system -> Assign".
-                      
-                      Here we are ASSIGNING.
-                      If they are external, we can't assign them until they register?
-                      Or we invite them to register?
-                      
-                      Let's assume for now we just invite them via email if they are selected here.
-                      So we use their email.
-                 -->
                  <div class="reviewer-info">
                    <span class="r-name">{{ reviewer.reviewerName }}</span>
+                   <span class="r-email">{{ reviewer.reviewerEmail }}</span>
                    <span class="r-aff">{{ reviewer.reviewerAffiliation }}</span>
-                   <div class="r-reason">Reason: {{ reviewer.recommendationReason }}</div>
+                   <div class="r-reason">{{ t('editor.audit.assignReviewers.reason') }}: {{ reviewer.recommendationReason }}</div>
                  </div>
-                 <button class="btn-select-rec" 
-                   @click="handleSelectRecommended(reviewer)"
-                   :class="{ 'selected': selectedReviewerIds.includes(reviewer.id) }"
-                 >
-                   {{ selectedReviewerIds.includes(reviewer.id) ? 'Selected' : 'Select' }}
-                 </button>
                </label>
             </div>
           </div>
@@ -244,17 +230,17 @@ const handleReinvite = (journal) => {
         <!-- Manual Tab -->
         <div v-if="activeTab === 'manual'" class="tab-content manual-content">
           <div class="modal-search">
-             <input v-model="searchQuery" placeholder="Search reviewers..." class="search-input" />
+             <input v-model="searchQuery" :placeholder="t('editor.audit.assignReviewers.searchPlaceholder')" class="search-input" />
              <div class="filters">
-               <label><input type="radio" v-model="filterMethod" value="all"> All</label>
-               <label><input type="radio" v-model="filterMethod" value="field"> Match Field</label>
+               <label><input type="radio" v-model="filterMethod" value="all"> {{ t('editor.audit.assignReviewers.filters.all') }}</label>
+               <label><input type="radio" v-model="filterMethod" value="field"> {{ t('editor.audit.assignReviewers.filters.matchField') }}</label>
              </div>
           </div>
           <div class="reviewer-list">
             <div v-for="reviewer in filteredReviewers" :key="reviewer.id" class="reviewer-item">
                <label>
                  <input type="checkbox" :value="reviewer.id" v-model="selectedReviewerIds">
-                 <span class="r-name">{{ reviewer.username }}</span>
+                 <span class="r-name">{{ reviewer.fullName }}</span>
                  <span class="r-email">{{ reviewer.email }}</span>
                </label>
             </div>
@@ -262,10 +248,10 @@ const handleReinvite = (journal) => {
         </div>
 
         <div class="modal-footer">
-          <div class="selection-count">Selected: {{ selectedReviewerIds.length }}</div>
+          <div class="selection-count">{{ t('editor.audit.assignReviewers.selectionCount', { count: selectedReviewerIds.length }) }}</div>
           <div class="buttons">
-            <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
-            <button class="btn btn-primary" @click="confirmAssignment">Confirm Assignment</button>
+            <button class="btn btn-secondary" @click="showModal = false">{{ t('common.cancel') }}</button>
+            <button class="btn btn-primary" @click="confirmAssignment">{{ t('editor.audit.assignReviewers.actions.confirm') }}</button>
           </div>
         </div>
       </div>
@@ -275,7 +261,13 @@ const handleReinvite = (journal) => {
 
 <style scoped>
 .audit-container { min-height: 100vh; background: #f5f7fa; display: flex; flex-direction: column; }
-.content { flex: 1; max-width: 1200px; margin: 80px auto 0; padding: 2rem; width: 100%; }
+.content {
+  flex: 1;
+  max-width: 1200px;
+  margin: 60px auto 0;
+  padding: 2rem;
+  width: 100%;
+}
 .header { margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; }
 .header h1 { font-size: 1.8rem; color: #2c3e50; margin: 0; }
 .subtitle { color: #7f8c8d; margin-top: 0.5rem; }
@@ -298,14 +290,13 @@ const handleReinvite = (journal) => {
 .no-data-tab { text-align: center; padding: 2rem; color: #999; }
 .hint { font-size: 0.9rem; color: #3498db; margin-top: 0.5rem; }
 .badge-count { background: #3498db; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8rem; margin-left: 5px; }
-.reviewer-item.recommended-item label { align-items: flex-start; }
-.reviewer-info { flex: 1; display: flex; flex-direction: column; }
+.reviewer-info { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 6px; background-color: #f9f9f9; }
 .r-aff { font-size: 0.85rem; color: #666; }
-.r-reason { font-size: 0.85rem; color: #27ae60; margin-top: 4px; font-style: italic; background: #f0fdf4; padding: 4px; border-radius: 4px; }
-.btn-select-rec { padding: 4px 12px; border: 1px solid #3498db; color: #3498db; background: white; border-radius: 4px; cursor: pointer; }
-.btn-select-rec.selected { background: #3498db; color: white; }
-.btn-select-rec:hover { background: #e1f5fe; }
-.btn-select-rec.selected:hover { background: #2980b9; }
+.r-email { font-size: 0.85rem; color: #888; }
+.r-reason { font-size: 0.85rem; color: #27ae60; font-style: italic; background: #f0fdf4; padding: 6px; border-radius: 4px; word-wrap: break-word; white-space: normal; }
+.reviewer-item.recommended-item { padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+.reviewer-item.recommended-item label { display: flex; align-items: flex-start; }
+.reviewer-item.recommended-item .reviewer-info { flex: 1; min-width: 0; }
 
 /* Modal */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }

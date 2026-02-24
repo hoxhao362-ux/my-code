@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +46,14 @@ const daysOverdue = computed(() => {
 
 const isReadonly = computed(() => {
   if (!journal.value || !journal.value.reviewHistory) return false
+  // For re-review, only check if user has reviewed in current Re-review stage
+  // For normal review, check if user has any review
+  if (isRevision.value) {
+    return journal.value.reviewHistory.some(r => 
+      r.reviewer === user.value.username && 
+      (r.stage === 'Re-review' || r.stage === '复审')
+    )
+  }
   return journal.value.reviewHistory.some(r => r.reviewer === user.value.username)
 })
 
@@ -75,7 +84,7 @@ const initialReviewData = computed(() => {
 })
 
 // Check if this is a revision (Re-review)
-const isRevision = computed(() => journal.value && journal.value.reviewStage === '复审')
+const isRevision = computed(() => journal.value && (journal.value.reviewStage === '复审' || journal.value.reviewStage === 'Re-review'))
 
 // Blind Review Logic
 const isBlindReview = ref(true)
@@ -85,7 +94,7 @@ const displayContent = computed(() => {
   let content = journal.value.content
   if (isBlindReview.value) {
     // Simple mock anonymization
-    content = content.replace(/Author Name/g, '[Anonymized]')
+    content = content.replace(/Writer Name/g, '[Anonymized]')
     content = content.replace(/University of X/g, '[Anonymized Institution]')
   }
   return content
@@ -171,13 +180,31 @@ const confirmSubmit = () => {
 
   updatedJournal.reviewHistory.push(reviewRecord)
   
-  // Update Global Status logic for mock:
-  // If decision is Reject, we might mark as Completed immediately.
-  // If Accept, same.
-  // In a real system, this depends on # of reviewers.
-  // For this mock requirement: "task status becomes Completed, auto jump to Completed Reviews"
-  // We will set status to '已审核' (Completed) to match the store convention.
-  updatedJournal.status = '已审核'
+  // Update Global Status logic:
+  // Only mark as 'review_completed' when all reviewers have completed their reviews
+  // First, determine how many reviewers are assigned to this manuscript
+  const uniqueReviewers = [...new Set(updatedJournal.reviewHistory.map(r => r.reviewer))]
+  
+  // Check if this manuscript has assigned reviewers information
+  const totalAssignedReviewers = updatedJournal.assignedReviewers ? updatedJournal.assignedReviewers.length : 1
+  
+  // If no assigned reviewers information, assume single reviewer setup
+  // Mark as review_completed when:
+  //1. There are assigned reviewers and all have completed (uniqueReviewers.length >= totalAssignedReviewers)
+  //2. No assigned reviewers information and at least one reviewer has completed
+  if (updatedJournal.assignedReviewers) {
+    if (uniqueReviewers.length >= totalAssignedReviewers) {
+      // All assigned reviewers have completed
+      updatedJournal.status = MANUSCRIPT_STATUS.REVIEW_COMPLETED
+    } else {
+      // Still waiting for other reviewers
+      updatedJournal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
+    }
+  } else {
+    // Single reviewer setup or no assigned reviewers info
+    // Mark as completed once any reviewer submits
+    updatedJournal.status = MANUSCRIPT_STATUS.REVIEW_COMPLETED
+  }
 
   userStore.updateJournal(updatedJournal)
   showSubmitModal.value = false
@@ -202,8 +229,8 @@ const downloadFile = (file) => {
   document.body.removeChild(link)
 }
 
-// Mock Author Response for Revision
-const authorResponse = ref(`
+// Mock Writer Response for Revision
+const writerResponse = ref(`
 Thank you for your valuable comments. We have revised the manuscript accordingly.
 1. Addressed the concern about sample size by adding 50 more participants.
 2. Clarified the methodology section as requested.
@@ -279,7 +306,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             </div>
 
             <div class="comments-block">
-              <h4>Comments to Author</h4>
+              <h4>Comments to Writer</h4>
               <div class="readonly-text">{{ review.comment || 'No comments provided.' }}</div>
             </div>
 
@@ -312,7 +339,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             <h1>{{ journal.title }}</h1>
             <span class="manuscript-id">ID: {{ journal.id }}</span>
             <span v-if="isRevision" class="revision-badge">Revision (Re-review)</span>
-            <span v-if="isBlindReview" class="blind-badge">Blind Review - Author Information Removed</span>
+            <span v-if="isBlindReview" class="blind-badge">Blind Review - Writer Information Removed</span>
           </div>
         </div>
 
@@ -337,10 +364,10 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="info-section">
             <h3>Basic Information</h3>
             <div class="info-grid">
-              <!-- Author Hidden for Blind Review -->
+              <!-- Writer Hidden for Blind Review -->
               <div class="info-item" v-if="!isBlindReview">
-                <label>Author:</label>
-                <span>{{ journal.author }}</span>
+                <label>Writer:</label>
+                <span>{{ journal.writer }}</span>
               </div>
               <div class="info-item">
                 <label>Title:</label>
@@ -348,7 +375,8 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
               </div>
               <div class="info-item">
                 <label>Abstract:</label>
-                <p class="abstract-text">{{ journal.abstract }}</p>
+                <p v-if="journal.abstract && journal.abstract.trim()" class="abstract-text content-text">{{ journal.abstract }}</p>
+                <p v-else class="abstract-text placeholder-text">Author's abstract will be displayed here once the manuscript is submitted successfully.</p>
               </div>
               <div class="info-item">
                 <label>Keywords:</label>
@@ -400,7 +428,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="content-preview">
              <h3>Online Reading</h3>
              <div class="blind-notice" v-if="isBlindReview">
-               This is a blind review - author information has been anonymized. Self-citations are marked as 'Author et al.'
+               This is a blind review - writer information has been anonymized. Self-citations are marked as 'Writer et al.'
              </div>
              <div class="paper-content" v-if="displayContent" v-html="displayContent"></div>
              <div class="paper-content placeholder" v-else>
@@ -412,9 +440,9 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
         <!-- Revision Details (Only for Revision) -->
         <div v-if="activeTab === 'revision-details'" class="tab-pane">
           <section class="response-section">
-            <h3>Author's Response to Previous Review</h3>
+            <h3>Writer's Response to Previous Review</h3>
             <div class="response-box">
-              <pre>{{ authorResponse }}</pre>
+              <pre>{{ writerResponse }}</pre>
             </div>
           </section>
           
@@ -500,10 +528,31 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
              <div v-else v-for="(rec, idx) in journal.reviewHistory" :key="idx" class="history-item">
                <div class="history-date">{{ rec.date }}</div>
                <div class="history-content">
-                 <strong>{{ rec.stage }} - {{ rec.status }}</strong>
-                 <p v-if="rec.comment">{{ rec.comment }}</p>
-                 <div v-if="rec.decision" class="decision-tag">{{ rec.decision }}</div>
-                 <div v-if="rec.file" class="file-tag">📎 {{ rec.file }}</div>
+                 <!-- Reviewer Record -->
+                 <template v-if="rec.reviewer">
+                   <strong>{{ rec.stage }} - {{ rec.status }}</strong>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                   <div v-if="rec.decision" class="decision-tag">Decision: {{ rec.decision }}</div>
+                   <div v-if="rec.ratings" class="ratings-block">
+                     <div v-for="(score, dim) in rec.ratings" :key="dim" class="rating-item">
+                       <span class="dim-label">{{ dim }}:</span>
+                       <span class="dim-score">{{ score }}</span>
+                     </div>
+                   </div>
+                   <div v-if="rec.file" class="file-tag">📎 {{ rec.file }}</div>
+                 </template>
+                 <!-- Editor Record -->
+                 <template v-else-if="rec.actor">
+                   <strong>{{ rec.actor }}</strong>
+                   <span class="action-tag">{{ rec.action }}</span>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                 </template>
+                 <!-- Legacy Record -->
+                 <template v-else>
+                   <strong>{{ rec.stage || 'Review' }} - {{ rec.status }}</strong>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                   <div v-if="rec.decision" class="decision-tag">Decision: {{ rec.decision }}</div>
+                 </template>
                </div>
              </div>
           </div>
@@ -724,6 +773,16 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
   color: #333;
 }
 
+.placeholder-text {
+  color: #666;
+  font-style: italic;
+}
+
+.content-text {
+  color: #000;
+  font-style: normal;
+}
+
 .status-badge {
   background: #e3f2fd;
   color: #1976d2;
@@ -883,6 +942,54 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
   color: #27ae60;
   font-size: 0.85rem;
   margin-top: 0.25rem;
+}
+
+.action-tag {
+  display: inline-block;
+  background: #3498db;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+.history-comment {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.ratings-block {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f0f8ff;
+  border-radius: 4px;
+}
+
+.rating-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #ddd;
+}
+
+.rating-item:last-child {
+  border-bottom: none;
+}
+
+.dim-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.dim-score {
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .no-data {

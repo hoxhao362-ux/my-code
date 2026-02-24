@@ -74,3 +74,31 @@ export const truncateHtml = (html, maxLength = 150) => {
   
   return result
 }
+
+// 在文本中插入换行符，确保每行不超过指定长度
+export const wrapText = (text, lineLength = 30) => {
+  if (!text || typeof text !== 'string') {
+    return text
+  }
+  if (text.length <= lineLength) {
+    return text
+  }
+  
+  let result = ''
+  let currentLine = ''
+  
+  for (let i = 0; i < text.length; i++) {
+    currentLine += text[i]
+    
+    if (currentLine.length >= lineLength) {
+      result += currentLine + '\n'
+      currentLine = ''
+    }
+  }
+  
+  if (currentLine) {
+    result += currentLine
+  }
+  
+  return result
+}

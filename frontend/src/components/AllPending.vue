@@ -3,6 +3,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navigation from './Navigation.vue'
 import { stripHtmlTags, truncateText } from '../utils/helpers.js'
+import { MANUSCRIPT_STATUS } from '../constants/manuscriptStatus'
+import { useI18n } from '../composables/useI18n'
+
+const { t } = useI18n()
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
@@ -62,23 +66,34 @@ const filterByTimeRange = (journals, dateField = 'date') => {
 
 // 待审稿件（从真实期刊数据中筛选，根据角色显示对应阶段）
 const pendingJournals = computed(() => {
-  // 基础筛选：只显示审稿中的稿件
-  let journals = props.journals.filter(journal => journal.status === '审稿中')
+  // 基础筛选：显示审稿中的稿件和已接受进入终审的稿件
+  let journals = props.journals.filter(journal => 
+    journal.status === MANUSCRIPT_STATUS.UNDER_PEER_REVIEW || 
+    journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ||
+    journal.status === 'final_decision_accepted'
+  )
   
   // 角色筛选：根据用户角色显示对应阶段的稿件
   if (props.user.role === 'admin') {
     // 管理员可以看到需要初审和终审的稿件
     journals = journals.filter(journal => 
-      journal.reviewStage === '初审' || journal.reviewStage === '终审'
+      journal.reviewStage === 'Initial Review' || journal.reviewStage === '初审' || 
+      journal.reviewStage === 'Final Decision' || journal.reviewStage === '终审'
     )
     
     // 管理员专属：阶段筛选
     if (selectedStage.value !== 'all') {
-      journals = journals.filter(journal => journal.reviewStage === selectedStage.value)
+      journals = journals.filter(journal => 
+        journal.reviewStage === selectedStage.value || 
+        (selectedStage.value === 'Initial Review' && journal.reviewStage === '初审') ||
+        (selectedStage.value === 'Final Decision' && journal.reviewStage === '终审')
+      )
     }
   } else if (props.user.role === 'reviewer') {
     // 审核员只能看到需要复审的稿件
-    journals = journals.filter(journal => journal.reviewStage === '复审')
+    journals = journals.filter(journal => 
+      journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审'
+    )
   }
   
   // 模块筛选
@@ -165,107 +180,107 @@ const handleReview = (id, action) => {
     const currentStageComment = journal[`${journal.reviewStage.toLowerCase()}Comment`] || ''
     
     // 三阶段审稿流程处理
-    if (journal.reviewStage === '初审' && props.user.role === 'admin') {
+    if ((journal.reviewStage === 'Initial Review' || journal.reviewStage === '初审') && props.user.role === 'admin') {
       // 管理员处理初审
       if (action === 'approve') {
         // 初审通过，进入复审阶段
-        journal.reviewStage = '复审'
-        journal.status = '审稿中'
-        updateMessage = `已通过初审，进入复审阶段：${journal.title}`
+        journal.reviewStage = 'Peer Review'
+        journal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
+        updateMessage = `${t('allPending.initialReviewPassed')}: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '初审',
-          status: '通过',
+          stage: 'Initial Review',
+          status: 'Approved',
           reviewer: props.user.username,
           date: today,
-          comment: currentStageComment || '初审通过，进入复审阶段',
-          type: '完全保密'
+          comment: currentStageComment || 'Initial review approved, proceeding to peer review',
+          type: 'Confidential'
         })
         
         // 清空初审评论，为复审阶段准备
         delete journal.chuShenComment
       } else {
         // 初审拒绝，直接未通过
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+        journal.reviewResult = 'Rejected'
         journal.reviewDate = today
-        updateMessage = `已拒绝初审：${journal.title}`
+        updateMessage = `${t('allPending.initialReviewRejected')}: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '初审',
-          status: '未通过',
+          stage: 'Initial Review',
+          status: 'Rejected',
           reviewer: props.user.username,
           date: today,
-          comment: currentStageComment || '初审未通过',
-          type: '完全保密'
+          comment: currentStageComment || 'Initial review rejected',
+          type: 'Confidential'
         })
         
         // 清空初审评论
         delete journal.chuShenComment
       }
-    } else if (journal.reviewStage === '复审' && props.user.role === 'reviewer') {
+    } else if ((journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审') && props.user.role === 'reviewer') {
       // 审核员处理复审
       if (action === 'approve') {
         // 复审通过，进入终审阶段
-        journal.reviewStage = '终审'
-        journal.status = '审稿中'
-        updateMessage = `已通过复审，进入终审阶段：${journal.title}`
+        journal.reviewStage = 'Final Decision'
+        journal.status = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
+        updateMessage = `${t('allPending.peerReviewPassed')}: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '复审',
-          status: '通过',
+          stage: 'Peer Review',
+          status: 'Approved',
           reviewer: props.user.username,
           date: today,
-          comment: currentStageComment || '复审通过，进入终审阶段',
-          type: '完全保密'
+          comment: currentStageComment || 'Peer review approved, proceeding to final decision',
+          type: 'Confidential'
         })
         
         // 清空复审评论，为终审阶段准备
         delete journal.fuShenComment
       } else {
         // 复审拒绝，直接未通过
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+        journal.reviewResult = 'Rejected'
         journal.reviewDate = today
-        updateMessage = `已拒绝复审：${journal.title}`
+        updateMessage = `${t('allPending.peerReviewRejected')}: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '复审',
-          status: '未通过',
+          stage: 'Peer Review',
+          status: 'Rejected',
           reviewer: props.user.username,
           date: today,
-          comment: currentStageComment || '复审未通过',
-          type: '完全保密'
+          comment: currentStageComment || 'Peer review rejected',
+          type: 'Confidential'
         })
         
         // 清空复审评论
         delete journal.fuShenComment
       }
-    } else if (journal.reviewStage === '终审' && props.user.role === 'admin') {
+    } else if ((journal.reviewStage === 'Final Decision' || journal.reviewStage === '终审') && props.user.role === 'admin') {
       // 管理员处理终审
-      journal.status = action === 'approve' ? '已通过' : '未通过'
-      journal.reviewResult = journal.status
+      journal.status = action === 'approve' ? MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED : MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+      journal.reviewResult = action === 'approve' ? 'Accepted' : 'Rejected'
       journal.reviewDate = today
-      updateMessage = `已${journal.status}终审：${journal.title}`
+      updateMessage = `${journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ? t('allPending.finalDecisionAccepted') : t('allPending.finalDecisionRejected')}: ${journal.title}`
       
       // 添加审核记录
       journal.reviewHistory.push({
-        stage: '终审',
-        status: journal.status === '已通过' ? '通过' : '未通过',
+        stage: 'Final Decision',
+        status: journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ? 'Accepted' : 'Rejected',
         reviewer: props.user.username,
         date: today,
-        comment: currentStageComment || `${journal.status}终审`,
-        type: '完全保密'
+        comment: currentStageComment || `Final decision: ${journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ? 'Accepted' : 'Rejected'}`,
+        type: 'Confidential'
       })
       
       // 清空终审评论
       delete journal.zhongShenComment
     } else {
-      alert('您没有权限处理此稿件或此稿件不在您负责的审稿阶段')
+      alert(t('allPending.noPermission'))
       return
     }
     
@@ -295,11 +310,11 @@ const handleReview = (id, action) => {
     <main class="review-content">
       <div class="review-header">
         <div class="header-flex">
-          <button class="btn btn-back" @click="navigateTo('review')">返回审稿页面</button>
-          <h2 class="review-title">所有待审稿记录</h2>
+          <button class="btn btn-back" @click="navigateTo('review')">{{ t('allPending.backToReview') }}</button>
+          <h2 class="review-title">{{ t('allPending.title') }}</h2>
         </div>
         <div class="review-stats">
-          <span class="stat-item">待审稿件总数：{{ pendingJournals.length }}</span>
+          <span class="stat-item">{{ t('allPending.totalPending') }}: {{ pendingJournals.length }}</span>
         </div>
       </div>
 
@@ -308,24 +323,24 @@ const handleReview = (id, action) => {
         <div class="filters-container">
           <!-- 搜索输入框 -->
           <div class="search-filter">
-            <label for="pending-search-input" class="filter-label">搜索：</label>
+            <label for="pending-search-input" class="filter-label">{{ t('allPending.search') }}:</label>
             <input 
               type="text" 
               id="pending-search-input" 
               v-model="searchQuery"
               class="search-input"
-              placeholder="搜索标题、作者、摘要或关键词..."
+              :placeholder="t('allPending.searchPlaceholder')"
             >
           </div>
           
           <div class="module-filter">
-            <label for="module-filter" class="filter-label">模块筛选：</label>
+            <label for="module-filter" class="filter-label">{{ t('allPending.filterModule') }}:</label>
             <select 
               id="module-filter" 
               v-model="selectedModule"
               class="filter-select"
             >
-              <option value="all">全部模块</option>
+              <option value="all">{{ t('allPending.allModules') }}</option>
               <option 
                 v-for="module in modules" 
                 :key="module"
@@ -337,31 +352,31 @@ const handleReview = (id, action) => {
           </div>
           
           <div class="time-range-filter">
-            <label for="time-range-filter" class="filter-label">时间范围：</label>
+            <label for="time-range-filter" class="filter-label">{{ t('allPending.filterTime') }}:</label>
             <select 
               id="time-range-filter" 
               v-model="timeRange"
               class="filter-select"
             >
-              <option value="all">全部时间</option>
-              <option value="today">今日</option>
-              <option value="week">本周</option>
-              <option value="month">本月</option>
-              <option value="year">本年</option>
+              <option value="all">{{ t('allPending.allTime') }}</option>
+              <option value="today">{{ t('allPending.today') }}</option>
+              <option value="week">{{ t('allPending.thisWeek') }}</option>
+              <option value="month">{{ t('allPending.thisMonth') }}</option>
+              <option value="year">{{ t('allPending.thisYear') }}</option>
             </select>
           </div>
           
           <!-- 管理员专属筛选：初审/终审 -->
           <div v-if="props.user.role === 'admin'" class="stage-filter">
-            <label for="stage-filter" class="filter-label">筛选阶段：</label>
+            <label for="stage-filter" class="filter-label">{{ t('allPending.filterStage') }}:</label>
             <select 
               id="stage-filter" 
               v-model="selectedStage"
               class="filter-select"
             >
-              <option value="all">全部阶段</option>
-              <option value="初审">初审</option>
-              <option value="终审">终审</option>
+              <option value="all">{{ t('allPending.allStages') }}</option>
+              <option value="Initial Review">{{ t('allPending.initialReview') }}</option>
+              <option value="Final Decision">{{ t('allPending.finalDecision') }}</option>
             </select>
           </div>
         </div>
@@ -376,18 +391,18 @@ const handleReview = (id, action) => {
           >
             <div class="journal-info">
               <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
-              <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }}</p>
+              <p class="journal-meta">{{ t('allPending.author') }}: {{ journal.author }} | {{ t('allPending.submissionDate') }}: {{ journal.date }}</p>
               <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             
             <!-- 审稿建议文本框 -->
             <div class="review-comment-section">
-              <label for="comment-{{ journal.id }}" class="comment-label">审稿建议：</label>
+              <label for="comment-{{ journal.id }}" class="comment-label">{{ t('allPending.reviewComment') }}:</label>
               <textarea 
                 id="comment-{{ journal.id }}" 
                 v-model="journal[`${journal.reviewStage.toLowerCase()}Comment`]"
                 class="review-comment"
-                placeholder="请输入审稿建议..."
+                :placeholder="t('allPending.reviewCommentPlaceholder')"
                 rows="4"
               ></textarea>
             </div>
@@ -397,22 +412,22 @@ const handleReview = (id, action) => {
                 {{ journal.status }} - {{ journal.reviewStage }}
               </div>
               <div class="action-buttons">
-                <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">通过</button>
-                <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">拒绝</button>
+                <button class="btn btn-approve" @click="handleReview(journal.id, 'approve')">{{ t('allPending.approve') }}</button>
+                <button class="btn btn-reject" @click="handleReview(journal.id, 'reject')">{{ t('allPending.reject') }}</button>
               </div>
             </div>
           </div>
 
           <!-- 无稿件提示 -->
           <div v-if="pendingJournals.length === 0" class="no-journals">
-            <p>当前没有待审核的稿件</p>
+            <p>{{ t('allPending.noManuscripts') }}</p>
           </div>
         </div>
 
         <!-- 分页控件 -->
         <div v-if="totalPages > 0" class="pagination">
           <div class="pagination-info">
-            共 {{ pendingJournals.length }} 条记录，第 {{ currentPage }} / {{ totalPages }} 页
+            {{ t('allPending.pageInfo', { count: pendingJournals.length, current: currentPage, total: totalPages }) }}
           </div>
           <div class="pagination-controls">
             <button 
@@ -420,14 +435,14 @@ const handleReview = (id, action) => {
               :disabled="currentPage === 1"
               @click="goToPrevPage"
             >
-              上一页
+              {{ t('allPending.prevPage') }}
             </button>
             <button 
               class="page-btn" 
               :disabled="currentPage === totalPages"
               @click="goToNextPage"
             >
-              下一页
+              {{ t('allPending.nextPage') }}
             </button>
           </div>
         </div>
@@ -436,7 +451,7 @@ const handleReview = (id, action) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>

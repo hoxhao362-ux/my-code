@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 import InitialReviewModal from '../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../components/admin/manuscript/AssignReviewersModal.vue'
 import DraftDecisionModal from '../../components/admin/manuscript/DraftDecisionModal.vue'
@@ -14,7 +15,9 @@ import RevisionCheck from '../../components/admin/manuscript/RevisionCheck.vue'
 import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const { t } = useI18n()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
 // State for Modal
@@ -43,13 +46,9 @@ const showSearchHistory = ref(false)
 const searchHistory = ref([])
 let debounceTimer = null
 
+
 // Load History
-onMounted(() => {
-  const history = localStorage.getItem('manuscript_search_history')
-  if (history) {
-    searchHistory.value = JSON.parse(history)
-  }
-})
+
 
 // Debounce Search
 watch(searchKeyword, (newVal) => {
@@ -74,103 +73,150 @@ const clearHistory = () => {
   localStorage.removeItem('manuscript_search_history')
 }
 
-// Simulated Manuscript Data
-const manuscripts = ref([
-  {
-    id: 'MS-2026-001',
-    title: 'Deep Learning in Medical Imaging: A Comprehensive Review',
-    author: 'John Doe',
-    status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-    submittedDate: '2026-02-01',
-    field: 'Medical Imaging',
-    assignedTo: 'editor' 
-  },
-  {
-    id: 'MS-2026-002',
-    title: 'Novel Drug Delivery Systems for Cancer Therapy',
-    author: 'Jane Smith',
-    status: MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
-    submittedDate: '2026-01-28',
-    field: 'Drug Delivery',
-    assignedTo: 'ae_user'
-  },
-  {
-    id: 'MS-2026-003',
-    title: 'Clinical Trial Ethics in the AI Era',
-    author: 'Alice Johnson',
-    status: MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
-    submittedDate: '2026-01-15',
-    field: 'Clinical Research',
-    assignedTo: 'editor'
-  },
-  {
-    id: 'MS-2026-004',
-    title: 'Big Data in Public Health Monitoring',
-    author: 'Bob Brown',
-    status: MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION,
-    submittedDate: '2026-01-10',
-    field: 'Public Health',
-    assignedTo: 'ea_user'
-  },
-  {
-    id: 'MS-2026-005',
-    title: 'CRISPR Gene Editing Advances',
-    author: 'Charlie Green',
-    status: MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED,
-    submittedDate: '2026-02-05',
-    field: 'Genetics',
-    assignedTo: 'editor'
-  },
-  {
-    id: 'MS-2026-006',
-    title: 'Global Pandemic Response Strategies',
-    author: 'Diana White',
-    status: MANUSCRIPT_STATUS.UNDER_FINAL_DECISION,
-    submittedDate: '2026-01-05',
-    field: 'Public Health',
-    assignedTo: 'associate_editor'
-  },
-  {
-    id: 'MS-2026-007',
-    title: 'AI in Cardiology Diagnosis',
-    author: 'Eve Black',
-    status: MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
-    submittedDate: '2025-12-20',
-    field: 'Cardiology',
-    assignedTo: 'editor'
-  }
-])
+// Simulated Manuscript Data (Replaced with Store Data)
+const manuscripts = ref([])
+
+// Sync from Store
+const syncFromStore = () => {
+  manuscripts.value = userStore.journals.map(j => ({
+    ...j,
+    author: j.writer, // Alias
+    submittedDate: j.date || j.submissionDate || '2026-01-01',
+    field: j.module || 'General',
+    assignedTo: j.assignedEditor || j.assignedTo
+  }))
+}
+
+// Watch Store Changes
+watch(() => userStore.journals, syncFromStore, { deep: true })
+
+// Helper to update store
+const updateManuscript = (journal) => {
+  userStore.updateJournal(journal)
+}
+
+onMounted(() => {
+    syncFromStore()
+    // Load history
+    const history = localStorage.getItem('manuscript_search_history')
+    if (history) {
+      searchHistory.value = JSON.parse(history)
+    }
+    
+    // Check query param for status filter
+    if (route.query.status) {
+      selectedStatus.value = route.query.status
+    }
+  })
 
 const activeTab = ref('all')
+
+// --- Filter State ---
+const selectedStatus = ref('all')
+const selectedDateRange = ref('custom') // custom, today, this_week, this_month, this_year
+const dateRange = ref({ start: '', end: '' })
+const showAdvancedFilters = ref(false)
+const advancedFilters = ref({ writer: '', field: '' })
+
+// Date range options
+const dateRangeOptions = computed(() => [
+  { label: t('editor.manuscripts.dateRanges.custom'), value: 'custom' },
+  { label: t('editor.manuscripts.dateRanges.today'), value: 'today' },
+  { label: t('editor.manuscripts.dateRanges.thisWeek'), value: 'this_week' },
+  { label: t('editor.manuscripts.dateRanges.thisMonth'), value: 'this_month' },
+  { label: t('editor.manuscripts.dateRanges.thisYear'), value: 'this_year' }
+])
+
+// Calculate date range based on selected option
+const calculateDateRange = () => {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  
+  switch (selectedDateRange.value) {
+    case 'today':
+      dateRange.value.start = today.toISOString().split('T')[0]
+      dateRange.value.end = today.toISOString().split('T')[0]
+      break
+    case 'this_week':
+      const startOfWeek = new Date(today)
+      startOfWeek.setDate(today.getDate() - today.getDay())
+      dateRange.value.start = startOfWeek.toISOString().split('T')[0]
+      dateRange.value.end = today.toISOString().split('T')[0]
+      break
+    case 'this_month':
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      dateRange.value.start = startOfMonth.toISOString().split('T')[0]
+      dateRange.value.end = today.toISOString().split('T')[0]
+      break
+    case 'this_year':
+      const startOfYear = new Date(today.getFullYear(), 0, 1)
+      dateRange.value.start = startOfYear.toISOString().split('T')[0]
+      dateRange.value.end = today.toISOString().split('T')[0]
+      break
+    default:
+      // Custom range - keep current values
+      break
+  }
+}
+
+// Watch for date range option changes
+watch(selectedDateRange, calculateDateRange)
+
+// Watch for route query changes to update status filter
+watch(() => route.query.status, (newStatus) => {
+  if (newStatus) {
+    selectedStatus.value = newStatus
+  }
+})
+
+const statusOptions = computed(() => [
+  { label: t('statusFilter.all'), value: 'all' },
+  { label: t('statusFilter.pendingScreening'), value: 'pending_screening' },
+  { label: t('statusFilter.underReview'), value: 'under_review' },
+  { label: t('statusFilter.decisionPending'), value: 'decision_pending' },
+  { label: t('statusFilter.accepted'), value: 'accepted' },
+  { label: t('statusFilter.rejected'), value: 'rejected' },
+  { label: t('statusFilter.inProduction'), value: 'in_production' }
+])
+
+const fieldOptions = ['Medical Imaging', 'Drug Delivery', 'Clinical Research', 'Public Health', 'Genetics', 'Cardiology']
+
+const resetFilters = () => {
+  selectedStatus.value = 'all'
+  selectedDateRange.value = 'custom'
+  dateRange.value = { start: '', end: '' }
+  advancedFilters.value = { writer: '', field: '' }
+  searchKeyword.value = ''
+}
 
 const filteredManuscripts = computed(() => {
   let list = manuscripts.value
   
-  // Search Filter
+  // 1. Keyword Search (Existing)
   if (debouncedKeyword.value) {
     const keyword = debouncedKeyword.value.toLowerCase()
     list = list.filter(m => 
       m.id.toLowerCase().includes(keyword) ||
       m.title.toLowerCase().includes(keyword) ||
-      m.author.toLowerCase().includes(keyword) ||
+      (m.writer || m.author).toLowerCase().includes(keyword) ||
       m.field.toLowerCase().includes(keyword)
     )
   }
   
-  // Role Scope
+  // 2. Role Scope (Existing)
   if (user.value?.role === 'editor') {
      if (activeTab.value === 'assigned') {
-        return list.filter(m => m.assignedTo === user.value.username)
+        list = list.filter(m => m.assignedTo === user.value.username)
      }
   } else if (user.value?.role === 'editorial_assistant') {
      if (activeTab.value === 'assigned') {
-        return list.filter(m => m.assignedTo === user.value.username)
+        list = list.filter(m => m.assignedTo === user.value.username)
      }
   }
 
-  // Tab filtering
+  // 3. Tab filtering (Existing)
   if (activeTab.value === 'pending') {
-    return list.filter(m => [
+    list = list.filter(m => [
       MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW, 
       MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW, 
       MANUSCRIPT_STATUS.UNDER_PEER_REVIEW, 
@@ -179,6 +225,57 @@ const filteredManuscripts = computed(() => {
     ].includes(m.status))
   }
   
+  // 4. Status Filter (New)
+  if (selectedStatus.value !== 'all') {
+    list = list.filter(m => {
+      switch (selectedStatus.value) {
+        case 'pending_screening':
+          return [MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW, MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW].includes(m.status)
+        case 'under_review':
+          return [
+            MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
+            MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+            MANUSCRIPT_STATUS.REVIEW_COMPLETED,
+            MANUSCRIPT_STATUS.REVISION_REQUIRED,
+            MANUSCRIPT_STATUS.REVISION_SUBMITTED
+          ].includes(m.status)
+        case 'decision_pending':
+          return [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION, MANUSCRIPT_STATUS.UNDER_FINAL_DECISION, MANUSCRIPT_STATUS.FINAL_DECISION_REVISION].includes(m.status)
+        case 'accepted':
+          return m.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+        case 'rejected':
+          return [MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED, MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED].includes(m.status)
+        case 'in_production':
+          return [
+            MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
+            MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
+            MANUSCRIPT_STATUS.PENDING_PROOF, 
+            MANUSCRIPT_STATUS.PENDING_PUBLICATION,
+            MANUSCRIPT_STATUS.PUBLISHED
+          ].includes(m.status)
+        default:
+          return true
+      }
+    })
+  }
+
+  // 5. Date Range Filter (New)
+  if (dateRange.value.start) {
+    list = list.filter(m => new Date(m.submittedDate) >= new Date(dateRange.value.start))
+  }
+  if (dateRange.value.end) {
+    list = list.filter(m => new Date(m.submittedDate) <= new Date(dateRange.value.end))
+  }
+
+  // 6. Advanced Filters (New)
+  if (advancedFilters.value.writer) {
+    const writerKey = advancedFilters.value.writer.toLowerCase()
+    list = list.filter(m => (m.writer || m.author || '').toLowerCase().includes(writerKey))
+  }
+  if (advancedFilters.value.field) {
+    list = list.filter(m => m.field === advancedFilters.value.field)
+  }
+
   return list
 })
 
@@ -191,7 +288,7 @@ const canFormatCheck = computed(() => userStore.hasRolePermission(user.value?.ro
 const isReadOnly = computed(() => user.value?.role === 'advisory_editor')
 
 // Helper
-const getStatusLabel = (s) => STATUS_LABELS[s] || s
+const getStatusLabel = (s) => t(`status.${s}`) || s
 const getStatusColor = (s) => STATUS_COLORS[s] || '#999'
 
 // Generic Action Handler
@@ -407,11 +504,8 @@ const handleStartPublication = (id) => {
   const journal = manuscripts.value.find(m => m.id === id)
   if (!journal) return
   
-  // Logic: Send Notice -> Pending Acceptance Confirmation
-  // Mocking transition
-  const index = manuscripts.value.findIndex(m => m.id === id)
-  manuscripts.value[index].status = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
-  alert("Acceptance Notice Sent. Waiting for Author Confirmation.")
+  // Navigate to publication process page
+  router.push({ name: 'editor-publication-process', params: { id } })
 }
 
 </script>
@@ -422,7 +516,7 @@ const handleStartPublication = (id) => {
     <!-- Full Screen Overlay for Heavy Tasks -->
     <div v-if="showChecklist || showFinalDecision || showReviewSummary || showAuditLog || showRevisionCheck" class="fullscreen-overlay">
       <div class="overlay-header">
-        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false">← Back to Dashboard</button>
+        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false">← {{ t('editor.manuscripts.back') }}</button>
       </div>
       
       <div v-if="showChecklist" class="overlay-content">
@@ -475,36 +569,86 @@ const handleStartPublication = (id) => {
     <!-- Main Dashboard List (Hidden when overlay active) -->
     <div v-else>
       <div class="page-header">
-        <h2>Manuscript Management</h2>
-        <div class="role-badge">Current Role: {{ user?.role }}</div>
+        <h2>{{ t('editor.manuscripts.title') }}</h2>
+        <div class="role-badge">{{ t('editor.manuscripts.currentRole') }}: {{ user?.role }}</div>
       </div>
 
       <div class="tabs">
         <div class="tab-group">
-          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">All Manuscripts</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'assigned' }" @click="activeTab = 'assigned'">My Assigned</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">Pending Action</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">{{ t('editor.manuscripts.tabs.all') }}</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'assigned' }" @click="activeTab = 'assigned'">{{ t('editor.manuscripts.tabs.assigned') }}</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">{{ t('editor.manuscripts.tabs.pending') }}</button>
         </div>
         
         <div class="search-container">
           <div class="search-wrapper">
-            <input type="text" v-model="searchKeyword" placeholder="Search..." class="search-input" @focus="showSearchHistory = true" @blur="setTimeout(() => showSearchHistory = false, 200)" />
+            <input type="text" v-model="searchKeyword" :placeholder="t('editor.manuscripts.search.placeholder')" class="search-input" @focus="showSearchHistory = true" @blur="setTimeout(() => showSearchHistory = false, 200)" />
           </div>
         </div>
       </div>
 
+      <!-- Filters Bar (New) -->
+      <div class="filters-bar">
+        <!-- Row 1: Status, Date, Advanced Toggle, Reset -->
+        <div class="filter-row">
+           <div class="filter-group">
+              <label>{{ t('editor.manuscripts.filter.status') }}</label>
+              <select v-model="selectedStatus" class="filter-select">
+                <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+           </div>
+           <div class="filter-group">
+              <label>{{ t('editor.manuscripts.filter.dateRange') }}</label>
+              <select v-model="selectedDateRange" class="filter-select date-range-select">
+                <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+           </div>
+           <div class="filter-actions">
+              <button class="btn-text filter-toggle" @click="showAdvancedFilters = !showAdvancedFilters">
+                {{ showAdvancedFilters ? t('editor.manuscripts.filter.hideAdvanced') : t('editor.manuscripts.filter.advanced') }}
+                <span class="toggle-icon">{{ showAdvancedFilters ? '▲' : '▼' }}</span>
+              </button>
+              <button class="btn-text reset-btn" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
+           </div>
+        </div>
+        
+        <!-- Row 2: Advanced Panel -->
+        <transition name="slide-fade">
+          <div v-if="showAdvancedFilters" class="advanced-panel">
+             <div class="filter-group">
+                <label>{{ t('editor.manuscripts.filter.writer') }}</label>
+                <input type="text" v-model="advancedFilters.writer" :placeholder="t('editor.manuscripts.filter.writer')" class="filter-input">
+             </div>
+             <div class="filter-group">
+                <label>{{ t('editor.manuscripts.filter.field') }}</label>
+                <select v-model="advancedFilters.field" class="filter-select">
+                   <option value="">{{ t('editor.manuscripts.filter.allFields') }}</option>
+                   <option v-for="f in fieldOptions" :key="f" :value="f">{{ f }}</option>
+                </select>
+             </div>
+          </div>
+        </transition>
+      </div>
+
       <div class="manuscript-list">
-        <div v-if="filteredManuscripts.length === 0" class="empty-state">No matching tasks found</div>
+        <div v-if="filteredManuscripts.length === 0" class="empty-state">
+          <p>{{ t('editor.manuscripts.noManuscripts') }}</p>
+          <button class="btn-text" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
+        </div>
         <div v-else v-for="ms in filteredManuscripts" :key="ms.id" class="manuscript-card">
           <div class="ms-header">
             <span class="ms-id">{{ ms.id }}</span>
             <span class="ms-status-badge" :style="{ backgroundColor: getStatusColor(ms.status), color: 'white' }">{{ getStatusLabel(ms.status) }}</span>
           </div>
-          <h3 class="ms-title">{{ ms.title }}</h3>
+          <h3 class="ms-title clickable-title" @click="router.push({ name: 'admin-journal-detail', params: { id: ms.id } })">
+            {{ ms.title }}
+          </h3>
           <div class="ms-meta">
-            <span>Author: {{ ms.author }}</span>
-            <span>Field: {{ ms.field }}</span>
-            <span>Date: {{ ms.submittedDate }}</span>
+            <span>{{ t('editor.manuscripts.columns.writer') }}: {{ ms.writer || ms.author }}</span>
+            <span>{{ t('editor.manuscripts.columns.field') }}: {{ ms.field }}</span>
+            <span>{{ t('editor.manuscripts.columns.date') }}: {{ ms.submittedDate }}</span>
           </div>
           
           <div class="ms-actions" v-if="!isReadOnly">
@@ -561,15 +705,23 @@ const handleStartPublication = (id) => {
             <!-- 7. Final Decision Passed (Accepted) -->
             <template v-if="ms.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED">
                <div class="action-row left">
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Send Acceptance Notice</button>
+                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Start Publication Process</button>
                </div>
             </template>
 
-             <!-- 8. Pending Acceptance Confirmation -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION">
+            <!-- 8. Publication Phase (New) -->
+            <template v-if="[
+                MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
+                MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
+                MANUSCRIPT_STATUS.PENDING_PROOF, 
+                MANUSCRIPT_STATUS.PENDING_PUBLICATION,
+                MANUSCRIPT_STATUS.PUBLISHED
+              ].includes(ms.status)">
                <div class="action-row left">
-                 <button class="action-btn gray">Check Notification Status</button>
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Resend Notice</button>
+                 <button class="action-btn red" @click="handleStartPublication(ms.id)">
+                   {{ ms.status === MANUSCRIPT_STATUS.PUBLISHED ? 'View Publication Details' : 'Continue Publication Process' }}
+                 </button>
+                 <span class="hint-text">Current Stage: {{ getStatusLabel(ms.status) }}</span>
                </div>
             </template>
 
@@ -639,10 +791,108 @@ const handleStartPublication = (id) => {
 /* Page Styles */
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
 .role-badge { background: #e0e0e0; padding: 0.5rem 1rem; border-radius: 20px; font-weight: bold; font-size: 0.8rem; color: #555; }
-.tabs { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+.tabs { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
 .tab-group { display: flex; gap: 1rem; }
 .search-container { flex-grow: 1; max-width: 400px; }
 .search-input { width: 100%; padding: 0.5rem 1rem; border: 1px solid #ddd; border-radius: 4px; }
+
+/* Filters Bar */
+.filters-bar {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.filter-row {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.filter-select, .filter-input {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 180px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.filter-input.date {
+  min-width: 140px;
+}
+
+.date-range-select {
+  min-width: 180px;
+}
+
+.filter-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-toggle {
+  color: #3498db;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+}
+
+.reset-btn {
+  color: #999;
+}
+
+.reset-btn:hover {
+  color: #666;
+  text-decoration: underline;
+}
+
+.advanced-panel {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #eee;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+/* Transitions */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
 
 .tab-btn { background: none; border: none; font-size: 1rem; padding: 0.5rem 1rem; cursor: pointer; color: #666; border-radius: 5px; }
 .tab-btn.active { background: #3498db; color: white; }
@@ -652,6 +902,8 @@ const handleStartPublication = (id) => {
 .ms-id { font-family: monospace; color: #888; }
 .ms-status-badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 .ms-title { margin: 0.5rem 0; color: #2c3e50; }
+.clickable-title { cursor: pointer; transition: color 0.2s; }
+.clickable-title:hover { color: #C93737; text-decoration: underline; }
 .ms-meta { font-size: 0.9rem; color: #666; display: flex; gap: 2rem; margin-bottom: 1.5rem; }
 .ms-actions { display: flex; flex-direction: column; gap: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0; }
 

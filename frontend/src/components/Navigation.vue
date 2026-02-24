@@ -1,10 +1,13 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
+import { useToastStore } from '../stores/toast'
 
 const router = useRouter()
+const route = useRoute()
 const { t, currentLang, setLang } = useI18n()
+const toastStore = useToastStore()
 
 const props = defineProps({
   user: Object,
@@ -21,7 +24,7 @@ const emit = defineEmits(['navigate'])
 
 const handleNav = (key, path) => {
   if (props.customNavigation) {
-    emit('navigate', key)
+    emit('navigate', key, path)
   } else {
     router.push(path)
   }
@@ -54,7 +57,7 @@ const showManuscriptMenu = ref(false)
 // 控制指南子菜单
 const showGuideMenu = ref(false)
 // 控制作者帮助子菜单
-const showAuthorHelpMenu = ref(false)
+const showWriterHelpMenu = ref(false)
 // 控制审核任务子菜单
 const showAuditTasksMenu = ref(false)
 // Control Reviewer Menu
@@ -63,6 +66,12 @@ const showReviewerMenu = ref(false)
 const showUserMenu = ref(false)
 // Control Mobile Menu
 const showMobileMenu = ref(false)
+// Control Review Process Menu
+const showReviewProcessMenu = ref(false)
+// Control Publication & Analytics Menu
+const showPubAnalyticsMenu = ref(false)
+// Control Admin Tools Menu
+const showAdminToolsMenu = ref(false)
 // User Menu Ref
 const userMenuRef = ref(null)
 
@@ -101,7 +110,7 @@ const handleHover = (menu, isOpen) => {
           case 'submission': showSubmissionMenu.value = true; break;
           case 'manuscript': showManuscriptMenu.value = true; break;
           case 'guide': showGuideMenu.value = true; break;
-          case 'authorHelp': showAuthorHelpMenu.value = true; break;
+          case 'writerHelp': showWriterHelpMenu.value = true; break;
           case 'auditTasks': showAuditTasksMenu.value = true; break;
         }
       }, 100)
@@ -124,7 +133,7 @@ const handleHover = (menu, isOpen) => {
           case 'submission': showSubmissionMenu.value = false; break;
           case 'manuscript': showManuscriptMenu.value = false; break;
           case 'guide': showGuideMenu.value = false; break;
-          case 'authorHelp': showAuthorHelpMenu.value = false; break;
+          case 'writerHelp': showWriterHelpMenu.value = false; break;
           case 'auditTasks': showAuditTasksMenu.value = false; break;
         }
       }, 200)
@@ -237,10 +246,10 @@ const toggleGuideMenu = (event) => {
 }
 
 // 切换作者帮助子菜单
-const toggleAuthorHelpMenu = (event) => {
+const toggleWriterHelpMenu = (event) => {
   if (event) event.stopPropagation()
-  showAuthorHelpMenu.value = !showAuthorHelpMenu.value
-  closeOtherMenus('authorHelp')
+  showWriterHelpMenu.value = !showWriterHelpMenu.value
+  closeOtherMenus('writerHelp')
 }
 
 // 切换审核任务子菜单
@@ -248,6 +257,27 @@ const toggleAuditTasksMenu = (event) => {
   if (event) event.stopPropagation()
   showAuditTasksMenu.value = !showAuditTasksMenu.value
   closeOtherMenus('auditTasks')
+}
+
+// 切换Review Process子菜单
+const toggleReviewProcessMenu = (event) => {
+  if (event) event.stopPropagation()
+  showReviewProcessMenu.value = !showReviewProcessMenu.value
+  closeOtherMenus('reviewProcess')
+}
+
+// 切换Publication & Analytics子菜单
+const togglePubAnalyticsMenu = (event) => {
+  if (event) event.stopPropagation()
+  showPubAnalyticsMenu.value = !showPubAnalyticsMenu.value
+  closeOtherMenus('pubAnalytics')
+}
+
+// 切换Admin Tools子菜单
+const toggleAdminToolsMenu = (event) => {
+  if (event) event.stopPropagation()
+  showAdminToolsMenu.value = !showAdminToolsMenu.value
+  closeOtherMenus('adminTools')
 }
 
 // 关闭其他菜单
@@ -264,8 +294,11 @@ const closeOtherMenus = (current) => {
   if (current !== 'submission') showSubmissionMenu.value = false
   if (current !== 'manuscript') showManuscriptMenu.value = false
   if (current !== 'guide') showGuideMenu.value = false
-  if (current !== 'authorHelp') showAuthorHelpMenu.value = false
+  if (current !== 'writerHelp') showWriterHelpMenu.value = false
   if (current !== 'auditTasks') showAuditTasksMenu.value = false
+  if (current !== 'reviewProcess') showReviewProcessMenu.value = false
+  if (current !== 'pubAnalytics') showPubAnalyticsMenu.value = false
+  if (current !== 'adminTools') showAdminToolsMenu.value = false
 }
 
 // 关闭所有子菜单
@@ -282,8 +315,11 @@ const closeAllMenus = () => {
   showHelpMenu.value = false
   showManuscriptMenu.value = false
   showGuideMenu.value = false
-  showAuthorHelpMenu.value = false
+  showWriterHelpMenu.value = false
   showAuditTasksMenu.value = false
+  showReviewProcessMenu.value = false
+  showPubAnalyticsMenu.value = false
+  showAdminToolsMenu.value = false
 }
 
 // 点击页面其他部分关闭子菜单
@@ -314,7 +350,7 @@ const goToSubmit = () => {
 
 const goToProfile = () => {
   if (isAdminRoute()) {
-    router.push('/admin/author-profile')
+    router.push('/admin/writer-profile')
   } else {
     router.push('/profile')
   }
@@ -327,8 +363,8 @@ const goToHome = () => {
 const goToAdminDashboard = () => {
   if (props.user?.role === 'reviewer') {
     router.push('/reviewer/dashboard')
-  } else if (props.user?.role === 'author') {
-    router.push('/admin/author-dashboard')
+  } else if (props.user?.role === 'writer') {
+    router.push('/admin/writer-dashboard')
   } else {
     router.push('/editor/dashboard')
   }
@@ -342,9 +378,31 @@ const goToAuditHistory = () => {
   router.push('/admin/audit-history')
 }
 
-// 处理搜索
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
+const handleClearSubmit = () => {
+  // 1. Remove from LocalStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('submit_')) {
+      localStorage.removeItem(key)
+    }
+  })
+  
+  // 2. Also ensure store state is cleared via action
+  import('../stores/user').then(({ useUserStore }) => {
+    const userStore = useUserStore()
+    userStore.logoutSubmission()
+  })
+
+  // 3. Feedback
+  toastStore.success('Submit login status cleared successfully!')
+}
+
+const showClearSubmitButton = computed(() => {
+  // Only show on Become Reviewer page as requested
+  return route.path === '/resources/reviewer/become'
+})
+
+function handleSearch() {
+  if (searchQuery.value && searchQuery.value.trim()) {
     console.log('Searching for:', searchQuery.value)
     router.push({ path: '/search', query: { q: searchQuery.value } })
   }
@@ -403,8 +461,8 @@ const handleLogout = () => {
         toast.style.opacity = '0'
         setTimeout(() => document.body.removeChild(toast), 300)
         
-        // Force Reload on Main Site to clear any state
-        window.location.href = '/?clearSubmitState=true'
+        // Return to submission login page instead of main site
+        router.push('/submission')
       }, 1500)
     })
   } else {
@@ -436,17 +494,29 @@ const handleLogout = () => {
 <template>
   <!-- System Status Banners -->
   <div v-if="!isAdminRoute() && user" class="system-banner read-only">
-    Read-Only Mode | Journal Submission Platform
+    {{ t('nav.readOnlyMode') }} | {{ t('submission.welcome.platform') }}
   </div>
   <div v-if="isAdminRoute() && user" class="system-banner submit-mode">
-    Submit System - [User Role: {{ user.role }}]
+    {{ t('nav.submitSystem') }} - [{{ t('nav.userRole') }}: {{ user.role }}]
   </div>
 
   <nav class="navbar" :class="{ 'reviewer-navbar': user?.role === 'reviewer', 'has-banner': user }">
     <div class="navbar-container" :class="{ 'reviewer-container': user?.role === 'reviewer' }">
-      <div class="navbar-logo" v-if="user?.role !== 'reviewer'">
-        <h1>{{ t('nav.logo') }}</h1>
+      <!-- 第一行：期刊名字、用户信息、Logout -->
+      <div class="navbar-top-row">
+        <div class="navbar-logo">
+          <h1>{{ t('nav.logo') }}</h1>
+        </div>
+        <div class="navbar-top-right">
+          <span v-if="user" class="user-info">
+            <span class="user-name">{{ user.username }}</span>
+            <span class="divider">|</span>
+            <a href="#" @click.prevent="handleLogout" class="logout-link">{{ t('nav.logout') }}</a>
+          </span>
+        </div>
       </div>
+      
+      <!-- 第二行：导航菜单 -->
       <div class="nav-wrapper">
         <!-- 主站导航 -->
         <template v-if="!isAdminRoute()">
@@ -464,7 +534,7 @@ const handleLogout = () => {
               </a>
             </li>
 
-          <!-- 2. Journals (Lancet Style) -->
+          <!-- 2. Journals -->
           <li class="nav-item">
             <a href="#" class="nav-link journals-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
               {{ t('nav.journals') }}
@@ -484,10 +554,10 @@ const handleLogout = () => {
               <a href="#" class="nav-link">{{ t('nav.resources') }} ▼</a>
             </div>
             <ul class="dropdown-menu" v-if="showResourcesMenu">
-              <li class="dropdown-header">{{ t('nav.authorResources') }}</li>
-              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/guide'); closeAllMenus()">{{ t('nav.guideForAuthors') }}</a></li>
-              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
-              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
+              <li class="dropdown-header">{{ t('nav.writerResources') }}</li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/guide'); closeAllMenus()">{{ t('nav.guideForWriters') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/writer/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
               <li><div class="dropdown-divider"></div></li>
               <li class="dropdown-header">{{ t('nav.reviewerResources') }}</li>
               <li>
@@ -612,20 +682,20 @@ const handleLogout = () => {
                     </a>
                   </li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="handleLogout" title="Logout from submit system (Reviewer access)">Logout (Submit System)</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="handleLogout" :title="t('nav.logoutSubmit')">{{ t('nav.logoutSubmit') }}</a></li>
                 </template>
                 <template v-else>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/account-security'); closeAllMenus()">{{ t('nav.settings') }}</a></li>
                   <li><div class="dropdown-divider"></div></li>
-                  <li><a href="#" class="nav-link logout" @click.prevent="confirmLogout">{{ t('nav.logout') }} (Read-Only)</a></li>
+                  <li><a href="#" class="nav-link logout" @click.prevent="confirmLogout">{{ t('nav.logout') }}</a></li>
                 </template>
               </ul>
             </li>
           </template>
           <template v-else>
             <li class="nav-item">
-               <a href="#" class="nav-link login-btn" @click.prevent="goToLogin">{{ t('nav.login') }} (Read-Only)</a>
+               <a href="#" class="nav-link login-btn" @click.prevent="goToLogin">{{ t('nav.login') }} ({{ t('nav.readOnly') }})</a>
             </li>
           </template>
 
@@ -640,137 +710,61 @@ const handleLogout = () => {
         
         <!-- 审核员后台导航 (Reviewer Navigation - Standardized) -->
         <template v-else-if="user?.role === 'reviewer'">
-          <div class="reviewer-nav-layout">
+          <!-- 第二行：导航菜单 -->
+          <div class="nav-wrapper">
             <!-- Mobile Hamburger (Visible < 1024px) -->
             <div class="hamburger-menu" @click="showMobileMenu = true">
               ☰
             </div>
 
-            <!-- Left 85%: Core Navigation -->
-            <div class="core-nav-section">
-              <!-- 1. Home -->
+            <!-- Desktop Menu -->
+            <ul class="navbar-menu desktop-only">
+              <!-- 1. Dashboard -->
               <li class="nav-item">
-                <a href="#" class="nav-link" :class="{ active: currentPage === 'home' }" @click.prevent="goToHome">
-                  {{ t('nav.home') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-dashboard' }" @click.prevent="router.push('/reviewer/dashboard')">
+                  {{ t('nav.dashboard') }}
                 </a>
               </li>
 
-              <!-- 2. Journals -->
+              <!-- 2. My Assignments -->
               <li class="nav-item">
-                <a href="#" class="nav-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
-                  {{ t('nav.journals') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-assignments' }" @click.prevent="router.push('/reviewer/assignments')">
+                  {{ t('nav.myAssignments') }}
                 </a>
               </li>
 
-              <!-- 3. Submit (Button) -->
+              <!-- 2.5 Letters & Invitations -->
               <li class="nav-item">
-                <a href="#" class="nav-link btn-submit-nav" @click.prevent="goToSubmit()">
-                  {{ t('nav.submit') }}
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-letters' }" @click.prevent="router.push('/reviewer/letters')">
+                  {{ t('nav.lettersAndInvitations') }}
+                </a>
+              </li>
+
+              <!-- 3. Profile -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-profile' }" @click.prevent="router.push('/reviewer/profile')">
+                  {{ t('nav.profile') }}
                 </a>
               </li>
 
               <!-- 4. Resources -->
               <li class="nav-item dropdown" @mouseenter="handleHover('resources', true)" @mouseleave="handleHover('resources', false)">
                 <div class="dropdown-toggle" @click="toggleResourcesMenu">
-                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('resources-') }">{{ t('nav.resources') }} ▼</a>
+                  <a href="#" class="nav-link">{{ t('nav.resources') }} ▼</a>
                 </div>
                 <ul class="dropdown-menu" v-if="showResourcesMenu">
-                   <!-- Reusing Resources Content -->
-                  <li class="dropdown-header">{{ t('nav.authorResources') }}</li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/guide'); closeAllMenus()">{{ t('nav.guideForAuthors') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/templates'); closeAllMenus()">{{ t('nav.templates') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/author/status'); closeAllMenus()">{{ t('nav.checkStatus') }}</a></li>
-                  <li><div class="dropdown-divider"></div></li>
-                  <li class="dropdown-header">{{ t('nav.newsEvents') }}</li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/latest'); closeAllMenus()">{{ t('nav.latestArticles') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/calls'); closeAllMenus()">{{ t('nav.callForPapers') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/news/events'); closeAllMenus()">{{ t('nav.upcomingEvents') }}</a></li>
-                </ul>
-              </li>
-
-              <!-- 5. Reviewer (Exclusive Dropdown) -->
-              <li class="nav-item dropdown" @mouseenter="handleHover('reviewer', true)" @mouseleave="handleHover('reviewer', false)">
-                <div class="dropdown-toggle" @click="toggleReviewerMenu">
-                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('reviewer-') }">{{ t('nav.reviewer') }} ▼</a>
-                </div>
-                <ul class="dropdown-menu reviewer-menu" v-if="showReviewerMenu">
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/become'); closeAllMenus()">{{ t('nav.becomeReviewer') }}</a></li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); closeAllMenus()">{{ t('nav.reviewerGuidelines') }}</a></li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/resources/reviewer/training'); closeAllMenus()">{{ t('nav.reviewerTraining') }}</a></li>
-                  <li><div class="dropdown-divider"></div></li>
-                  
-                  <!-- My Reviews: Permission Logic -->
-                  <li>
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      :class="{ 'disabled-link': user?.status !== 'active' }"
-                      @click.prevent="handleMyReviewsClick"
-                      title="Please apply and pass the reviewer review first"
-                    >
-                      {{ t('nav.myReviews') }}
-                    </a>
-                  </li>
-
-                  <!-- My Profile: Permission Logic -->
-                  <li>
-                    <a 
-                      href="#" 
-                      class="nav-link" 
-                      @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()"
-                      :title="user?.status !== 'active' ? 'View Only' : ''"
-                    >
-                      {{ t('nav.myProfile') }}
-                    </a>
-                  </li>
                 </ul>
               </li>
 
-              <!-- 6. More -->
-              <li class="nav-item dropdown" @mouseenter="handleHover('more', true)" @mouseleave="handleHover('more', false)">
-                <div class="dropdown-toggle" @click="toggleMoreMenu">
-                  <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('about-') }">{{ t('nav.more') }} ▼</a>
-                </div>
-                <ul class="dropdown-menu" v-if="showMoreMenu">
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/editorial-board'); closeAllMenus()">{{ t('nav.editorialBoard') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/journal-info'); closeAllMenus()">{{ t('nav.journalInfo') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/about/history'); closeAllMenus()">{{ t('nav.history') }}</a></li>
-                </ul>
-              </li>
-            </div>
-
-            <!-- Right 15%: Icons -->
-            <div class="icon-nav-section">
-              <!-- Search Icon -->
-              <div class="search-container">
-                <div class="search-icon">🔍</div>
-                <div class="search-input-wrapper">
-                   <input type="text" v-model="searchQuery" @keyup.enter="handleSearch" :placeholder="t('nav.searchPlaceholder')" />
-                </div>
-              </div>
-
-              <!-- User Icon -->
-              <div class="user-container dropdown" @click="toggleUserMenu" ref="userMenuRef">
-                <div class="user-icon">👤</div>
-                <ul class="dropdown-menu user-menu" v-if="showUserMenu">
-                  <!-- Login/Logout -->
-              <li v-if="!user"><a href="#" class="nav-link" @click.prevent="goToLogin">{{ t('nav.login') }} (Read-Only)</a></li>
-              <li v-else><a href="#" class="nav-link" @click.prevent="handleLogout">{{ t('nav.logout') }} (Read-Only)</a></li>
-              
               <!-- Language -->
-                  <li>
-                    <a href="#" class="nav-link" @click.prevent="toggleLang">
-                      {{ currentLang === 'en' ? 'Chinese' : 'English' }} <span v-if="currentLang === 'en'">✓</span>
-                    </a>
-                  </li>
-
-                  <!-- Help -->
-                  <li><a href="#" class="nav-link" @click.prevent="$router.push('/submission/help'); closeAllMenus()">{{ t('nav.help') }}</a></li>
-                </ul>
-              </div>
-            </div>
-
-
+              <li class="nav-item">
+                 <a href="#" class="nav-link" @click.prevent="toggleLang">
+                   {{ currentLang === 'en' ? '中文' : 'En' }}
+                 </a>
+               </li>
+            </ul>
           </div>
         </template>
         
@@ -778,6 +772,7 @@ const handleLogout = () => {
         <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
+          <!-- Core Navigation -->
           <li class="nav-item">
             <a 
               href="#" 
@@ -800,11 +795,11 @@ const handleLogout = () => {
             </a>
           </li>
 
-          <!-- Audit Tasks Menu (Added) -->
+          <!-- Audit Tasks Menu (Top-level) -->
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleAuditTasksMenu">
               <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('audit-') }">
-                {{ t('nav.tasks') }} ▼
+                {{ t('nav.auditTasks') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showAuditTasksMenu">
@@ -820,37 +815,30 @@ const handleLogout = () => {
             </ul>
           </li>
 
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-reviewers' }"
-              @click.prevent="handleNav('editor-reviewers', '/editor/reviewers')"
-            >
-              {{ t('nav.reviewers') }}
-            </a>
+          <!-- Review Process Dropdown -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="toggleReviewProcessMenu">
+              <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-reviewers' || currentPage === 'editor-decisions' }">
+                {{ t('nav.reviewProcess') }} ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showReviewProcessMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-reviewers', '/editor/reviewers'); closeAllMenus()">{{ t('nav.reviewers') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-decisions', '/editor/decisions'); closeAllMenus()">{{ t('nav.decisionsLetters') }}</a></li>
+            </ul>
           </li>
 
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-decisions' }"
-              @click.prevent="handleNav('editor-decisions', '/editor/decisions')"
-            >
-              {{ t('nav.decisionsLetters') }}
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a 
-              href="#" 
-              class="nav-link"
-              :class="{ active: currentPage === 'editor-statistics' }"
-              @click.prevent="handleNav('editor-statistics', '/editor/statistics')"
-            >
-              Data Statistics
-            </a>
+          <!-- Publication & Analytics Dropdown -->
+          <li class="nav-item dropdown">
+            <div class="dropdown-toggle" @click="togglePubAnalyticsMenu">
+              <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-publication-management' || currentPage === 'editor-statistics' }">
+                {{ t('nav.publicationAnalytics') }} ▼
+              </a>
+            </div>
+            <ul class="dropdown-menu" v-if="showPubAnalyticsMenu">
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-publication-management', '/editor/publication'); closeAllMenus()">{{ t('nav.publication') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-statistics', '/editor/statistics'); closeAllMenus()">{{ t('nav.dataStatistics') }}</a></li>
+            </ul>
           </li>
 
           <!-- Board Management (Editor Only) -->
@@ -861,55 +849,44 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'editor-board' }"
               @click.prevent="handleNav('editor-board', '/editor/board')"
             >
-              Board Management
+              {{ t('nav.boardManagement') }}
             </a>
           </li>
 
           <!-- Admin Only Menu Items -->
           <template v-if="user?.role === 'admin'">
-             <li class="nav-item dropdown">
-              <div class="dropdown-toggle" @click="toggleRoleMenu">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'editor-users' }"
-                >
-                  {{ t('nav.editorManagement') }} ▼
-                </a>
-              </div>
-              <ul class="dropdown-menu" v-if="showRoleMenu">
-                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-users', '/editor/users'); closeAllMenus()">{{ t('nav.userList') }}</a></li>
-                 <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); closeAllMenus()">{{ t('nav.accountStatus') }}</a></li>
-              </ul>
-            </li>
-
             <li class="nav-item dropdown">
-              <div class="dropdown-toggle" @click="toggleSystemMenu">
-                <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage.startsWith('editor-system') }"
-                >
-                  {{ t('nav.journalSettings') }} ▼
+              <div class="dropdown-toggle" @click="toggleAdminToolsMenu">
+                <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-users' || currentPage.startsWith('editor-system') }">
+                  {{ t('nav.adminTools') }} ▼
                 </a>
               </div>
-              <ul class="dropdown-menu" v-if="showSystemMenu">
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); closeAllMenus()">{{ t('nav.basicConfig') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); closeAllMenus()">{{ t('nav.moduleManagement') }}</a></li>
-                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); closeAllMenus()">{{ t('nav.inviteCodeManagement') }}</a></li>
+              <ul class="dropdown-menu" v-if="showAdminToolsMenu">
+                <!-- Editor Management -->
+                <li class="dropdown-submenu">
+                  <div class="dropdown-toggle" @click.stop="toggleRoleMenu">
+                    <a href="#" class="nav-link">{{ t('nav.editorManagement') }} ▶</a>
+                  </div>
+                  <ul class="dropdown-menu submenu-level-2" v-if="showRoleMenu">
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-users', '/editor/users'); closeAllMenus()">{{ t('nav.userList') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-account-status', '/editor/account-status'); closeAllMenus()">{{ t('nav.accountStatus') }}</a></li>
+                  </ul>
+                </li>
+                <!-- Journal Settings -->
+                <li class="dropdown-submenu">
+                  <div class="dropdown-toggle" @click.stop="toggleSystemMenu">
+                    <a href="#" class="nav-link">{{ t('nav.journalSettings') }} ▶</a>
+                  </div>
+                  <ul class="dropdown-menu submenu-level-2" v-if="showSystemMenu">
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-basic', '/editor/system/basic'); closeAllMenus()">{{ t('nav.basicConfig') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-notification', '/editor/system/notification'); closeAllMenus()">{{ t('nav.notificationSettings') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-modules', '/editor/system/modules'); closeAllMenus()">{{ t('nav.moduleManagement') }}</a></li>
+                    <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-invitation-codes', '/editor/system/invitation-codes'); closeAllMenus()">{{ t('nav.inviteCodeManagement') }}</a></li>
+                  </ul>
+                </li>
+                <!-- Log Management -->
+                <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-system-logs', '/editor/system/logs'); closeAllMenus()">{{ t('nav.logManagement') }}</a></li>
               </ul>
-            </li>
-
-            <li class="nav-item">
-               <a 
-                  href="#" 
-                  class="nav-link"
-                  :class="{ active: currentPage === 'editor-system-logs' }"
-                  @click.prevent="handleNav('editor-system-logs', '/editor/system/logs')"
-                >
-                  {{ t('nav.logManagement') }}
-                </a>
             </li>
           </template>
 
@@ -951,15 +928,15 @@ const handleLogout = () => {
           </ul>
         </template>
         
-        <!-- 作者后台导航 -->
-        <template v-else-if="user?.role === 'author'">
+        <!-- 投稿人后台导航 -->
+        <template v-else-if="user?.role === 'writer'">
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
           <li class="nav-item">
             <a 
               href="#" 
               class="nav-link"
-              :class="{ active: currentPage === 'author-dashboard' || currentPage === 'admin-author-dashboard' || currentPage === 'submission-author-dashboard' }"
+              :class="{ active: currentPage === 'writer-dashboard' || currentPage === 'admin-writer-dashboard' || currentPage === 'submission-writer-dashboard' }"
               @click.prevent="goToAdminDashboard"
             >
               {{ t('nav.dashboard') }}
@@ -982,8 +959,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-                  :class="{ active: currentPage === 'admin-author-submit' || currentPage === 'submission-author-submit' }"
-                  @click.prevent="router.push('/admin/author-submit'); closeAllMenus()"
+                  :class="{ active: currentPage === 'admin-writer-submit' || currentPage === 'submission-writer-submit' }"
+                  @click.prevent="router.push('/admin/writer-submit'); closeAllMenus()"
                 >
                   {{ t('nav.newSubmission') }}
                 </a>
@@ -1018,6 +995,16 @@ const handleLogout = () => {
                   {{ t('nav.historySubmission') }}
                 </a>
               </li>
+              <li>
+                <a 
+                  href="#" 
+                  class="nav-link"
+                  :class="{ active: currentPage === 'writer-letters' }"
+                  @click.prevent="router.push('/writer/letters'); closeAllMenus()"
+                >
+                  {{ t('nav.letters') }}
+                </a>
+              </li>
             </ul>
           </li>
           
@@ -1027,7 +1014,7 @@ const handleLogout = () => {
               <a 
                 href="#" 
                 class="nav-link"
-                :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' || currentPage.startsWith('submission-profile') || currentPage === 'submission-notifications' }"
+                :class="{ active: currentPage === 'writer-profile' || currentPage === 'admin-writer-profile' || currentPage.startsWith('admin-profile') || currentPage === 'admin-notifications' || currentPage.startsWith('submission-profile') || currentPage === 'submission-notifications' }"
               >
                 {{ t('nav.profile') }} ▼
               </a>
@@ -1037,8 +1024,8 @@ const handleLogout = () => {
                 <a 
                   href="#" 
                   class="nav-link"
-                  :class="{ active: currentPage === 'author-profile' || currentPage === 'admin-author-profile' || currentPage === 'submission-author-profile' }"
-                  @click.prevent="router.push('/admin/author-profile'); closeAllMenus()"
+                  :class="{ active: currentPage === 'writer-profile' || currentPage === 'admin-writer-profile' || currentPage === 'submission-writer-profile' }"
+                  @click.prevent="router.push('/admin/writer-profile'); closeAllMenus()"
                 >
                   {{ t('nav.profileInfo') }}
                 </a>
@@ -1103,7 +1090,7 @@ const handleLogout = () => {
           
           <!-- 帮助中心菜单 -->
           <li class="nav-item dropdown">
-            <div class="dropdown-toggle" @click="toggleAuthorHelpMenu">
+            <div class="dropdown-toggle" @click="toggleWriterHelpMenu">
               <a 
                 href="#" 
                 class="nav-link"
@@ -1112,7 +1099,7 @@ const handleLogout = () => {
                 {{ t('nav.helpCenter') }} ▼
               </a>
             </div>
-            <ul class="dropdown-menu" v-if="showAuthorHelpMenu">
+            <ul class="dropdown-menu" v-if="showWriterHelpMenu">
               <li>
                 <a 
                   href="#" 
@@ -1167,8 +1154,8 @@ const handleLogout = () => {
           </li>
            <!-- Logout -->
            <li class="nav-item">
-            <a href="#" class="nav-link logout" @click.prevent="handleLogout" title="Logout from submit system">
-              Logout (Submit System)
+            <a href="#" class="nav-link logout" @click.prevent="handleLogout" :title="t('nav.logoutSubmit')">
+              {{ t('nav.logoutSubmit') }}
             </a>
           </li>
           <!-- Language -->
@@ -1208,9 +1195,9 @@ const handleLogout = () => {
           <li class="sidebar-item has-submenu">
             <div class="sidebar-link" @click="toggleResourcesMenu">{{ t('nav.resources') }} <span class="arrow">▼</span></div>
             <ul class="sidebar-submenu" v-if="showResourcesMenu">
-              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/guide'); showMobileMenu = false">{{ t('nav.guideForAuthors') }}</a></li>
-              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/templates'); showMobileMenu = false">{{ t('nav.templates') }}</a></li>
-              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/author/status'); showMobileMenu = false">{{ t('nav.checkStatus') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/writer/guide'); showMobileMenu = false">{{ t('nav.guideForAuthors') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/writer/templates'); showMobileMenu = false">{{ t('nav.templates') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/writer/status'); showMobileMenu = false">{{ t('nav.checkStatus') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/become'); showMobileMenu = false">{{ t('nav.becomeReviewer') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="$router.push('/resources/reviewer/guidelines'); showMobileMenu = false">{{ t('nav.reviewerGuidelines') }}</a></li>
             </ul>
@@ -1254,9 +1241,9 @@ const handleLogout = () => {
           <li class="sidebar-item">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-manuscripts', '/editor/manuscripts'); showMobileMenu = false">{{ t('nav.manuscripts') }}</a>
           </li>
-          <!-- Tasks -->
+          <!-- Audit Tasks -->
           <li class="sidebar-item has-submenu">
-            <div class="sidebar-link" @click="toggleAuditTasksMenu">{{ t('nav.tasks') }} <span class="arrow">▼</span></div>
+            <div class="sidebar-link" @click="toggleAuditTasksMenu">Audit Tasks <span class="arrow">▼</span></div>
             <ul class="sidebar-submenu" v-if="showAuditTasksMenu">
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-new-submissions', '/editor/audit/new-submissions'); showMobileMenu = false">{{ t('nav.auditNewSubmissions') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="handleNav('audit-assign-reviewers', '/editor/audit/assign-reviewers'); showMobileMenu = false">{{ t('nav.auditAssignReviewers') }}</a></li>
@@ -1327,8 +1314,8 @@ const handleLogout = () => {
           </li>
         </template>
 
-        <!-- 3. Author Navigation -->
-        <template v-else-if="user?.role === 'author'">
+        <!-- 3. Writer Navigation -->
+        <template v-else-if="user?.role === 'writer'">
           <li class="sidebar-item">
             <a href="#" class="sidebar-link" @click.prevent="goToAdminDashboard; showMobileMenu = false">{{ t('nav.dashboard') }}</a>
           </li>
@@ -1336,17 +1323,18 @@ const handleLogout = () => {
           <li class="sidebar-item has-submenu">
             <div class="sidebar-link" @click="toggleManuscriptMenu">{{ t('nav.manuscriptManagement') }} <span class="arrow">▼</span></div>
             <ul class="sidebar-submenu" v-if="showManuscriptMenu">
-              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/author-submit'); showMobileMenu = false">{{ t('nav.newSubmission') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/writer-submit'); showMobileMenu = false">{{ t('nav.newSubmission') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/my'); showMobileMenu = false">{{ t('nav.myManuscripts') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/progress'); showMobileMenu = false">{{ t('nav.manuscriptProgress') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/manuscript/history'); showMobileMenu = false">{{ t('nav.historySubmission') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/writer/letters'); showMobileMenu = false">{{ t('nav.letters') }}</a></li>
             </ul>
           </li>
            <!-- Profile -->
           <li class="sidebar-item has-submenu">
             <div class="sidebar-link" @click="toggleProfileMenu">{{ t('nav.profile') }} <span class="arrow">▼</span></div>
             <ul class="sidebar-submenu" v-if="showProfileMenu">
-              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/author-profile'); showMobileMenu = false">{{ t('nav.profileInfo') }}</a></li>
+              <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/writer-profile'); showMobileMenu = false">{{ t('nav.profileInfo') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/account-security'); showMobileMenu = false">{{ t('nav.accountSecurity') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/notifications'); showMobileMenu = false">{{ t('nav.messages') }}</a></li>
             </ul>
@@ -1361,8 +1349,8 @@ const handleLogout = () => {
           </li>
           <!-- Help -->
           <li class="sidebar-item has-submenu">
-            <div class="sidebar-link" @click="toggleAuthorHelpMenu">{{ t('nav.helpCenter') }} <span class="arrow">▼</span></div>
-            <ul class="sidebar-submenu" v-if="showAuthorHelpMenu">
+            <div class="sidebar-link" @click="toggleWriterHelpMenu">{{ t('nav.helpCenter') }} <span class="arrow">▼</span></div>
+            <ul class="sidebar-submenu" v-if="showWriterHelpMenu">
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/submission/help'); showMobileMenu = false">{{ t('nav.helpCenter') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/help/consultation'); showMobileMenu = false">{{ t('nav.onlineConsultation') }}</a></li>
               <li><a href="#" class="submenu-link" @click.prevent="router.push('/admin/help/feedback'); showMobileMenu = false">{{ t('nav.feedback') }}</a></li>
@@ -1427,7 +1415,7 @@ const handleLogout = () => {
 }
 
 .system-banner.submit-mode {
-  background-color: #C93737;
+  background-color: #0056B3;
   color: white;
 }
 
@@ -1440,7 +1428,6 @@ const handleLogout = () => {
 .navbar {
   background: white;
   color: #333;
-  padding: 1rem 0;
   border-bottom: 1px solid #eee;
   position: fixed;
   top: 0;
@@ -1458,7 +1445,57 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 0;
+}
+
+/* 双层导航栏 - 第一行 */
+.navbar-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.navbar-top-right {
+  display: flex;
+  align-items: center;
   gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.user-info .user-name {
+  color: #666;
+  font-weight: 500;
+}
+
+.user-info .logout-link {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.user-info .logout-link:hover {
+  text-decoration: underline;
+}
+
+.user-info .divider {
+  color: #ccc;
+}
+
+/* 双层导航栏 - 第二行 */
+.nav-wrapper {
+  width: 100%;
+  padding: 0.5rem 0;
 }
 
 .navbar-menu {
@@ -1471,11 +1508,65 @@ const handleLogout = () => {
   gap: 0.5rem;
 }
 
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .navbar-logo h1 {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
   color: #333;
+}
+
+.logo-logout-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: 5px;
+}
+
+.logo-logout-area .user-name {
+  color: #666;
+  font-weight: 500;
+}
+
+.logo-logout-area .logout-link {
+  color: #dc3545;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.logo-logout-area .logout-link:hover {
+  text-decoration: underline;
+}
+
+.logo-logout-area .divider {
+  color: #ccc;
+}
+
+
+/* Clear Submit Button */
+.btn-clear-submit {
+  margin-left: 15px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-clear-submit:hover {
+  background-color: #e0e0e0;
+  color: #000;
 }
 
 .nav-item {
@@ -1498,9 +1589,9 @@ const handleLogout = () => {
 
 /* Navigation Item Highlight Style */
 .nav-link.active {
-  color: #C93737;
+  color: #0056B3;
   background: transparent;
-  border-bottom: 2px solid #C93737;
+  border-bottom: 2px solid #0056B3;
   border-radius: 0;
 }
 
@@ -1515,12 +1606,12 @@ const handleLogout = () => {
 }
 
 .nav-link.logout {
-  color: #C93737;
+  color: #dc3545;
 }
 
 .nav-link.logout:hover {
-  color: #C93737;
-  background: rgba(201, 55, 55, 0.1);
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 /* 下拉菜单样式 */
@@ -1573,8 +1664,8 @@ const handleLogout = () => {
 
 .dropdown-menu .nav-link:hover,
 .dropdown-menu .nav-link.active {
-  background: rgba(201, 55, 55, 0.1);
-  color: #C93737;
+  background: rgba(0, 86, 179, 0.1);
+  color: #0056B3;
 }
 
 /* Hamburger Menu Global */
@@ -1788,95 +1879,13 @@ const handleLogout = () => {
   background: #B02E2E;
 }
 
-/* Reviewer Navigation Specific Styles */
-.reviewer-nav-layout {
-  display: flex;
-  width: 100%;
-  height: 60px; /* Strict height */
-  min-width: 1200px; /* Strict min-width */
-  align-items: center;
-  box-sizing: border-box;
-}
-
-/* Left 85% */
-.core-nav-section {
-  width: 85%;
-  display: flex;
-  align-items: center;
-  gap: 32px; /* Fixed spacing */
-  padding-left: 0;
-  height: 100%;
-}
-
-/* Right 15% */
-.icon-nav-section {
-  width: 15%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px; /* Fixed icon spacing */
-  padding-left: 24px; /* Gap from core nav */
-  height: 100%;
-}
-
-/* Override nav-item for reviewer layout */
-.reviewer-nav-layout .nav-item {
-  margin: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-}
-
-/* Link Styles */
-.reviewer-nav-layout .nav-link {
-  color: #333333;
-  font-size: 16px;
-  font-weight: normal;
-  font-family: Arial, Helvetica, sans-serif; /* Sans-serif */
-  padding: 0 4px; /* Minimal padding for text */
-  height: 100%;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid transparent; /* Prepare for active state */
-  border-radius: 0;
-  background: transparent;
-  transition: background-color 0.3s;
-}
-
-.reviewer-nav-layout .nav-link:hover {
-  background-color: #F5F5F5;
-  color: #333333;
-}
-
-.reviewer-nav-layout .nav-link.active {
-  border-bottom: 1px solid #C93737;
-  color: #333333; /* Text color remains #333 */
-  background: transparent;
-}
-
-/* Submit Button Specific */
-.reviewer-nav-layout .btn-submit-nav {
-  background-color: #C93737 !important;
-  color: #FFFFFF !important;
-  border-radius: 4px;
-  padding: 8px 24px !important;
-  height: auto;
-  line-height: normal;
-  border: none;
-}
-
-.reviewer-nav-layout .btn-submit-nav:hover {
-  background-color: #B02E2E !important;
-  color: #FFFFFF !important;
-}
-
 /* Reviewer Dropdown Specific */
 .reviewer-menu {
-  top: 60px; /* Align with bottom of nav */
-  margin-top: 0;
+  top: 100%;
+  margin-top: 0.1rem;
   border: 1px solid #E5E5E5;
-  box-shadow: none !important; /* Forbidden shadow */
-  border-radius: 0 0 4px 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
   min-width: 200px;
   padding: 8px 0;
 }
@@ -1919,7 +1928,7 @@ const handleLogout = () => {
 }
 
 .user-container:hover .user-icon {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .user-menu {
@@ -1927,48 +1936,13 @@ const handleLogout = () => {
   left: auto;
   width: 150px; /* Fixed width */
   border: 1px solid #E5E5E5;
-  box-shadow: none; /* Spec says no shadow for Reviewer dropdown, assume User too? Spec says "User menu... border 1px... click outside to close". Doesn't explicitly forbid shadow but says "Reviewer dropdown... no shadow". Actually "Dropdown menu style... no any shadow". Applies to Reviewer? Or all? "Reviewer Exclusive Dropdown... no any shadow". User menu "Background white, border 1px...". I'll remove shadow to be safe/consistent. */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   top: 100%;
   margin-top: 10px; /* Spacing */
 }
 
-/* Search Box Override */
-.reviewer-nav-layout .search-container {
-  height: 100%;
-}
-.reviewer-nav-layout .search-icon {
-  font-size: 16px;
-  color: #333333;
-}
-.reviewer-nav-layout .search-icon:hover {
-  color: #C93737;
-}
-.reviewer-nav-layout .search-input-wrapper {
-  border-radius: 4px;
-  border: 1px solid #E5E5E5;
-}
-.reviewer-nav-layout .search-container:hover .search-input-wrapper,
-.reviewer-nav-layout .search-input-wrapper:focus-within {
-  width: 300px; /* Fixed width */
-}
-
 /* Mobile Adaptation for Reviewer */
 @media (max-width: 1024px) {
-  .reviewer-nav-layout {
-    min-width: auto;
-    padding: 0 16px;
-    justify-content: space-between;
-  }
-  
-  .core-nav-section {
-    display: none; /* Hide core nav on mobile, use Hamburger */
-  }
-  
-  .icon-nav-section {
-    width: auto;
-    gap: 20px; /* Mobile gap */
-  }
-  
   /* Add Hamburger Menu Logic here */
   .hamburger-menu {
     display: block; /* Visible on mobile */
@@ -2045,7 +2019,7 @@ const handleLogout = () => {
 }
 
 .sidebar-link:hover {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .btn-submit-sidebar {
@@ -2073,12 +2047,30 @@ const handleLogout = () => {
 }
 
 .submenu-link:hover {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .submenu-link.disabled {
   color: #999;
   cursor: not-allowed;
+}
+
+/* Dropdown Submenu Styles */
+.dropdown-submenu {
+  position: relative;
+}
+
+.dropdown-submenu .dropdown-menu.submenu-level-2 {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-top: -1px;
+  min-width: 200px;
+  display: block;
+}
+
+.dropdown-submenu:hover .dropdown-menu.submenu-level-2 {
+  display: block;
 }
 
 /* Hamburger default hidden on PC */

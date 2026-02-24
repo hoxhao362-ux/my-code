@@ -84,7 +84,7 @@ const roleOptions = [
   { value: 'editorial_assistant', label: 'Editorial Assistant' },
   { value: 'advisory_editor', label: 'Advisory Editor' },
   { value: 'reviewer', label: 'Reviewer' },
-  { value: 'author', label: 'Author' },
+  { value: 'writer', label: 'Writer' },
   { value: 'user', label: 'User' }
 ]
 
@@ -233,7 +233,7 @@ const executeEdit = () => {
       currentUser.value.role = editForm.value.role
       const roleName = editForm.value.role === 'editor' ? 'Editor' : 
                        editForm.value.role === 'reviewer' ? 'Reviewer' : 
-                       editForm.value.role === 'author' ? 'Author' : 'User'
+                       editForm.value.role === 'writer' ? 'Writer' : 'User'
       alert(`User ${currentUser.value.username} role updated to ${roleName}`)
     }
     showEditModal.value = false
@@ -386,7 +386,7 @@ const enableUser = (user) => {
             <div class="stat-label">Reviewers</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'writer').length }}</div>
             <div class="stat-label">Writers</div>
           </div>
         </div>
@@ -419,7 +419,7 @@ const enableUser = (user) => {
                        user.role === 'editorial_assistant' ? 'Editorial Assistant' :
                        user.role === 'advisory_editor' ? 'Advisory Editor' :
                        user.role === 'reviewer' ? 'Reviewer' : 
-                       user.role === 'author' ? 'Author' : 'User' }}
+                       user.role === 'writer' ? 'Writer' : 'User' }}
                   </span>
                 </td>
                 <td class="user-email">{{ encryptEmail(user.email) }}</td>
@@ -475,7 +475,7 @@ const enableUser = (user) => {
               </div>
               <div class="info-item">
                 <span class="info-label">Role:</span>
-                <span class="info-value">{{ currentUser?.role === 'admin' ? 'Editor' : currentUser?.role === 'reviewer' ? 'Reviewer' : currentUser?.role === 'author' ? 'Author' : 'User' }}</span>
+                <span class="info-value">{{ currentUser?.role === 'admin' ? 'Editor' : currentUser?.role === 'reviewer' ? 'Reviewer' : currentUser?.role === 'writer' ? 'Writer' : 'User' }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Email:</span>
@@ -493,7 +493,7 @@ const enableUser = (user) => {
           </div>
           
           <!-- 投稿记录 -->
-          <div class="records-section" v-if="(currentUser?.role === 'user' || currentUser?.role === 'author') && getUserSubmissions(currentUser?.id).length > 0">
+          <div class="records-section" v-if="(currentUser?.role === 'user' || currentUser?.role === 'writer') && getUserSubmissions(currentUser?.id).length > 0">
             <h3>Submission History</h3>
             <div class="records-table-container">
               <table class="records-table">
@@ -566,7 +566,7 @@ const enableUser = (user) => {
                 <option value="editorial_assistant">Editorial Assistant</option>
                 <option value="advisory_editor">Advisory Editor</option>
                 <option value="reviewer">Reviewer</option>
-                <option value="author">Author</option>
+                <option value="writer">Writer</option>
                 <option value="user">User</option>
               </select>
             </div>
@@ -964,7 +964,7 @@ const enableUser = (user) => {
   color: white;
 }
 
-.role-badge.author {
+.role-badge.writer {
   background-color: #45b7d1;
   color: white;
 }

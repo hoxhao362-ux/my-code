@@ -71,7 +71,7 @@ const handleArchiveReport = (report) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <!-- Note: Embedded prop usually handles nav, but for standalone dev we might keep it or rely on Portal -->
     <Navigation 
       v-if="!$attrs.embedded"
@@ -121,7 +121,7 @@ const handleArchiveReport = (report) => {
 
           <div class="action-group">
             <button class="btn btn-grey" @click="handleQuery">Query</button>
-            <button class="btn btn-red" @click="handleExportReport">Export Report</button>
+            <button class="btn btn-primary" @click="handleExportReport">Export Report</button>
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@ const handleArchiveReport = (report) => {
       <div class="reports-section">
         <h2 class="section-title">Report Management</h2>
         <div class="table-wrapper">
-          <table class="lancet-table">
+          <table class="jp-table">
             <thead>
               <tr>
                 <th>Report Name</th>
@@ -256,7 +256,7 @@ const handleArchiveReport = (report) => {
                 </td>
                 <td class="actions">
                   <button class="btn-text" @click="handleDownloadReport(report)">View</button>
-                  <button class="btn-text red" @click="handleDownloadReport(report)">Export</button>
+                  <button class="btn-text text-danger" @click="handleDownloadReport(report)">Export</button>
                   <button class="btn-text" @click="handleArchiveReport(report)" :disabled="report.status === 'archived'">Archive</button>
                 </td>
               </tr>
@@ -270,9 +270,9 @@ const handleArchiveReport = (report) => {
 </template>
 
 <style scoped>
-/* Lancet Standard Typography & Colors */
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
+/* Journal Platform Standard Typography & Colors */
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #FFFFFF;
   min-height: 100vh;
   color: #333333;
@@ -332,7 +332,7 @@ const handleArchiveReport = (report) => {
   padding: 6px 12px;
   border: 1px solid #CCCCCC;
   border-radius: 0; /* Minimalist */
-  font-family: 'Times New Roman', serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #333;
   min-width: 120px;
 }
@@ -353,8 +353,8 @@ const handleArchiveReport = (report) => {
   opacity: 0.9;
 }
 
-.btn-red {
-  background-color: #D1202F; /* Lancet Red */
+.btn-primary {
+  background-color: #0056B3; /* Journal Platform Blue */
   color: white;
 }
 
@@ -424,7 +424,7 @@ const handleArchiveReport = (report) => {
 }
 
 .highlight-red .value {
-  color: #D1202F;
+  color: #dc3545;
 }
 
 .highlight-orange .value {
@@ -448,13 +448,13 @@ const handleArchiveReport = (report) => {
   overflow-x: auto;
 }
 
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
   padding: 12px 15px;
   border-bottom: 2px solid #333;
@@ -462,13 +462,13 @@ const handleArchiveReport = (report) => {
   color: #333;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 12px 15px;
   border-bottom: 1px solid #EEE;
   color: #555;
 }
 
-.lancet-table tr:hover td {
+.jp-table tr:hover td {
   background-color: #F9F9F9;
 }
 
@@ -502,8 +502,8 @@ const handleArchiveReport = (report) => {
   text-decoration: underline;
 }
 
-.btn-text.red {
-  color: #D1202F;
+.btn-text.text-danger {
+  color: #dc3545;
   font-weight: bold;
 }
 

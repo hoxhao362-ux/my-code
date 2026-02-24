@@ -50,7 +50,7 @@ const showDetail = (log) => {
     <!-- Header -->
     <header class="header">
       <h2 class="title">Full Process Audit Log (Tamper-Proof)</h2>
-      <p class="subtitle">Logs are automatically generated, permanently stored, and cannot be deleted or modified (Lancet Compliance).</p>
+      <p class="subtitle">Logs are automatically generated, permanently stored, and cannot be deleted or modified (Journal Platform Compliance).</p>
       
       <div class="filter-bar">
         <div class="filter-group">
@@ -68,7 +68,7 @@ const showDetail = (log) => {
         </div>
         <div class="action-group">
           <button class="btn-gray">Search</button>
-          <button class="btn-red" @click="exportLogs">Export Logs</button>
+          <button class="btn-primary" @click="exportLogs">Export Logs</button>
         </div>
       </div>
     </header>
@@ -138,7 +138,7 @@ const showDetail = (log) => {
 
 <style scoped>
 .audit-log-container {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: white;
   padding: 20px;
   height: 100%;
@@ -158,7 +158,8 @@ const showDetail = (log) => {
 .action-group { display: flex; gap: 10px; }
 
 .btn-gray { padding: 5px 15px; border: 1px solid #ddd; background: #eee; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-red { padding: 5px 15px; border: none; background: #C93737; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-primary { padding: 5px 15px; border: none; background: #0056B3; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-primary:hover { background: #004494; }
 
 .log-list-wrapper { flex: 1; overflow-y: auto; }
 .log-count { font-size: 12px; color: #666; margin-bottom: 5px; text-align: right; }

@@ -3,10 +3,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
+import { useI18n } from '../../composables/useI18n'
 
 const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 const username = ref('')
 const password = ref('')
@@ -19,15 +21,17 @@ const rememberMe = ref(false)
 // Determine Context and Title
 const contextTitle = computed(() => {
   const role = route.query.role
-  if (role === 'admin') return 'Editor Portal Login'
-  if (role === 'reviewer') return 'Reviewer Dashboard Login'
-  if (role === 'author') return 'Author Dashboard Login'
-  return 'Admin Portal Login'
+  if (role === 'writer') return t('auth.adminLogin.title.writer')
+  if (role === 'reviewer') return t('auth.adminLogin.title.reviewer')
+  if (role === 'admin') return t('auth.adminLogin.title.admin')
+  return t('auth.adminLogin.title.default')
 })
 
 // Auto-select role based on query
 onMounted(() => {
-  if (route.query.role) {
+  if (route.query.role === 'author') {
+    selectedRole.value = 'writer'
+  } else if (route.query.role) {
     selectedRole.value = route.query.role
   }
 
@@ -42,31 +46,31 @@ onMounted(() => {
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
-    error.value = 'Please enter username and password'
+    error.value = t('auth.adminLogin.error.required')
     return
   }
   
   try {
-    const encryptedPassword = encryptPassword(password.value)
+    // Pass plaintext password to userStore.login
     
     // Role Logic: 1. URL Query 2. Dropdown 3. Fallback
     let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
                username.value === 'reviewer' ? 'reviewer' : 
-               username.value === 'author' ? 'author' : 
+               username.value === 'writer' || username.value.startsWith('writer') ? 'writer' : 
                'user')
     
     // Check if user is trying to login to wrong portal
     if (route.query.role && role !== route.query.role) {
        // Allow "admin" to login everywhere, but strict for others
        if (role !== 'admin') {
-         error.value = `You are only authorized to access the [${role.charAt(0).toUpperCase() + role.slice(1)} Dashboard]`
+         error.value = t('auth.adminLogin.error.authorized', { role: role.charAt(0).toUpperCase() + role.slice(1) })
          return
        }
     }
 
     const credentials = {
       username: username.value,
-      password: encryptedPassword,
+      password: password.value,
       role: role
     }
     
@@ -82,11 +86,11 @@ const handleLogin = async () => {
     
     let redirectPath = '/admin/login'
     if (userStore.currentRole === 'admin') {
-      redirectPath = '/editor/dashboard' // Corrected path
+      redirectPath = '/editor/dashboard'
     } else if (userStore.currentRole === 'reviewer') {
-      redirectPath = '/reviewer/dashboard' // Corrected path
-    } else if (userStore.currentRole === 'author') {
-      redirectPath = '/author/dashboard' // Corrected path
+      redirectPath = '/reviewer/dashboard'
+    } else if (userStore.currentRole === 'writer') {
+      redirectPath = '/admin/writer-dashboard'
     } else if (userStore.currentRole === 'editor' || userStore.currentRole === 'associate_editor') {
       redirectPath = '/editor/dashboard'
     }
@@ -97,7 +101,7 @@ const handleLogin = async () => {
     router.push(redirectPath)
   } catch (err) {
     console.error('Login failed:', err)
-    error.value = 'Login failed, please try again later'
+    error.value = t('auth.adminLogin.error.failed')
   }
 }
 
@@ -115,21 +119,21 @@ const goToRegister = () => {
         <h2 class="admin-login-title">{{ contextTitle }}</h2>
         
         <div class="admin-form-group">
-          <label for="admin-username">Username</label>
+          <label for="admin-username">{{ t('auth.adminLogin.username') }}</label>
           <input 
             type="text" 
             id="admin-username" 
             v-model="username" 
-            placeholder="Enter username"
+            :placeholder="t('auth.adminLogin.username')"
           />
         </div>
         <div class="admin-form-group">
-          <label for="admin-password">Password</label>
+          <label for="admin-password">{{ t('auth.adminLogin.password') }}</label>
           <input 
             type="password" 
             id="admin-password" 
             v-model="password" 
-            placeholder="Enter password"
+            :placeholder="t('auth.adminLogin.password')"
           />
         </div>
         
@@ -140,33 +144,33 @@ const goToRegister = () => {
             id="admin-rememberMe" 
             v-model="rememberMe" 
           />
-          <label for="admin-rememberMe">Remember Me</label>
+          <label for="admin-rememberMe">{{ t('auth.adminLogin.rememberMe') }}</label>
         </div>
         
         <!-- 角色选择 (Hide if fixed in query) -->
         <div class="admin-form-group" v-if="!route.query.role">
-          <label for="admin-role">Role</label>
+          <label for="admin-role">{{ t('auth.adminLogin.role') }}</label>
           <select 
             id="admin-role" 
             v-model="selectedRole"
             class="admin-role-select"
           >
-            <option value="">Select Role</option>
-            <option value="admin">Administrator</option>
-            <option value="editor">Editor</option>
-            <option value="reviewer">Reviewer</option>
-            <option value="author">Author</option>
+            <option value="">{{ t('auth.adminLogin.selectRole') }}</option>
+            <option value="admin">{{ t('auth.adminLogin.roles.admin') }}</option>
+            <option value="editor">{{ t('auth.adminLogin.roles.editor') }}</option>
+            <option value="reviewer">{{ t('auth.adminLogin.roles.reviewer') }}</option>
+            <option value="writer">{{ t('auth.adminLogin.roles.writer') }}</option>
           </select>
         </div>
         
         <p v-if="error" class="admin-error-message">{{ error }}</p>
-        <button class="admin-login-btn" @click="handleLogin">Login</button>
+        <button class="admin-login-btn" @click="handleLogin">{{ t('auth.adminLogin.loginBtn') }}</button>
         <div class="admin-register-link">
-          <span>Don't have an account?</span>
-          <a href="#" @click.prevent="goToRegister">Register Now</a>
+          <span>{{ t('auth.adminLogin.noAccount') }}</span>
+          <a href="#" @click.prevent="goToRegister">{{ t('auth.adminLogin.registerNow') }}</a>
         </div>
         <div class="admin-back-link">
-          <a href="/" @click.prevent="router.push('/')">Back to Home</a>
+          <a href="/" @click.prevent="router.push('/')">{{ t('auth.adminLogin.backToHome') }}</a>
         </div>
       </div>
     </div>

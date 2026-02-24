@@ -20,12 +20,12 @@ const props = defineProps({
 // Dashboard Title based on role
 const dashboardTitle = computed(() => {
   const role = user.value?.role
-  if (role === 'admin') return 'Editor-in-Chief Dashboard'
-  if (role === 'editor') return 'Editor Dashboard'
-  if (role === 'associate_editor') return 'Associate Editor Dashboard'
-  if (role === 'editorial_assistant') return 'Editorial Assistant Dashboard'
-  if (role === 'advisory_editor') return 'Advisory Editor Dashboard'
-  return 'Dashboard'
+  if (role === 'admin') return t('dashboard.roles.admin')
+  if (role === 'editor') return t('dashboard.roles.editor')
+  if (role === 'associate_editor') return t('dashboard.roles.associate_editor')
+  if (role === 'editorial_assistant') return t('dashboard.roles.editorial_assistant')
+  if (role === 'advisory_editor') return t('dashboard.roles.advisory_editor')
+  return t('dashboard.roles.default')
 })
 
 // Filtered Journals based on role
@@ -41,7 +41,15 @@ const filteredJournals = computed(() => {
 
 // 统计信息
 const totalJournals = computed(() => filteredJournals.value.length)
-const pendingJournals = computed(() => filteredJournals.value.filter(j => j.status === '待审核' || j.status === '审稿中').length)
+const pendingJournals = computed(() => filteredJournals.value.filter(j => 
+  j.status === 'Pending' || 
+  j.status === 'Under Review' || 
+  j.status === 'pending_initial_review' ||
+  j.status === 'initial_review_passed' ||
+  j.status === 'under_peer_review' ||
+  j.status === 'review_completed' ||
+  j.status === 'final_decision_pending'
+).length)
 const totalUsers = computed(() => 2345) // Mock
 const recentSubmissions = computed(() => 45) // Mock
 
@@ -62,6 +70,27 @@ const navigateTo = (path) => {
   // The simplest way for portal to catch this is if we use the same route mechanism.
   // The portal watches route changes.
   router.push(path)
+}
+
+// Helper for status display
+const getStatusLabel = (status) => {
+  if (status === 'Published' || status === 'accepted' || status === 'published') return t('status.published')
+  if (status === 'Pending' || status === 'pending_initial_review') return t('status.pending_initial_review')
+  if (status === 'initial_review_passed') return t('status.initial_review_passed')
+  if (status === 'Under Review' || status === 'under_peer_review' || status === 'under_review') return t('status.under_review')
+  if (status === 'review_completed') return t('status.review_completed')
+  if (status === 'final_decision_pending') return t('status.pending_final_decision')
+  if (status === 'Rejected' || status === 'rejected' || status === 'initial_review_rejected') return t('status.initial_review_rejected')
+  if (status === 'revision_required') return t('status.revision_required')
+  return status
+}
+
+const getStatusClass = (status) => {
+  const s = status?.toLowerCase()
+  if (s === 'published' || s === 'accepted') return 'published'
+  if (s === 'pending' || s === 'pending_initial_review' || s === 'initial_review_passed' || s === 'under_peer_review' || s === 'under_review' || s === 'review_completed' || s === 'final_decision_pending' || s === 'revision_required') return 'pending'
+  if (s === 'rejected' || s === 'initial_review_rejected') return 'rejected'
+  return ''
 }
 </script>
 
@@ -90,50 +119,44 @@ const navigateTo = (path) => {
       <section class="stats-section">
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">📚</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalJournals }}</h3>
-              <p class="stat-label">Total Manuscripts</p>
+              <p class="stat-label">{{ t('dashboard.stats.totalJournals') }}</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">⏳</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingJournals }}</h3>
-              <p class="stat-label">Pending Reviews</p>
+              <p class="stat-label">{{ t('dashboard.stats.pendingJournals') }}</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">👥</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ totalUsers }}</h3>
-              <p class="stat-label">Registered Users</p>
+              <p class="stat-label">{{ t('dashboard.stats.totalUsers') }}</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">📝</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ recentSubmissions }}</h3>
-              <p class="stat-label">Recent Submissions</p>
+              <p class="stat-label">{{ t('dashboard.stats.recentSubmissions') }}</p>
             </div>
           </div>
           
           <!-- New Widgets for Reviewer Management -->
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/recommended-reviewers')">
-            <div class="stat-icon">👍</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingRecommendations }}</h3>
-              <p class="stat-label">Author Recommendations</p>
-              <span class="action-hint">Pending Approval</span>
+              <p class="stat-label">{{ t('dashboard.stats.writerRecommendations') }}</p>
+              <span class="action-hint">{{ t('dashboard.stats.pendingApproval') }}</span>
             </div>
           </div>
           
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/opposed-reviewers')">
-            <div class="stat-icon">🚫</div>
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingOppositions }}</h3>
-              <p class="stat-label">Avoidance Requests</p>
-              <span class="action-hint">Pending Review</span>
+              <p class="stat-label">{{ t('dashboard.stats.avoidanceRequests') }}</p>
+              <span class="action-hint">{{ t('dashboard.stats.pendingReview') }}</span>
             </div>
           </div>
         </div>
@@ -142,7 +165,7 @@ const navigateTo = (path) => {
       <!-- 近期投稿 -->
       <section class="journals-section">
         <div class="section-header">
-          <h2 class="section-title">Recent Manuscripts</h2>
+          <h2 class="section-title">{{ t('dashboard.recentJournals.title') }}</h2>
         </div>
         <div class="journals-list">
           <div 
@@ -152,10 +175,10 @@ const navigateTo = (path) => {
           >
             <div class="journal-info">
               <h4 class="journal-title">{{ journal.title }}</h4>
-              <p class="journal-meta">Author: {{ journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+              <p class="journal-meta">{{ t('dashboard.recentJournals.writer') }}: {{ journal.writer || journal.author }} | {{ t('dashboard.recentJournals.date') }}: {{ journal.date || journal.submissionDate }}</p>
             </div>
-            <div class="journal-status" :class="journal.status === '已发表' ? 'published' : journal.status === '待审核' ? 'pending' : 'rejected'">
-              {{ journal.status === '已发表' ? 'Published' : journal.status === '待审核' ? 'Pending' : journal.status === '审稿中' ? 'Under Review' : 'Rejected' }}
+            <div class="journal-status" :class="getStatusClass(journal.status)">
+              {{ getStatusLabel(journal.status) }}
             </div>
           </div>
         </div>
@@ -165,7 +188,7 @@ const navigateTo = (path) => {
     <!-- 页脚 -->
     <footer class="footer" v-if="!embedded">
       <div class="footer-content">
-        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+        <p>{{ t('auth.footer.copyright') }}</p>
       </div>
     </footer>
   </div>
@@ -232,48 +255,38 @@ const navigateTo = (path) => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
   background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
 }
 
 .stat-card.action-card {
   cursor: pointer;
-  border-left: 4px solid #3498db;
+  border-left: 3px solid #3498db;
 }
 
 .stat-card.action-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
   background-color: #f8fbfe;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  margin-right: 1rem;
+  background-color: #f9f9f9;
 }
 
 .stat-content {
-  flex: 1;
+  text-align: center;
 }
 
 .stat-number {
-  font-size: 1.8rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #2c3e50;
   margin: 0;
 }
@@ -281,18 +294,18 @@ const navigateTo = (path) => {
 .stat-label {
   color: #7f8c8d;
   margin: 0.25rem 0 0 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .action-hint {
   display: inline-block;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
   color: #e67e22;
   background: #fff3e0;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
 }
 
 /* 近期投稿部分 */

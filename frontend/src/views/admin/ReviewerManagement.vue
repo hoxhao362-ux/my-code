@@ -235,11 +235,13 @@ const cancelEditReviewer = () => {
 </template>
 
 <style scoped>
-.admin-reviewer-management-container {
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: #f5f5f5;
+  color: #333333;
 }
 
 .content {

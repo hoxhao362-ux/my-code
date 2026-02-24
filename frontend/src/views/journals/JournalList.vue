@@ -13,14 +13,14 @@ const rawJournals = computed(() => {
   let baseList = userStore.journals && userStore.journals.length > 0 ? userStore.journals : []
   
   if (baseList.length === 0) {
-     baseList = [
-       { id: 1, title: 'The Lancet Oncology', module: 'Oncology' },
-       { id: 2, title: 'The Lancet Neurology', module: 'Neuroscience' },
-       { id: 3, title: 'The Lancet Global Health', module: 'Public Health' },
-       { id: 4, title: 'The Lancet Respiratory Medicine', module: 'Clinical Medicine' },
-       { id: 5, title: 'The Lancet Infectious Diseases', module: 'Clinical Medicine' }
-     ]
-  }
+       baseList = [
+         { id: 1, title: 'Journal of Oncology', module: 'Oncology' },
+         { id: 2, title: 'Journal of Neurology', module: 'Neuroscience' },
+         { id: 3, title: 'Journal of Global Health', module: 'Public Health' },
+         { id: 4, title: 'Journal of Respiratory Medicine', module: 'Clinical Medicine' },
+         { id: 5, title: 'Journal of Infectious Diseases', module: 'Clinical Medicine' }
+       ]
+    }
 
   return baseList.map((j, index) => ({
     ...j,
@@ -373,7 +373,7 @@ const goToFullText = (id) => {
 .page-wrapper {
   background-color: #f9f9f9;
   min-height: 100vh;
-  padding-top: 80px; /* Nav height */
+  padding-top: 120px; /* Nav height, increased to avoid content being blocked */
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: #333;
 }
@@ -510,7 +510,7 @@ const goToFullText = (id) => {
 }
 
 .clickable-title:hover {
-  color: #C93737; /* Brand Color */
+  color: #0056B3; /* Brand Color */
   text-decoration: underline;
   text-decoration-thickness: 1px;
 }
@@ -647,7 +647,7 @@ const goToFullText = (id) => {
 
 .link-item {
   font-size: 13px;
-  color: #e74c3c;
+  color: #0056B3;
   text-decoration: none;
   font-weight: 500;
 }
@@ -657,7 +657,7 @@ const goToFullText = (id) => {
 }
 
 .btn-submit-inline {
-  background: #e74c3c;
+  background: #0056B3;
   color: white;
   border: none;
   padding: 8px 20px;
@@ -669,7 +669,7 @@ const goToFullText = (id) => {
 }
 
 .btn-submit-inline:hover {
-  background: #c0392b;
+  background: #004494;
 }
 
 .btn-subscribe {
@@ -684,12 +684,12 @@ const goToFullText = (id) => {
 }
 
 .btn-subscribe-action {
-  background: #C93737; /* Brand Red */
+  background: #0056B3; /* Brand Blue */
   color: white;
 }
 
 .btn-subscribe-action:hover {
-  background: #b03030;
+  background: #004494;
 }
 
 .btn-unsubscribe {
@@ -764,7 +764,7 @@ const goToFullText = (id) => {
   color: #333;
 }
 .required {
-  color: #C93737;
+  color: #dc3545;
 }
 .modal-input {
   width: 100%;
@@ -815,7 +815,7 @@ const goToFullText = (id) => {
   font-weight: 500;
 }
 .btn-confirm {
-  background: #C93737;
+  background: #0056B3;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -824,7 +824,7 @@ const goToFullText = (id) => {
   font-weight: 500;
 }
 .btn-confirm:hover {
-  background: #b03030;
+  background: #004494;
 }
 .btn-cancel:hover {
   background: #e5e5e5;

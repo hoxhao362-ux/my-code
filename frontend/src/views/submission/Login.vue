@@ -27,10 +27,9 @@ const handleLogin = async (role) => {
     })
     
     // 登录成功后根据角色跳转到对应仪表盘
-    if (role === 'author') {
-      // Author logs in to submit, go to submission process directly if no pending tasks? 
-      // User requested: "After login... must go directly to submission exclusive route... /submission/author/submit"
-      router.push('/submission/author/submit')
+    if (role === 'writer') {
+      // Writer logs in to submit, go to submission process directly
+      router.push('/submission/writer/submit')
     } else if (role === 'reviewer') {
       router.push('/admin/audit-dashboard')
     } else if (role === 'editor' || role === 'admin') {
@@ -39,7 +38,8 @@ const handleLogin = async (role) => {
       router.push('/submission')
     }
   } catch (error) {
-    errorMessage.value = t('submission.login.error.failed')
+    // Show specific error from store (e.g. password mismatch, lockout)
+    errorMessage.value = error.message || t('submission.login.error.failed')
   }
 }
 
@@ -52,23 +52,23 @@ const handleOrcidLogin = () => {
 <template>
   <div class="submission-login-container">
     <div class="login-box">
-      <h2 class="login-title">Login to Submit System</h2>
+      <h2 class="login-title">{{ t('submission.login.title') }}</h2>
       
       <div class="form-group">
         <label>{{ t('submission.login.username') }}</label>
-        <input v-model="username" type="text" placeholder="Username" />
+        <input v-model="username" type="text" :placeholder="t('submission.login.placeholder.username')" />
       </div>
 
       <div class="form-group">
         <label>{{ t('submission.login.password') }}</label>
-        <input v-model="password" type="password" placeholder="Password" />
+        <input v-model="password" type="password" :placeholder="t('submission.login.placeholder.password')" />
       </div>
 
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
       <div class="role-buttons">
-        <button class="btn-role author" @click="handleLogin('author')">
-          {{ t('submission.login.btn.author') }}
+        <button class="btn-role author" @click="handleLogin('writer')">
+          {{ t('submission.login.btn.writer') }}
         </button>
         <button class="btn-role reviewer" @click="handleLogin('reviewer')">
           {{ t('submission.login.btn.reviewer') }}
@@ -82,7 +82,7 @@ const handleOrcidLogin = () => {
         <p class="orcid-text">{{ t('submission.login.orcid.label') }}</p>
         <button class="btn-orcid" @click="handleOrcidLogin">
           <span class="orcid-icon">ID</span> 
-          Login with ORCID
+          {{ t('submission.login.orcid.btn') }}
         </button>
         <a href="#" class="orcid-help">{{ t('submission.login.orcid.help') }}</a>
       </div>
@@ -90,7 +90,7 @@ const handleOrcidLogin = () => {
       <div class="login-footer">
         <a href="#">{{ t('submission.login.link.sendDetails') }}</a>
         <span class="divider">|</span>
-        <a href="#">{{ t('submission.login.link.register') }}</a>
+        <a href="#" @click.prevent="$emit('toggle-register')">{{ t('submission.login.link.register') }}</a>
         <span class="divider">|</span>
         <a href="#">{{ t('submission.login.link.help') }}</a>
       </div>

@@ -1,5 +1,5 @@
 export const announcements = [
-  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear authors, the 2026 Journal Submission Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
+  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear writers, the 2026 Journal Submission Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
   { id: 2, title: 'System Update: New Review Reminder Feature Added', content: 'To better serve you, we have added a new review reminder feature. Please check your dashboard for details.', date: '2026-01-10' },
   { id: 3, title: 'Notice: Review Cycle Adjustment', content: 'Starting from Feb 1, 2026, the review cycle for general manuscripts will be shortened to 1-2 weeks.', date: '2026-01-12' }
 ]
@@ -13,7 +13,7 @@ export const basicConfig = {
   copyrightInfo: '© 2026 Journal Submission Platform. All rights reserved.'
 }
 
-export const reviewStages = ['Initial Review', 'Re-review', 'Final Decision']
+export const reviewStages = ['Initial Review', 'Peer Review', 'Final Decision']
 
 export const modules = [
   'Medical Imaging',
@@ -25,41 +25,152 @@ export const modules = [
   'Others'
 ]
 
+// Status constants for mock data
+const STATUS = {
+  PENDING_INITIAL_REVIEW: 'pending_initial_review',
+  UNDER_PEER_REVIEW: 'under_peer_review',
+  PUBLISHED: 'published',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected'
+}
+
 export const journals = [
+  // Test data for Publication module
+  {
+    id: 1001,
+    title: 'Novel Therapeutic Approaches for Alzheimer\'s Disease',
+    writer: 'John Doe',
+    author: 'John Doe',
+    module: 'Clinical Research',
+    status: STATUS.PUBLISHED,
+    submissionDate: '2026-02-10',
+    date: '2026-02-10',
+    abstract: 'This study explores innovative therapeutic strategies for the treatment of Alzheimer\'s disease, including targeted drug delivery systems and non-pharmacological interventions.',
+    keywords: ['Alzheimer\'s Disease', 'Therapeutics', 'Drug Delivery'],
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer1', status: 'Reviewed', comment: 'Novel approach with significant potential', rating: 5 },
+      { reviewer: 'reviewer2', status: 'Reviewed', comment: 'Well-designed study with robust methodology', rating: 4 }
+    ]
+  },
+  {
+    id: 1002,
+    title: 'Genomic Biomarkers in Cancer Diagnosis',
+    writer: 'Jane Smith',
+    author: 'Jane Smith',
+    module: 'Bioinformatics',
+    status: STATUS.PUBLISHED,
+    submissionDate: '2026-02-08',
+    date: '2026-02-08',
+    abstract: 'This research identifies key genomic biomarkers for early detection of various cancer types, improving diagnostic accuracy and patient outcomes.',
+    keywords: ['Genomics', 'Biomarkers', 'Cancer Diagnosis'],
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer3', status: 'Reviewed', comment: 'Groundbreaking findings with clinical relevance', rating: 5 },
+      { reviewer: 'reviewer4', status: 'Reviewed', comment: 'Comprehensive analysis with validated results', rating: 4 }
+    ]
+  },
+  {
+    id: 1003,
+    title: 'Artificial Intelligence in Medical Imaging',
+    writer: 'David Johnson',
+    author: 'David Johnson',
+    module: 'Artificial Intelligence',
+    status: STATUS.PUBLISHED,
+    submissionDate: '2026-02-05',
+    date: '2026-02-05',
+    abstract: 'This paper evaluates the effectiveness of AI algorithms in interpreting medical images, including X-rays, MRIs, and CT scans, compared to board-certified radiologists.',
+    keywords: ['AI', 'Medical Imaging', 'Diagnostic Accuracy'],
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer5', status: 'Reviewed', comment: 'Innovative application of AI in healthcare', rating: 4 },
+      { reviewer: 'reviewer6', status: 'Reviewed', comment: 'Thorough evaluation with clinical validation', rating: 5 }
+    ]
+  },
+  // Test data for New Submissions - Pending Screening
+  {
+    id: 20260001,
+    title: 'Efficacy of New Antiviral Drugs in COVID-19 Treatment',
+    writer: 'Jane Smith',
+    author: 'Jane Smith',
+    module: 'Clinical Research',
+    status: STATUS.PENDING_INITIAL_REVIEW,
+    submissionDate: '2026-02-18',
+    date: '2026-02-18',
+    abstract: 'This randomized controlled trial evaluates the efficacy and safety of novel antiviral drugs in the treatment of patients with moderate to severe COVID-19.',
+    keywords: ['Antiviral Drugs', 'COVID-19', 'Clinical Trial'],
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 20260002,
+    title: 'Public Health Interventions During Pandemics: A Systematic Review',
+    writer: 'Michael Brown',
+    author: 'Michael Brown',
+    module: 'Public Health',
+    status: STATUS.PENDING_INITIAL_REVIEW,
+    submissionDate: '2026-02-18',
+    date: '2026-02-18',
+    abstract: 'This systematic review examines the effectiveness of various public health interventions implemented during recent pandemics, including social distancing, mask mandates, and vaccination campaigns.',
+    keywords: ['Public Health', 'Pandemics', 'Interventions'],
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 20260003,
+    title: 'AI-Powered Diagnostic Tools in Radiology: Clinical Validation',
+    writer: 'David Chen',
+    author: 'David Chen',
+    module: 'Medical Imaging',
+    status: STATUS.PENDING_INITIAL_REVIEW,
+    submissionDate: '2026-02-18',
+    date: '2026-02-18',
+    abstract: 'This study validates the performance of AI-powered diagnostic tools in radiology practice, comparing accuracy rates with board-certified radiologists across different imaging modalities.',
+    keywords: ['AI', 'Radiology', 'Diagnostic Tools'],
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
   {
     id: 1,
     title: 'Development Trends in Medical Imaging Technology',
-    author: 'author1',
+    writer: 'writer1',
+    author: 'writer1',
     module: 'Medical Imaging',
-    status: 'Published',
+    status: STATUS.PUBLISHED,
     submissionDate: '2026-01-10',
+    date: '2026-01-10',
     publicationDate: '2026-01-15',
     abstract: 'This paper details the latest trends in medical imaging technology, including AI-assisted diagnosis and 3D printing applications.',
-    keywords: 'Medical Imaging, AI Diagnosis, 3D Printing',
+    keywords: ['Medical Imaging', 'AI Diagnosis', '3D Printing'],
     fileUrl: '/vite.svg',
     reviews: []
   },
   {
     id: 2,
     title: 'Deep Learning Approaches in Drug Discovery',
-    author: 'author2',
+    writer: 'writer2',
+    author: 'writer2',
     module: 'Drug Discovery',
-    status: 'Pending',
+    status: STATUS.PENDING_INITIAL_REVIEW,
     submissionDate: '2026-01-12',
+    date: '2026-01-12',
     abstract: 'This paper explores the application of deep learning in drug discovery, including molecular structure prediction and target identification.',
-    keywords: 'Deep Learning, Drug Discovery, Molecular Structure',
+    keywords: ['Deep Learning', 'Drug Discovery', 'Molecular Structure'],
     fileUrl: '/vite.svg',
     reviews: []
   },
   {
     id: 3,
     title: 'Big Data Analysis Methods in Clinical Research',
-    author: 'author3',
+    writer: 'writer3',
+    author: 'writer3',
     module: 'Clinical Research',
-    status: 'Under Review',
+    status: STATUS.UNDER_PEER_REVIEW,
+    reviewStage: 'Peer Review',
     submissionDate: '2026-01-08',
+    date: '2026-01-08',
     abstract: 'This paper introduces common methods and tools for big data analysis in clinical research.',
-    keywords: 'Clinical Research, Big Data, Data Processing',
+    keywords: ['Clinical Research', 'Big Data', 'Data Processing'],
     fileUrl: '/vite.svg',
     reviews: [
       { reviewer: 'reviewer1', status: 'Reviewed', comment: 'Content is solid, methods are feasible.', rating: 4 }
@@ -68,13 +179,15 @@ export const journals = [
   {
     id: 4,
     title: 'Construction of Public Health Emergency Management Systems',
-    author: 'author4',
+    writer: 'writer4',
+    author: 'writer4',
     module: 'Public Health',
-    status: 'Published',
+    status: STATUS.PUBLISHED,
     submissionDate: '2026-01-05',
+    date: '2026-01-05',
     publicationDate: '2026-01-10',
     abstract: 'This paper analyzes the current status of public health emergency management systems and proposes improvements.',
-    keywords: 'Public Health, Emergency Management, System Construction',
+    keywords: ['Public Health', 'Emergency Management', 'System Construction'],
     fileUrl: '/vite.svg',
     reviews: [
       { reviewer: 'reviewer2', status: 'Reviewed', comment: 'Significant practical importance.', rating: 5 }
@@ -83,13 +196,15 @@ export const journals = [
   {
     id: 5,
     title: 'Applications of Bioinformatics in Gene Sequencing',
-    author: 'author1',
+    writer: 'writer1',
+    author: 'writer1',
     module: 'Bioinformatics',
-    status: 'Published',
+    status: STATUS.PUBLISHED,
     submissionDate: '2026-01-03',
+    date: '2026-01-03',
     publicationDate: '2026-01-08',
     abstract: 'This paper reviews applications of bioinformatics in gene sequencing, including sequence alignment and variant detection.',
-    keywords: 'Bioinformatics, Gene Sequencing, Sequence Alignment',
+    keywords: ['Bioinformatics', 'Gene Sequencing', 'Sequence Alignment'],
     fileUrl: '/vite.svg',
     reviews: [
       { reviewer: 'reviewer3', status: 'Reviewed', comment: 'Comprehensive content, rich references.', rating: 4 }
@@ -99,38 +214,41 @@ export const journals = [
   {
     id: 6,
     title: 'Epidemiology of Cardiovascular Diseases in Urban Populations',
-    author: 'author2',
+    writer: 'writer2',
+    author: 'writer2',
     module: 'Public Health',
-    status: 'Under Review', // Under Review
+    status: STATUS.UNDER_PEER_REVIEW,
     reviewStage: 'Initial Review',
-    date: '2026-02-05', // Pending (Not Overdue)
+    date: '2026-02-05',
     submissionDate: '2026-02-05',
     abstract: 'A comprehensive study on the prevalence and risk factors of cardiovascular diseases in major urban centers.',
-    keywords: 'Epidemiology, Cardiovascular, Urban Health',
+    keywords: ['Epidemiology', 'Cardiovascular', 'Urban Health'],
     fileUrl: '/vite.svg',
     reviews: []
   },
   {
     id: 7,
     title: 'Public Health Policy Analysis: A Global Perspective',
-    author: 'author3',
+    writer: 'writer3',
+    author: 'writer3',
     module: 'Public Health',
-    status: 'Under Review', // Under Review
+    status: STATUS.UNDER_PEER_REVIEW,
     reviewStage: 'Initial Review',
-    date: '2026-01-20', // Overdue (> 14 days)
+    date: '2026-01-20',
     submissionDate: '2026-01-20',
     abstract: 'An analysis of public health policies across different continents and their effectiveness.',
-    keywords: 'Public Health, Policy, Global Health',
+    keywords: ['Public Health', 'Policy', 'Global Health'],
     fileUrl: '/vite.svg',
     reviews: []
   },
   {
     id: 8,
     title: 'Advanced Cardiac Imaging Techniques: A Clinical Study',
-    author: 'author4',
+    writer: 'writer4',
+    author: 'writer4',
     module: 'Medical Imaging',
-    status: 'Under Review', // Under Review
-    reviewStage: 'Re-review', // Re-review
+    status: STATUS.UNDER_PEER_REVIEW,
+    reviewStage: 'Peer Review',
     date: '2026-02-01',
     submissionDate: '2026-01-10',
     abstract: 'Clinical evaluation of new cardiac imaging modalities for early detection of heart failure.',
@@ -144,7 +262,7 @@ export const journals = [
   {
     id: 9,
     title: 'R&D and Application of mRNA Vaccines',
-    author: 'author5',
+    writer: 'writer5',
     module: 'Drug Discovery',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -158,7 +276,7 @@ export const journals = [
   {
     id: 10,
     title: 'Development and Challenges of Telemedicine',
-    author: 'author6',
+    writer: 'writer6',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -172,7 +290,7 @@ export const journals = [
   {
     id: 11,
     title: 'AI Applications in Drug Discovery',
-    author: 'author11',
+    writer: 'writer11',
     module: 'Artificial Intelligence',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -187,7 +305,7 @@ export const journals = [
   {
     id: 12,
     title: 'Microbiome and Human Health',
-    author: 'author7',
+    writer: 'writer7',
     module: 'Bioinformatics',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -201,7 +319,7 @@ export const journals = [
   {
     id: 13,
     title: 'Clinical Applications of Precision Medicine',
-    author: 'author12',
+    writer: 'writer12',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -215,7 +333,7 @@ export const journals = [
   {
     id: 14,
     title: 'Recent Advances in Regenerative Medicine',
-    author: 'author13',
+    writer: 'writer13',
     module: 'Medical Imaging',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -230,7 +348,7 @@ export const journals = [
   {
     id: 15,
     title: 'Impact of Climate Change on Public Health',
-    author: 'author8',
+    writer: 'writer8',
     module: 'Public Health',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -244,7 +362,7 @@ export const journals = [
   {
     id: 16,
     title: 'Nanotechnology in Drug Delivery',
-    author: 'author9',
+    writer: 'writer9',
     module: 'Drug Discovery',
     status: 'Under Review',
     reviewStage: 'Initial Review',
@@ -258,7 +376,7 @@ export const journals = [
   {
     id: 17,
     title: 'Efficacy of CBT in Depression Treatment',
-    author: 'author10',
+    writer: 'writer10',
     module: 'Clinical Research',
     status: 'Under Review',
     reviewStage: 'Re-review',
@@ -273,7 +391,7 @@ export const journals = [
   {
     id: 18,
     title: 'Ethical Considerations of Gene Editing',
-    author: 'author14',
+    writer: 'writer14',
     module: 'Bioinformatics',
     status: 'Published',
     reviewStage: 'Final Decision',
@@ -290,7 +408,7 @@ export const journals = [
   {
     id: 19,
     title: 'Development Trends in Digital Health',
-    author: 'author15',
+    writer: 'writer15',
     module: 'Artificial Intelligence',
     status: 'Published',
     reviewStage: 'Final Decision',
@@ -307,7 +425,7 @@ export const journals = [
   {
     id: 20,
     title: 'Global Challenge of Antibiotic Resistance',
-    author: 'author16',
+    writer: 'writer16',
     module: 'Drug Discovery',
     status: 'Published',
     reviewStage: 'Final Decision',

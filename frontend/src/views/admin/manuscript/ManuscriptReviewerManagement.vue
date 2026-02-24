@@ -172,21 +172,21 @@ const handleInviteSubmit = (payload) => {
   }
 }
 
-const openNotifyAuthorModal = () => {
-  currentActionType.value = 'notify_author_recommendation'
+const openNotifyWriterModal = () => {
+  currentActionType.value = 'notify_writer_recommendation'
   showActionModal.value = true
 }
 
-const handleNotifyAuthorSubmit = (payload) => {
-  addLog('Notified author about reviewer recommendation results', 'recommended')
+const handleNotifyWriterSubmit = (payload) => {
+  addLog('Notified writer about reviewer recommendation results', 'recommended')
   alert('Notification sent successfully!')
 }
 
 const handleActionSubmit = (payload) => {
   if (payload.type === 'invite_reviewer') {
     handleInviteSubmit(payload)
-  } else if (payload.type === 'notify_author_recommendation') {
-    handleNotifyAuthorSubmit(payload)
+  } else if (payload.type === 'notify_writer_recommendation') {
+    handleNotifyWriterSubmit(payload)
   }
 }
 
@@ -306,23 +306,23 @@ const copyToClipboard = (text) => {
     <!-- 1. Author Recommended Reviewers -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Author Recommended Reviewers</h2>
+        <h2 class="module-title">Writer Recommended Reviewers</h2>
         <div class="header-actions">
            <button 
              v-if="isAllRecommendedProcessed" 
-             class="btn-action btn-red" 
-             @click="openNotifyAuthorModal"
-             title="Notify Author of Results"
+             class="btn-action btn-primary" 
+             @click="openNotifyWriterModal"
+             title="Notify Writer of Results"
            >
-             Notify Author of Results
+             Notify Writer of Results
            </button>
         </div>
       </div>
       <div class="module-stats">{{ recommendedStats }}</div>
-      <p class="module-desc">Review and manage reviewers recommended by the authors. Approved reviewers can be invited to participate in the peer review process.</p>
+      <p class="module-desc">Review and manage reviewers recommended by the writers. Approved reviewers can be invited to participate in the peer review process.</p>
       
       <div class="table-container">
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th width="60" class="text-center">Serial No.</th>
@@ -360,12 +360,12 @@ const copyToClipboard = (text) => {
               <td>
                 <!-- Pending Actions -->
                 <div v-if="r.status === 'Pending'" class="action-buttons">
-                  <button class="btn-action btn-red" @click="approveRecommendation(r)">Approve</button>
+                  <button class="btn-action btn-primary" @click="approveRecommendation(r)">Approve</button>
                   <button class="btn-action btn-gray" @click="rejectRecommendation(r)">Reject</button>
                 </div>
                 <!-- Approved Actions -->
                 <div v-else-if="r.status === 'Approved'" class="action-buttons">
-                  <button class="btn-action btn-red" @click="openInviteModal(r)">Send Invite</button>
+                  <button class="btn-action btn-primary" @click="openInviteModal(r)">Send Invite</button>
                 </div>
                 <!-- Rejected Actions -->
                 <div v-else-if="r.status === 'Rejected'" class="action-buttons">
@@ -373,7 +373,7 @@ const copyToClipboard = (text) => {
                 </div>
                 <!-- Invited Actions -->
                 <div v-else-if="r.status === 'Invited' || r.status === 'Invitation Sent'" class="action-buttons">
-                  <button class="btn-action btn-red" @click="openInviteModal(r)">Resend Invite</button>
+                  <button class="btn-action btn-primary" @click="openInviteModal(r)">Resend Invite</button>
                   <button class="btn-action btn-gray" @click="cancelInvite(r)">Cancel Invite</button>
                 </div>
               </td>
@@ -399,13 +399,13 @@ const copyToClipboard = (text) => {
     <!-- 2. Author Avoidance Requests -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Author Avoidance Requests</h2>
+        <h2 class="module-title">Writer Avoidance Requests</h2>
         <div class="module-stats">{{ avoidanceStats }}</div>
       </div>
-      <p class="module-desc">Review and evaluate requests from authors to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
+      <p class="module-desc">Review and evaluate requests from writers to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
       
       <div class="table-container">
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th width="60" class="text-center">Serial No.</th>
@@ -432,7 +432,7 @@ const copyToClipboard = (text) => {
               <td>
                 <!-- Pending -->
                 <div v-if="req.status === 'Pending'" class="action-buttons">
-                  <button class="btn-action btn-red" @click="approveAvoidance(req)">Adopt (Shield)</button>
+                  <button class="btn-action btn-primary" @click="approveAvoidance(req)">Adopt (Shield)</button>
                   <button class="btn-action btn-gray" @click="rejectAvoidance(req)">Reject</button>
                 </div>
                 <!-- Approved -->
@@ -443,7 +443,7 @@ const copyToClipboard = (text) => {
                 <!-- Rejected -->
                 <div v-else-if="req.status === 'Rejected'" class="action-buttons">
                   <button class="btn-text" @click="viewRejectionReason(req.rejectionReason)">View Reason</button>
-                  <button class="btn-action btn-red" @click="reReviewAvoidance(req)">Re-review</button>
+                  <button class="btn-action btn-primary" @click="reReviewAvoidance(req)">Re-review</button>
                   <span class="cross-mark">❌</span>
                 </div>
               </td>
@@ -481,13 +481,13 @@ const copyToClipboard = (text) => {
           <button class="btn-action btn-gray btn-sm" @click="reCheckAll" style="margin-left: 10px;">One-click Re-check</button>
         </div>
       </div>
-      <p class="module-desc">Automatically check for potential conflicts of interest between authors and reviewers. Editors can manually confirm and mark conflict status.</p>
+      <p class="module-desc">Automatically check for potential conflicts of interest between writers and reviewers. Editors can manually confirm and mark conflict status.</p>
       
       <div class="coi-container">
         
         <!-- Sub 1: Recommended -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Author vs Recommended Reviewers</h3>
+          <h3 class="coi-subtitle">Writer vs Recommended Reviewers</h3>
           <div v-for="item in conflictResults.recommended" :key="item.reviewerId" class="coi-card">
             <div class="coi-card-header">
               Reviewer: {{ item.name }} ({{ item.affiliation }})
@@ -511,7 +511,7 @@ const copyToClipboard = (text) => {
             </ul>
             <div class="coi-actions">
               <button v-if="item.isConflict || item.sameAffiliation || item.coAuthored" class="btn-action btn-green" @click="markConflict(item, false)">Mark as Safe</button>
-              <button v-else class="btn-action btn-red" @click="markConflict(item, true)">Mark as Conflict</button>
+              <button v-else class="btn-action btn-danger" @click="markConflict(item, true)">Mark as Conflict</button>
               <button class="btn-action btn-gray" @click="reCheckSingle(item)">Re-check</button>
             </div>
           </div>
@@ -519,7 +519,7 @@ const copyToClipboard = (text) => {
 
         <!-- Sub 2: Excluded -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Author vs Excluded Reviewers</h3>
+          <h3 class="coi-subtitle">Writer vs Excluded Reviewers</h3>
           <div v-for="item in conflictResults.excluded" :key="item.requestId" class="coi-card">
              <div class="coi-card-header">
               Excluded Reviewer: {{ item.name }} ({{ item.affiliation }})
@@ -542,7 +542,7 @@ const copyToClipboard = (text) => {
       <div class="report-section">
         <h3 class="history-title">Conflict Check Report</h3>
         <div class="report-actions">
-          <button class="btn-action btn-red" @click="downloadReport">Download Report</button>
+          <button class="btn-action btn-primary" @click="downloadReport">Download Report</button>
         </div>
         <p class="report-desc">The check report will be retained in the manuscript file for academic traceability.</p>
       </div>
@@ -569,7 +569,7 @@ const copyToClipboard = (text) => {
           <button class="btn-close" @click="showExcludedModal = false">×</button>
         </div>
         <div class="modal-body">
-          <table class="lancet-table">
+          <table class="jp-table">
             <thead>
               <tr>
                 <th>Reviewer Name</th>
@@ -688,12 +688,12 @@ const copyToClipboard = (text) => {
   margin-bottom: 1rem;
 }
 
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.lancet-table th {
+.jp-table th {
   background-color: #fff;
   color: #333;
   font-weight: bold;
@@ -703,7 +703,7 @@ const copyToClipboard = (text) => {
   text-align: left;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 12px;
   border-bottom: 1px solid #eee;
   color: #333;
@@ -711,7 +711,7 @@ const copyToClipboard = (text) => {
   vertical-align: middle;
 }
 
-.lancet-table tr:hover {
+.jp-table tr:hover {
   background-color: #f5f5f5;
 }
 
@@ -727,7 +727,7 @@ const copyToClipboard = (text) => {
 }
 .status-badge.pending { color: #4A90E2; }
 .status-badge.approved { color: #28A745; }
-.status-badge.rejected { color: #C93737; }
+.status-badge.rejected { color: #dc3545; }
 .status-badge.invited, .status-badge.invitation-sent { color: #333; }
 
 .platform-tag { color: #28A745; background: #e8f5e9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
@@ -754,8 +754,11 @@ const copyToClipboard = (text) => {
   transition: background 0.2s;
 }
 
-.btn-red { background-color: #C93737; color: white; }
-.btn-red:hover { background-color: #B02E2E; }
+.btn-primary { background-color: #0056B3; color: white; }
+.btn-primary:hover { background-color: #004494; }
+
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-danger:hover { background-color: #c82333; }
 
 .btn-gray { background-color: #E0E0E0; color: #333; }
 .btn-gray:hover { background-color: #D0D0D0; }
@@ -774,7 +777,7 @@ const copyToClipboard = (text) => {
 .btn-text:hover { text-decoration: underline; color: #666; }
 
 .check-mark { color: #28A745; margin-left: 5px; }
-.cross-mark { color: #C93737; margin-left: 5px; }
+.cross-mark { color: #dc3545; margin-left: 5px; }
 
 /* History */
 .history-section { margin-top: 1rem; }
@@ -828,7 +831,7 @@ const copyToClipboard = (text) => {
   color: #333;
 }
 
-.text-red { color: #C93737; font-weight: bold; }
+.text-red { color: #dc3545; font-weight: bold; }
 .text-green { color: #28A745; font-weight: bold; }
 .text-blue { color: #4A90E2; font-weight: bold; }
 .text-gray { color: #666; }

@@ -60,7 +60,7 @@ const goBack = () => {
                 <p>{{ t('submissionRules.intro') }}</p>
                 <ul class="rules-list">
                   <li><strong>{{ t('submissionRules.format') }}:</strong> {{ t('submissionRules.formatDesc') }}</li>
-                  <li><strong>{{ t('submissionRules.authors') }}:</strong> {{ t('submissionRules.authorsDesc') }}</li>
+                  <li><strong>{{ t('submissionRules.writers') }}:</strong> {{ t('submissionRules.writersDesc') }}</li>
                   <li><strong>{{ t('submissionRules.originality') }}:</strong> {{ t('submissionRules.originalityDesc') }}</li>
                 </ul>
                 <div class="actions">
@@ -105,7 +105,7 @@ const goBack = () => {
   flex: 1;
   max-width: 1200px;
   width: 100%;
-  margin: 80px auto 0;
+  margin: 120px auto 0;
   padding: 2rem;
 }
 

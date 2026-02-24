@@ -183,6 +183,15 @@ const confirmSelfCitations = () => {
   selfCiteStatus.value = 'confirmed'
 }
 
+const toggleCiteChoice = (cite, value) => {
+  // Allow toggling (unselecting) by clicking the same value again
+  if (cite.userChoice === value) {
+    cite.userChoice = null
+  } else {
+    cite.userChoice = value
+  }
+}
+
 onMounted(() => {
   // Initialize arrays if they don't exist (handling legacy drafts)
   if (!store.formData.additionalInfo.recommendedReviewers) {
@@ -245,24 +254,26 @@ const removeAvoidedReviewer = (index) => {
 }
 
 // Validation Helpers
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/ // Removed per requirements
 
 const isFieldInvalid = (value, type, minLength = 0) => {
   if (store.steps[3].status !== 'error') return false
   
   if (!value) return true // Required check
   
-  if (type === 'email') {
-    return !emailRegex.test(value)
-  }
+  // Removed Email Format Check
+  // if (type === 'email') {
+  //   return !emailRegex.test(value)
+  // }
 
   if (type === 'coi') {
     return value !== true
   }
   
-  if (minLength > 0) {
-    return value.length < minLength
-  }
+  // Removed Min Length Check
+  // if (minLength > 0) {
+  //   return value.length < minLength
+  // }
   
   return false
 }
@@ -272,32 +283,25 @@ const getFieldError = (value, type, minLength = 0) => {
   
   if (!value) {
     if (type === 'name') return "Please enter the reviewer's full name"
-    if (type === 'email') return "Please enter a valid email address" // Empty is also invalid for required
+    if (type === 'email') return "Please enter the reviewer's email address"
     if (type === 'reasonType') {
        return "Please select a reason category"
     }
     
     if (type === 'reason') {
-        if (minLength === 50) return "Reason must be at least 50 characters"
-        if (minLength === 80) return "Reason must be at least 80 characters and explain a valid conflict"
+        return "Please provide a justification"
     }
   }
 
-  if (type === 'email' && !emailRegex.test(value)) {
-    return "Please enter a valid email address"
-  }
-  
-  if (minLength > 0 && value.length < minLength) {
-    if (minLength === 50) return "Reason must be at least 50 characters"
-    if (minLength === 80) return "Reason must be at least 80 characters and explain a valid conflict"
-  }
+  // Journal Platform Standard: If any required field is missing, the popup handles the main message.
+  // Inline errors remain specific but aligned with the requirement "Complete all required fields".
   
   return ''
 }
 
 const handleConfirmAnonymization = () => {
   // Simulate scanning
-  const confirmText = "You confirm that all author identifying information has been removed from the manuscript."
+  const confirmText = "You confirm that all writer identifying information has been removed from the manuscript."
   if (confirm(confirmText)) {
     store.formData.additionalInfo.blindReview.confirmed = true
   }
@@ -315,7 +319,7 @@ const handleConfirmAnonymization = () => {
     <!-- Manuscript Anonymization Check (Required) -->
     <div class="blind-review-section">
       <h3 class="section-title">Manuscript Anonymization Check <span class="required">(Required for Double-Blind Review)</span></h3>
-      <p class="section-helper">The system will automatically scan your full manuscript for author identifying information. <span class="text-red">All identifiers must be completely removed</span> to comply with double-blind review standards.</p>
+      <p class="section-helper">The system will automatically scan your full manuscript for writer identifying information. <span class="text-red">All identifiers must be completely removed</span> to comply with double-blind review standards.</p>
       
       <div class="scan-status-container">
         <span class="status-label">Scan Status:</span>
@@ -341,8 +345,8 @@ const handleConfirmAnonymization = () => {
 
       <!-- Scan Results -->
       <div v-if="scanStatus === 'completed'" class="scan-result success">
-        <h4 class="result-title">No Author Identifying Information Detected</h4>
-        <p class="result-desc">The system has finished scanning your manuscript. No author identifiers were found in the text, figures, tables, headers, footers or acknowledgments. You may proceed with submission.</p>
+        <h4 class="result-title">No Writer Identifying Information Detected</h4>
+        <p class="result-desc">The system has finished scanning your manuscript. No writer identifiers were found in the text, figures, tables, headers, footers or acknowledgments. You may proceed with submission.</p>
         <button class="btn-confirm-green" @click="confirmAnonymization" v-if="!store.formData.additionalInfo.blindReview.confirmed">
           Confirm & Proceed
         </button>
@@ -356,7 +360,7 @@ const handleConfirmAnonymization = () => {
             <span class="risk-dot">●</span> {{ risk }}
           </li>
         </ul>
-        <p class="revision-hint">Please delete all detected author identifiers, re-upload your revised manuscript, and click Rescan Manuscript to verify again.</p>
+        <p class="revision-hint">Please delete all detected writer identifiers, re-upload your revised manuscript, and click Rescan Manuscript to verify again.</p>
         <button class="btn-secondary" @click="triggerReupload">Re-upload Revised Manuscript</button>
       </div>
     </div>
@@ -402,7 +406,7 @@ const handleConfirmAnonymization = () => {
       </div>
 
       <div v-if="refStatus === 'completed'" class="ref-confirm-actions">
-        <p class="ref-hint">Please carefully compare the original and anonymized references to ensure no author information remains.</p>
+        <p class="ref-hint">Please carefully compare the original and anonymized references to ensure no writer information remains.</p>
         <button class="btn-confirm-green" @click="confirmReferences">Confirm Anonymized References</button>
       </div>
       
@@ -456,8 +460,26 @@ const handleConfirmAnonymization = () => {
             <div class="cite-reason">Reason: {{ cite.reason }}</div>
             <div class="cite-text">{{ cite.text }}</div>
             <div class="cite-verify">
-              <label><input type="radio" :name="'pot-'+idx" value="yes" v-model="cite.userChoice"> Is Self-Citation</label>
-              <label><input type="radio" :name="'pot-'+idx" value="no" v-model="cite.userChoice"> Not Self-Citation</label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  :name="'pot-'+idx" 
+                  value="yes" 
+                  :checked="cite.userChoice === 'yes'"
+                  @click="toggleCiteChoice(cite, 'yes')"
+                > 
+                Is Self-Citation
+              </label>
+              <label class="radio-label">
+                <input 
+                  type="radio" 
+                  :name="'pot-'+idx" 
+                  value="no" 
+                  :checked="cite.userChoice === 'no'"
+                  @click="toggleCiteChoice(cite, 'no')"
+                > 
+                Not Self-Citation
+              </label>
             </div>
           </div>
         </div>
@@ -494,8 +516,8 @@ const handleConfirmAnonymization = () => {
     <!-- Recommended Reviewers Section -->
     <div class="reviewers-section">
       <div class="section-header">
-        <h3 class="section-title">Recommended Reviewers (Optional, 1-3 reviewers)</h3>
-        <p class="section-helper">Please recommend 1-3 potential reviewers for your manuscript. All recommendations will be reviewed by the editorial team.</p>
+        <h3 class="section-title">Suggested Reviewers (Optional, 1–3 reviewers)</h3>
+        <p class="section-helper">You may suggest 1–3 potential reviewers for your manuscript. All suggestions are subject to review and final approval by the editorial team.</p>
       </div>
 
       <div v-for="(reviewer, index) in store.formData.additionalInfo.recommendedReviewers" :key="'rec-' + index" class="reviewer-row">
@@ -532,7 +554,7 @@ const handleConfirmAnonymization = () => {
 
             <!-- Affiliation -->
             <div class="form-group-item">
-                <label class="field-label">Affiliation</label>
+                <label class="field-label">Affiliation (Institution & Department)</label>
                 <div style="position: relative;">
                     <input 
                         type="text" 
@@ -549,16 +571,16 @@ const handleConfirmAnonymization = () => {
 
             <!-- Reason -->
             <div class="form-group-item full-width">
-                <label class="field-label">Reason for Recommendation <span class="required">*</span></label>
+                <label class="field-label">Justification for Suggestion <span class="required">*</span></label>
                 <textarea 
                     v-model="reviewer.reason" 
                     class="form-textarea"
                     rows="2"
-                    :class="{ 'input-error': isFieldInvalid(reviewer.reason, 'reason', 50) }"
+                    :class="{ 'input-error': isFieldInvalid(reviewer.reason, 'reason') }"
                     placeholder="Explain why this reviewer is suitable (e.g., expertise in cardiovascular research)"
                 ></textarea>
-                <div v-if="isFieldInvalid(reviewer.reason, 'reason', 50)" class="error-text">
-                    {{ getFieldError(reviewer.reason, 'reason', 50) }}
+                <div v-if="isFieldInvalid(reviewer.reason, 'reason')" class="error-text">
+                    {{ getFieldError(reviewer.reason, 'reason') }}
                 </div>
             </div>
 
@@ -567,7 +589,7 @@ const handleConfirmAnonymization = () => {
               <label class="checkbox-label" :class="{ 'error-text': isFieldInvalid(reviewer.coiDeclared, 'coi') }">
                 <input type="checkbox" v-model="reviewer.coiDeclared">
                 <span class="checkbox-text" style="color: #333; font-weight: normal; margin-left: 8px;">
-                  I declare that I have no conflict of interest with this reviewer (e.g., no recent collaboration, mentorship, or shared affiliation). <span class="required">*</span>
+                  I confirm that I have no conflict of interest with this reviewer (e.g., no recent collaboration, mentorship, or shared institutional affiliation). <span class="required">*</span>
                 </span>
               </label>
               <div v-if="isFieldInvalid(reviewer.coiDeclared, 'coi')" class="error-text" style="margin-left: 24px;">
@@ -663,7 +685,7 @@ const handleConfirmAnonymization = () => {
           <input type="checkbox" :checked="store.formData.additionalInfo.blindReview.enabled" disabled>
           <span class="checkbox-text">Submit manuscript for blind peer review</span>
         </label>
-        <p class="blind-hint">All author identifying information will be removed from the manuscript for reviewers</p>
+        <p class="blind-hint">All writer identifying information will be removed from the manuscript for reviewers</p>
       </div>
 
       <div class="blind-actions">
@@ -674,7 +696,7 @@ const handleConfirmAnonymization = () => {
         >
           {{ store.formData.additionalInfo.blindReview.confirmed ? 'Anonymization Confirmed ✓' : 'Confirm Anonymization' }}
         </button>
-        <p class="self-check-hint">Please ensure no author names, affiliations, or personal identifiers (including in figures/tables/filenames) are present in the manuscript.</p>
+        <p class="self-check-hint">Please ensure no writer names, affiliations, or personal identifiers (including in figures/tables/filenames) are present in the manuscript.</p>
       </div>
       
       <div v-if="store.steps[3].status === 'error' && !store.formData.additionalInfo.blindReview.confirmed" class="error-text">
@@ -709,6 +731,7 @@ const handleConfirmAnonymization = () => {
       <div class="form-group">
         <label class="form-label">{{ t('additionalInformation.conference') }} ({{ t('common.optional') }})</label>
         <select v-model="store.formData.additionalInfo.conference" class="form-select">
+          <option value="">{{ t('common.select') }}</option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
         </select>
@@ -746,7 +769,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .required {
-  color: #C93737;
+  color: #dc3545;
 }
 
 .form-textarea {
@@ -760,9 +783,9 @@ const handleConfirmAnonymization = () => {
 }
 
 .form-textarea:focus {
-  border-color: #C93737;
+  border-color: #0056B3;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(201, 55, 55, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 86, 179, 0.25);
 }
 
 .form-input, .form-select {
@@ -774,13 +797,13 @@ const handleConfirmAnonymization = () => {
 }
 
 .form-input:focus, .form-select:focus {
-  border-color: #C93737;
+  border-color: #0056B3;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(201, 55, 55, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 86, 179, 0.25);
 }
 
 .input-error {
-  border-color: #C93737 !important;
+  border-color: #dc3545 !important;
 }
 
 .char-count {
@@ -791,12 +814,12 @@ const handleConfirmAnonymization = () => {
 }
 
 .char-count.error {
-  color: #C93737;
+  color: #dc3545;
   font-weight: bold;
 }
 
 .error-text, .error-msg {
-  color: #C93737;
+  color: #dc3545;
   font-size: 12px;
   margin-top: 5px;
 }
@@ -888,7 +911,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .add-btn:hover:not(:disabled) {
-  background-color: #B02E2E;
+  background-color: #004494;
 }
 
 .add-btn:disabled {
@@ -921,14 +944,14 @@ const handleConfirmAnonymization = () => {
   border-radius: 4px;
 }
 
-.text-red { color: #C93737; font-weight: bold; }
+.text-red { color: #dc3545; font-weight: bold; }
 
 .scan-status-container { margin: 10px 0; font-size: 14px; }
 .status-label { font-weight: 600; color: #333; margin-right: 5px; }
 .status-value { font-weight: bold; }
 .status-pending { color: #4A90E2; }
 .status-completed { color: #28A745; }
-.status-error { color: #C93737; }
+.status-error { color: #dc3545; }
 .status-gray { color: #666; }
 
 .scan-target-info { font-size: 14px; color: #666; margin-bottom: 10px; }
@@ -939,15 +962,15 @@ const handleConfirmAnonymization = () => {
 
 .result-title { margin: 0 0 5px 0; font-size: 16px; font-weight: bold; }
 .success .result-title { color: #28A745; }
-.error .result-title { color: #C93737; }
+.error .result-title { color: #dc3545; }
 
 .result-desc { font-size: 14px; color: #333; margin: 0 0 10px 0; }
 
 .risk-list { list-style: none; padding: 0; margin: 10px 0; }
 .risk-list li { font-size: 14px; margin-bottom: 5px; color: #333; }
-.risk-dot { color: #C93737; margin-right: 5px; }
+.risk-dot { color: #dc3545; margin-right: 5px; }
 
-.revision-hint { color: #C93737; font-weight: bold; font-size: 14px; margin: 10px 0; }
+.revision-hint { color: #dc3545; font-weight: bold; font-size: 14px; margin: 10px 0; }
 
 .btn-confirm-green {
   background: #28A745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;
@@ -961,7 +984,7 @@ const handleConfirmAnonymization = () => {
 .ref-col-title { font-size: 16px; color: #333; margin: 0 0 10px 0; }
 .ref-list { max-height: 200px; overflow-y: auto; font-size: 13px; color: #555; }
 .ref-item { margin-bottom: 8px; line-height: 1.4; }
-.self-citation { color: #C93737; }
+.self-citation { color: #dc3545; }
 .red-star { color: #C93737; font-weight: bold; }
 
 .self-cite-stats { display: flex; gap: 15px; margin: 15px 0; padding: 10px; background: white; border: 1px solid #eee; border-radius: 8px; }
@@ -1012,7 +1035,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .btn-brand-red {
-  background-color: #C93737;
+  background-color: #dc3545;
   color: white;
   border: none;
   border-radius: 4px;
@@ -1023,7 +1046,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .btn-brand-red:hover {
-  background-color: #B02E2E;
+  background-color: #c82333;
 }
 
 .btn-brand-red.confirmed {

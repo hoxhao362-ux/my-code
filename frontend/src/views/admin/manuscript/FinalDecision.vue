@@ -103,7 +103,7 @@ const submitEic = () => {
           <label class="required">Upload Peer Review Summary Report</label>
           <div v-if="!editorForm.reportFile" class="upload-box">
             <input type="file" @change="handleFileUpload" class="file-input">
-            <button class="btn btn-red">Upload File</button>
+            <button class="btn btn-primary">Upload File</button>
             <div class="error-text">Report is required</div>
           </div>
           <div v-else class="file-info">
@@ -155,7 +155,7 @@ const submitEic = () => {
       <div class="bottom-bar">
         <button class="btn btn-gray" @click="$emit('save-draft')">Save Draft</button>
         <button 
-          class="btn btn-red" 
+          class="btn btn-primary" 
           :disabled="!isEditorFormValid"
           @click="submitEditor"
         >
@@ -167,7 +167,7 @@ const submitEic = () => {
     <!-- EiC Interface (Decision) -->
     <div v-if="isEIC" class="role-view eic-view">
       <header class="page-header">
-        <h2>Final Decision (Lancet Compliance)</h2>
+        <h2>Final Decision (Journal Platform Compliance)</h2>
         <div class="meta">
           <span>ID: {{ manuscript.id }}</span>
           <span>EiC: {{ currentUser.name }}</span>
@@ -244,7 +244,7 @@ const submitEic = () => {
         <button class="btn btn-gray" @click="$emit('return-materials')">Return for Materials</button>
         <button class="btn btn-gray" @click="$emit('save-draft')">Save Draft</button>
         <button 
-          class="btn btn-red" 
+          class="btn btn-primary" 
           :disabled="!isEicFormValid"
           @click="submitEic"
         >
@@ -258,7 +258,7 @@ const submitEic = () => {
 
 <style scoped>
 .final-decision-container {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: white;
   padding: 20px;
   height: 100%;
@@ -266,12 +266,12 @@ const submitEic = () => {
 }
 
 /* Common */
-.required::after { content: " *"; color: #C93737; }
-.text-red { color: #C93737; }
+.required::after { content: " *"; color: #dc3545; }
+.text-red { color: #dc3545; }
 .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-.btn-red { background: #C93737; color: white; }
-.btn-red:hover { background: #B02E2E; }
-.btn-red:disabled { background: #ccc; cursor: not-allowed; }
+.btn-primary { background: #0056B3; color: white; }
+.btn-primary:hover { background: #004494; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 .btn-gray { background: #eee; color: #333; }
 .btn-gray-outline { border: 1px solid #ddd; background: white; color: #333; padding: 4px 8px; }
 .btn-text { background: none; border: none; color: #666; text-decoration: underline; cursor: pointer; }
@@ -282,7 +282,7 @@ const submitEic = () => {
 .col-title { font-size: 16px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 15px; }
 
 .module { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px; }
-.upload-box { border: 1px dashed #C93737; padding: 15px; text-align: center; }
+.upload-box { border: 1px dashed #0056B3; padding: 15px; text-align: center; }
 .file-input { display: none; } /* Use label trigger or similar in real app, simplified here */
 textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; }
 
@@ -290,7 +290,7 @@ textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px
 .review-item { border-bottom: 1px solid #eee; padding: 10px 0; }
 .review-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
 .decision-tag.Accept { color: green; }
-.decision-tag.Reject { color: red; }
+.decision-tag.Reject { color: #dc3545; }
 .review-summary { font-size: 13px; color: #666; margin: 5px 0; }
 
 /* EiC View */

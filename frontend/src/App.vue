@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <Toast />
     <router-view />
   </div>
 </template>
@@ -7,6 +8,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useUserStore } from './stores/user'
+import Toast from './components/Toast.vue'
 
 // 应用初始化
 onMounted(() => {

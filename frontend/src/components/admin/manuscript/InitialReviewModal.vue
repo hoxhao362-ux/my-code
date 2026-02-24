@@ -194,18 +194,18 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// Helper for Authors
-const displayAuthors = computed(() => {
-  if (!props.manuscript?.author) return ''
-  // Assuming author is a string, split by comma if needed, or just use as is if simple string
-  // The prompt says "Authors (first 3 + et al)"
-  // If author is just a name string like "John Doe", we can't really split. 
+// Helper for Writers
+const displayWriters = computed(() => {
+  if (!props.manuscript?.writer) return ''
+  // Assuming writer is a string, split by comma if needed, or just use as is if simple string
+  // The prompt says "Writers (first 3 + et al)"
+  // If writer is just a name string like "John Doe", we can't really split. 
   // But usually it's "A, B, C". Let's try to split by comma.
-  const authors = props.manuscript.author.split(',').map(s => s.trim())
-  if (authors.length > 3) {
-    return `${authors.slice(0, 3).join(', ')} et al`
+  const writers = props.manuscript.writer.split(',').map(s => s.trim())
+  if (writers.length > 3) {
+    return `${writers.slice(0, 3).join(', ')} et al`
   }
-  return props.manuscript.author
+  return props.manuscript.writer
 })
 
 </script>
@@ -249,8 +249,8 @@ const displayAuthors = computed(() => {
               <span class="value">{{ manuscript.title }}</span>
             </div>
             <div class="info-item">
-              <span class="label">Authors:</span>
-              <span class="value">{{ displayAuthors }}</span>
+              <span class="label">Writers:</span>
+              <span class="value">{{ displayWriters }}</span>
             </div>
             <div class="info-item">
               <span class="label">Submission Date:</span>

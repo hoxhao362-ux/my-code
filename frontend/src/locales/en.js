@@ -1,41 +1,59 @@
 export default {
   common: {
-    back: 'Back',
-    next: 'Next',
-    proceed: 'Proceed',
-    saveLater: 'Save & Submit Later',
+    journalName: 'Journal Name',
+    ok: 'OK',
     cancel: 'Cancel',
-    submit: 'Submit',
-    required: 'Required',
-    optional: 'Optional',
+    close: 'Close',
+    confirm: 'Confirm',
+    save: 'Save',
     delete: 'Delete',
     edit: 'Edit',
-    confirm: 'Confirm',
-    close: 'Close',
+    search: 'Search',
+    reset: 'Reset',
+    view: 'View',
+    back: 'Back',
+    submit: 'Submit',
+    loading: 'Loading...',
+    noData: 'No data available',
+    actions: 'Actions',
+    status: 'Status',
+    date: 'Date',
+    title: 'Title',
+    writer: 'Writer',
+    module: 'Module',
+    id: 'ID',
+    abstract: 'Abstract',
+    content: 'Content',
+    references: 'References',
+    next: 'Next',
+    proceed: 'Proceed',
+    select: 'Select...',
+    saveLater: 'Save & Submit Later',
+    required: 'Required',
+    optional: 'Optional',
     add: 'Add',
     remove: 'Remove',
     download: 'Download',
     preview: 'Preview',
-    loading: 'Loading...',
     success: 'Success',
     error: 'Error',
     warning: 'Warning',
-    switchLang: '切换为中文'
+    switchLang: 'Switch to Chinese'
   },
   progress: {
     step1: 'Article Type',
     step2: 'Attach Files',
-    step3: 'General Info',
-    step4: 'Additional Info',
+    step3: 'General Information',
+    step4: 'Additional Information',
     step5: 'Comments',
     step6: 'Manuscript Data',
   },
   articleTypeSelection: {
     title: 'Article Type Selection',
     label: 'Article Type',
-    placeholder: 'Select an article type',
+    placeholder: 'Select article type',
     types: {
-      invited: 'Invited Papers',
+      invited: 'Invited Article',
       correspondence: 'Correspondence',
       comments: 'Comments',
       clinical: 'Clinical Rounds',
@@ -46,7 +64,7 @@ export default {
     guidelines: {
       general: 'Submission Guidelines',
       wordCount: 'Word Count Limit',
-      references: 'Reference Quantity Requirement',
+      references: 'Reference Count Requirements',
     },
     errors: {
       required: 'Please select an article type',
@@ -54,17 +72,17 @@ export default {
   },
   attachFiles: {
     title: 'Attach Files',
-    dragDrop: 'Drag and drop files here, or click Browse to upload',
+    dragDrop: 'Drag and drop files here, or click to browse',
     browse: 'Browse',
-    bulkUpdate: 'Bulk Update File Type',
+    bulkUpdate: 'Bulk update file types',
     fileType: 'File Type',
     fileName: 'File Name',
     description: 'Description',
-    actions: 'Operations',
+    actions: 'Actions',
     types: {
       manuscript: 'Manuscript',
-      contribution: 'Writers’ Contributions',
-      conflict: 'Conflicts of Interest',
+      contribution: 'Writer Contribution',
+      conflict: 'Conflict of Interest',
       figure: 'Figure',
       table: 'Table',
       supplementary: 'Supplementary Material'
@@ -73,50 +91,62 @@ export default {
       description: 'Enter custom file description (optional)',
       selectType: 'Select type'
     },
-    confirmDelete: 'Are you sure to delete this file? This operation cannot be undone.',
+    confirmDelete: 'Are you sure you want to delete this file? This action cannot be undone.',
     errors: {
       noFile: 'Please upload at least one manuscript-related file',
     },
+    requiredFiles: {
+      title: 'Required Files',
+      description: 'The following files are mandatory for submission. Please ensure each type has at least one file uploaded.',
+      descriptions: {
+        manuscript: 'Contains title, abstract, main text, references, and tables. This is the core document of your submission.',
+        contribution: 'Specifies each writer\'s individual contributions following ICMJE guidelines. Essential for academic integrity.',
+        conflict: 'Discloses all potential competing interests to ensure research objectivity.'
+      },
+      missingWarning: 'Missing required files: ',
+      missingError: 'Please upload all required files: Manuscript, Writer Contribution, and Conflict of Interest.',
+      allUploaded: 'All required files have been uploaded.'
+    }
   },
   generalInformation: {
     title: 'General Information',
-    regionLabel: 'Manuscript Source Region',
-    regionPlaceholder: 'Select a region',
+    regionLabel: 'Region of Origin',
+    regionPlaceholder: 'Select region',
     classificationsLabel: 'Medical Specialty Classifications',
-    addClassification: 'Add Classifications',
+    addClassification: 'Add Classification',
     selectedClassifications: 'Selected Classifications',
-    popupTitle: 'Classification Selection Popup',
+    popupTitle: 'Classification Selection',
     searchPlaceholder: 'Search classifications...',
     noResults: 'No results found',
     errors: {
-      regionRequired: 'Please select the manuscript source region',
+      regionRequired: 'Please select a region of origin',
       classificationRequired: 'Please select at least one medical specialty classification',
     },
   },
   additionalInformation: {
     title: 'Additional Information',
     questions: {
-      q1: 'Confirm data access and submission responsibility',
+      q1: 'Confirm data access and responsibility for submission',
       q2: 'Have all writers reviewed and agreed to the submission?',
-      q3: 'Are there any medical writers/editors involved, and provide relevant funding information',
-      q4: 'Which writers have accessed and verified the research data, and who is responsible for the submission decision?',
-      q5: 'Did you use generative AI, and please specify the specific purpose',
-      q6: 'Provide manuscript word count, number of references, and number of figures/tables',
+      q3: 'Was a medical writer/editor involved, and provide funding details',
+      q4: 'Which writers accessed and verified study data, who is responsible for the submission decision?',
+      q5: 'Was generative AI used, please explain the specific use',
+      q6: 'Provide manuscript word count, reference count, and figure/table count',
     },
-    ssrn: 'Agree to publish the research article on the SSRN preprint platform',
-    socialMedia: "Corresponding Writer's Social Media Accounts",
-    conference: 'Future Conference Concurrent Submission Confirmation',
+    ssrn: 'Agree to publish research article on SSRN preprint platform',
+    socialMedia: "Corresponding writer's social media handles",
+    conference: 'Simultaneous submission to future conferences confirmation',
     errors: {
-      incomplete: 'Please complete all additional information questionnaires',
-      limitExceeded: 'Input exceeds the character limit, please shorten it',
+      incomplete: 'Please complete all additional information questions',
+      limitExceeded: 'Input exceeds character limit, please shorten the content',
     },
   },
   comments: {
     title: 'Comments',
-    coverLetter: 'Covering Letter (Explanation to the journal, content will not be displayed in the final manuscript)',
-    placeholder: 'Please enter explanations to the journal, such as manuscript highlights, submission notes, etc.',
+    coverLetter: 'Cover Letter (Notes to the journal, will not appear in the final manuscript)',
+    placeholder: 'Enter notes to the journal, e.g., manuscript highlights, submission notes, etc.',
     errors: {
-      required: 'Please enter the covering letter to the journal',
+      required: 'Please enter a cover letter for the journal',
     },
   },
   manuscriptData: {
@@ -124,8 +154,8 @@ export default {
     manuscriptTitle: 'Title (Manuscript Title)',
     abstract: 'Abstract',
     keywords: 'Keywords',
-    keywordsPlaceholder: 'Please enter keywords, separate multiple keywords with semicolons',
-    authors: {
+    keywordsPlaceholder: 'Enter keywords, separated by semicolons',
+    writers: {
       title: 'Writers',
       add: 'Add Writer',
       name: 'Name',
@@ -137,95 +167,570 @@ export default {
     funding: {
       title: 'Funding Information',
       add: 'Add Funding Source',
-      noFunding: 'No Funding Information',
+      noFunding: 'No funding information',
       body: 'Funding Body',
-      selectBody: 'Select Funding Body',
-      number: 'Project Number',
+      selectBody: 'Select funding body',
+      number: 'Grant Number',
     },
     buildPDF: 'Build PDF for Approval',
     previewTitle: 'PDF Preview',
     publishingOption: {
       title: 'Publishing Option',
-      subscription: 'Subscription (Subscription Model)',
-      subscriptionDesc: 'Traditional publishing model. No fee for writers.',
-      openAccess: 'Open Access (Open Access Model)',
-      openAccessDesc: 'Article is freely available to everyone. APC applies.',
-    },
-    pdf: {
-      abstract: 'Abstract',
-      authors: 'Writers',
-      funding: 'Funding',
-      none: 'None'
+      subscription: 'Subscription (Subscription model)',
+      openAccess: 'Open Access (Open access model)',
     },
     errors: {
       incomplete: 'Please complete all required fields',
-      noAuthor: 'Please add at least one writer',
+      noWriter: 'Please add at least one writer',
       noCorresponding: 'Please select a corresponding writer',
       noFirst: 'Please select a first writer',
-      noFunding: 'Please add funding information or select "No Funding Information"',
-      selectPublishingOption: 'Please select a publishing option',
-      submissionFailed: 'Submission failed'
+      noFunding: 'Please add funding information or select "No funding information"',
     },
-    successMessage: 'Submission has been successfully submitted. Please wait for the journal\'s initial review',
-  },
-  screening: {
-    title: 'Initial Screening & Assignment',
-    searchPlaceholder: 'Search by title or writer...',
-    allModules: 'All Modules',
-    noJournals: 'No manuscripts pending screening.',
-    actions: {
-      assign: 'Assign Reviewer',
-      reject: 'Reject',
-      confirm: 'Confirm'
-    },
-    assignReviewer: 'Assign Reviewers',
-    errors: {
-      selectReviewer: 'Please select at least one reviewer.'
-    },
-    success: {
-      assigned: 'Reviewers assigned successfully.'
-    },
-    confirmReject: 'Are you sure you want to reject this manuscript? This action cannot be undone.'
-  },
-  manuscriptProgress: {
-    title: 'Manuscript Progress',
-    select: 'Select Manuscript',
-    placeholder: 'Please select a manuscript',
-    auditProgress: 'Audit Progress',
-    details: 'View Details',
-    stages: {
-      submitted: 'Submitted',
-      initial: 'Initial Review',
-      peer: 'Peer Review',
-      final: 'Final Decision',
-      published: 'Published/Rejected'
-    }
+    successMessage: 'Submission has been successfully submitted. Please wait for initial review',
   },
   submissionRules: {
     title: 'Submission Guidelines',
-    intro: 'Please read the following guidelines carefully before submission...',
+    intro: 'Please read the following guidelines carefully before submitting...',
     format: 'Format',
     formatDesc: 'PDF, Word, or LaTeX.',
-    authors: 'Writers',
-    authorsDesc: 'Ensure all writers are listed and have approved.',
+    writers: 'Writers',
+    writersDesc: 'Ensure all writers are listed and have approved the submission.',
     originality: 'Originality',
     originalityDesc: 'Content must be original.',
     start: 'Start Submission'
   },
+  editor: {
+    manuscripts: {
+      title: 'Manuscript Management',
+      currentRole: 'Current Role',
+      tabs: {
+        all: 'All Manuscripts',
+        assigned: 'My Assigned',
+        pending: 'Pending Action'
+      },
+      search: {
+        placeholder: 'Search by ID, title, writer or field...',
+        history: 'Search History',
+        clear: 'Clear History'
+      },
+      filter: {
+        status: 'Status',
+        dateRange: 'Date Range',
+        writer: 'Writer Name',
+        field: 'Field',
+        reset: 'Reset Filters',
+        advanced: 'Advanced Filters'
+      },
+      dateRanges: {
+        custom: 'Custom Range',
+        today: 'Today',
+        thisWeek: 'This Week',
+        thisMonth: 'This Month',
+        thisYear: 'This Year'
+      },
+      columns: {
+        id: 'ID',
+        title: 'Title',
+        writer: 'Writer',
+        date: 'Submitted Date',
+        status: 'Status',
+        actions: 'Actions'
+      },
+      actions: {
+        view: 'View',
+        assign: 'Assign Reviewers',
+        initialReview: 'Initial Review',
+        reviewSummary: 'Review Summary',
+        finalDecision: 'Make Decision',
+        revisionCheck: 'Check Revision',
+        auditLog: 'Audit Log',
+        history: 'History',
+        deskReject: 'Desk Reject',
+        withdraw: 'Withdraw',
+        archive: 'Archive',
+        sendProduction: 'Send to Production',
+        formatCheck: 'Format Check'
+      },
+      alerts: {
+        noPermission: 'Permission denied',
+        deskReject: 'Desk Reject Confirmed',
+        withdraw: 'Manuscript Withdrawn',
+        archive: 'Manuscript Archived',
+        production: 'Sent to Production',
+        formatCheck: 'Format Check Completed',
+        initialReview: 'Initial Review Completed: {decision}',
+        reviewSummary: 'Review Summary Report Generated & Submitted to EiC',
+        materialsSubmitted: 'Materials submitted to Editor-in-Chief',
+        finalDecision: 'Final Decision Submitted: {decision}',
+        revisionPassed: 'Revision Passed',
+        revisionReturned: 'Returned for Revision',
+        revisionRejected: 'Revision Rejected'
+      },
+      back: '← Back to Dashboard',
+      noManuscripts: 'No manuscripts found matching your criteria'
+    },
+    reviewers: {
+      title: 'Reviewer Management Module',
+      currentRole: 'Current Role',
+      table: {
+        name: 'Name',
+        email: 'Email',
+        expertise: 'Expertise',
+        status: 'Status',
+        actions: 'Actions'
+      }
+    },
+    audit: {
+      newSubmissions: {
+        title: 'New Submissions',
+        subtitle: 'Screening & Initial Check',
+        columns: {
+          writer: 'Writer',
+          date: 'Date',
+          module: 'Module',
+          actions: 'Actions'
+        },
+        links: {
+          viewManuscript: 'View Manuscript',
+          viewAttachments: 'View Attachments',
+          ethicsStatement: 'Ethics Statement'
+        },
+        actions: {
+          screen: 'Screen & Send',
+          transfer: 'Suggest Transfer',
+          reject: 'Reject'
+        },
+        noData: 'No new submissions pending screening.',
+        modals: {
+          screen: {
+            title: 'Screen & Send Confirmation',
+            notesLabel: 'Initial Screening Notes (Optional)',
+            notesPlaceholder: 'Enter brief screening notes (optional)',
+            assignmentLabel: 'Assignment Options',
+            autoAssign: 'Auto-assign to Assign Reviewers task pool',
+            specificAssign: 'Assign to specific editor',
+            noEditors: 'No active editors are available for manual assignment. This manuscript will be auto-assigned to the Assign Reviewers task pool.',
+            selectEditor: 'Select Editor',
+            loadingEditors: 'Loading editors...',
+            noActiveEditors: 'No active editors available',
+            confirmBtn: 'Confirm & Proceed'
+          },
+          transfer: {
+            title: 'Suggest Transfer to Another Journal',
+            reasonLabel: 'Transfer Reason',
+            reasonPlaceholder: 'Enter reason for transfer suggestion (required)',
+            journalLabel: 'Journal Selection',
+            previewLabel: 'Transfer Letter Preview',
+            letterTemplate: 'Dear {writer},\n\nWe have reviewed your manuscript "{title}". While it is of high quality, we believe it would be better suited for our sister journal, {targetJournal}.\n\nBest regards,\nThe {journalName} Editorial Team',
+            sendBtn: 'Send Transfer Suggestion'
+          },
+          reject: {
+            title: 'Reject Manuscript (Desk Reject)',
+            reasonLabel: 'Rejection Reasons (Select all that apply)',
+            categories: {
+              scope: 'Scope & Novelty',
+              methodology: 'Methodology',
+              presentation: 'Presentation & Other'
+            },
+            reasons: {
+              outOfScope: 'Out of scope for this journal',
+              insufficientNovelty: 'Insufficient novelty or originality',
+              methodologicalFlaws: 'Major methodological flaws',
+              statisticalErrors: 'Statistical errors',
+              poorPresentation: 'Poor presentation or language quality'
+            },
+            otherLabel: 'Other Reason (Please specify)',
+            commentsLabel: 'Editor Comments (Sent to Writer)',
+            commentsPlaceholder: 'Provide detailed feedback for the writer...',
+            templateLabel: 'Letter Template',
+            templates: {
+              standard: 'Standard Template',
+              custom: 'Custom Template'
+            },
+            confirmBtn: 'Confirm Rejection'
+          },
+          manuscript: {
+            title: 'Manuscript Preview',
+            zoomIn: 'Zoom In',
+            zoomOut: 'Zoom Out',
+            prevPage: 'Previous Page',
+            nextPage: 'Next Page',
+            fullScreen: 'Full Screen',
+            exitFullScreen: 'Exit Full Screen'
+          },
+          attachments: {
+            title: 'Supplementary Materials & Attachments',
+            refresh: 'Refresh List',
+            downloadAll: 'Download All (ZIP)',
+            preview: 'Preview',
+            download: 'Download',
+            noAttachments: 'No supplementary materials uploaded for this manuscript.',
+            groups: {
+              supplementary: 'Supplementary Materials',
+              figures: 'Figures & Tables'
+            }
+          },
+          ethics: {
+            title: 'Ethics & Compliance Statement',
+            verified: 'Ethics Verified',
+            pending: 'Pending Verification',
+            verifyBtn: 'Verify Statement',
+            unverifyBtn: 'Unverify Statement',
+            requestRevision: 'Request Ethics Revision',
+            print: 'Print Statement',
+            sections: {
+              irb: 'IRB Approval',
+              consent: 'Informed Consent',
+              data: 'Data Sharing'
+            },
+            mockData: {
+              irb: 'This study was approved by the Institutional Review Board of [Hospital Name] (Approval No. IRB-2023-001) on January 15, 2023.',
+              consent: 'Written informed consent was obtained from all participants prior to their inclusion in the study.',
+              data: 'De-identified participant data will be made available upon reasonable request to the corresponding writer.'
+            }
+          },
+          validation: {
+            title: 'Required Selection Missing',
+            message: 'Please select an editor to assign this manuscript to before proceeding.'
+          }
+        },
+        detail: {
+          backToList: '← Back to List',
+          id: 'ID:',
+          status: 'Status:',
+          submitted: 'Submitted:',
+          tabs: {
+            preview: 'Revision Preview (Track Changes)',
+            response: 'Point-by-Point Response'
+          },
+          preview: {
+            simulationNote: '[Simulation] Displaying Revised Manuscript with Track Changes...',
+            introduction: 'Introduction',
+            trackChanges: 'The {old} {new} methodology implementation shows significant improvement...',
+            reviewedLabel: 'I have reviewed the revision content.'
+          },
+          response: {
+            originalComments: 'Original Reviewer Comments (Anonymized)',
+            authorResponse: "Writer's Response",
+            responseTo: 'Response to {reviewer}',
+            authorLabel: 'Writer:',
+            thankYou: 'Thank you for your comment. We have addressed this by...',
+            updatedFigure: 'As requested, we have updated Figure 2 and clarified the methodology section (lines 145-150).'
+          },
+          actions: {
+            reject: 'Reject',
+            requestFurther: 'Request Further Revision',
+            approve: 'Approve'
+          },
+          modals: {
+            approve: {
+              title: 'Confirm Action: APPROVE',
+              msg: 'Are you sure you want to approve this revision? The manuscript will proceed to the next stage (e.g., final acceptance).',
+              reviewRequired: 'Please review the revision before approving.'
+            },
+            sendRequest: {
+              title: 'Confirm Action: SEND_REQUEST',
+              draftMsg: 'Draft Revision Request for Manuscript ID: {id}',
+              commentsSummary: 'Reviewer Comments Summary (Anonymized)',
+              revisionType: 'Revision Type:',
+              deadline: 'Deadline:',
+              types: {
+                minor: 'Minor Revision',
+                major: 'Major Revision'
+              },
+              requirementsLabel: 'Revision Requirements / Editor Comments:',
+              requirementsTip: 'Please summarize your editorial decision and provide clear guidance to the writer on how to address the reviewer comments.',
+              declaration: {
+                title: 'Editorial Declaration',
+                reviewedComments: 'I have reviewed all reviewer comments and ensured they are accurately reflected in this request.',
+                deadlineGuidelines: 'The revision deadline is set in accordance with the Journal Submission Platform editorial guidelines.',
+                scopePolicy: 'I confirm that this revision request is consistent with the journal policies.'
+              },
+              tooltips: {
+                provideComments: 'Please provide editorial comments before sending the request.',
+                confirmDeclarations: 'Please confirm all editorial declarations before sending the request.'
+              },
+              doubleConfirm: {
+                title: 'Confirm Send Request',
+                msg: 'Are you sure you want to send this revision request to the writer?',
+                note: "The manuscript status will be updated to 'Revision Required' and the writer will be notified."
+              }
+            },
+            reject: {
+              title: 'Confirm Action: REJECT',
+              areYouSure: 'Are you sure you want to Reject the revision for Manuscript ID: {id}?',
+              reasonLabel: 'Rejection Reason:',
+              reasonTip: 'Please provide a clear reason for rejecting this revision. This will be sent to the writer.',
+              reasonRequiredTooltip: 'Please provide a clear reason for rejecting this revision.',
+              doubleConfirm: {
+                title: 'High Risk Action',
+                msg: 'WARNING: This action will reject the manuscript and terminate the review process. Are you absolutely sure?',
+                confirmBtn: 'Yes, Reject Manuscript'
+              }
+            }
+          }
+        },
+        alerts: {
+          previewUnavailable: 'Preview Unavailable\n\nThis file type is not supported for preview. Please download to view.',
+          downloadStarted: 'Download started for all attachments.',
+          revisionSent: 'Revision request sent to writer.',
+          downloading: 'Downloading {name}...',
+          assignmentFailed: 'Assignment failed. Please try again.',
+          screenConfirmed: 'Screening confirmed. Manuscript moved to next stage.',
+          transferReasonRequired: 'Please enter a reason for transfer.',
+          transferSent: 'Transfer suggestion sent to writer.',
+          fieldsRequired: 'Please fill in all required fields.',
+          specifyOther: 'Please specify the other reason.',
+          rejectConfirmed: 'Rejection confirmed. Manuscript marked as Desk Rejected.'
+        }
+      },
+      assignReviewers: {
+        title: 'Assign Reviewers',
+        subtitle: 'Select and Invite Peer Reviewers',
+        tabs: {
+          writerRecommended: 'Writer Recommended',
+          smartRecommendation: 'Smart Recommendation',
+          manualSearch: 'Manual Search'
+        },
+        noWriterRecommendations: 'No writer recommendations found for this manuscript.',
+        writerRecommendationHint: 'Please ensure the writer has submitted suggestions, or use Smart Recommendation / Manual Search.',
+        reason: 'Reason',
+        searchPlaceholder: 'Search reviewers...',
+        filters: {
+          all: 'All',
+          matchField: 'Match Field'
+        },
+        selectionCount: 'Selected: {count}',
+        noManuscripts: 'No manuscripts waiting for reviewer assignment.',
+        modalTitle: 'Select Reviewers',
+        meta: {
+          writer: 'Writer',
+          module: 'Module'
+        },
+        actions: {
+          assign: 'Assign Reviewers',
+          reinvite: 'Re-invite',
+          confirm: 'Confirm Assignment'
+        },
+        alerts: {
+          selectAtLeastOne: 'Please select at least one reviewer.',
+          assignedSuccess: 'Reviewers assigned. {count} invitations sent. Manuscript moved to "Under Review".',
+          reinviteHint: 'Re-invitation feature would go here.'
+        }
+      },
+      reviewMonitoring: {
+        title: 'Review Monitoring',
+        subtitle: 'Track Progress & Manage Delays',
+        meta: {
+          writer: 'Writer',
+          sentToReview: 'Sent to Review'
+        },
+        reviewerStatus: 'Reviewers Status',
+        actions: {
+          remind: 'Remind',
+          replace: 'Replace',
+          processExtension: 'Process Extension Request'
+        },
+        status: {
+          invited: 'Invited',
+          accepted: 'Accepted',
+          declined: 'Declined',
+          overdue: 'Overdue'
+        },
+        noManuscripts: 'No manuscripts currently under review.',
+        noReviewers: 'No reviewers assigned yet (Data inconsistency).',
+        alerts: {
+          reminderSent: 'Reminder sent to {name}.',
+          replaceConfirm: 'Replace reviewer {name}?',
+          redirecting: 'Redirecting to replacement selection (mock)...',
+          extensionGranted: 'Extension granted for 7 days.'
+        }
+      },
+      decisionMaking: {
+        title: 'Decision Central',
+        subtitle: 'Evidence-Based Decision Making System',
+        tabs: {
+          consolidation: 'Review Consolidation',
+          consensus: 'Consensus Meetings',
+          appeals: 'Appeals & Rebuttals'
+        },
+        consolidation: {
+          noManuscripts: 'No manuscripts pending consolidation.',
+          reviewerOpinions: 'Reviewer Opinions',
+          reviewerLabel: 'Reviewer',
+          score: 'Score',
+          noReviews: 'No reviews data available.',
+          assessment: "Editor's Assessment",
+          systemAnalysis: 'System Analysis',
+          consensusLevel: 'Consensus Level',
+          mixed: 'Mixed',
+          high: 'High',
+          keyIssues: 'Key Issues',
+          detected: 'Detected',
+          actions: {
+            draftDecision: 'Draft Decision & Rationale',
+            requestConsensus: 'Request Consensus Meeting'
+          }
+        },
+        consensus: {
+          noManuscripts: 'No manuscripts scheduled for consensus meeting.',
+          scheduleNew: 'Schedule New Meeting',
+          nextMeeting: 'Next Meeting',
+          reasonLabel: 'Reason for Meeting',
+          actions: {
+            finalize: 'Finalize Decision',
+            viewMinutes: 'View Minutes'
+          }
+        },
+        appeals: {
+          noAppeals: 'No active appeals.',
+          reasonLabel: 'Appeal Reason',
+          actions: {
+            assignIndependent: 'Assign Independent Reviewer'
+          }
+        },
+        modals: {
+          decision: {
+            title: 'Final Decision',
+            sections: {
+              decision: '1. Decision',
+              rationale: '2. Evidence-Based Rationale',
+              letter: '3. Decision Letter to Writer'
+            },
+            types: {
+              accept: 'Accept (Publish without further changes)',
+              minor: 'Minor Revision (Back to Writer - Editor Check Only)',
+              major: 'Major Revision (Back to Writer - Re-review Required)',
+              return: 'Return to Reviewer (Special Case: Direct Re-review)',
+              reject: 'Reject (Decline Submission)',
+              transfer: 'Transfer (Recommend Other Journals)',
+              consensus: 'Escalate to Consensus Meeting'
+            },
+            returnWarning: 'This option bypasses the writer and sends the manuscript directly back to reviewers. Use only for arbitration or internal re-evaluation.',
+            rationaleLabels: {
+              rigor: 'Scientific Rigor',
+              novelty: 'Novelty & Innovation',
+              methodology: 'Methodology',
+              dataIntegrity: 'Data Integrity'
+            },
+            placeholders: {
+              rigor: 'Comment on study design and controls...',
+              novelty: 'Comment on contribution to the field...',
+              methodology: 'Comment on methods...',
+              dataIntegrity: 'Comment on data quality...',
+              letter: 'Draft your letter here. The structured rationale above will be attached for internal records.'
+            }
+          }
+        },
+        alerts: {
+          onlyEditors: 'Only editors can handle manuscripts pending final decision.',
+          enterComments: 'Please enter decision comments.',
+          movedToConsensus: 'Manuscript moved to Consensus Meeting queue.',
+          decisionRecorded: 'Decision recorded: {type}.',
+          sentToEIC: 'Manuscript sent to Editor-in-Chief for final decision.',
+          letterGenerated: "Draft letter generated in 'Decisions & Letters' module.",
+          meetingScheduled: 'Meeting scheduled for {title}. Notification sent to attendees.',
+          independentAssigned: 'Independent reviewer assigned for appeal of {title}.'
+        }
+      },
+      revisionHandling: {
+        title: 'Revision Handling',
+        subtitle: 'Journal Platform-Style Revision Audit & Control',
+        columns: {
+          id: 'MS ID',
+          title: 'Title',
+          version: 'Version',
+          deadline: 'Deadline',
+          status: 'Status',
+          formatCheck: 'Format Check',
+          actions: 'Actions'
+        },
+        noManuscripts: 'No pending revisions found.',
+        formatCheck: {
+          title: 'Format Compliance Check',
+          verifyItems: 'Please verify the following items for the revision ({version}):',
+          checklist: {
+            wordCount: 'Manuscript word count limits',
+            abstract: 'Abstract structure (Background, Methods, Findings, Interpretation)',
+            coi: 'Conflict of Interest declaration',
+            figures: 'Figure quality and legends',
+            references: 'Reference formatting (Vancouver style)'
+          },
+          passBtn: 'Confirm & Pass',
+          runCheck: 'Run Check',
+          passed: '✔ Passed'
+        },
+        reReview: {
+          title: 'Coordinate Re-Review',
+          selectReviewers: 'Select reviewers for this round of revision:',
+          sendBtn: 'Send to Selected Reviewers'
+        },
+        actions: {
+          preview: 'Preview',
+          approve: 'Approve',
+          reReview: 'Re-Review',
+          returnForRevision: 'Return for Revision'
+        },
+        preview: {
+          title: 'Preview: Manuscript ID {id}',
+          tabs: {
+            reviewerComments: 'Reviewer Comments',
+            manuscriptPreview: 'Manuscript Preview',
+            revisionHistory: 'Revision History'
+          },
+          noContent: 'No preview content available for this manuscript at this stage.',
+          noHistory: 'No revision history available for this manuscript.',
+          openDetail: 'Open Full Audit Detail'
+        },
+        modals: {
+          confirmAction: 'Confirm Action: {action}',
+          areYouSure: 'Are you sure you want to {action} the revision for Manuscript ID: {id}?',
+          editorComment: 'Editor Comment / Decision Rationale:',
+          editorCommentsOptional: 'Editor Comments (Optional):',
+          approveRationale: 'Please document the rationale for approving this manuscript.',
+          rejectRationale: 'Please provide a clear and constructive reason for returning this manuscript for revision.',
+          commentPlaceholder: 'Enter comments for the writer...',
+          confirmBtn: 'Confirm {action}',
+          doubleConfirm: {
+            approveTitle: 'Confirm Approval',
+            rejectTitle: 'Confirm Return for Revision',
+            approveMsg: 'Are you sure you want to approve this manuscript?',
+            rejectMsg: 'WARNING: You are about to return this manuscript for revision. Are you sure?'
+          }
+        },
+        alerts: {
+          allChecksRequired: 'All format checks must be passed before proceeding.',
+          formatPassed: 'Format check passed. You may now proceed with the review process.',
+          auditSuccess: 'Manuscript {id} has been {action}.',
+          sentToReviewers: 'Sent back to reviewers: {reviewers}',
+          notification: {
+            approvedTitle: 'Revision Approved',
+            rejectedTitle: 'Revision Rejected',
+            statusUpdateTitle: 'Revision Status Update',
+            reReviewTitle: 'Re-Review Request',
+            approvedMsg: 'Your revision for MS {id} has been approved and sent to decision making. Editor Comment: {comment}',
+            rejectedMsg: 'The revision did not address reviewer comments adequately. Please revise and resubmit. Editor Comment: {comment}',
+            reReviewMsg: 'Your manuscript has been sent back to reviewers for further evaluation.',
+            reviewerMsg: 'Manuscript {id} has been returned for re-review. Please check your assignments.'
+          }
+        }
+      }
+    }
+  },
   nav: {
-    logo: 'Journal Submission Platform',
+    logo: '期刊平台名字',
     home: 'Home',
     directory: 'Directory',
     submissionCenter: 'Submission Center',
     submissionRules: 'Submission Rules',
     onlineSubmission: 'Online Submission',
     profile: 'Profile',
-    profileInfo: 'Personal Info',
+    profileInfo: 'Profile Info',
     accountSecurity: 'Account Security',
     messages: 'Messages',
     operationLogs: 'Operation Logs',
     manuscriptStatus: 'Manuscript Status',
-    feedbackManagement: 'Feedback Mgmt',
+    feedbackManagement: 'Feedback',
     helpCenter: 'Help Center',
     faq: 'FAQ',
     contact: 'Contact Us',
@@ -233,118 +738,254 @@ export default {
     adminLogin: 'Admin Login',
     logout: 'Logout',
     login: 'Login',
+    readOnly: 'Read-Only',
+    readOnlyMode: 'Read-Only Mode',
+    submitSystem: 'Submit System',
+    userRole: 'User Role',
     register: 'Register',
     dashboard: 'Dashboard',
     roleSwitch: 'Role Switch',
     roles: {
-      admin: 'Editor Dashboard',
-      associate_editor: 'Associate Editor Dashboard',
-      ea_ae: 'EA & AE Dashboard',
-      reviewer: 'Reviewer Dashboard',
-      author: 'Writer Dashboard'
+      admin: 'Editor Workspace',
+      associate_editor: 'Associate Editor Workspace',
+      ea_ae: 'EA/AE Workspace',
+      reviewer: 'Reviewer Workspace',
+      writer: 'Writer Workspace'
     },
     tasks: 'Audit Tasks',
     history: 'Audit History',
     returnMain: 'Return to Main Site',
     roleManagement: 'Role Management',
     userList: 'User List',
-    reviewerManagement: 'Reviewer Mgmt',
+    reviewerManagement: 'Reviewer Management',
+    auditReviewerManagement: 'Reviewer Mgmt',
+    auditRecommendedReviewers: 'Recommended',
+    auditOpposedReviewers: 'Opposed',
+    auditMyTasks: 'My Tasks',
     accountStatus: 'Account Status',
     systemSettings: 'System Settings',
     basicConfig: 'Basic Config',
-    notificationSettings: 'Notification Settings',
-    logManagement: 'Log Management',
-    moduleManagement: 'Module Management',
-    inviteCodeManagement: 'Invitation Codes',
+    notificationSettings: 'Notifications',
+    logManagement: 'Logs',
+    moduleManagement: 'Modules',
+    inviteCodeManagement: 'Invite Codes',
     manuscriptManagement: 'Manuscript Mgmt',
     newSubmission: 'New Submission',
     myManuscripts: 'My Manuscripts',
-    manuscriptProgress: 'Manuscript Progress',
-    historySubmission: 'History Submission',
-    submissionGuide: 'Submission Guide',
-    onlineConsultation: 'Online Consultation',
-    permissionDenied: 'Permission denied, cannot access admin panel',
-    // New additions
+    manuscriptProgress: 'Progress',
+    historySubmission: 'History',
+    submissionGuide: 'Guide',
+    onlineConsultation: 'Consultation',
+    permissionDenied: 'Permission Denied',
+    writerResources: 'Writer Resources',
+    guideForWriters: 'Guide for Writers',
+    templates: 'Templates',
+    checkStatus: 'Check Status',
+    letters: 'Letters',
+    lettersAndInvitations: 'Letters & Invitations',
+    logoutSubmit: 'Logout (Submit System)',
+    myAssignments: 'My Assignments',
+    auditTasks: 'Audit Tasks',
+    reviewProcess: 'Review Process',
+    publicationAnalytics: 'Publication & Analytics',
+    publication: 'Publication',
+    dataStatistics: 'Data Statistics',
+    boardManagement: 'Board Management',
+    adminTools: 'Admin Tools',
+    editorManagement: 'Editor Management',
     journals: 'Journals',
     submit: 'Submit',
     resources: 'Resources',
-    more: 'More',
-    reviewer: 'Reviewer',
-    search: 'Search',
-    searchPlaceholder: 'Search...',
-    subscribe: 'Subscribe',
-    authorResources: 'Author Resources',
-    reviewerResources: 'Reviewer Resources',
-    newsEvents: 'News & Events',
-    editorialBoard: 'Editorial Board',
-    journalInfo: 'Journal Info',
-    history: 'History',
     becomeReviewer: 'Become a Reviewer',
     reviewerGuidelines: 'Reviewer Guidelines',
     reviewerTraining: 'Reviewer Training',
-    myReviews: 'My Reviews',
-    myProfile: 'My Profile',
-    guideForAuthors: 'Guide for Authors',
-    templates: 'Templates',
-    checkStatus: 'Check Status',
+    newsEvents: 'News & Events',
     latestArticles: 'Latest Articles',
     callForPapers: 'Call for Papers',
     upcomingEvents: 'Upcoming Events',
+    reviewer: 'Reviewer',
+    myReviews: 'My Reviews',
+    myProfile: 'My Profile',
     help: 'Help',
+    more: 'More',
+    editorialBoard: 'Editorial Board',
+    journalInfo: 'Journal Info',
+    searchPlaceholder: 'Search articles, writers, DOI...',
     settings: 'Settings',
-    profile: 'Profile',
-    editorPreferences: 'Editor Preferences',
-    apiAccess: 'API Access',
-    helpSupport: 'Help & Support',
-    helpCenter: 'Help Center',
-    systemStatus: 'System Status',
-    statistics: 'Statistics',
-    decisionsLetters: 'Decisions & Letters',
-    manuscripts: 'Manuscripts',
-    reviewers: 'Reviewers',
-    editorManagement: 'Editor Management',
-    journalSettings: 'Journal Settings',
-    profileSettings: 'Profile & Settings',
     auditNewSubmissions: 'New Submissions',
     auditAssignReviewers: 'Assign Reviewers',
     auditReviewMonitoring: 'Review Monitoring',
     auditDecisionMaking: 'Decision Making',
     auditRevisionHandling: 'Revision Handling',
-    auditReviewerManagement: 'Reviewer Management',
-    auditRecommendedReviewers: 'Recommended Reviewers',
-    auditOpposedReviewers: 'Opposed Reviewers',
-    auditMyTasks: 'My Tasks',
+    reviewers: 'Reviewers',
+    decisionsLetters: 'Decisions & Letters',
+    manuscripts: 'Manuscripts',
+    profileSettings: 'Profile Settings',
+    helpSupport: 'Help & Support'
   },
-  dashboard: {
-    title: 'Dashboard',
-    welcome: 'Welcome, {name}',
-    stats: {
-      totalJournals: 'Total Submissions',
-      pendingJournals: 'Pending Reviews',
-      totalUsers: 'Total Normals',
-      recentSubmissions: 'Recent Submissions'
+  home: {
+    topBar: 'Welcome to the Academic Journal Platform',
+    hero: {
+      title: 'Advancing Science, Together',
+      subtitle: 'A modern platform for academic excellence and peer-reviewed research.',
+      submit: 'Submit Your Manuscript'
     },
-    recentJournals: {
-      title: 'Recent Submissions',
-      author: 'Writer',
-      date: 'Date',
-      status: 'Status'
+    sections: {
+      latestArticles: 'Latest Articles',
+      journalFamily: 'Our Journal Family',
+      specialCollections: 'Special Collections'
+    },
+    journalFamily: {
+      main: 'Main Journal',
+      letters: 'Letters',
+      reviews: 'Reviews',
+      caseReports: 'Case Reports'
+    },
+    subscribe: {
+      title: 'Stay Informed',
+      text: 'Subscribe to our newsletter to receive the latest research and updates.'
     }
   },
+  journalDetail: {
+    header: {
+      volume: 'Volume',
+      issue: 'Issue',
+      pages: 'Pages',
+      publishedOnline: 'Published Online',
+      correspondence: 'Correspondence',
+      affiliations: 'Affiliations'
+    },
+    actions: {
+      downloadPdf: 'Download PDF',
+      cite: 'Cite'
+    },
+    sections: {
+      abstract: 'Abstract',
+      keywords: 'Keywords',
+      mainText: 'Main Text'
+    },
+    abstract: {
+      background: 'Background',
+      methods: 'Methods',
+      findings: 'Findings',
+      interpretation: 'Interpretation',
+      funding: 'Funding'
+    },
+    mainText: {
+      introduction: 'Introduction',
+      methods: 'Methods',
+      results: 'Results',
+      discussion: 'Discussion'
+    }
+  },
+  reviewerDashboard: {
+    stats: {
+      pendingReviews: 'Pending Reviews',
+      pendingReReviews: 'Pending Re-reviews',
+      overdueReviews: 'Overdue Reviews'
+    },
+    invitations: {
+      title: 'Latest Invitations',
+      viewAll: 'View All',
+      empty: 'No new invitations.'
+    },
+    announcements: {
+      title: 'System Announcements'
+    }
+  },
+  preview: {
+    title: 'Previewing {name}',
+    download: 'Download',
+    close: 'Close',
+    loading: 'Loading preview...',
+    fileType: 'File Type',
+    size: 'Size',
+    pdfError: 'Failed to load PDF. Please download to view.',
+    imgError: 'Failed to load image.',
+    txtError: 'Failed to load text content.',
+    unsupported: 'This file type does not support online preview. Please download to view.'
+  },
+  allPending: {
+    author: 'Author'
+  },
+  status: {
+    under_review: 'Under Review',
+    re_review: 'Re-review',
+    pending_initial_review: 'Pending Initial Review',
+    under_peer_review: 'Under Peer Review'
+  },
+  footer: {
+    about: {
+      title: 'About',
+      us: 'About Us',
+      mission: 'Mission',
+      team: 'Team',
+      contact: 'Contact'
+    },
+    journals: {
+      title: 'Journals'
+    },
+    authors: {
+      title: 'Authors',
+      instructions: 'Instructions for Authors',
+      guidelines: 'Submission Guidelines',
+      process: 'Peer Review Process',
+      ethics: 'Publication Ethics'
+    },
+    resources: {
+      title: 'Resources',
+      faq: 'FAQ',
+      help: 'Help Center',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service'
+    },
+    rights: 'All rights reserved.'
+  },
   submission: {
+    brand: 'Submission Module',
+    nav: {
+      home: 'Home',
+      about: 'About',
+      help: 'Help',
+      mainMenu: 'Main Menu',
+      submitManuscript: 'Submit a Manuscript',
+      letters: 'Letters',
+      editorialBoard: 'Editorial Board',
+      journalInfo: 'Journal Info',
+      history: 'History',
+      helpCenter: 'Help Center',
+      submissionRules: 'Submission Rules',
+      feedback: 'Feedback',
+      logout: 'Logout'
+    },
+    sidebar: {
+      instruction: 'Instruction for Writers',
+      about: 'About the Journal',
+      checklist: 'Pre-submission checklist',
+      reviewers: 'Peer Reviewers'
+    },
+    welcome: {
+      title: 'Welcome to Submission Module for',
+      platform: 'Journal Submission Platform'
+    },
     login: {
-      title: 'Please Enter the Following',
-      username: 'Normalname',
+      title: 'Login to Submit System',
+      username: 'Username',
       password: 'Password',
+      placeholder: {
+        username: 'Username',
+        password: 'Password'
+      },
       btn: {
-        author: 'Writer Login',
+        writer: 'Writer Login',
         reviewer: 'Reviewer Login',
-        editor: 'Editor Login'
+        editor: 'Editor / Admin Login'
       },
       orcid: {
-        label: 'Or Login via',
+        label: 'ORCID® provides a persistent digital identifier that distinguishes you from every other researcher.',
+        btn: 'Login with ORCID',
         help: 'What is ORCID?',
-        info: 'ORCID provides a persistent digital identifier that distinguishes you from every other researcher.'
+        info: 'You can use your ORCID iD to log in to our submission system. If you don\'t have one, you can register for one during the login process.'
       },
       link: {
         sendDetails: 'Send Login Details',
@@ -352,56 +993,276 @@ export default {
         help: 'Login Help'
       },
       error: {
-        required: 'Normalname and password are required',
+        required: 'Please enter both username and password.',
         failed: 'Login failed. Please check your credentials.'
+      }
+    },
+    register: {
+      title: 'Journal Platform - Register Account',
+      alreadyHaveAccount: 'Already have an account?',
+      backToLogin: 'Login now',
+      btn: {
+        continue: 'Continue >>',
+        complete: 'Complete Registration'
+      },
+      error: {
+        required: 'Please fill in all required fields',
+        passwordLength: 'Password length must be at least 6 characters'
+      },
+      fields: {
+        firstName: 'Given/First Name',
+        lastName: 'Family/Last Name',
+        email: 'E-mail Address',
+        username: 'Preferred User Name',
+        password: 'Password',
+        confirmPassword: 'Re-type Password',
+        title: 'Title',
+        middleName: 'Middle Name',
+        degree: 'Degree',
+        orcid: 'ORCID iD',
+        position: 'Position',
+        institution: 'Institution',
+        department: 'Department',
+        streetAddress: 'Street Address',
+        city: 'City',
+        stateProvince: 'State or Province',
+        zipCode: 'Zip or Postal Code',
+        country: 'Country or Region',
+        classifications: 'Personal Classifications',
+        keywords: 'Personal Keywords'
+      },
+      placeholder: {
+        firstName: 'Enter your first name',
+        lastName: 'Enter your last name',
+        email: 'Enter your email address',
+        username: 'Enter your username',
+        password: 'Enter your password',
+        confirmPassword: 'Re-enter your password',
+        title: 'Enter your title',
+        middleName: 'Enter your middle name',
+        degree: 'Enter your degree',
+        orcid: 'Enter your ORCID',
+        position: 'Enter your position',
+        institution: 'Enter your institution',
+        department: 'Enter your department',
+        streetAddress: 'Enter your street address',
+        city: 'Enter your city',
+        stateProvince: 'Enter your state or province',
+        zipCode: 'Enter your zip code',
+        country: 'Select country or region'
+      },
+      step1: {
+        title: 'Choose a Registration Method',
+        orcidLabel: 'Retrieve your details from the ORCID registry:',
+        orcidBtn: 'Use My ORCID Record',
+        manualLabel: 'Or type in your details and continue to register without using ORCID:',
+        warning: {
+          title: 'WARNING',
+          msg1: 'If you think you already have an existing registration of any type (Writer, Reviewer, or Editor) in this system, please DO NOT register again. This will cause delays or prevent the processing of any manuscript you submit.',
+          msg2: 'If you are unsure if you are already registered, click the "Forgot Your Login Details?" button.'
+        }
+      },
+      step2: {
+        title: 'Login Details',
+        info1: 'The username you choose must be unique within the system.',
+        info2: 'If the one you choose is already in use, you will be asked for another.',
+        passwordRules: 'Password Rules'
+      },
+      step3: {
+        title: 'Personal Information',
+        degreeHint: '(Ph.D., M.D., etc.)',
+        emailInfo: 'If entering more than one e-mail address, use a semi-colon between each address.',
+        orcidInfo1: 'You are encouraged to link to your ORCID ID and authenticate it.',
+        orcidInfo2: 'You will only need to do this once in this journal.',
+        orcidFetchBtn: 'Fetch/Register',
+        whatIsOrcid: 'What is ORCID?'
+      },
+      step4: {
+        title: 'Institution Related Information',
+        institutionHint: 'Start typing to display potentially matching institutions.'
+      },
+      step5: {
+        title: 'Areas of Interest or Expertise',
+        info: 'Please indicate your areas of expertise by selecting from the pre-defined list or adding keywords.',
+        noneSelected: '(None Selected)',
+        noneDefined: '(None Defined)',
+        selectBtn: 'Select Personal Classifications',
+        editKeywordsBtn: 'Edit Personal Keywords',
+        requiredNote: 'Select 1+ Classifications',
+        finalInfo: 'After successful registration, additional details can be added via the "Update My Information" page.'
+      }
+    },
+    about: {
+      title: 'About the Submission System',
+      description: 'This module is dedicated to manuscript submission, peer review, and editorial workflows.'
+    },
+    feedback: {
+      title: 'Feedback',
+      tabs: {
+        submit: 'Submit Feedback',
+        my: 'My Feedback',
+        all: 'All Feedback (Editor)'
+      },
+      form: {
+        type: 'Feedback Type',
+        title: 'Title (Required, ≤50 chars)',
+        description: 'Detailed Description (Required, ≥20 chars)',
+        attachments: 'Attachments (Max 3, JPG/PNG/PDF, ≤5MB each)',
+        contact: 'Contact Email',
+        placeholder: {
+          title: 'Brief summary',
+          description: 'Describe your issue or suggestion...'
+        },
+        types: {
+          suggestion: 'Feature Suggestion',
+          bug: 'Bug Report',
+          question: 'Usage Question',
+          others: 'Others'
+        }
+      },
+      alert: {
+        maxFiles: 'Maximum 3 files allowed',
+        fileSize: 'Some files exceed 5MB limit',
+        success: 'Feedback submitted. We will reply within 2 business days. ID: {id}'
+      }
+    },
+    help: {
+      title: 'Help Center',
+      search: 'Search for help...',
+      searchBtn: 'Search',
+      categories: {
+        dashboard: 'Dashboard',
+        manuscripts: 'Manuscripts',
+        reviewers: 'Reviewers',
+        decisions: 'Decisions & Letters',
+        profile: 'Profile & Settings',
+        manual: 'Operation Manual'
+      },
+      favorites: 'My Favorites',
+      noFavorites: 'No favorites yet.',
+      noArticles: 'No articles found in this category.',
+      faq: 'Frequently Asked Questions',
+      removeFav: 'Remove'
+    }
+  },
+  auth: {
+    adminLogin: {
+      title: {
+        admin: 'Editor Portal Login',
+        reviewer: 'Reviewer Dashboard Login',
+        writer: 'Writer Dashboard Login',
+        default: 'Admin Portal Login'
+      },
+      username: 'Username',
+      password: 'Password',
+      rememberMe: 'Remember Me',
+      role: 'Role',
+      selectRole: 'Select Role',
+      roles: {
+        admin: 'Administrator',
+        editor: 'Editor',
+        reviewer: 'Reviewer',
+        writer: 'Writer'
+      },
+      loginBtn: 'Login',
+      noAccount: "Don't have an account?",
+      registerNow: 'Register Now',
+      backToHome: 'Back to Home',
+      error: {
+        required: 'Please enter username and password',
+        authorized: 'You are only authorized to access the [{role} Dashboard]',
+        failed: 'Login failed, please try again later'
+      }
+    },
+    register: {
+      title: 'Create Account',
+      subtitle: 'Join our academic community',
+      desc: 'Submit your research and participate in the peer review process.',
+      usernameLabel: 'Username',
+      usernamePlaceholder: 'Enter your username',
+      emailLabel: 'Email',
+      emailPlaceholder: 'Enter your email',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Enter your password',
+      confirmPasswordLabel: 'Confirm Password',
+      confirmPasswordPlaceholder: 'Confirm your password',
+      error: {
+        emailFormat: 'Invalid email format',
+        passwordLength: 'Password must be at least 6 characters',
+        passwordMatch: 'Passwords do not match'
       }
     }
   },
+  dashboard: {
+    roles: {
+      admin: 'Editor Workspace',
+      editor: 'Editor Workspace',
+      associate_editor: 'Associate Editor Workspace',
+      editorial_assistant: 'Editorial Assistant Workspace',
+      advisory_editor: 'Advisory Editor Workspace',
+      default: 'Dashboard'
+    },
+    welcome: 'Welcome, {name}',
+    stats: {
+      totalJournals: 'Total Journals',
+      pendingJournals: 'Pending Journals',
+      totalUsers: 'Total Users',
+      recentSubmissions: 'Recent Submissions',
+      writerRecommendations: 'Writer Recommendations',
+      pendingApproval: 'Pending Approval',
+      avoidanceRequests: 'Avoidance Requests',
+      pendingReview: 'Pending Review'
+    },
+    recentJournals: {
+      title: 'Recent Journals',
+      writer: 'Writer',
+      date: 'Date'
+    }
+  },
   review: {
-    title: 'Peer Review',
+    title: 'Review Form',
     dimensions: {
-      novelty: 'Novelty',
-      scientificMerit: 'Scientific Merit',
-      relevance: 'Clinical/Public Health Relevance',
-      clarity: 'Clarity & Compliance',
-      rigour: 'Methodological Rigour',
+      addressingPreviousConcerns: 'Addressing of Previous Concerns',
+      qualityOfRevisions: 'Quality of Revisions',
+      newIssuesIdentified: 'New Issues Identified',
+      originality: 'Originality',
+      methodology: 'Methodology',
+      ethicalCompliance: 'Ethical Compliance',
+      readability: 'Readability',
+      importance: 'Importance'
     },
     levels: {
       excellent: 'Excellent',
       good: 'Good',
       fair: 'Fair',
-      poor: 'Poor',
+      poor: 'Poor'
+    },
+    comments: {
+      toAuthor: 'Review Comments (To Author)',
+      toEditor: 'Confidential Comments (To Editor)',
+      placeholder: 'Enter your review comments here...'
+    },
+    decision: {
+      label: 'Recommendation',
+      accept: 'Accept',
+      minorRevision: 'Minor Revision',
+      majorRevision: 'Major Revision',
+      reject: 'Reject'
     },
     actions: {
-      accept: 'Accept as is',
-      reviseMinor: 'Revise (Minor)',
-      reviseMajor: 'Revise (Major)',
-      reject: 'Reject',
+      submit: 'Submit Review',
+      cancel: 'Cancel',
+      saveDraft: 'Save Draft'
     },
-    rules: {
-      title: 'Core Review Rules',
-      priority: 'Novelty is the highest priority.',
-      screening: 'Editor Screening (1-3 days): 70-80% rejection rate.',
-      peerReview: 'Peer Review (2-4 weeks): 2-3 reviewers.',
-      rejection: 'Rejection Criteria: Poor novelty, fatal flaws, misconduct.',
-      resubmission: 'Resubmission ban: 6 months for rejected manuscripts.',
+    validation: {
+      required: 'This field is required',
+      selectAllDimensions: 'Please select a rating level for all required review criteria',
+      provideComments: 'Please provide review comments for the author',
+      selectDecision: 'Please select a final recommendation for the manuscript'
     },
-    comparison: {
-      title: 'Differences from Domestic Core Journals',
-      scoring: 'Scoring: Level + Comments (No numerical scores)',
-      efficiency: 'Efficiency: Fast rejection (1 day min), no redundancy',
-      priority: 'Priority: Innovation > Methodology',
-      response: 'Response: Point-by-point response required',
-    },
-    placeholders: {
-      comment: 'Please provide detailed comments...',
-      confidential: 'Confidential comments to editor...',
-    },
-    errors: {
-      noveltyRequired: 'Novelty evaluation is required',
-      commentRequired: 'Comments are required',
-      allDimensionsRequired: 'Please evaluate all dimensions',
-      decisionRequired: 'Please select a recommendation',
+    confirmation: {
+      title: 'Confirm Submission',
+      message: 'Are you sure you want to submit this review? This action cannot be undone, and the review will be immediately available to the editorial team.'
     }
   }
 }

@@ -73,7 +73,7 @@ const viewEvaluation = (reviewer) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user"
@@ -107,7 +107,7 @@ const viewEvaluation = (reviewer) => {
       </div>
 
       <!-- Reviewer List -->
-      <table class="lancet-table">
+      <table class="jp-table">
         <thead>
           <tr>
             <th>Reviewer ID (Blind)</th>
@@ -134,7 +134,7 @@ const viewEvaluation = (reviewer) => {
               </span>
             </td>
             <td class="actions">
-              <button class="btn-red-sm" v-if="r.status === 'unevaluated'" @click="openEvaluation(r)">Evaluate</button>
+              <button class="btn-primary-sm" v-if="r.status === 'unevaluated'" @click="openEvaluation(r)">Evaluate</button>
               <button class="btn-text" v-else @click="viewEvaluation(r)">View Eval</button>
             </td>
           </tr>
@@ -198,7 +198,7 @@ const viewEvaluation = (reviewer) => {
 
         <div class="modal-actions">
           <button class="btn btn-grey" @click="showEvalModal = false">Cancel</button>
-          <button class="btn btn-red" @click="submitEvaluation">Submit Evaluation</button>
+          <button class="btn btn-primary" @click="submitEvaluation">Submit Evaluation</button>
         </div>
       </div>
     </div>
@@ -207,9 +207,9 @@ const viewEvaluation = (reviewer) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
-  background-color: #FFFFFF;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
   min-height: 100vh;
   color: #333333;
 }
@@ -227,16 +227,16 @@ const viewEvaluation = (reviewer) => {
 }
 
 .main-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
   text-transform: uppercase;
 }
 
 .warning-text {
-  font-size: 12px;
-  color: #D1202F;
+  font-size: 14px;
+  color: #d9534f;
   margin-bottom: 20px;
 }
 
@@ -247,59 +247,74 @@ const viewEvaluation = (reviewer) => {
 }
 
 .filter-bar select {
-  padding: 6px 12px;
-  border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  padding: 8px 16px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: inherit;
   min-width: 150px;
 }
 
 /* Table */
-.lancet-table {
+.jp-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
-  padding: 10px;
-  border-bottom: 1px solid #CCC;
-  font-weight: bold;
-  color: #555;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 600;
+  color: #495057;
 }
 
-.lancet-table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #EEE;
+.jp-table td {
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
   vertical-align: middle;
 }
 
 .status-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
   text-transform: uppercase;
 }
-.status-badge.unevaluated { background: #E3F2FD; color: #1565C0; }
-.status-badge.evaluated { background: #E8F5E9; color: #2E7D32; }
-.status-badge.overdue_eval { background: #FFEBEE; color: #C62828; }
+.status-badge.unevaluated { background: #e3f2fd; color: #0d47a1; }
+.status-badge.evaluated { background: #e8f5e9; color: #1b5e20; }
+.status-badge.overdue_eval { background: #ffebee; color: #c62828; }
 
-.btn-red-sm {
-  background: #D1202F;
+.btn-primary-sm {
+  background: #0056B3;
   color: white;
   border: none;
-  padding: 4px 12px;
+  padding: 6px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  transition: background-color 0.2s;
+}
+.btn-primary-sm:hover {
+  background: #004494;
 }
 
 .btn-text {
   background: none;
   border: none;
-  color: #666;
+  color: #0056B3;
   cursor: pointer;
   font-size: 12px;
+  text-decoration: none;
+}
+.btn-text:hover {
   text-decoration: underline;
 }
 
@@ -315,8 +330,8 @@ const viewEvaluation = (reviewer) => {
   width: 600px;
   padding: 30px;
   background: white;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 .rating-grid {
@@ -328,73 +343,90 @@ const viewEvaluation = (reviewer) => {
 
 .rating-item label {
   display: block;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 14px;
   margin-bottom: 5px;
+  color: #495057;
 }
 
 .stars {
-  color: #CCC;
-  font-size: 20px;
+  color: #dee2e6;
+  font-size: 24px;
   cursor: pointer;
   display: inline-block;
 }
 
 .stars span.active {
-  color: #FFC107;
+  color: #ffc107;
 }
 
 .score-display {
   margin-left: 10px;
   font-weight: bold;
-  color: #333;
+  color: #495057;
 }
 
 .grade-preview {
   margin-bottom: 20px;
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .grade-badge {
-  padding: 2px 8px;
-  background: #EEE;
+  padding: 4px 12px;
+  background: #e9ecef;
   border-radius: 4px;
+  margin-left: 10px;
 }
-.grade-badge.S { background: #E8F5E9; color: #2E7D32; }
-.grade-badge.A { background: #E3F2FD; color: #1565C0; }
-.grade-badge.B { background: #FFF3E0; color: #EF6C00; }
-.grade-badge.C { background: #FFEBEE; color: #C62828; }
+.grade-badge.S { background: #e8f5e9; color: #1b5e20; }
+.grade-badge.A { background: #e3f2fd; color: #0d47a1; }
+.grade-badge.B { background: #fff3e0; color: #e65100; }
+.grade-badge.C { background: #ffebee; color: #c62828; }
 
 textarea {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  padding: 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-family: inherit;
   resize: vertical;
 }
 
 .char-count {
   text-align: right;
   font-size: 12px;
-  color: #999;
+  color: #6c757d;
   margin-top: 5px;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .btn {
-  padding: 8px 20px;
+  padding: 8px 24px;
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  transition: all 0.2s;
 }
-.btn-red { background: #D1202F; color: white; }
-.btn-grey { background: #EEE; color: #333; }
+.btn-primary { 
+  background: #0056B3; 
+  color: white; 
+}
+.btn-primary:hover {
+  background: #004494;
+}
+.btn-grey { 
+  background: #e9ecef; 
+  color: #495057; 
+}
+.btn-grey:hover {
+  background: #dee2e6;
+}
 
 </style>

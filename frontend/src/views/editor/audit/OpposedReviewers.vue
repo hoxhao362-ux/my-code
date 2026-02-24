@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { truncateText, wrapText } from '../../../utils/helpers.js'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
@@ -216,7 +217,7 @@ const getStatusText = (status) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user" 
@@ -229,7 +230,7 @@ const getStatusText = (status) => {
       <!-- Header -->
       <div class="page-header">
         <h1 class="main-title">Opposed Reviewers Management</h1>
-        <p class="warning-text">Review and manage reviewers opposed by authors for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
+        <p class="warning-text">Review and manage reviewers opposed by writers for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
         
         <div class="filter-bar">
           <select v-model="selectedStatus">
@@ -265,13 +266,13 @@ const getStatusText = (status) => {
         <button class="btn btn-primary" @click="handleBulkAccept" :disabled="selectedIds.length === 0">
           Bulk Accept (Exclude)
         </button>
-        <button class="btn btn-red" @click="handleBulkReject" :disabled="selectedIds.length === 0">
+        <button class="btn btn-secondary" @click="handleBulkReject" :disabled="selectedIds.length === 0">
           Bulk Reject (Allow)
         </button>
       </div>
 
       <!-- Opposed Reviewers List -->
-      <table class="lancet-table">
+      <table class="jp-table">
         <thead>
           <tr>
             <th style="width: 50px;"></th>
@@ -308,7 +309,7 @@ const getStatusText = (status) => {
               <span class="category-badge">{{ item.reasonType || 'General' }}</span>
             </td>
             <td class="reason-cell" :title="item.opposedReason">
-              {{ item.opposedReason.length > 50 ? item.opposedReason.substring(0, 50) + '...' : item.opposedReason }}
+              {{ wrapText(truncateText(item.opposedReason, 30), 30) }}
             </td>
             <td>
               <span class="status-badge" :class="getStatusClass(item.status)">
@@ -340,7 +341,7 @@ const getStatusText = (status) => {
           <div class="section">
             <h4>Manuscript Information</h4>
             <p><strong>Title:</strong> {{ currentItem?.manuscriptTitle }}</p>
-            <p><strong>Author:</strong> {{ currentItem?.authorName }}</p>
+            <p><strong>Writer:</strong> {{ currentItem?.writerName }}</p>
           </div>
           
           <div class="section">
@@ -389,7 +390,7 @@ const getStatusText = (status) => {
         
         <div class="modal-actions">
           <button class="btn btn-grey" @click="showDetailModal = false">Cancel</button>
-          <button class="btn btn-red" @click="handleReject">Reject (Allow Review)</button>
+          <button class="btn btn-secondary" @click="handleReject">Reject (Allow Review)</button>
           <button class="btn btn-primary" @click="handleAccept">Accept (Exclude Reviewer)</button>
         </div>
       </div>
@@ -399,8 +400,8 @@ const getStatusText = (status) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #FFFFFF;
   min-height: 100vh;
   color: #333333;
@@ -428,7 +429,7 @@ const getStatusText = (status) => {
 
 .warning-text {
   font-size: 12px;
-  color: #D1202F;
+  color: #0056B3;
   margin-bottom: 20px;
 }
 
@@ -444,7 +445,7 @@ const getStatusText = (status) => {
 .search-input {
   padding: 6px 12px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-width: 150px;
   border-radius: 4px;
 }
@@ -472,14 +473,14 @@ const getStatusText = (status) => {
 }
 
 /* Table */
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
   margin-bottom: 30px;
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
   padding: 12px 10px;
   border-bottom: 2px solid #CCC;
@@ -488,7 +489,7 @@ const getStatusText = (status) => {
   background: #f8f9fa;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 15px 10px;
   border-bottom: 1px solid #EEE;
   vertical-align: top;
@@ -511,6 +512,7 @@ const getStatusText = (status) => {
 .reason-cell {
   max-width: 300px;
   color: #555;
+  white-space: pre-line;
 }
 
 .status-badge {
@@ -585,12 +587,12 @@ const getStatusText = (status) => {
 }
 
 .btn-primary {
-  background: #1a365d;
+  background: #0056B3;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #2c5282;
+  background: #004494;
 }
 
 .btn-primary:disabled {
@@ -598,13 +600,13 @@ const getStatusText = (status) => {
   cursor: not-allowed;
 }
 
-.btn-red {
-  background: #D1202F;
+.btn-secondary {
+  background: #6c757d;
   color: white;
 }
 
-.btn-red:hover {
-  background: #b01b27;
+.btn-secondary:hover {
+  background: #5a6268;
 }
 
 .btn-grey {
@@ -661,7 +663,7 @@ const getStatusText = (status) => {
   color: #1a365d;
   font-size: 14px;
   text-transform: uppercase;
-  border-left: 3px solid #D1202F;
+  border-left: 3px solid #0056B3;
   padding-left: 8px;
 }
 
@@ -683,7 +685,7 @@ const getStatusText = (status) => {
   width: 100%;
   padding: 10px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   resize: vertical;
   border-radius: 4px;
 }

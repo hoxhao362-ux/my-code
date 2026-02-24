@@ -28,7 +28,7 @@ const notificationConfig = ref({
     },
     recommendationResult: {
       subject: 'Update on Recommended Reviewer for {{title}}',
-      content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
+      content: 'Dear {{writerName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
     }
   },
   
@@ -423,7 +423,7 @@ const resetConfig = () => {
                     placeholder="请输入邮件内容"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{authorName}}（作者姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
+                    <p>可用变量：{{writerName}}（撰稿人姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
                   </div>
                 </div>
               </div>
