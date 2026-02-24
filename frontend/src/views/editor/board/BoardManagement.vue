@@ -101,7 +101,7 @@ const removeMember = (member) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user"
@@ -118,7 +118,7 @@ const removeMember = (member) => {
       </div>
 
       <!-- Tabs -->
-      <div class="lancet-tabs">
+      <div class="jp-tabs">
         <button 
           v-for="tab in ['members', 'team', 'invitations', 'permissions']" 
           :key="tab"
@@ -134,11 +134,11 @@ const removeMember = (member) => {
       <section v-if="activeTab === 'members'" class="tab-content">
         <div class="section-header">
           <h2>Board Members (Editors)</h2>
-          <button class="btn btn-red" @click="openInviteModal">Nominate New Editor</button>
+          <button class="btn btn-primary" @click="openInviteModal">Nominate New Editor</button>
         </div>
         <p class="info-text">Note: Nomination requires 2 existing board members' consensus. Invite link expires in 7 days.</p>
         
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -156,7 +156,7 @@ const removeMember = (member) => {
               <td><span class="status-dot" :class="m.status.toLowerCase()"></span> {{ m.status }}</td>
               <td class="actions">
                 <button class="btn-text">View Profile</button>
-                <button class="btn-text red">Suspend</button>
+                <button class="btn-text text-danger">Suspend</button>
               </td>
             </tr>
           </tbody>
@@ -167,10 +167,10 @@ const removeMember = (member) => {
       <section v-if="activeTab === 'team'" class="tab-content">
          <div class="section-header">
           <h2>Editorial Team (AE & Staff)</h2>
-          <button class="btn btn-red" @click="openInviteModal">Appoint New Member</button>
+          <button class="btn btn-primary" @click="openInviteModal">Appoint New Member</button>
         </div>
         
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -190,7 +190,7 @@ const removeMember = (member) => {
               <td><span class="status-dot" :class="m.status.toLowerCase()"></span> {{ m.status }}</td>
               <td class="actions">
                 <button class="btn-text">Edit Rights</button>
-                <button class="btn-text red" @click="removeMember(m)">Remove</button>
+                <button class="btn-text text-danger" @click="removeMember(m)">Remove</button>
               </td>
             </tr>
           </tbody>
@@ -204,7 +204,7 @@ const removeMember = (member) => {
         </div>
         <p class="info-text">All invitations are tracked. Expired links are automatically invalidated.</p>
 
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Type</th>
@@ -320,7 +320,7 @@ const removeMember = (member) => {
 
         <div class="modal-actions">
           <button class="btn btn-grey" @click="showInviteModal = false">Cancel</button>
-          <button class="btn btn-red" @click="sendInvitation">Generate Invite Link</button>
+          <button class="btn btn-primary" @click="sendInvitation">Generate Invite Link</button>
         </div>
       </div>
     </div>
@@ -329,9 +329,9 @@ const removeMember = (member) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
-  background-color: #FFFFFF;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
   min-height: 100vh;
   color: #333333;
 }
@@ -361,38 +361,33 @@ const removeMember = (member) => {
 
 .sub-caption {
   font-size: 14px;
-  color: #D1202F;
+  color: #dc3545;
   font-style: italic;
 }
 
 /* Tabs */
-.lancet-tabs {
+.jp-tabs {
   display: flex;
-  justify-content: center;
   gap: 10px;
   margin-bottom: 30px;
-  border-bottom: 2px solid #EEE;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
 }
 
 .tab-btn {
   background: none;
   border: none;
   padding: 10px 20px;
-  font-family: 'Times New Roman';
   font-size: 16px;
-  color: #666;
   cursor: pointer;
+  color: #666;
   border-bottom: 3px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab-btn:hover {
-  color: #333;
+  transition: all 0.3s;
 }
 
 .tab-btn.active {
-  color: #D1202F;
-  border-bottom-color: #D1202F;
+  color: #0056B3;
+  border-bottom: 3px solid #0056B3;
   font-weight: bold;
 }
 
@@ -420,26 +415,40 @@ const removeMember = (member) => {
   border-left: 3px solid #999;
 }
 
-/* Table */
-.lancet-table {
+/* Tables */
+.jp-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-top: 20px;
 }
 
-.lancet-table th {
+.jp-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  padding: 12px 16px;
   text-align: left;
-  padding: 12px 10px;
-  border-bottom: 1px solid #999;
-  font-weight: bold;
-  color: #333;
-  background: #F5F5F5;
+  border-bottom: 2px solid #e9ecef;
 }
 
-.lancet-table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #EEE;
-  vertical-align: middle;
+.jp-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+  color: #333;
+}
+
+.jp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.jp-table tr:hover {
+  background-color: #f8f9fa;
 }
 
 .bold-text { font-weight: bold; }
@@ -452,7 +461,7 @@ const removeMember = (member) => {
   margin-right: 5px;
 }
 .status-dot.active { background: #2E7D32; }
-.status-dot.removed { background: #D1202F; }
+.status-dot.removed { background: #dc3545; }
 
 .status-badge {
   padding: 2px 6px;
@@ -480,7 +489,7 @@ const removeMember = (member) => {
 .perm-card h3 {
   margin-top: 0;
   font-size: 16px;
-  color: #D1202F;
+  color: #0056B3;
   border-bottom: 1px solid #DDD;
   padding-bottom: 10px;
   margin-bottom: 15px;
@@ -513,18 +522,23 @@ const removeMember = (member) => {
   text-decoration: underline;
   font-size: 12px;
 }
-.btn-text.red { color: #D1202F; }
+.btn-text.text-danger { color: #dc3545; }
 .btn-text:hover { color: #000; }
 
-.btn {
+/* Buttons */
+.btn-primary {
+  background: #0056B3;
+  color: white;
+  border: none;
   padding: 8px 16px;
   border-radius: 4px;
-  border: none;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 13px;
+  font-weight: 600;
 }
-.btn-red { background: #D1202F; color: white; }
+
+.btn-primary:hover {
+  background: #004494;
+}
 .btn-grey { background: #EEE; color: #333; }
 
 /* Modal */
@@ -541,7 +555,7 @@ const removeMember = (member) => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .modal-box h3 { margin-top: 0; margin-bottom: 5px; color: #333; }
-.modal-subtitle { font-size: 12px; color: #D1202F; margin-bottom: 20px; }
+.modal-subtitle { font-size: 12px; color: #dc3545; margin-bottom: 20px; }
 
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
@@ -549,7 +563,7 @@ const removeMember = (member) => {
   width: 100%;
   padding: 8px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .modal-actions {

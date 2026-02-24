@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from '../../composables/useI18n'
 import { useUserStore } from '../../stores/user'
 import ActionModal from '../../components/admin/manuscript/actions/ActionModal.vue'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
@@ -185,7 +187,7 @@ const handleBatchAction = (type) => {
       // Check pending count > 0
       const pendingReviewers = selectedReviewerObjects.filter(r => r.pendingCount > 0)
       if (pendingReviewers.length === 0) {
-        alert("No pending tasks for selected reviewers.")
+        alert(t('editor.reviewers.alerts.noPending'))
         return
       }
       if (pendingReviewers.length < selectedReviewerObjects.length) {
@@ -195,14 +197,14 @@ const handleBatchAction = (type) => {
     } else if (type === 'mark_active') {
       const inactiveReviewers = selectedReviewerObjects.filter(r => r.status !== 'Active')
       if (inactiveReviewers.length === 0) {
-        alert("Selected reviewers are already active.")
+        alert(t('editor.reviewers.alerts.alreadyActive'))
         return
       }
       currentActionType.value = 'batch_mark_active'
     } else if (type === 'mark_inactive') {
       const activeReviewers = selectedReviewerObjects.filter(r => r.status === 'Active')
       if (activeReviewers.length === 0) {
-        alert("Selected reviewers are already inactive.")
+        alert(t('editor.reviewers.alerts.alreadyInactive'))
         return
       }
       currentActionType.value = 'batch_mark_inactive'
@@ -214,8 +216,8 @@ const handleBatchAction = (type) => {
 
   if (type === 'mark_inactive') {
     // Sensitive Action: Mark Inactive
-    verificationAction.value = 'Batch Suspend Reviewers'
-    verificationTarget.value = `${selectedReviewerObjects.length} Reviewers`
+    verificationAction.value = t('editor.reviewers.batch.markInactive')
+    verificationTarget.value = `${selectedReviewerObjects.length} ${t('editor.reviewers.title').split(' ')[0]}` // "Reviewers"
     pendingCallback.value = proceed
     showVerification.value = true
   } else {
@@ -228,30 +230,30 @@ const handleModalSubmit = ({ type, data }) => {
   // Update local state based on action
   if (type === 'cancel_invitation' && currentReviewer.value) {
      // Mock update
-     alert(`Invitation cancelled for ${currentReviewer.value.name}`)
+     alert(t('editor.reviewers.alerts.invitationCancelled', { name: currentReviewer.value.name }))
   } else if (type === 'invite_reviewer') {
-     alert(`Invitation sent to ${currentReviewer.value.name}`)
+     alert(t('editor.reviewers.alerts.invitationSent', { name: currentReviewer.value.name }))
   } else if (type === 'replace_reviewer') {
-     alert(`Reviewer replaced for ${currentReviewer.value.name}`)
+     alert(t('editor.reviewers.alerts.replaced', { name: currentReviewer.value.name }))
   } else if (type === 'batch_mark_active') {
     selectedReviewers.value.forEach(id => {
        const r = reviewers.value.find(rv => rv.id === id)
        if (r) r.status = 'Active'
     })
+    alert(t('editor.reviewers.alerts.batchActive'))
     selectedReviewers.value = []
-    alert("Batch marked as Active")
   } else if (type === 'batch_mark_inactive') {
     selectedReviewers.value.forEach(id => {
        const r = reviewers.value.find(rv => rv.id === id)
        if (r) r.status = 'Inactive'
     })
+    alert(t('editor.reviewers.alerts.batchInactive'))
     selectedReviewers.value = []
-    alert("Batch marked as Inactive")
   } else if (type === 'batch_invite') {
-    alert("Batch invitations sent")
+    alert(t('editor.reviewers.alerts.batchInvited'))
     selectedReviewers.value = []
   } else if (type === 'batch_remind') {
-    alert("Batch reminders sent")
+    alert(t('editor.reviewers.alerts.batchReminded'))
     selectedReviewers.value = []
   }
   // ... handle others
@@ -278,37 +280,37 @@ const selectAll = (e) => {
 <template>
   <div class="reviewer-page">
     <div class="page-header">
-      <h2>Reviewer Management Module</h2>
-      <div class="role-badge">Current Role: {{ user?.role }}</div>
+      <h2>{{ t('editor.reviewers.title') }}</h2>
+      <div class="role-badge">{{ t('editor.reviewers.currentRole') }}: {{ user?.role }}</div>
     </div>
 
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filters">
         <select v-model="filter.field" class="filter-select" :disabled="isReadOnly || canManageOwnField">
-          <option value="">All Fields</option>
+          <option value="">{{ t('editor.reviewers.filter.allFields') }}</option>
           <option v-for="f in uniqueFields" :key="f" :value="f">{{ f }}</option>
         </select>
         <select v-model="filter.status" class="filter-select" :disabled="isReadOnly">
-          <option value="">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
+          <option value="">{{ t('editor.reviewers.filter.allStatus') }}</option>
+          <option value="Active">{{ t('editor.reviewers.filter.active') }}</option>
+          <option value="Inactive">{{ t('editor.reviewers.filter.inactive') }}</option>
         </select>
         <select v-model="filter.performance" class="filter-select" :disabled="isReadOnly">
-           <option value="">Performance</option>
-           <option value="high">High Completion (>10)</option>
+           <option value="">{{ t('editor.reviewers.filter.performance') }}</option>
+           <option value="high">{{ t('editor.reviewers.filter.highCompletion') }}</option>
         </select>
       </div>
 
       <!-- Batch Operations (Editor Only) -->
       <div v-if="canManageAll" class="batch-actions">
         <div class="dropdown">
-          <button class="batch-btn" @click="toggleBatchDropdown($event)">Batch Operations ▼</button>
+          <button class="batch-btn" @click="toggleBatchDropdown($event)">{{ t('editor.reviewers.batch.operations') }} ▼</button>
           <div class="dropdown-content" v-if="showBatchDropdown">
-            <a @click="handleBatchAction('invite'); showBatchDropdown = false">Batch Invite</a>
-            <a @click="handleBatchAction('remind'); showBatchDropdown = false">Batch Remind</a>
-            <a @click="handleBatchAction('mark_active'); showBatchDropdown = false">Mark as Active</a>
-            <a @click="handleBatchAction('mark_inactive'); showBatchDropdown = false">Mark as Inactive</a>
+            <a @click="handleBatchAction('invite'); showBatchDropdown = false">{{ t('editor.reviewers.batch.invite') }}</a>
+            <a @click="handleBatchAction('remind'); showBatchDropdown = false">{{ t('editor.reviewers.batch.remind') }}</a>
+            <a @click="handleBatchAction('mark_active'); showBatchDropdown = false">{{ t('editor.reviewers.batch.markActive') }}</a>
+            <a @click="handleBatchAction('mark_inactive'); showBatchDropdown = false">{{ t('editor.reviewers.batch.markInactive') }}</a>
           </div>
         </div>
       </div>
@@ -319,12 +321,18 @@ const selectAll = (e) => {
       <table class="reviewer-table">
         <thead>
           <tr>
-            <th v-if="canManageAll"><input type="checkbox" @change="selectAll"></th>
-            <th>Name / Email</th>
-            <th>Field</th>
-            <th>Metrics</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th v-if="canManageAll">
+              <input 
+                type="checkbox" 
+                :checked="filteredReviewers.length > 0 && selectedReviewers.length === filteredReviewers.length"
+                @change="selectAll"
+              >
+            </th>
+            <th>{{ t('editor.reviewers.columns.nameEmail') }}</th>
+            <th>{{ t('editor.reviewers.columns.field') }}</th>
+            <th>{{ t('editor.reviewers.columns.metrics') }}</th>
+            <th>{{ t('editor.reviewers.columns.status') }}</th>
+            <th>{{ t('editor.reviewers.columns.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -339,9 +347,9 @@ const selectAll = (e) => {
             <td><span class="tag field">{{ rev.field }}</span></td>
             <td>
               <div class="metrics">
-                <span title="Completed Reviews">✅ {{ rev.completedReviews }}</span>
-                <span title="Avg Turnaround">⏱️ {{ rev.avgTurnaround }}</span>
-                <span title="Rejection Rate">🚫 {{ rev.rejectionRate }}</span>
+                <span :title="t('editor.reviewers.metrics.completed')">✅ {{ rev.completedReviews }}</span>
+                <span :title="t('editor.reviewers.metrics.turnaround')">⏱️ {{ rev.avgTurnaround }}</span>
+                <span :title="t('editor.reviewers.metrics.rejectionRate')">🚫 {{ rev.rejectionRate }}</span>
               </div>
             </td>
             <td>
@@ -350,21 +358,21 @@ const selectAll = (e) => {
             <td class="actions-cell">
               <!-- EA/AE View Only -->
               <template v-if="isReadOnly">
-                 <button class="btn-link" @click="openModal('view_history', rev)">View History</button>
+                 <button class="btn-link" @click="openModal('view_history', rev)">{{ t('editor.reviewers.actions.viewHistory') }}</button>
               </template>
 
               <!-- Editor/AE Actions -->
               <template v-else>
                 <div class="btn-group">
-                   <button class="btn-primary-sm" @click="openModal('invite_reviewer', rev)">Invite</button>
-                   <button v-if="rev.pendingCount > 0" class="btn-warning-sm" @click="openModal('remind_reviewer', rev)">Remind</button>
-                   <button v-if="rev.pendingCount > 0" class="btn-danger-sm" @click="openModal('replace_reviewer', rev)">Replace</button>
-                   <button class="btn-text" @click="openModal('cancel_invitation', rev)">Cancel</button>
+                   <button class="btn-primary-sm" @click="openModal('invite_reviewer', rev)">{{ t('editor.reviewers.actions.invite') }}</button>
+                   <button v-if="rev.pendingCount > 0" class="btn-warning-sm" @click="openModal('remind_reviewer', rev)">{{ t('editor.reviewers.actions.remind') }}</button>
+                   <button v-if="rev.pendingCount > 0" class="btn-danger-sm" @click="openModal('replace_reviewer', rev)">{{ t('editor.reviewers.actions.replace') }}</button>
+                   <button class="btn-text" @click="openModal('cancel_invitation', rev)">{{ t('editor.reviewers.actions.cancel') }}</button>
                    <div class="dropdown-action">
                       <span class="dots" @click="toggleActionDropdown($event, rev.id)">•••</span>
                       <div class="dropdown-menu" v-if="showActionDropdowns[rev.id]">
-                         <a @click="openModal('add_note', rev); showActionDropdowns[rev.id] = false">Add Note</a>
-                         <a @click="openModal('view_history', rev); showActionDropdowns[rev.id] = false">View History</a>
+                         <a @click="openModal('add_note', rev); showActionDropdowns[rev.id] = false">{{ t('editor.reviewers.actions.addNote') }}</a>
+                         <a @click="openModal('view_history', rev); showActionDropdowns[rev.id] = false">{{ t('editor.reviewers.actions.viewHistory') }}</a>
                       </div>
                    </div>
                 </div>

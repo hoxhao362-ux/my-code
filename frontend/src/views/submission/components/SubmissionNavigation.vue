@@ -38,12 +38,12 @@ const handleLogout = () => {
   <nav class="submission-navbar">
     <div class="nav-container">
       <div class="nav-left">
-        <span class="brand">Journal Submission Platform</span>
+        <span class="brand">{{ t('submission.welcome.platform') }}</span>
       </div>
       
       <div class="nav-right">
         <span v-if="user" class="user-info">
-          {{ user.username }} | <a href="#" @click.prevent="handleLogout" class="logout-link">Logout</a>
+          {{ user.username }} | <a href="#" @click.prevent="handleLogout" class="logout-link">{{ t('submission.nav.logout') }}</a>
         </span>
       </div>
     </div>
@@ -51,20 +51,20 @@ const handleLogout = () => {
     <div class="nav-menu-bar">
       <div class="menu-container">
         <ul class="menu-list">
-          <li class="menu-item"><a href="#" @click.prevent="goHome">Home</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/admin/writer-dashboard' }"><a href="#" @click.prevent="goMainMenu">Main Menu</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/submission/writer/submit' }"><a href="#" @click.prevent="goSubmit">Submit a Manuscript</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/writer/letters' }"><a href="#" @click.prevent="router.push('/writer/letters')">Letters</a></li>
+          <li class="menu-item"><a href="#" @click.prevent="goHome">{{ t('submission.nav.home') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/admin/writer-dashboard' }"><a href="#" @click.prevent="goMainMenu">{{ t('submission.nav.mainMenu') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/submission/writer/submit' }"><a href="#" @click.prevent="goSubmit">{{ t('submission.nav.submitManuscript') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/writer/letters' }"><a href="#" @click.prevent="router.push('/writer/letters')">{{ t('submission.nav.letters') }}</a></li>
           
           <!-- About Dropdown -->
           <li class="menu-item dropdown" 
               @mouseenter="showAboutMenu = true" 
               @mouseleave="showAboutMenu = false">
-            <a href="#">About ▼</a>
+            <a href="#">{{ t('submission.nav.about') }} ▼</a>
             <ul class="dropdown-menu" v-if="showAboutMenu">
-              <li><a href="#" @click.prevent="router.push('/about/editorial-board')">Editorial Board</a></li>
-              <li><a href="#" @click.prevent="router.push('/about/journal-info')">Journal Info</a></li>
-              <li><a href="#" @click.prevent="router.push('/about/history')">History</a></li>
+              <li><a href="#" @click.prevent="router.push('/about/editorial-board')">{{ t('submission.nav.editorialBoard') }}</a></li>
+              <li><a href="#" @click.prevent="router.push('/about/journal-info')">{{ t('submission.nav.journalInfo') }}</a></li>
+              <li><a href="#" @click.prevent="router.push('/about/history')">{{ t('submission.nav.history') }}</a></li>
             </ul>
           </li>
 
@@ -72,11 +72,11 @@ const handleLogout = () => {
           <li class="menu-item dropdown" 
               @mouseenter="showHelpMenu = true" 
               @mouseleave="showHelpMenu = false">
-            <a href="#">Help ▼</a>
+            <a href="#">{{ t('submission.nav.help') }} ▼</a>
             <ul class="dropdown-menu" v-if="showHelpMenu">
-              <li><a href="#" @click.prevent="router.push('/submission/help')">Help Center</a></li>
-              <li><a href="#" @click.prevent="router.push('/submission/submission-rules')">Submission Rules</a></li>
-              <li><a href="#" @click.prevent="router.push('/admin/help/feedback')">Feedback</a></li>
+              <li><a href="#" @click.prevent="router.push('/submission/help')">{{ t('submission.nav.helpCenter') }}</a></li>
+              <li><a href="#" @click.prevent="router.push('/submission/submission-rules')">{{ t('submission.nav.submissionRules') }}</a></li>
+              <li><a href="#" @click.prevent="router.push('/admin/help/feedback')">{{ t('submission.nav.feedback') }}</a></li>
             </ul>
           </li>
         </ul>

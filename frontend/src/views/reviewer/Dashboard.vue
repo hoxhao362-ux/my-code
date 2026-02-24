@@ -3,12 +3,27 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import { useI18n } from '../../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
 let pollingInterval = null
+
+// Status Helpers
+const getStatusLabel = (status) => {
+  const map = {
+    'Under Review': 'under_review',
+    'Re-review': 're_review',
+    'Pending Initial Review': 'pending_initial_review',
+    'under_peer_review': 'under_peer_review',
+    'pending_initial_review': 'pending_initial_review'
+  }
+  const key = map[status] || status
+  return t(`status.${key}`)
+}
 
 // Access Control & Polling
 onMounted(() => {
@@ -50,30 +65,69 @@ const isOverdue = (date) => {
   return today > dueDate
 }
 
+// Helper to check if user is assigned
+const isAssigned = (j) => {
+  return !j.assignedReviewers || j.assignedReviewers.length === 0 || 
+         j.assignedReviewers.some(r => {
+           if (typeof r === 'string') {
+             return r === user.value.username || r.includes(user.value.username)
+           } else if (typeof r === 'object' && r !== null) {
+             return r.name === user.value.username || 
+                    r.id === user.value.username ||
+                    String(r.id) === String(user.value.id)
+           }
+           return false
+         })
+}
+
+// Helper to check if user has reviewed
+const hasReviewed = (j, isRevisionStage) => {
+  const reviews = j.reviewHistory || j.reviews || []
+  if (isRevisionStage) {
+    // For re-review: check if there's a review in current Re-review stage
+    return reviews.some(r => 
+      r.reviewer === user.value.username && 
+      (r.stage === 'Re-review' || r.stage === '复审')
+    )
+  } else {
+    // For normal review: check any review by this user
+    return reviews.some(r => r.reviewer === user.value.username)
+  }
+}
+
 // Stats Logic
 const pendingReviews = computed(() => {
-  // Status '审稿中' (Under Review), not Re-review, not overdue
-  return userStore.journals.filter(j => 
-    j.status === '审稿中' && 
-    j.reviewStage !== '复审' && 
-    !isOverdue(j.date)
-  )
+  // Status 'under_peer_review' or 'Under Review', not Re-review, not overdue, assigned, not reviewed
+  return userStore.journals.filter(j => {
+    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
+    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
+           !isRevisionStage && 
+           !isOverdue(j.date) &&
+           isAssigned(j) &&
+           !hasReviewed(j, false)
+  })
 })
 
 const pendingReReviews = computed(() => {
-  // Status '审稿中' and Stage '复审' (Re-review)
-  return userStore.journals.filter(j => 
-    j.status === '审稿中' && 
-    j.reviewStage === '复审' && 
-    !isOverdue(j.date)
-  )
+  // Status 'under_peer_review' or 'Under Review', Stage 'Re-review' or '复审', not overdue, assigned, not reviewed in current stage
+  return userStore.journals.filter(j => {
+    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
+    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
+           isRevisionStage && 
+           !isOverdue(j.date) &&
+           isAssigned(j) &&
+           !hasReviewed(j, true)
+  })
 })
 
 const overdueReviews = computed(() => {
-  return userStore.journals.filter(j => 
-    j.status === '审稿中' && 
-    isOverdue(j.date)
-  )
+  return userStore.journals.filter(j => {
+    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
+    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
+           isOverdue(j.date) &&
+           isAssigned(j) &&
+           !hasReviewed(j, isRevisionStage)
+  })
 })
 
 // Mock Data for Invitations and Announcements
@@ -126,17 +180,17 @@ const viewAnnouncement = (id) => {
       <section class="dashboard-section stats-section">
         <div class="stat-card" @click="viewAllAssignments('pending')">
           <div class="stat-value">{{ pendingReviews.length }}</div>
-          <div class="stat-label">Pending Reviews</div>
+          <div class="stat-label">{{ t('reviewerDashboard.stats.pendingReviews') }}</div>
         </div>
         
         <div class="stat-card" @click="viewAllAssignments('re-reviews')">
           <div class="stat-value">{{ pendingReReviews.length }}</div>
-          <div class="stat-label">Pending Re-reviews</div>
+          <div class="stat-label">{{ t('reviewerDashboard.stats.pendingReReviews') }}</div>
         </div>
         
         <div class="stat-card overdue" @click="viewAllAssignments('overdue')">
           <div class="stat-value text-red">{{ overdueReviews.length }}</div>
-          <div class="stat-label">Overdue Reviews</div>
+          <div class="stat-label">{{ t('reviewerDashboard.stats.overdueReviews') }}</div>
         </div>
       </section>
 
@@ -147,14 +201,14 @@ const viewAnnouncement = (id) => {
         <div class="column-module" @click="clearDot">
           <div class="module-header">
             <h2 class="module-title">
-              Latest Invitations ({{ latestInvitations.length }})
+              {{ t('reviewerDashboard.invitations.title') }} ({{ latestInvitations.length }})
               <span v-if="hasNewInvitations" class="notification-dot"></span>
             </h2>
-            <a href="#" class="view-all-link" @click.prevent="viewInvitations">View All</a>
+            <a href="#" class="view-all-link" @click.prevent="viewInvitations">{{ t('reviewerDashboard.invitations.viewAll') }}</a>
           </div>
           <div class="module-content">
             <div v-if="latestInvitations.length === 0" class="empty-state">
-              No new invitations.
+              {{ t('reviewerDashboard.invitations.empty') }}
             </div>
             <div v-else class="invitation-list">
               <div v-for="inv in latestInvitations" :key="inv.id" class="invitation-item">
@@ -169,7 +223,7 @@ const viewAnnouncement = (id) => {
         <!-- Module 3: System Announcements -->
         <div class="column-module">
           <div class="module-header">
-            <h2 class="module-title">System Announcements</h2>
+            <h2 class="module-title">{{ t('reviewerDashboard.announcements.title') }}</h2>
             <!-- No right action button as per spec -->
           </div>
           <div class="module-content">

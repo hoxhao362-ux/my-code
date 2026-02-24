@@ -5,7 +5,9 @@ import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
 import Navigation from '../components/Navigation.vue'
 import { stripHtmlTags } from '../utils/helpers'
+import { useI18n } from '../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
 const route = useRoute()
@@ -28,14 +30,99 @@ const toggleDirectory = () => {
 
 // 获取当前期刊详情
 const journal = computed(() => {
-  return userStore.journals.find(j => {
+  const found = userStore.journals.find(j => {
     // 转换id类型为字符串进行比较，解决类型不匹配问题
     return String(j.id) === String(journalId.value)
   })
+  
+  if (!found) return null
+  
+  // 为新稿件提供默认值，确保详情页能正常显示
+  return {
+    // 基础信息
+    id: found.id,
+    title: found.title || 'Untitled Manuscript',
+    author: found.author || found.writer || 'Unknown Author',
+    writer: found.writer || found.author || 'Unknown Author',
+    date: found.date || found.submissionDate || new Date().toISOString().split('T')[0],
+    status: found.status || 'pending_initial_review',
+    module: found.module || 'Others',
+    
+    // 期刊元数据（新稿件可能没有）
+    volume: found.volume || 'X',
+    issue: found.issue || 'X',
+    pages: found.pages || 'X-X',
+    articleType: found.articleType || 'Original Article',
+    doi: found.doi || '10.1234/jsp.2026.xxxx',
+    doiUrl: found.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx',
+    onlineDate: found.onlineDate || found.publicationDate || found.date || 'Pending',
+    
+    // 作者信息
+    correspondingAuthor: found.correspondingAuthor || null,
+    affiliations: found.affiliations || null,
+    
+    // 摘要和关键词
+    abstract: found.abstract || 'No abstract available.',
+    keywords: found.keywords || [],
+    
+    // 结构化摘要字段
+    background: found.background || null,
+    methods: found.methods || null,
+    findings: found.findings || null,
+    interpretation: found.interpretation || null,
+    funding: found.funding || 'None',
+    
+    // 正文内容
+    introduction: found.introduction || null,
+    methodsDetail: found.methodsDetail || null,
+    results: found.results || null,
+    discussion: found.discussion || null,
+    content: found.content || null,
+    
+    // 文末声明
+    authorContributions: found.authorContributions || null,
+    declarationOfInterests: found.declarationOfInterests || 'None declared.',
+    dataSharing: found.dataSharing || 'Data sharing not applicable.',
+    acknowledgments: found.acknowledgments || null,
+    fundingDetail: found.fundingDetail || found.funding || 'None',
+    references: found.references || null,
+    
+    // 附件
+    attachments: found.attachments || [],
+    
+    // 审核历史
+    reviewHistory: found.reviewHistory || found.reviews || [],
+    
+    // 其他字段
+    viewCount: found.viewCount || 0,
+    reviewStage: found.reviewStage || 'Initial Review',
+    submissionDate: found.submissionDate || found.date || new Date().toISOString().split('T')[0],
+    ...found
+  }
 })
 
 // 获取当前用户
 const user = computed(() => userStore.user)
+
+// 处理关键词列表（支持字符串和数组格式）
+const keywordsList = computed(() => {
+  if (!journal.value) return []
+  const keywords = journal.value.keywords
+  if (!keywords) return []
+  if (Array.isArray(keywords)) {
+    return keywords.filter(k => k && k.trim())
+  }
+  if (typeof keywords === 'string') {
+    return keywords.split(',').map(k => k.trim()).filter(k => k)
+  }
+  return []
+})
+
+// 判断是否有结构化摘要
+const hasStructuredAbstract = computed(() => {
+  if (!journal.value) return false
+  return !!(journal.value.background || journal.value.methods || journal.value.findings || journal.value.interpretation)
+})
 
 // Blind Review Logic (Mock)
 const isBlindReview = ref(true)
@@ -61,7 +148,7 @@ const previewAttachment = (attachment) => {
               <!DOCTYPE html>
               <html>
               <head>
-                <title>预览：${attachment.name}</title>
+                <title>${t('preview.title', { name: attachment.name })}</title>
                 <style>
                   * {
                     margin: 0;
@@ -207,17 +294,17 @@ const previewAttachment = (attachment) => {
                 <div class="preview-header">
                   <div class="preview-title">${attachment.name}</div>
                   <div class="header-actions">
-                    <button class="btn btn-primary" onclick="downloadFile()">下载文件</button>
-                    <button class="btn btn-secondary" onclick="closePreview()">关闭预览</button>
+                    <button class="btn btn-primary" onclick="downloadFile()">${t('preview.download')}</button>
+                    <button class="btn btn-secondary" onclick="closePreview()">${t('preview.close')}</button>
                   </div>
                 </div>
                 <div class="preview-container">
                   <div id="preview-content" class="preview-content">
-                    <div class="loading">正在加载预览...</div>
+                    <div class="loading">${t('preview.loading')}</div>
                   </div>
                 </div>
                 <div class="file-info">
-                  文件类型: ${fileExtension.substring(1).toUpperCase()} | 大小: ${formatFileSize(attachment.size)}
+                  ${t('preview.fileType')}: ${fileExtension.substring(1).toUpperCase()} | ${t('preview.size')}: ${formatFileSize(attachment.size)}
                 </div>
                 <script>
                   // 格式化文件大小
@@ -262,7 +349,7 @@ const previewAttachment = (attachment) => {
                       
                       // 添加加载错误处理
                       object.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">PDF预览失败，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.pdfError')}</div>';
                       };
                       
                       contentDiv.appendChild(object);
@@ -274,7 +361,7 @@ const previewAttachment = (attachment) => {
                         console.log('图片加载完成');
                       };
                       img.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">图片预览失败，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.imgError')}</div>';
                       };
                       contentDiv.appendChild(img);
                     } else if (fileType === '.txt') {
@@ -288,7 +375,7 @@ const previewAttachment = (attachment) => {
                         })
                         .catch(error => {
                           console.error('文本加载失败:', error);
-                          contentDiv.innerHTML = '<div class="loading">文本预览失败，建议直接下载查看</div>';
+                          contentDiv.innerHTML = '<div class="loading">${t('preview.txtError')}</div>';
                         });
                     } else {
                       // 其他文档类型，尝试使用object标签预览
@@ -298,7 +385,7 @@ const previewAttachment = (attachment) => {
                       object.style.height = '100%';
                       
                       object.onerror = function() {
-                        contentDiv.innerHTML = '<div class="loading">该文件类型无法预览，建议直接下载查看</div>';
+                        contentDiv.innerHTML = '<div class="loading">${t('preview.unsupported')}</div>';
                       };
                       
                       contentDiv.appendChild(object);
@@ -400,18 +487,18 @@ onMounted(() => {
       <header class="journal-header">
         <div class="header-info">
           <div class="journal-info">
-            <span class="journal-name">Journal Platform</span> | 
-            <span class="volume-issue">Volume {{ journal.volume || 'X' }}, Issue {{ journal.issue || 'X' }}</span> | 
+            <span class="journal-name">{{ t('nav.logo') }}</span> | 
+            <span class="volume-issue">{{ t('journalDetail.header.volume') }} {{ journal.volume || 'X' }}, {{ t('journalDetail.header.issue') }} {{ journal.issue || 'X' }}</span> | 
             <span class="date-year">{{ journal.date || 'Date, Year' }}</span> | 
-            <span class="pages">Pages {{ journal.pages || 'X–X' }}</span>
+            <span class="pages">{{ t('journalDetail.header.pages') }} {{ journal.pages || 'X–X' }}</span>
           </div>
           <div class="article-meta">
             <span class="article-type">{{ journal.articleType || 'Original Article' }}</span> | 
-            <span class="doi">DOI: {{ journal.doi || '10.1016/S0140-6736(XX)XXXX-X' }}</span>
+            <span class="doi">DOI: {{ journal.doi || '10.1234/jsp.2026.xxxx' }}</span>
           </div>
           <div class="online-date">
-            Published Online: {{ journal.onlineDate || 'Month Day, Year' }} | 
-            <a :href="journal.doiUrl || 'https://doi.org/XXXX'" target="_blank">{{ journal.doiUrl || 'https://doi.org/XXXX' }}</a>
+            {{ t('journalDetail.header.publishedOnline') }}: {{ journal.onlineDate || 'Month Day, Year' }} | 
+            <a :href="journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx'" target="_blank">{{ journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx' }}</a>
           </div>
         </div>
       </header>
@@ -419,9 +506,9 @@ onMounted(() => {
       <!-- Floating Action Box -->
       <div class="floating-actions">
         <button class="btn-float btn-download" @click="handleDownloadPDF">
-          Download PDF
+          {{ t('journalDetail.actions.downloadPdf') }}
         </button>
-        <a href="#" class="link-cite" @click.prevent="handleCite">Cite This Article</a>
+        <a href="#" class="link-cite" @click.prevent="handleCite">{{ t('journalDetail.actions.cite') }}</a>
       </div>
 
       <!-- 标题区 -->
@@ -431,10 +518,10 @@ onMounted(() => {
           <span class="authors">{{ journal.author }}</span>
         </div>
         <div class="corresponding-author" v-if="journal.correspondingAuthor">
-          *Correspondence to: {{ journal.correspondingAuthor }}
+          *{{ t('journalDetail.header.correspondence') }}: {{ journal.correspondingAuthor }}
         </div>
         <div class="author-affiliations" v-if="journal.affiliations">
-          <h3>Affiliations</h3>
+          <h3>{{ t('journalDetail.header.affiliations') }}</h3>
           <div class="affiliation-list">
             <span v-for="(affiliation, index) in journal.affiliations" :key="index" class="affiliation-item">
               {{ index + 1 }}: {{ affiliation }}
@@ -445,32 +532,37 @@ onMounted(() => {
 
       <!-- 摘要区 -->
       <section class="abstract-section">
-        <h2 class="section-title">Abstract</h2>
-        <div class="structured-abstract">
-          <div class="abstract-item">
-            <strong>Background:</strong> {{ journal.background || '1-2 sentences about research background and unsolved problem.' }}
+        <h2 class="section-title">{{ t('journalDetail.sections.abstract') }}</h2>
+        <!-- 如果有结构化摘要字段，显示结构化摘要 -->
+        <div class="structured-abstract" v-if="hasStructuredAbstract">
+          <div class="abstract-item" v-if="journal.background">
+            <strong>{{ t('journalDetail.abstract.background') }}:</strong> {{ journal.background }}
+          </div>
+          <div class="abstract-item" v-if="journal.methods">
+            <strong>{{ t('journalDetail.abstract.methods') }}:</strong> {{ journal.methods }}
+          </div>
+          <div class="abstract-item" v-if="journal.findings">
+            <strong>{{ t('journalDetail.abstract.findings') }}:</strong> {{ journal.findings }}
+          </div>
+          <div class="abstract-item" v-if="journal.interpretation">
+            <strong>{{ t('journalDetail.abstract.interpretation') }}:</strong> {{ journal.interpretation }}
           </div>
           <div class="abstract-item">
-            <strong>Methods:</strong> {{ journal.methods || '1-2 sentences about study design, population, interventions, and statistical methods.' }}
+            <strong>{{ t('journalDetail.abstract.funding') }}:</strong> {{ journal.funding || 'None' }}
           </div>
-          <div class="abstract-item">
-            <strong>Findings:</strong> {{ journal.findings || '2-3 sentences about main results with effect sizes and 95% CI.' }}
-          </div>
-          <div class="abstract-item">
-            <strong>Interpretation:</strong> {{ journal.interpretation || '1 sentence about clinical/academic significance of results.' }}
-          </div>
-          <div class="abstract-item">
-            <strong>Funding:</strong> {{ journal.funding || 'None' }}
-          </div>
+        </div>
+        <!-- 否则显示简单摘要 -->
+        <div class="simple-abstract" v-else>
+          <div class="abstract-content" v-html="journal.abstract || 'No abstract available.'"></div>
         </div>
       </section>
 
       <!-- 关键词 -->
-      <section class="keywords-section">
-        <h2 class="section-title">Keywords</h2>
+      <section class="keywords-section" v-if="keywordsList.length > 0">
+        <h2 class="section-title">{{ t('journalDetail.sections.keywords') }}</h2>
         <div class="keywords-list">
           <span 
-            v-for="(keyword, index) in journal.keywords.split(',').map(k => k.trim())" 
+            v-for="(keyword, index) in keywordsList" 
             :key="index" 
             class="keyword-tag"
           >
@@ -481,64 +573,72 @@ onMounted(() => {
 
       <!-- 正文结构 -->
       <section class="main-text">
-        <h2 class="section-title">Main Text</h2>
+        <h2 class="section-title">{{ t('journalDetail.sections.mainText') }}</h2>
         
-        <!-- Introduction -->
-        <div class="text-section">
-          <h3 class="section-subtitle">Introduction</h3>
-          <div class="section-content" v-html="journal.introduction || '<p>Background → Research gap → Research objective</p>'"></div>
+        <!-- 如果有简单内容字段，直接显示 -->
+        <div v-if="journal.content" class="text-section">
+          <div class="section-content content-body" v-html="journal.content"></div>
         </div>
         
-        <!-- Methods -->
-        <div class="text-section">
-          <h3 class="section-subtitle">Methods</h3>
-          <div class="section-content" v-html="journal.methodsDetail || '<p>Study design → Participants → Interventions → Outcomes → Statistical analyses → Ethical approval</p>'"></div>
-        </div>
-        
-        <!-- Results -->
-        <div class="text-section">
-          <h3 class="section-subtitle">Results</h3>
-          <div class="section-content" v-html="journal.results || '<p>Baseline characteristics → Primary outcomes → Secondary outcomes → Safety → Subgroup analyses (if applicable)</p>'"></div>
-        </div>
-        
-        <!-- Discussion -->
-        <div class="text-section">
-          <h3 class="section-subtitle">Discussion</h3>
-          <div class="section-content" v-html="journal.discussion || '<p>Core findings → Comparison with previous research → Strengths and limitations → Practice/policy implications → Conclusion</p>'"></div>
-        </div>
+        <!-- 否则显示结构化正文 -->
+        <template v-else>
+          <!-- Introduction -->
+          <div class="text-section" v-if="journal.introduction">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.introduction') }}</h3>
+            <div class="section-content" v-html="journal.introduction"></div>
+          </div>
+          
+          <!-- Methods -->
+          <div class="text-section" v-if="journal.methodsDetail">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.methods') }}</h3>
+            <div class="section-content" v-html="journal.methodsDetail"></div>
+          </div>
+          
+          <!-- Results -->
+          <div class="text-section" v-if="journal.results">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.results') }}</h3>
+            <div class="section-content" v-html="journal.results"></div>
+          </div>
+          
+          <!-- Discussion -->
+          <div class="text-section" v-if="journal.discussion">
+            <h3 class="section-subtitle">{{ t('journalDetail.mainText.discussion') }}</h3>
+            <div class="section-content" v-html="journal.discussion"></div>
+          </div>
+        </template>
       </section>
 
       <!-- 文末声明 -->
       <section class="end-matter">
-        <h2 class="section-title">End Matter</h2>
+        <h2 class="section-title">{{ t('journalDetail.sections.endMatter') }}</h2>
         
         <div class="end-section">
-          <h3 class="section-subtitle">Authors' contributions</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.contributions') }}</h3>
           <p>{{ journal.authorContributions || "Authors' contributions not specified." }}</p>
         </div>
         
         <div class="end-section">
-          <h3 class="section-subtitle">Declaration of interests</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.interests') }}</h3>
           <p>{{ journal.declarationOfInterests || "None declared." }}</p>
         </div>
         
         <div class="end-section">
-          <h3 class="section-subtitle">Data sharing</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.dataSharing') }}</h3>
           <p>{{ journal.dataSharing || "Data sharing not applicable." }}</p>
         </div>
         
         <div class="end-section">
-          <h3 class="section-subtitle">Acknowledgments</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.acknowledgments') }}</h3>
           <p>{{ journal.acknowledgments || "Acknowledgments not specified." }}</p>
         </div>
         
         <div class="end-section">
-          <h3 class="section-subtitle">Funding</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.funding') }}</h3>
           <p>{{ journal.fundingDetail || journal.funding || "None" }}</p>
         </div>
         
         <div class="end-section">
-          <h3 class="section-subtitle">References</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.references') }}</h3>
           <div class="references-list">
             <p>{{ journal.references || "References not specified." }}</p>
           </div>
@@ -546,9 +646,9 @@ onMounted(() => {
         
         <!-- Supplementary Materials -->
         <div class="end-section" v-if="hasAttachments">
-          <h3 class="section-subtitle">Supplementary Materials</h3>
+          <h3 class="section-subtitle">{{ t('journalDetail.endMatter.supplementary') }}</h3>
           <a href="#" class="link-supp" @click.prevent="previewAttachment(journal.attachments[0])">
-            View Supplementary Materials
+            {{ t('journalDetail.actions.viewSupplementary') }}
           </a>
         </div>
       </section>
@@ -556,8 +656,8 @@ onMounted(() => {
       <!-- 审核历史记录卡片 -->
       <section class="journal-review-history" v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
         <h2 class="section-title">
-          Review History
-          <span v-if="isBlindReview" class="blind-badge">Blind Review - Reviewer Identity Anonymous</span>
+          {{ t('journalDetail.sections.reviewHistory') }}
+          <span v-if="isBlindReview" class="blind-badge">{{ t('journalDetail.reviewHistory.blindBadge') }}</span>
         </h2>
         <div class="review-history-list">
           <div 
@@ -570,12 +670,12 @@ onMounted(() => {
               <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
               <span class="review-date">{{ record.date }}</span>
               <span class="reviewer" v-if="isBlindReview">
-                (Reviewer {{ index + 1 }} - [Anonymized])
+                ({{ t('journalDetail.reviewHistory.reviewer') }} {{ index + 1 }} - [{{ t('journalDetail.reviewHistory.anonymized') }}])
               </span>
               <span class="reviewer" v-else>({{ record.reviewer }})</span>
             </div>
             <div class="review-comment" v-if="record.comment">
-              <div v-if="isBlindReview" class="comment-content" v-html="record.comment.replace(/Reviewer Name/g, '[Anonymized]')"></div>
+              <div v-if="isBlindReview" class="comment-content" v-html="record.comment.replace(/Reviewer Name/g, `[${t('journalDetail.reviewHistory.anonymized')}]`)"></div>
               <div v-else class="comment-content">{{ record.comment }}</div>
             </div>
           </div>
@@ -586,9 +686,9 @@ onMounted(() => {
     <div v-else class="no-journal card">
       <div class="no-journal-content">
         <div class="no-journal-icon">📄</div>
-        <h2>Article Not Found</h2>
-        <p>Sorry, the article you are looking for does not exist or has been deleted</p>
-        <button class="back-btn" @click="goBack">Back</button>
+        <h2>{{ t('journalDetail.notFound.title') }}</h2>
+        <p>{{ t('journalDetail.notFound.message') }}</p>
+        <button class="back-btn" @click="goBack">{{ t('journalDetail.notFound.back') }}</button>
       </div>
     </div>
   </div>
@@ -934,7 +1034,7 @@ onMounted(() => {
 .journal-title {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #333333; /* Lancet Dark Grey */
+  color: #333333; /* Journal Platform Dark Grey */
   margin: 0 0 1.5rem 0;
   line-height: 1.3;
   letter-spacing: -0.5px;
@@ -1269,7 +1369,7 @@ onMounted(() => {
 
 .abstract-content {
   font-size: 1.15rem;
-  line-height: 1.6; /* Lancet spec */
+  line-height: 1.6; /* Journal Platform spec */
   color: #555; /* Light grey */
   text-align: justify;
   background: transparent; /* No background */
@@ -1311,9 +1411,9 @@ onMounted(() => {
 /* 正文样式 */
 .journal-content {
   margin-bottom: 0;
-  line-height: 1.6; /* Lancet spec */
+  line-height: 1.6; /* Journal Platform spec */
   color: #333;
-  font-size: 14px; /* Lancet spec */
+  font-size: 14px; /* Journal Platform spec */
 }
 
 .content-body {

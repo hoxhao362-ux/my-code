@@ -281,7 +281,7 @@ const handleSuccessConfirm = () => {
   font-weight: 600;
   color: #333;
   margin-bottom: 24px;
-  font-family: 'Georgia', serif; /* Lancet style font preference */
+  font-family: 'Segoe UI', sans-serif; /* Journal Platform style font preference */
 }
 
 .sidebar-info p, .sidebar-info li {
@@ -329,14 +329,14 @@ const handleSuccessConfirm = () => {
   width: 100%;
   padding: 12px;
   border: 1px solid #ccc;
-  border-radius: 2px; /* Sharper corners like Lancet */
+  border-radius: 4px; /* Standard corners like Journal Platform */
   font-size: 15px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .form-group input:focus {
-  border-color: #005696; /* Lancet Blue */
+  border-color: #0056B3; /* Journal Platform Blue */
 }
 
 /* Error Styles */
@@ -375,7 +375,7 @@ const handleSuccessConfirm = () => {
 
 .btn-submit {
   padding: 12px 28px;
-  background-color: #005696; /* Lancet Blue */
+  background-color: #0056B3; /* Journal Platform Blue */
   color: white;
   border: none;
   border-radius: 2px;

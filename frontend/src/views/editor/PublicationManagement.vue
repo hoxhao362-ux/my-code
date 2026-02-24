@@ -52,7 +52,7 @@ const goToPublicationProcess = (manuscriptId) => {
             <p>Submitted: {{ manuscript.submissionDate }}</p>
           </div>
           <div class="manuscript-actions">
-            <button class="btn btn-red">Manage Publication</button>
+            <button class="btn btn-primary">Manage Publication</button>
           </div>
         </div>
       </div>
@@ -68,6 +68,7 @@ const goToPublicationProcess = (manuscriptId) => {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .publication-management .page-header {
@@ -114,7 +115,7 @@ const goToPublicationProcess = (manuscriptId) => {
 .manuscript-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  border-color: #C93737;
+  border-color: #0056B3;
 }
 
 .manuscript-card-header {
@@ -173,12 +174,12 @@ const goToPublicationProcess = (manuscriptId) => {
   transition: background-color 0.3s ease;
 }
 
-.btn-red {
-  background: #C93737;
+.btn-primary {
+  background: #0056B3;
   color: white;
 }
 
-.btn-red:hover {
-  background: #B02E2E;
+.btn-primary:hover {
+  background: #004494;
 }
 </style>

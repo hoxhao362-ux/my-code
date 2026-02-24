@@ -1,3 +1,24 @@
+<script setup>
+import { ref, computed } from 'vue'
+import { useUserStore } from '../../stores/user'
+import Navigation from '../../components/Navigation.vue'
+import { useI18n } from '../../composables/useI18n'
+
+const userStore = useUserStore()
+const user = computed(() => userStore.user)
+const showToast = ref(false)
+const { t } = useI18n()
+
+const copyISSN = () => {
+  navigator.clipboard.writeText("XXXX-XXXX (Print), XXXX-XXXX (Online)").then(() => {
+    showToast.value = true
+    setTimeout(() => {
+      showToast.value = false
+    }, 3000)
+  })
+}
+</script>
+
 <template>
   <div class="page-container">
     <Navigation 
@@ -8,90 +29,70 @@
     
     <div class="content-area">
       <div class="header-section">
-        <h1>Journal Info (ISSN)</h1>
+        <h1>{{ t('about.journalInfo.title') }}</h1>
         <button class="copy-btn" @click="copyISSN">
-          Copy ISSN
+          {{ t('about.journalInfo.copyISSN') }}
         </button>
       </div>
 
       <div class="info-block">
-        <h2>Basic Information</h2>
+        <h2>{{ t('about.journalInfo.basicInfo') }}</h2>
         <div class="info-row">
-          <span class="label">ISSN (Print):</span>
-          <span class="value">0140-6736</span>
+          <span class="label">{{ t('about.journalInfo.issnPrint') }}:</span>
+          <span class="value">XXXX-XXXX</span>
         </div>
         <div class="info-row">
-          <span class="label">ISSN (Online):</span>
-          <span class="value">1474-547X</span>
+          <span class="label">{{ t('about.journalInfo.issnOnline') }}:</span>
+          <span class="value">XXXX-XXXX</span>
         </div>
         <div class="info-row">
-          <span class="label">Founded:</span>
-          <span class="value">1823</span>
+          <span class="label">{{ t('about.journalInfo.founded') }}:</span>
+          <span class="value">2024</span>
         </div>
         <div class="info-row">
-          <span class="label">Frequency:</span>
-          <span class="value">Weekly</span>
+          <span class="label">{{ t('about.journalInfo.frequency') }}:</span>
+          <span class="value">Monthly</span>
         </div>
         <div class="info-row">
-          <span class="label">Impact Factor (2025):</span>
-          <a href="#" class="link-value">168.9 (Click to view JCR)</a>
+          <span class="label">{{ t('about.journalInfo.impactFactor') }}:</span>
+          <a href="#" class="link-value">{{ t('about.journalInfo.newJournal') }}</a>
         </div>
         <div class="info-row">
-          <span class="label">Indexed In:</span>
+          <span class="label">{{ t('about.journalInfo.indexedIn') }}:</span>
           <div class="databases">
-            <a href="#" class="db-link">PubMed</a>
-            <a href="#" class="db-link">Scopus</a>
-            <a href="#" class="db-link">Web of Science</a>
+            <a href="#" class="db-link">Google Scholar</a>
+            <a href="#" class="db-link">DOAJ</a>
           </div>
         </div>
       </div>
 
       <div class="info-block">
-        <h2>Aims & Scope</h2>
-        <p>The Lancet publishes medical news, original research, and reviews on all aspects of clinical medicine and public health. We are committed to using science to improve human lives.</p>
+        <h2>{{ t('about.journalInfo.aimsScope') }}</h2>
+        <p>{{ t('about.journalInfo.aimsScopeText') }}</p>
       </div>
 
       <div class="info-block">
-        <h2>Copyright & Open Access</h2>
-        <p>Authors retain copyright under a Creative Commons Attribution (CC-BY) license. We offer Gold Open Access options for all accepted articles.</p>
+        <h2>{{ t('about.journalInfo.copyright') }}</h2>
+        <p>{{ t('about.journalInfo.copyrightText') }}</p>
       </div>
 
       <div class="info-block">
-        <h2>Publication Ethics</h2>
-        <p>We adhere to the COPE (Committee on Publication Ethics) guidelines. All manuscripts must comply with ethical standards for human and animal research.</p>
+        <h2>{{ t('about.journalInfo.ethics') }}</h2>
+        <p>{{ t('about.journalInfo.ethicsText') }}</p>
       </div>
 
       <div class="info-block">
-        <h2>Contact Support</h2>
-        <p>For technical issues: <a href="mailto:support@thelancet.com" class="link-text">support@thelancet.com</a></p>
-        <p>For submission queries: <a href="mailto:editorial@thelancet.com" class="link-text">editorial@thelancet.com</a></p>
+        <h2>{{ t('about.journalInfo.contact') }}</h2>
+        <p>{{ t('about.journalInfo.technicalIssues') }} <a href="mailto:support@journalplatform.com" class="link-text">support@journalplatform.com</a></p>
+        <p>{{ t('about.journalInfo.submissionQueries') }} <a href="mailto:editorial@journalplatform.com" class="link-text">editorial@journalplatform.com</a></p>
       </div>
     </div>
 
     <div v-if="showToast" class="toast">
-      ISSN copied to clipboard.
+      {{ t('about.journalInfo.copied') }}
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, computed } from 'vue'
-import { useUserStore } from '../../stores/user'
-import Navigation from '../../components/Navigation.vue'
-
-const userStore = useUserStore()
-const user = computed(() => userStore.user)
-const showToast = ref(false)
-
-const copyISSN = () => {
-  navigator.clipboard.writeText("0140-6736 (Print), 1474-547X (Online)").then(() => {
-    showToast.value = true
-    setTimeout(() => {
-      showToast.value = false
-    }, 3000)
-  })
-}
-</script>
 
 <style scoped>
 .page-container {

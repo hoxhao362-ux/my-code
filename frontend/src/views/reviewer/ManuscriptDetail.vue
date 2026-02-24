@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +46,14 @@ const daysOverdue = computed(() => {
 
 const isReadonly = computed(() => {
   if (!journal.value || !journal.value.reviewHistory) return false
+  // For re-review, only check if user has reviewed in current Re-review stage
+  // For normal review, check if user has any review
+  if (isRevision.value) {
+    return journal.value.reviewHistory.some(r => 
+      r.reviewer === user.value.username && 
+      (r.stage === 'Re-review' || r.stage === '复审')
+    )
+  }
   return journal.value.reviewHistory.some(r => r.reviewer === user.value.username)
 })
 
@@ -75,7 +84,7 @@ const initialReviewData = computed(() => {
 })
 
 // Check if this is a revision (Re-review)
-const isRevision = computed(() => journal.value && journal.value.reviewStage === '复审')
+const isRevision = computed(() => journal.value && (journal.value.reviewStage === '复审' || journal.value.reviewStage === 'Re-review'))
 
 // Blind Review Logic
 const isBlindReview = ref(true)
@@ -181,20 +190,20 @@ const confirmSubmit = () => {
   
   // If no assigned reviewers information, assume single reviewer setup
   // Mark as review_completed when:
-  // 1. There are assigned reviewers and all have completed (uniqueReviewers.length >= totalAssignedReviewers)
-  // 2. No assigned reviewers information and at least one reviewer has completed
+  //1. There are assigned reviewers and all have completed (uniqueReviewers.length >= totalAssignedReviewers)
+  //2. No assigned reviewers information and at least one reviewer has completed
   if (updatedJournal.assignedReviewers) {
     if (uniqueReviewers.length >= totalAssignedReviewers) {
       // All assigned reviewers have completed
-      updatedJournal.status = 'review_completed'
+      updatedJournal.status = MANUSCRIPT_STATUS.REVIEW_COMPLETED
     } else {
       // Still waiting for other reviewers
-      updatedJournal.status = 'under_peer_review'
+      updatedJournal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
     }
   } else {
     // Single reviewer setup or no assigned reviewers info
     // Mark as completed once any reviewer submits
-    updatedJournal.status = 'review_completed'
+    updatedJournal.status = MANUSCRIPT_STATUS.REVIEW_COMPLETED
   }
 
   userStore.updateJournal(updatedJournal)
@@ -519,10 +528,31 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
              <div v-else v-for="(rec, idx) in journal.reviewHistory" :key="idx" class="history-item">
                <div class="history-date">{{ rec.date }}</div>
                <div class="history-content">
-                 <strong>{{ rec.stage }} - {{ rec.status }}</strong>
-                 <p v-if="rec.comment">{{ rec.comment }}</p>
-                 <div v-if="rec.decision" class="decision-tag">{{ rec.decision }}</div>
-                 <div v-if="rec.file" class="file-tag">📎 {{ rec.file }}</div>
+                 <!-- Reviewer Record -->
+                 <template v-if="rec.reviewer">
+                   <strong>{{ rec.stage }} - {{ rec.status }}</strong>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                   <div v-if="rec.decision" class="decision-tag">Decision: {{ rec.decision }}</div>
+                   <div v-if="rec.ratings" class="ratings-block">
+                     <div v-for="(score, dim) in rec.ratings" :key="dim" class="rating-item">
+                       <span class="dim-label">{{ dim }}:</span>
+                       <span class="dim-score">{{ score }}</span>
+                     </div>
+                   </div>
+                   <div v-if="rec.file" class="file-tag">📎 {{ rec.file }}</div>
+                 </template>
+                 <!-- Editor Record -->
+                 <template v-else-if="rec.actor">
+                   <strong>{{ rec.actor }}</strong>
+                   <span class="action-tag">{{ rec.action }}</span>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                 </template>
+                 <!-- Legacy Record -->
+                 <template v-else>
+                   <strong>{{ rec.stage || 'Review' }} - {{ rec.status }}</strong>
+                   <p v-if="rec.comment" class="history-comment">{{ rec.comment }}</p>
+                   <div v-if="rec.decision" class="decision-tag">Decision: {{ rec.decision }}</div>
+                 </template>
                </div>
              </div>
           </div>
@@ -912,6 +942,54 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
   color: #27ae60;
   font-size: 0.85rem;
   margin-top: 0.25rem;
+}
+
+.action-tag {
+  display: inline-block;
+  background: #3498db;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+.history-comment {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.ratings-block {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f0f8ff;
+  border-radius: 4px;
+}
+
+.rating-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #ddd;
+}
+
+.rating-item:last-child {
+  border-bottom: none;
+}
+
+.dim-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.dim-score {
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .no-data {

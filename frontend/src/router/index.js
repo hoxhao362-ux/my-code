@@ -201,7 +201,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     ...mainRoutes,
-    ...adminRoutes
+    ...adminRoutes,
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFound.vue') }
   ]
 })
 

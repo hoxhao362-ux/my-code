@@ -44,12 +44,14 @@ const isProcessing = (status) => [
 ].includes(status)
 
 const isUnderReview = (status) => [
+  MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
   MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
-  MANUSCRIPT_STATUS.REVISION_SUBMITTED // Include submitted revisions in processing view if needed, or separate
+  MANUSCRIPT_STATUS.REVIEW_COMPLETED
 ].includes(status)
 
 const isWaitingApproval = (status) => [
-  'Awaiting Author Approval' // Placeholder as per requirement (0 if not found)
+  MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
+  MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
 ].includes(status)
 
 const isNeedingRevision = (status) => [
@@ -71,7 +73,6 @@ const isDecisionMade = (status) => {
 }
 
 const isInProduction = (status) => [
-  MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
   MANUSCRIPT_STATUS.PENDING_COPYRIGHT,
   MANUSCRIPT_STATUS.PENDING_PROOF,
   MANUSCRIPT_STATUS.PENDING_PUBLICATION,
@@ -165,7 +166,7 @@ const selectedItemLabel = computed(() => {
 })
 
 const getAuthorStatusLabel = (manuscript) => {
-  // Lancet Standard: Submitted status includes ID
+  // Journal Platform Standard: Submitted status includes ID
   if (manuscript.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW) {
     return `Submitted (Manuscript ID: ${manuscript.id})`
   }

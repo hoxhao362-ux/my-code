@@ -5,7 +5,10 @@ import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import { useI18n } from '../../composables/useI18n'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
@@ -41,7 +44,7 @@ const handleFileUpload = (event) => {
     // 检查文件大小（限制10MB）
     const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      error.value = '文件大小不能超过10MB'
+      error.value = t('submit.validation.fileSize')
       return
     }
     
@@ -49,7 +52,7 @@ const handleFileUpload = (event) => {
     const allowedTypes = ['.doc', '.docx', '.pdf', '.txt']
     const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
     if (!allowedTypes.includes(fileExtension)) {
-      error.value = '只支持上传.doc, .docx, .pdf, .txt文件'
+      error.value = t('submit.validation.fileType')
       return
     }
     
@@ -100,7 +103,7 @@ const previewAttachment = (attachment) => {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>预览：${attachment.name}</title>
+            <title>${t('preview.title', { name: attachment.name })}</title>
             <style>
               * {
                 margin: 0;
@@ -246,17 +249,17 @@ const previewAttachment = (attachment) => {
             <div class="preview-header">
               <div class="preview-title">${attachment.name}</div>
               <div class="header-actions">
-                <button class="btn btn-primary" onclick="downloadFile()">下载文件</button>
-                <button class="btn btn-secondary" onclick="closePreview()">关闭预览</button>
+                <button class="btn btn-primary" onclick="downloadFile()">${t('preview.download')}</button>
+                <button class="btn btn-secondary" onclick="closePreview()">${t('preview.close')}</button>
               </div>
             </div>
             <div class="preview-container">
               <div id="preview-content" class="preview-content">
-                <div class="loading">正在加载预览...</div>
+                <div class="loading">${t('preview.loading')}</div>
               </div>
             </div>
             <div class="file-info">
-              文件类型: ${fileExtension.substring(1).toUpperCase()} | 大小: ${formatFileSize(attachment.size)}
+              ${t('preview.fileType')}: ${fileExtension.substring(1).toUpperCase()} | ${t('preview.size')}: ${formatFileSize(attachment.size)}
             </div>
             <script>
               // 格式化文件大小
@@ -301,7 +304,7 @@ const previewAttachment = (attachment) => {
                   
                   // 添加加载错误处理
                   object.onerror = function() {
-                    contentDiv.innerHTML = '<div class="loading">PDF预览失败，建议直接下载查看</div>';
+                    contentDiv.innerHTML = '<div class="loading">${t('preview.pdfError')}</div>';
                   };
                   
                   contentDiv.appendChild(object);
@@ -310,25 +313,25 @@ const previewAttachment = (attachment) => {
                   const img = document.createElement('img');
                   img.src = fileUrl;
                   img.onload = function() {
-                    console.log('图片加载完成');
+                    console.log('Image loaded');
                   };
                   img.onerror = function() {
-                    contentDiv.innerHTML = '<div class="loading">图片预览失败，建议直接下载查看</div>';
+                    contentDiv.innerHTML = '<div class="loading">${t('preview.imgError')}</div>';
                   };
                   contentDiv.appendChild(img);
                 } else if (fileType === '.txt') {
                   // 文本文件预览
                   fetch(fileUrl)
-                    .then(response => response.text())
-                    .then(text => {
-                      const pre = document.createElement('pre');
-                      pre.textContent = text;
-                      contentDiv.appendChild(pre);
-                    })
-                    .catch(error => {
-                      console.error('文本加载失败:', error);
-                      contentDiv.innerHTML = '<div class="loading">文本预览失败，建议直接下载查看</div>';
-                    });
+                  .then(response => response.text())
+                  .then(text => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = text;
+                    contentDiv.appendChild(pre);
+                  })
+                  .catch(error => {
+                    console.error('Text load failed:', error);
+                    contentDiv.innerHTML = '<div class="loading">${t('preview.txtError')}</div>';
+                  });
                 } else {
                   // 其他文档类型，尝试使用object标签预览
                   const object = document.createElement('object');
@@ -337,7 +340,7 @@ const previewAttachment = (attachment) => {
                   object.style.height = '100%';
                   
                   object.onerror = function() {
-                    contentDiv.innerHTML = '<div class="loading">该文件类型无法预览，建议直接下载查看</div>';
+                    contentDiv.innerHTML = '<div class="loading">${t('preview.unsupported')}</div>';
                   };
                   
                   contentDiv.appendChild(object);
@@ -364,7 +367,7 @@ const previewAttachment = (attachment) => {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>预览：${attachment.name}</title>
+            <title>${t('preview.failedTitle')}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -405,12 +408,12 @@ const previewAttachment = (attachment) => {
           </head>
           <body>
             <div class="error-container">
-              <h1>预览失败</h1>
-              <div class="error">预览链接已失效，您可以重新上传文件或直接下载</div>
+              <h1>${t('preview.failedTitle')}</h1>
+              <div class="error">${t('preview.linkExpired')}</div>
               <br>
-              <a href="${attachment.url || attachment.name}" download="${attachment.name}" class="btn">下载文件</a>
+              <a href="${attachment.url || attachment.name}" download="${attachment.name}" class="btn">${t('preview.download')}</a>
               <br><br>
-              <button class="btn" onclick="window.close()">关闭窗口</button>
+              <button class="btn" onclick="window.close()">${t('preview.close')}</button>
             </div>
           </body>
           </html>
@@ -472,7 +475,7 @@ const handleSubmit = async () => {
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
   if (!hasTitle || !hasWriter || !hasAbstract || (!hasContent && !hasAttachments)) {
-    error.value = '请填写完整的投稿信息，正文和附件至少需要填写一项'
+    error.value = t('submit.validation.required')
     return
   }
   
@@ -494,13 +497,15 @@ const handleSubmit = async () => {
       id: Date.now().toString(),
       title: formData.value.title,
       writer: formData.value.writer,
+      author: formData.value.writer,
       abstract: convertToHTML(formData.value.abstract),
       keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
       content: convertToHTML(formData.value.content),
-      module: formData.value.modules.length > 0 && formData.value.modules.includes('all') ? '其他' : formData.value.modules.filter(m => m !== 'all'),
-      status: '待审核', // 初始状态为待审核
-      reviewStage: '初审', // 初始审稿阶段为初审
+      module: formData.value.modules.length > 0 && formData.value.modules.includes('all') ? 'Others' : formData.value.modules.filter(m => m !== 'all'),
+      status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
+      reviewStage: 'Initial Review',
       date: new Date().toISOString().split('T')[0],
+      submissionDate: new Date().toISOString().split('T')[0],
       viewCount: 0,
       attachments: formData.value.attachments.map(att => ({
         id: att.id,
@@ -515,7 +520,7 @@ const handleSubmit = async () => {
     userStore.addJournal(newJournal)
     
     // 显示成功消息
-    success.value = '投稿成功！您的稿件已提交至审核队列'
+    success.value = t('submit.success')
     
     // 清空表单并跳转
     setTimeout(() => {
@@ -531,7 +536,7 @@ const handleSubmit = async () => {
       router.push('/admin/writer-dashboard')
     }, 2000)
   } catch (err) {
-    error.value = '投稿失败，请稍后重试'
+    error.value = t('submit.error')
   } finally {
     submitting.value = false
   }
@@ -557,68 +562,68 @@ const goBack = () => {
       <div class="submit-form-wrapper">
         <!-- 投稿须知页面 -->
         <template v-if="route.path === '/admin/submission-rules'">
-          <h2 class="submit-title">投稿须知</h2>
+          <h2 class="submit-title">{{ t('submit.title') }}</h2>
           
           <div class="rules-content">
             <div class="rules-section">
-              <h3 class="section-subtitle">格式要求</h3>
+              <h3 class="section-subtitle">{{ t('submit.formatReq') }}</h3>
               <ul class="rules-list">
-                <li><strong>标题格式：</strong>简洁明了，准确反映论文核心内容</li>
-                <li><strong>作者信息：</strong>请填写真实姓名，多个作者之间用逗号分隔，顺序为第一作者、第二作者等</li>
-                <li><strong>摘要要求：</strong>200-500字，概述论文的研究目的、方法、结果和结论</li>
-                <li><strong>关键词：</strong>3-5个，用逗号分隔，反映论文的核心内容</li>
-                <li><strong>正文要求：</strong>请将完整论文作为附件上传，论文应包含引言、方法、结果、讨论和结论等部分，参考文献格式规范</li>
-                <li><strong>附件格式：</strong>支持上传.doc、.docx、.pdf格式的论文文件，单个文件大小不超过10MB</li>
-                <li><strong>附件命名：</strong>建议以"作者姓名-论文标题"格式命名附件，避免使用特殊字符</li>
-                <li><strong>图片要求：</strong>论文中的图片应清晰可读，分辨率不低于300dpi，图片版权归作者所有</li>
+                <li>{{ t('submit.rules.format.title') }}</li>
+                <li>{{ t('submit.rules.format.author') }}</li>
+                <li>{{ t('submit.rules.format.abstract') }}</li>
+                <li>{{ t('submit.rules.format.keywords') }}</li>
+                <li>{{ t('submit.rules.format.content') }}</li>
+                <li>{{ t('submit.rules.format.attachment') }}</li>
+                <li>{{ t('submit.rules.format.naming') }}</li>
+                <li>{{ t('submit.rules.format.images') }}</li>
               </ul>
             </div>
             
             <div class="rules-section">
-              <h3 class="section-subtitle">版权要求</h3>
+              <h3 class="section-subtitle">{{ t('submit.copyrightReq') }}</h3>
               <ul class="rules-list">
-                <li><strong>原创性声明：</strong>投稿者需确保所投论文为原创作品，未在其他期刊或平台发表过</li>
-                <li><strong>版权转让：</strong>论文发表后，版权归期刊投稿平台所有，平台有权对论文进行编辑、修改和传播</li>
-                <li><strong>引用规范：</strong>论文中引用他人成果需注明出处，避免抄袭和剽窃行为</li>
-                <li><strong>保密要求：</strong>涉及国家机密、商业秘密或个人隐私的内容不得投稿</li>
-                <li><strong>法律责任：</strong>投稿者需对论文内容的真实性和合法性负责，如因侵权等问题产生法律纠纷，由投稿者承担全部责任</li>
-                <li><strong>退稿政策：</strong>平台有权根据审稿结果拒绝不符合要求的稿件，退稿后投稿者可自行处理稿件</li>
+                <li>{{ t('submit.rules.copyright.original') }}</li>
+                <li>{{ t('submit.rules.copyright.noplagiarism') }}</li>
+                <li>{{ t('submit.rules.copyright.rights') }}</li>
+                <li>{{ t('submit.rules.copyright.confidential') }}</li>
+                <li>{{ t('submit.rules.copyright.legal') }}</li>
+                <li>{{ t('submit.rules.copyright.rejection') }}</li>
               </ul>
             </div>
             
             <div class="rules-section">
-              <h3 class="section-subtitle">投稿流程</h3>
+              <h3 class="section-subtitle">{{ t('submit.rules.flow.title') }}</h3>
               <ol class="rules-list">
-                <li>登录期刊投稿平台投稿人后台</li>
-                <li>进入在线投稿页面，填写论文基本信息</li>
-                <li>填写论文摘要，概述研究目的、方法、结果和结论</li>
-                <li>上传完整论文附件，支持.doc、.docx、.pdf格式</li>
-                <li>选择论文所属模块，输入关键词</li>
-                <li>提交投稿，系统自动生成投稿ID</li>
-                <li>等待审稿结果，可通过个人中心查看稿件状态</li>
-                <li>根据审稿意见修改论文（如需）</li>
-                <li>论文发表，可在期刊目录中查看</li>
+                <li>{{ t('submit.rules.flow.step1') }}</li>
+                <li>{{ t('submit.rules.flow.step2') }}</li>
+                <li>{{ t('submit.rules.flow.step3') }}</li>
+                <li>{{ t('submit.rules.flow.step4') }}</li>
+                <li>{{ t('submit.rules.flow.step5') }}</li>
+                <li>{{ t('submit.rules.flow.step6') }}</li>
+                <li>{{ t('submit.rules.flow.step7') }}</li>
+                <li>{{ t('submit.rules.flow.step8') }}</li>
+                <li>{{ t('submit.rules.flow.step9') }}</li>
               </ol>
             </div>
             
             <div class="rules-section">
-              <h3 class="section-subtitle">审稿流程</h3>
+              <h3 class="section-subtitle">{{ t('submit.rules.review.title') }}</h3>
               <ol class="rules-list">
-                <li>稿件提交后进入待审核状态</li>
-                <li>系统自动分配到初审阶段</li>
-                <li>审核员进行评审，给出评审意见</li>
-                <li>根据审核结果，稿件进入下一阶段或返回修改</li>
-                <li>最终审核通过后，稿件状态更新为已发表</li>
-                <li>作者可在个人中心查看完整的审核记录</li>
+                <li>{{ t('submit.rules.review.step1') }}</li>
+                <li>{{ t('submit.rules.review.step2') }}</li>
+                <li>{{ t('submit.rules.review.step3') }}</li>
+                <li>{{ t('submit.rules.review.step4') }}</li>
+                <li>{{ t('submit.rules.review.step5') }}</li>
+                <li>{{ t('submit.rules.review.step6') }}</li>
               </ol>
             </div>
             
             <div class="rules-actions">
               <button class="btn btn-primary" @click="router.push('/admin/writer-submit')">
-                开始在线投稿
+                {{ t('submit.actions.start') }}
               </button>
               <button class="btn btn-secondary" @click="goBack">
-                返回个人中心
+                {{ t('submit.actions.back') }}
               </button>
             </div>
           </div>
@@ -626,52 +631,52 @@ const goBack = () => {
         
         <!-- 在线投稿表单 -->
         <template v-else>
-          <h2 class="submit-title">在线投稿</h2>
+          <h2 class="submit-title">{{ t('submit.formTitle') }}</h2>
           
           <div v-if="error" class="alert error">{{ error }}</div>
           <div v-if="success" class="alert success">{{ success }}</div>
           
           <form class="submit-form">
             <div class="form-section">
-              <h3 class="section-subtitle">基本信息</h3>
+              <h3 class="section-subtitle">{{ t('submit.title') }}</h3>
               
               <div class="form-group">
-                <label for="title">论文标题 <span class="required">*</span></label>
+                <label for="title">{{ t('submit.articleTitle') }} <span class="required">*</span></label>
                 <input 
                   type="text" 
                   id="title" 
                   v-model="formData.title" 
-                  placeholder="请输入论文标题"
+                  :placeholder="t('submit.articleTitle')"
                   required
                   :disabled="submitting"
                 />
               </div>
               
               <div class="form-group">
-                <label for="writer">投稿人 <span class="required">*</span></label>
+                <label for="writer">{{ t('submit.author') }} <span class="required">*</span></label>
                 <input 
                   type="text" 
                   id="writer" 
                   v-model="formData.writer" 
-                  placeholder="请输入投稿人姓名"
+                  :placeholder="t('submit.author')"
                   required
                   :disabled="submitting"
                 />
               </div>
               
               <div class="form-group">
-                <label for="keywords">关键词</label>
+                <label for="keywords">{{ t('submit.keywords') }}</label>
                 <input 
                   type="text" 
                   id="keywords" 
                   v-model="formData.keywords" 
-                  placeholder="请输入关键词，用逗号分隔"
+                  :placeholder="t('submit.keywordsPlaceholder')"
                   :disabled="submitting"
                 />
               </div>
               
               <div class="form-group">
-                <label for="modules">所属模块</label>
+                <label for="modules">{{ t('submit.module') }}</label>
                 <div class="module-checkboxes">
                   <label class="module-checkbox">
                     <input 
@@ -682,7 +687,7 @@ const goBack = () => {
                       value="all" 
                       :disabled="submitting"
                     >
-                    <span>全部</span>
+                    <span>{{ t('directory.allModules') }}</span>
                   </label>
                   <label class="module-checkbox" v-for="module in modules" :key="module">
                     <input 
@@ -700,98 +705,60 @@ const goBack = () => {
             </div>
             
             <div class="form-section">
-              <h3 class="section-subtitle">论文内容</h3>
+              <h3 class="section-subtitle">{{ t('submit.content') }}</h3>
               
               <div class="form-group">
-                <label for="abstract">摘要 <span class="required">*</span></label>
+                <label for="abstract">{{ t('submit.abstract') }} <span class="required">*</span></label>
                 <QuillEditor 
                   id="abstract"
                   v-model:content="formData.abstract"
                   contentType="html"
-                  placeholder="请输入论文摘要"
-                  :disabled="submitting"
-                  :options="{
-                    modules: {
-                      toolbar: [
-                        ['bold', 'italic', 'underline'],
-                        [{ 'header': [1, 2, false] }]
-                      ]
-                    }
-                  }"
-                  style="height: 150px;"
-                  required
+                  theme="snow"
+                  toolbar="minimal"
+                  :readOnly="submitting"
                 />
               </div>
               
               <div class="form-group">
-                <label for="content">正文 <span class="required">*</span></label>
-                <textarea 
+                <label for="content">{{ t('submit.content') }}</label>
+                <QuillEditor 
                   id="content"
-                  v-model="formData.content"
-                  placeholder="请输入论文正文"
-                  :disabled="submitting"
-                  style="height: 300px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; font-size: 14px; resize: vertical;"
-                  required
-                ></textarea>
-                
-                <!-- 自定义附件上传按钮 -->
-                <div class="custom-attachment-container">
-                  <button 
-                    type="button"
-                    class="custom-attachment-btn"
-                    @click="triggerFileUpload"
-                    :disabled="submitting"
-                  >
-                    <span class="attachment-icon">📎</span> 上传附件
-                  </button>
+                  v-model:content="formData.content"
+                  contentType="html"
+                  theme="snow"
+                  toolbar="essential"
+                  :readOnly="submitting"
+                />
+              </div>
+              
+              <div class="form-group">
+                <label>{{ t('submit.attachments') }}</label>
+                <div class="file-upload-container">
                   <input 
                     type="file" 
                     id="attachment-upload" 
-                    style="display: none;" 
-                    accept=".doc,.docx,.pdf,.txt" 
-                    @change="handleFileUpload"
+                    class="file-input" 
+                    @change="handleFileUpload" 
+                    accept=".doc,.docx,.pdf,.txt"
                   />
+                  <div class="upload-trigger" @click="triggerFileUpload">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">{{ t('submit.upload') }}</div>
+                    <div class="upload-hint">{{ t('submit.uploadHint') }}</div>
+                  </div>
                 </div>
                 
-                <!-- 附件列表显示 -->
-                <div v-if="formData.attachments && formData.attachments.length > 0" class="attachments-list-container">
-                  <h4 class="attachments-list-title">已上传附件：</h4>
-                  <div class="attachments-list">
-                    <div 
-                      v-for="attachment in formData.attachments" 
-                      :key="attachment.id"
-                      class="attachment-item-display"
-                    >
-                      <div class="attachment-info">
-                        <button 
-                          type="button"
-                          class="attachment-preview-btn"
-                          @click="previewAttachment(attachment)"
-                          :disabled="submitting"
-                        >
-                          <span class="attachment-icon">👁️</span> 预览
-                        </button>
-                        <button 
-                          type="button"
-                          class="attachment-download-btn"
-                          @click="downloadAttachment(attachment)"
-                          :disabled="submitting"
-                        >
-                          <span class="attachment-icon">📥</span> 下载
-                        </button>
-                      </div>
-                      <div class="attachment-details">
-                        <span class="attachment-name">{{ attachment.name }}</span>
-                        <span class="attachment-size">({{ formatFileSize(attachment.size) }})</span>
-                      </div>
-                      <button 
-                        type="button"
-                        class="attachment-delete-btn"
-                        @click="removeAttachment(attachment.id)"
-                        :disabled="submitting"
-                      >
-                        🗑️
-                      </button>
+                <!-- 附件列表 -->
+                <div v-if="formData.attachments.length > 0" class="attachments-list">
+                  <div v-for="attachment in formData.attachments" :key="attachment.id" class="attachment-item">
+                    <div class="attachment-info">
+                      <span class="attachment-icon">📄</span>
+                      <span class="attachment-name">{{ attachment.name }}</span>
+                      <span class="attachment-size">({{ formatFileSize(attachment.size) }})</span>
+                    </div>
+                    <div class="attachment-actions">
+                      <button type="button" class="btn-icon view" @click="previewAttachment(attachment)" :title="t('preview.preview')">👁️</button>
+                      <button type="button" class="btn-icon delete" @click="removeAttachment(attachment.id)" :title="t('common.delete')">🗑️</button>
                     </div>
                   </div>
                 </div>
@@ -799,23 +766,17 @@ const goBack = () => {
             </div>
             
             <div class="form-actions">
-              <button type="button" class="btn btn-secondary" @click="goBack" :disabled="submitting">取消</button>
+              <button type="button" class="btn btn-secondary" @click="goBack" :disabled="submitting">
+                {{ t('common.cancel') }}
+              </button>
               <button type="button" class="btn btn-primary" @click="handleSubmit" :disabled="submitting">
-                <span v-if="submitting">投稿中...</span>
-                <span v-else>提交投稿</span>
+                {{ submitting ? t('submit.submitting') : t('submit.submit') }}
               </button>
             </div>
           </form>
         </template>
       </div>
     </main>
-    
-    <!-- 页脚 -->
-    <footer class="footer">
-      <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
-      </div>
-    </footer>
   </div>
 </template>
 
@@ -824,542 +785,281 @@ const goBack = () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background-color: #f5f7fa;
 }
 
-/* 主内容 */
 .main-content {
   flex: 1;
+  padding: 40px 20px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
   width: 100%;
-  margin-top: 80px; /* 为固定导航栏留出空间 */
 }
 
 .submit-form-wrapper {
   background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 40px;
 }
 
 .submit-title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 2rem;
+  font-size: 24px;
   color: #2c3e50;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #3498db;
+  text-align: center;
 }
 
-/* 提示信息 */
-.alert {
-  padding: 1rem;
-  border-radius: 5px;
-  margin-bottom: 1.5rem;
-  font-weight: 500;
+.rules-content {
+  color: #34495e;
 }
 
-.alert.error {
-  background: #fee;
-  color: #e74c3c;
-  border: 1px solid #fcc;
-}
-
-.alert.success {
-  background: #efe;
-  color: #2ecc71;
-  border: 1px solid #cfc;
-}
-
-/* 表单样式 */
-.submit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-section {
-  margin-bottom: 1rem;
+.rules-section {
+  margin-bottom: 30px;
 }
 
 .section-subtitle {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 18px;
   color: #2c3e50;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #3498db;
-  display: inline-block;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.rules-list {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.rules-list li {
+  margin-bottom: 8px;
+}
+
+.rules-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.submit-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-section {
+  margin-bottom: 30px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 6px;
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  color: #555;
   font-weight: 500;
+  color: #2c3e50;
 }
 
 .required {
   color: #e74c3c;
+  margin-left: 4px;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+input[type="text"],
+select {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 16px;
-  font-family: inherit;
-  transition: all 0.3s ease;
+  padding: 10px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-  outline: none;
+input[type="text"]:focus,
+select:focus {
   border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  outline: none;
 }
 
-.form-group textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.form-group select {
-  cursor: pointer;
-}
-
-.form-group input:disabled,
-.form-group textarea:disabled,
-.form-group select:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-/* 按钮样式 */
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.btn-primary {
-  background: #3498db;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2980b9;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-}
-
-.btn-secondary {
-  background: #95a5a6;
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #7f8c8d;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
-}
-
-/* 页脚 */
-.footer {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem 0;
-  text-align: center;
-  margin-top: auto;
-}
-
-.footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-.footer-content p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-/* 富文本编辑器样式 */
-.ql-container.ql-snow {
-  border-radius: 0 0 5px 5px;
-  border: 1px solid #ddd;
-  min-height: 150px;
-}
-
-.ql-toolbar.ql-snow {
-  border-radius: 5px 5px 0 0;
-  border: 1px solid #ddd;
-  border-bottom: none;
-  background-color: #f8f9fa;
-}
-
-/* 模块多选框样式 */
 .module-checkboxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 15px;
 }
 
 .module-checkbox {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
   cursor: pointer;
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  transition: all 0.3s ease;
+}
+
+.file-upload-container {
+  border: 2px dashed #dcdfe6;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.3s;
   background: white;
 }
 
-.module-checkbox:hover:not(:has(input:disabled)) {
+.file-upload-container:hover {
   border-color: #3498db;
-  background: #f0f8ff;
 }
 
-.module-checkbox input[type="checkbox"] {
-  width: auto;
-  margin: 0;
+.file-input {
+  display: none;
+}
+
+.upload-trigger {
   cursor: pointer;
 }
 
-.module-checkbox input[type="checkbox"]:checked + span {
-  font-weight: 600;
-  color: #3498db;
+.upload-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
 }
 
-.module-checkbox input[type="checkbox"]:disabled {
-  cursor: not-allowed;
-}
-
-.module-checkbox input[type="checkbox"]:disabled + span {
-  color: #999;
-  cursor: not-allowed;
-}
-
-/* 投稿须知样式 */
-.rules-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.rules-section {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border-left: 4px solid #3498db;
-}
-
-.rules-list {
-  list-style-position: inside;
-  padding-left: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.rules-list li {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #555;
-}
-
-.rules-list strong {
-  color: #2c3e50;
-  font-weight: 600;
-}
-
-.rules-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 2rem;
-  flex-wrap: wrap;
-}
-
-.rules-actions .btn {
-  padding: 0.8rem 2rem;
-  font-size: 1.1rem;
-}
-
-/* 附件样式 */
-.attachment-item {
-  display: inline-block;
-  margin: 5px 0;
-  padding: 8px 12px;
-  background-color: #f0f8ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 5px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.attachment-link {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: #1e90ff;
-  font-size: 14px;
-}
-
-.attachment-link:hover {
-  text-decoration: underline;
-}
-
-.attachment-icon {
-  margin-right: 8px;
+.upload-text {
   font-size: 16px;
-}
-
-.attachment-name {
-  flex: 1;
+  color: #3498db;
   font-weight: 500;
 }
 
-.attachment-size {
+.upload-hint {
   font-size: 12px;
-  color: #666;
-  margin-left: 8px;
-}
-
-/* 自定义附件上传按钮样式 */
-.custom-attachment-container {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 1rem;
-  gap: 1rem;
-}
-
-.custom-attachment-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.custom-attachment-btn:hover:not(:disabled) {
-  background-color: #2980b9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
-}
-
-.custom-attachment-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.custom-attachment-btn .attachment-icon {
-  font-size: 1rem;
-}
-
-/* 附件列表样式 */
-.attachments-list-container {
-  margin-top: 1rem;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 5px;
-  padding: 1rem;
-}
-
-.attachments-list-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+  color: #909399;
+  margin-top: 5px;
 }
 
 .attachments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.attachment-item-display {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.8rem;
-  background-color: white;
-  border: 1px solid #dee2e6;
+  margin-top: 15px;
+  border: 1px solid #ebeef5;
   border-radius: 4px;
-  transition: all 0.3s ease;
-  flex-wrap: wrap;
-  gap: 1rem;
+  background: white;
 }
 
-.attachment-item-display:hover {
-  border-color: #3498db;
-  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.1);
+.attachment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.attachment-item:last-child {
+  border-bottom: none;
 }
 
 .attachment-info {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.attachment-preview-btn,
-.attachment-download-btn {
-  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.8rem;
+  gap: 10px;
+}
+
+.attachment-name {
+  font-size: 14px;
+  color: #606266;
+}
+
+.attachment-size {
+  font-size: 12px;
+  color: #909399;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-icon {
+  background: none;
   border: none;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
-.attachment-preview-btn {
-  background-color: #28a745;
-  color: white;
+.btn-icon:hover {
+  background-color: #f5f7fa;
 }
 
-.attachment-preview-btn:hover:not(:disabled) {
-  background-color: #218838;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+.btn-icon.delete:hover {
+  color: #e74c3c;
 }
 
-.attachment-download-btn {
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
   background-color: #3498db;
   color: white;
 }
 
-.attachment-download-btn:hover:not(:disabled) {
+.btn-primary:hover {
   background-color: #2980b9;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
 }
 
-.attachment-preview-btn:disabled,
-.attachment-download-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.attachment-details {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex: 1;
-  min-width: 200px;
-  overflow: hidden;
-}
-
-.attachment-name {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.attachment-size {
-  font-size: 0.85rem;
-  color: #6c757d;
-  white-space: nowrap;
-}
-
-.attachment-delete-btn {
-  background: none;
-  border: none;
-  color: #dc3545;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 3px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.attachment-delete-btn:hover:not(:disabled) {
-  background-color: rgba(220, 53, 69, 0.1);
-  transform: scale(1.1);
-}
-
-.attachment-delete-btn:disabled {
-  opacity: 0.6;
+.btn-primary:disabled {
+  background-color: #a0cfff;
   cursor: not-allowed;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .rules-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .rules-actions .btn {
-    width: 100%;
-    max-width: 300px;
-  }
-  
-  .rules-list {
-    padding-left: 0;
-  }
-  
-  .rules-section {
-    padding: 1rem;
-  }
-  
-  .module-checkboxes {
-    flex-direction: column;
-  }
-  
-  .module-checkbox {
-    width: 100%;
-  }
+.btn-secondary {
+  background-color: #909399;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #82848a;
+}
+
+.btn-secondary:disabled {
+  background-color: #c0c4cc;
+  cursor: not-allowed;
+}
+
+.alert {
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.error {
+  background-color: #fef0f0;
+  color: #f56c6c;
+  border: 1px solid #fde2e2;
+}
+
+.success {
+  background-color: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #e1f3d8;
+}
+
+:deep(.ql-editor) {
+  min-height: 150px;
 }
 </style>

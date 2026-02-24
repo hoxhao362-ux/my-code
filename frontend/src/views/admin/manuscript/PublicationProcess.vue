@@ -342,7 +342,7 @@ onMounted(() => {
         <div class="form-group">
           <label class="label">Actions</label>
           <button 
-            class="btn btn-red"
+            class="btn btn-primary"
             @click="handleAcceptanceConfirmation"
             :disabled="forms.acceptance.confirmationSent"
           >
@@ -386,7 +386,7 @@ onMounted(() => {
         <div class="form-group">
           <label class="label">Actions</label>
           <button 
-            class="btn btn-red"
+            class="btn btn-primary"
             @click="handleCopyrightAgreement"
             :disabled="forms.copyright.agreementSent"
           >
@@ -443,7 +443,7 @@ onMounted(() => {
         <div class="form-group">
           <label class="label">Actions</label>
           <button 
-            class="btn btn-red"
+            class="btn btn-primary"
             @click="handleProofSent"
             :disabled="forms.proof.proofSent"
           >
@@ -565,7 +565,7 @@ onMounted(() => {
       </button>
       
       <button 
-        class="btn btn-red"
+        class="btn btn-primary"
         :disabled="!canProceed || isLoading"
         @click="currentStage === 'publication' ? handlePublish() : handleNextStage()"
       >
@@ -599,7 +599,7 @@ onMounted(() => {
 }
 
 .publication-process-container {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: white;
   padding: 20px;
   min-height: calc(100vh - 80px);
@@ -705,8 +705,8 @@ onMounted(() => {
 }
 
 .progress-item.current .progress-dot {
-  background: #C93737;
-  border: 2px solid #C93737;
+  background: #0056B3;
+  border: 2px solid #0056B3;
 }
 
 .progress-item.completed .progress-dot {
@@ -721,7 +721,7 @@ onMounted(() => {
 /* Error Message */
 .error-message {
   background: #ffebee;
-  color: #C93737;
+  color: #dc3545;
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 20px;
@@ -844,16 +844,16 @@ textarea {
   font-size: 14px;
 }
 
-.btn-red {
-  background: #C93737;
+.btn-primary {
+  background: #0056B3;
   color: white;
 }
 
-.btn-red:hover {
-  background: #B02E2E;
+.btn-primary:hover {
+  background: #004494;
 }
 
-.btn-red:disabled {
+.btn-primary:disabled {
   background: #ccc;
   cursor: not-allowed;
 }

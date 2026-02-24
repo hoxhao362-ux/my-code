@@ -323,7 +323,7 @@ const handleNavigate = (key, path) => {
 .manuscript-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  border-color: #C93737;
+  border-color: #0056B3;
 }
 
 .manuscript-card-header {
@@ -382,12 +382,12 @@ const handleNavigate = (key, path) => {
   transition: background-color 0.3s ease;
 }
 
-.btn-red {
-  background: #C93737;
+.btn-primary {
+  background: #0056B3;
   color: white;
 }
 
-.btn-red:hover {
-  background: #B02E2E;
+.btn-primary:hover {
+  background: #004494;
 }
 </style>

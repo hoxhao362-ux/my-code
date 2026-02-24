@@ -494,10 +494,10 @@ const handleLogout = () => {
 <template>
   <!-- System Status Banners -->
   <div v-if="!isAdminRoute() && user" class="system-banner read-only">
-    Read-Only Mode | Journal Submission Platform
+    {{ t('nav.readOnlyMode') }} | {{ t('submission.welcome.platform') }}
   </div>
   <div v-if="isAdminRoute() && user" class="system-banner submit-mode">
-    Submit System - [User Role: {{ user.role }}]
+    {{ t('nav.submitSystem') }} - [{{ t('nav.userRole') }}: {{ user.role }}]
   </div>
 
   <nav class="navbar" :class="{ 'reviewer-navbar': user?.role === 'reviewer', 'has-banner': user }">
@@ -511,7 +511,7 @@ const handleLogout = () => {
           <span v-if="user" class="user-info">
             <span class="user-name">{{ user.username }}</span>
             <span class="divider">|</span>
-            <a href="#" @click.prevent="handleLogout" class="logout-link">Logout</a>
+            <a href="#" @click.prevent="handleLogout" class="logout-link">{{ t('nav.logout') }}</a>
           </span>
         </div>
       </div>
@@ -534,7 +534,7 @@ const handleLogout = () => {
               </a>
             </li>
 
-          <!-- 2. Journals (Lancet Style) -->
+          <!-- 2. Journals -->
           <li class="nav-item">
             <a href="#" class="nav-link journals-link" :class="{ active: currentPage === 'journals' }" @click.prevent="$router.push('/journals/all')">
               {{ t('nav.journals') }}
@@ -682,20 +682,20 @@ const handleLogout = () => {
                     </a>
                   </li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/reviewer/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
-                  <li><a href="#" class="nav-link" @click.prevent="handleLogout" title="Logout from submit system (Reviewer access)">Logout (Submit System)</a></li>
+                  <li><a href="#" class="nav-link" @click.prevent="handleLogout" :title="t('nav.logoutSubmit')">{{ t('nav.logoutSubmit') }}</a></li>
                 </template>
                 <template v-else>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/profile'); closeAllMenus()">{{ t('nav.profile') }}</a></li>
                   <li><a href="#" class="nav-link" @click.prevent="$router.push('/account-security'); closeAllMenus()">{{ t('nav.settings') }}</a></li>
                   <li><div class="dropdown-divider"></div></li>
-                  <li><a href="#" class="nav-link logout" @click.prevent="confirmLogout">{{ t('nav.logout') }} (Read-Only)</a></li>
+                  <li><a href="#" class="nav-link logout" @click.prevent="confirmLogout">{{ t('nav.logout') }}</a></li>
                 </template>
               </ul>
             </li>
           </template>
           <template v-else>
             <li class="nav-item">
-               <a href="#" class="nav-link login-btn" @click.prevent="goToLogin">{{ t('nav.login') }} (Read-Only)</a>
+               <a href="#" class="nav-link login-btn" @click.prevent="goToLogin">{{ t('nav.login') }} ({{ t('nav.readOnly') }})</a>
             </li>
           </template>
 
@@ -729,7 +729,7 @@ const handleLogout = () => {
               <!-- 2. My Assignments -->
               <li class="nav-item">
                 <a href="#" class="nav-link" :class="{ active: currentPage === 'reviewer-assignments' }" @click.prevent="router.push('/reviewer/assignments')">
-                  My Assignments
+                  {{ t('nav.myAssignments') }}
                 </a>
               </li>
 
@@ -799,7 +799,7 @@ const handleLogout = () => {
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleAuditTasksMenu">
               <a href="#" class="nav-link" :class="{ active: currentPage.startsWith('audit-') }">
-                Audit Tasks ▼
+                {{ t('nav.auditTasks') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showAuditTasksMenu">
@@ -819,7 +819,7 @@ const handleLogout = () => {
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="toggleReviewProcessMenu">
               <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-reviewers' || currentPage === 'editor-decisions' }">
-                Review Process ▼
+                {{ t('nav.reviewProcess') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showReviewProcessMenu">
@@ -832,12 +832,12 @@ const handleLogout = () => {
           <li class="nav-item dropdown">
             <div class="dropdown-toggle" @click="togglePubAnalyticsMenu">
               <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-publication-management' || currentPage === 'editor-statistics' }">
-                Publication & Analytics ▼
+                {{ t('nav.publicationAnalytics') }} ▼
               </a>
             </div>
             <ul class="dropdown-menu" v-if="showPubAnalyticsMenu">
-              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-publication-management', '/editor/publication'); closeAllMenus()">Publication</a></li>
-              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-statistics', '/editor/statistics'); closeAllMenus()">Data Statistics</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-publication-management', '/editor/publication'); closeAllMenus()">{{ t('nav.publication') }}</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="handleNav('editor-statistics', '/editor/statistics'); closeAllMenus()">{{ t('nav.dataStatistics') }}</a></li>
             </ul>
           </li>
 
@@ -849,7 +849,7 @@ const handleLogout = () => {
               :class="{ active: currentPage === 'editor-board' }"
               @click.prevent="handleNav('editor-board', '/editor/board')"
             >
-              Board Management
+              {{ t('nav.boardManagement') }}
             </a>
           </li>
 
@@ -858,7 +858,7 @@ const handleLogout = () => {
             <li class="nav-item dropdown">
               <div class="dropdown-toggle" @click="toggleAdminToolsMenu">
                 <a href="#" class="nav-link" :class="{ active: currentPage === 'editor-users' || currentPage.startsWith('editor-system') }">
-                  Admin Tools ▼
+                  {{ t('nav.adminTools') }} ▼
                 </a>
               </div>
               <ul class="dropdown-menu" v-if="showAdminToolsMenu">
@@ -1154,8 +1154,8 @@ const handleLogout = () => {
           </li>
            <!-- Logout -->
            <li class="nav-item">
-            <a href="#" class="nav-link logout" @click.prevent="handleLogout" title="Logout from submit system">
-              Logout (Submit System)
+            <a href="#" class="nav-link logout" @click.prevent="handleLogout" :title="t('nav.logoutSubmit')">
+              {{ t('nav.logoutSubmit') }}
             </a>
           </li>
           <!-- Language -->
@@ -1415,7 +1415,7 @@ const handleLogout = () => {
 }
 
 .system-banner.submit-mode {
-  background-color: #C93737;
+  background-color: #0056B3;
   color: white;
 }
 
@@ -1478,7 +1478,7 @@ const handleLogout = () => {
 }
 
 .user-info .logout-link {
-  color: #C93737;
+  color: #dc3545;
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;
@@ -1536,7 +1536,7 @@ const handleLogout = () => {
 }
 
 .logo-logout-area .logout-link {
-  color: #C93737;
+  color: #dc3545;
   text-decoration: none;
   font-weight: 500;
   cursor: pointer;
@@ -1589,9 +1589,9 @@ const handleLogout = () => {
 
 /* Navigation Item Highlight Style */
 .nav-link.active {
-  color: #C93737;
+  color: #0056B3;
   background: transparent;
-  border-bottom: 2px solid #C93737;
+  border-bottom: 2px solid #0056B3;
   border-radius: 0;
 }
 
@@ -1606,12 +1606,12 @@ const handleLogout = () => {
 }
 
 .nav-link.logout {
-  color: #C93737;
+  color: #dc3545;
 }
 
 .nav-link.logout:hover {
-  color: #C93737;
-  background: rgba(201, 55, 55, 0.1);
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
 }
 
 /* 下拉菜单样式 */
@@ -1664,8 +1664,8 @@ const handleLogout = () => {
 
 .dropdown-menu .nav-link:hover,
 .dropdown-menu .nav-link.active {
-  background: rgba(201, 55, 55, 0.1);
-  color: #C93737;
+  background: rgba(0, 86, 179, 0.1);
+  color: #0056B3;
 }
 
 /* Hamburger Menu Global */
@@ -1928,7 +1928,7 @@ const handleLogout = () => {
 }
 
 .user-container:hover .user-icon {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .user-menu {
@@ -2019,7 +2019,7 @@ const handleLogout = () => {
 }
 
 .sidebar-link:hover {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .btn-submit-sidebar {
@@ -2047,7 +2047,7 @@ const handleLogout = () => {
 }
 
 .submenu-link:hover {
-  color: #C93737;
+  color: #0056B3;
 }
 
 .submenu-link.disabled {

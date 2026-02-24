@@ -39,7 +39,7 @@ const saveForLater = () => {
   alert('Progress saved!')
 }
 
-// Lancet Standard Status Label
+// Journal Platform Standard Status Label
 const statusText = computed(() => {
   const steps1to5 = submissionStore.steps.slice(0, 5)
   const ready = steps1to5.every(s => s.status === 'completed') && submissionStore.currentStep === 6

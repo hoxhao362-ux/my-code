@@ -2,9 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 const user = ref(userStore.user)
 
 // --- State ---
@@ -15,12 +17,12 @@ const favorites = ref([]) // IDs of favorite articles
 
 // --- Data ---
 const categories = [
-  { id: 'dashboard', name: 'Dashboard' },
-  { id: 'manuscripts', name: 'Manuscripts' },
-  { id: 'reviewers', name: 'Reviewers' },
-  { id: 'decisions', name: 'Decisions & Letters' },
-  { id: 'profile', name: 'Profile & Settings' },
-  { id: 'manual', name: 'Operation Manual' } // Special category
+  { id: 'dashboard', name: t('submission.help.categories.dashboard') },
+  { id: 'manuscripts', name: t('submission.help.categories.manuscripts') },
+  { id: 'reviewers', name: t('submission.help.categories.reviewers') },
+  { id: 'decisions', name: t('submission.help.categories.decisions') },
+  { id: 'profile', name: t('submission.help.categories.profile') },
+  { id: 'manual', name: t('submission.help.categories.manual') } // Special category
 ]
 
 const articles = [
@@ -112,10 +114,10 @@ const goBack = () => router.back()
     <!-- Header -->
     <header class="help-header">
       <div class="header-content">
-        <h1>Help Center</h1>
+        <h1>{{ t('submission.help.title') }}</h1>
         <div class="search-box">
-          <input type="text" v-model="searchQuery" placeholder="Search for help...">
-          <button>Search</button>
+          <input type="text" v-model="searchQuery" :placeholder="t('submission.help.search')">
+          <button>{{ t('submission.help.searchBtn') }}</button>
         </div>
       </div>
     </header>
@@ -132,7 +134,7 @@ const goBack = () => router.back()
             </li>
             <li class="separator"></li>
             <li :class="{ active: activeCategory === 'favorites' }" @click="activeCategory = 'favorites'">
-              My Favorites
+              {{ t('submission.help.favorites') }}
             </li>
           </ul>
         </nav>
@@ -142,14 +144,14 @@ const goBack = () => router.back()
       <main class="content">
         <!-- Favorites View -->
         <div v-if="activeCategory === 'favorites'">
-          <h2>My Favorites</h2>
-          <div v-if="favoriteArticles.length === 0" class="empty-state">No favorites yet.</div>
+          <h2>{{ t('submission.help.favorites') }}</h2>
+          <div v-if="favoriteArticles.length === 0" class="empty-state">{{ t('submission.help.noFavorites') }}</div>
           <div class="article-list">
              <div v-for="article in favoriteArticles" :key="article.id" class="article-card">
               <h3>{{ article.title }}</h3>
               <p class="article-preview">{{ typeof article.content === 'string' ? article.content.substring(0, 100) + '...' : 'View steps...' }}</p>
               <div class="actions">
-                <button @click="toggleFavorite(article.id)" class="btn-fav active">★ Remove</button>
+                <button @click="toggleFavorite(article.id)" class="btn-fav active">★ {{ t('submission.help.removeFav') }}</button>
               </div>
             </div>
           </div>
@@ -180,7 +182,7 @@ const goBack = () => router.back()
               </div>
             </div>
             <div v-if="filteredArticles.length === 0" class="empty-state">
-              No articles found in this category.
+              {{ t('submission.help.noArticles') }}
             </div>
           </div>
         </div>
@@ -189,7 +191,7 @@ const goBack = () => router.back()
         <!-- Requirement: "FAQ Module: Sorted by heat... expand/collapse... like" -->
         <!-- Let's add FAQ as a section if Dashboard is selected, or make it a global footer section -->
         <div v-if="activeCategory === 'dashboard'" class="faq-section">
-          <h3>Frequently Asked Questions</h3>
+          <h3>{{ t('submission.help.faq') }}</h3>
           <div class="faq-list">
             <div v-for="faq in sortedFaqs" :key="faq.id" class="faq-item">
               <div class="faq-question" @click="toggleFaq(faq.id)">
@@ -198,9 +200,9 @@ const goBack = () => router.back()
               </div>
               <div v-if="expandedFaqs.includes(faq.id)" class="faq-answer">
                 <p>{{ faq.answer }}</p>
-                <button @click="likeFaq(faq.id)" class="btn-like">
-                  👍 Useful ({{ faq.likes }})
-                </button>
+                <div class="faq-footer">
+                  <button @click="likeFaq(faq.id)" class="btn-like">👍 {{ faq.likes }}</button>
+                </div>
               </div>
             </div>
           </div>

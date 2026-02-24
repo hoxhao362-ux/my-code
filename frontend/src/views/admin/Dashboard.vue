@@ -20,12 +20,12 @@ const props = defineProps({
 // Dashboard Title based on role
 const dashboardTitle = computed(() => {
   const role = user.value?.role
-  if (role === 'admin') return 'Editor-in-Chief Dashboard'
-  if (role === 'editor') return 'Editor Dashboard'
-  if (role === 'associate_editor') return 'Associate Editor Dashboard'
-  if (role === 'editorial_assistant') return 'Editorial Assistant Dashboard'
-  if (role === 'advisory_editor') return 'Advisory Editor Dashboard'
-  return 'Dashboard'
+  if (role === 'admin') return t('dashboard.roles.admin')
+  if (role === 'editor') return t('dashboard.roles.editor')
+  if (role === 'associate_editor') return t('dashboard.roles.associate_editor')
+  if (role === 'editorial_assistant') return t('dashboard.roles.editorial_assistant')
+  if (role === 'advisory_editor') return t('dashboard.roles.advisory_editor')
+  return t('dashboard.roles.default')
 })
 
 // Filtered Journals based on role
@@ -44,8 +44,6 @@ const totalJournals = computed(() => filteredJournals.value.length)
 const pendingJournals = computed(() => filteredJournals.value.filter(j => 
   j.status === 'Pending' || 
   j.status === 'Under Review' || 
-  j.status === '待审核' || 
-  j.status === '审稿中' ||
   j.status === 'pending_initial_review' ||
   j.status === 'initial_review_passed' ||
   j.status === 'under_peer_review' ||
@@ -76,26 +74,22 @@ const navigateTo = (path) => {
 
 // Helper for status display
 const getStatusLabel = (status) => {
-  if (status === 'Published' || status === '已发表' || status === 'accepted') return 'Accepted'
-  if (status === 'Pending' || status === '待审核' || status === 'pending_initial_review') return 'Pending'
-  if (status === 'initial_review_passed') return 'Screening Passed'
-  if (status === 'Under Review' || status === '审稿中' || status === 'under_peer_review') return 'Under Review'
-  if (status === 'review_completed') return 'Review Completed'
-  if (status === 'final_decision_pending') return 'Decision Pending'
-  if (status === 'Rejected' || status === '已拒稿' || status === 'rejected' || status === 'initial_review_rejected') return 'Rejected'
-  if (status === 'revision_required') return 'Revision Required'
+  if (status === 'Published' || status === 'accepted' || status === 'published') return t('status.published')
+  if (status === 'Pending' || status === 'pending_initial_review') return t('status.pending_initial_review')
+  if (status === 'initial_review_passed') return t('status.initial_review_passed')
+  if (status === 'Under Review' || status === 'under_peer_review' || status === 'under_review') return t('status.under_review')
+  if (status === 'review_completed') return t('status.review_completed')
+  if (status === 'final_decision_pending') return t('status.pending_final_decision')
+  if (status === 'Rejected' || status === 'rejected' || status === 'initial_review_rejected') return t('status.initial_review_rejected')
+  if (status === 'revision_required') return t('status.revision_required')
   return status
 }
 
 const getStatusClass = (status) => {
-  if (status === 'Published' || status === '已发表' || status === 'accepted') return 'published'
-  if (status === 'Pending' || status === '待审核' || status === 'pending_initial_review') return 'pending'
-  if (status === 'initial_review_passed') return 'pending'
-  if (status === 'Under Review' || status === '审稿中' || status === 'under_peer_review') return 'pending' // pending color (yellow)
-  if (status === 'review_completed') return 'pending'
-  if (status === 'final_decision_pending') return 'pending'
-  if (status === 'Rejected' || status === '已拒稿' || status === 'rejected' || status === 'initial_review_rejected') return 'rejected'
-  if (status === 'revision_required') return 'pending'
+  const s = status?.toLowerCase()
+  if (s === 'published' || s === 'accepted') return 'published'
+  if (s === 'pending' || s === 'pending_initial_review' || s === 'initial_review_passed' || s === 'under_peer_review' || s === 'under_review' || s === 'review_completed' || s === 'final_decision_pending' || s === 'revision_required') return 'pending'
+  if (s === 'rejected' || s === 'initial_review_rejected') return 'rejected'
   return ''
 }
 </script>
@@ -127,25 +121,25 @@ const getStatusClass = (status) => {
           <div class="stat-card">
             <div class="stat-content">
               <h3 class="stat-number">{{ totalJournals }}</h3>
-              <p class="stat-label">Total Manuscripts</p>
+              <p class="stat-label">{{ t('dashboard.stats.totalJournals') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingJournals }}</h3>
-              <p class="stat-label">Pending Reviews</p>
+              <p class="stat-label">{{ t('dashboard.stats.pendingJournals') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-content">
               <h3 class="stat-number">{{ totalUsers }}</h3>
-              <p class="stat-label">Registered Users</p>
+              <p class="stat-label">{{ t('dashboard.stats.totalUsers') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-content">
               <h3 class="stat-number">{{ recentSubmissions }}</h3>
-              <p class="stat-label">Recent Submissions</p>
+              <p class="stat-label">{{ t('dashboard.stats.recentSubmissions') }}</p>
             </div>
           </div>
           
@@ -153,16 +147,16 @@ const getStatusClass = (status) => {
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/recommended-reviewers')">
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingRecommendations }}</h3>
-              <p class="stat-label">Writer Recommendations</p>
-              <span class="action-hint">Pending Approval</span>
+              <p class="stat-label">{{ t('dashboard.stats.writerRecommendations') }}</p>
+              <span class="action-hint">{{ t('dashboard.stats.pendingApproval') }}</span>
             </div>
           </div>
           
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/opposed-reviewers')">
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingOppositions }}</h3>
-              <p class="stat-label">Avoidance Requests</p>
-              <span class="action-hint">Pending Review</span>
+              <p class="stat-label">{{ t('dashboard.stats.avoidanceRequests') }}</p>
+              <span class="action-hint">{{ t('dashboard.stats.pendingReview') }}</span>
             </div>
           </div>
         </div>
@@ -171,7 +165,7 @@ const getStatusClass = (status) => {
       <!-- 近期投稿 -->
       <section class="journals-section">
         <div class="section-header">
-          <h2 class="section-title">Recent Manuscripts</h2>
+          <h2 class="section-title">{{ t('dashboard.recentJournals.title') }}</h2>
         </div>
         <div class="journals-list">
           <div 
@@ -181,7 +175,7 @@ const getStatusClass = (status) => {
           >
             <div class="journal-info">
               <h4 class="journal-title">{{ journal.title }}</h4>
-              <p class="journal-meta">Writer: {{ journal.writer || journal.author }} | Date: {{ journal.date || journal.submissionDate }}</p>
+              <p class="journal-meta">{{ t('dashboard.recentJournals.writer') }}: {{ journal.writer || journal.author }} | {{ t('dashboard.recentJournals.date') }}: {{ journal.date || journal.submissionDate }}</p>
             </div>
             <div class="journal-status" :class="getStatusClass(journal.status)">
               {{ getStatusLabel(journal.status) }}
@@ -194,7 +188,7 @@ const getStatusClass = (status) => {
     <!-- 页脚 -->
     <footer class="footer" v-if="!embedded">
       <div class="footer-content">
-        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+        <p>{{ t('auth.footer.copyright') }}</p>
       </div>
     </footer>
   </div>

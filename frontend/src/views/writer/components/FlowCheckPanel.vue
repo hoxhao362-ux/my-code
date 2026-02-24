@@ -79,7 +79,7 @@ const getActualModules = (status) => {
   return modules
 }
 
-// --- Lancet Requirement Rules ---
+// --- Journal Platform Requirement Rules ---
 // Based on the SRS Document provided
 const RULES = [
   {
@@ -246,41 +246,29 @@ defineExpose({ runCheck })
       </div>
       
       <div v-else class="success-message">
-        <span class="check-icon">✓</span> All manuscripts are flowing correctly according to Lancet norms.
+        <span class="check-icon">✓</span> All manuscripts are flowing correctly according to Journal Platform norms.
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.flow-check-panel {
-  margin-top: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  overflow: hidden;
-  animation: slideUp 0.3s ease-out;
+.jp-flow-check {
+  background-color: white;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-family: 'Segoe UI', sans-serif;
+  border-left: 4px solid #0056B3;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.panel-header {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.panel-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
+.header h3 {
+  margin-top: 0;
   color: #333;
+  font-size: 18px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .close-btn {

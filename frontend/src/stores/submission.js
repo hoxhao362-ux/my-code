@@ -117,6 +117,15 @@ export const useSubmissionStore = defineStore('submission', () => {
                 isValid = false
             }
         }
+        if (isValid) {
+          const requiredTypes = ['manuscript', 'contribution', 'conflict']
+          const hasAllRequired = requiredTypes.every(type => 
+            formData.value.files.some(f => f.type === type)
+          )
+          if (!hasAllRequired) {
+            isValid = false
+          }
+        }
         break
       case 3:
         isValid = !!formData.value.region && formData.value.classifications.length > 0
@@ -365,7 +374,7 @@ export const useSubmissionStore = defineStore('submission', () => {
             ip: '127.0.0.1'
         })
 
-        // 清除草稿 (Lancet Standard Cleanup)
+        // 清除草稿 (Journal Platform Standard Cleanup)
         localStorage.removeItem('submission_draft')
         
         // Reset Store State (Pure Frontend Cleanup)

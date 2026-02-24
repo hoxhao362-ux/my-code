@@ -87,7 +87,7 @@ const handleSubmit = () => {
   <div class="revision-check-container">
     <!-- Header -->
     <header class="header">
-      <h2 class="title">Revision Re-Review (Lancet Standard)</h2>
+      <h2 class="title">Revision Re-Review (Journal Platform Standard)</h2>
       <p class="subtitle">Max 2 revisions allowed. Must verify item by item against original requirements.</p>
       
       <div class="meta-info">
@@ -184,7 +184,7 @@ const handleSubmit = () => {
 
       <div class="action-buttons">
         <button class="btn-gray" @click="$emit('save-draft')">Save Draft</button>
-        <button class="btn-red" :disabled="!isFormValid || isSubmitting" @click="handleSubmit">Submit Conclusion</button>
+        <button class="btn-primary" :disabled="!isFormValid || isSubmitting" @click="handleSubmit">Submit Conclusion</button>
       </div>
     </footer>
 
@@ -193,7 +193,7 @@ const handleSubmit = () => {
 
 <style scoped>
 .revision-check-container {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: white;
   padding: 20px;
   height: 100%;
@@ -204,7 +204,7 @@ const handleSubmit = () => {
 
 .header { text-align: center; margin-bottom: 20px; }
 .title { font-size: 18px; font-weight: bold; margin-bottom: 5px; color: #333; }
-.subtitle { font-size: 12px; color: #C93737; margin-bottom: 10px; }
+.subtitle { font-size: 12px; color: #dc3545; margin-bottom: 10px; }
 .meta-info { display: flex; justify-content: center; gap: 20px; font-size: 14px; color: #666; font-weight: bold; }
 
 .divider { height: 1px; background: #eee; margin: 15px 0; }
@@ -228,7 +228,7 @@ const handleSubmit = () => {
 .radio-label { font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 .radio-label.pass { color: #28A745; }
 .radio-label.partial { color: #F5A623; }
-.radio-label.fail { color: #C93737; }
+.radio-label.fail { color: #dc3545; }
 
 /* Footer */
 .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
@@ -241,12 +241,13 @@ const handleSubmit = () => {
 .opt-desc { display: block; font-size: 12px; color: #666; }
 
 .opinion-box { margin-bottom: 20px; }
-.required::after { content: " *"; color: #C93737; }
+.required::after { content: " *"; color: #dc3545; }
 textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; }
 
 .action-buttons { text-align: center; display: flex; justify-content: center; gap: 15px; }
 .btn-gray { padding: 8px 20px; border: 1px solid #ddd; background: #eee; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-red { padding: 8px 20px; border: none; background: #C93737; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-red:disabled { background: #ccc; cursor: not-allowed; }
+.btn-primary { padding: 8px 20px; border: none; background: #0056B3; color: white; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-primary:hover { background: #004494; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 
 </style>

@@ -85,7 +85,7 @@ const handlePublish = (issue) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user"
@@ -100,8 +100,8 @@ const handlePublish = (issue) => {
         <h1 class="main-title">Journal Column & Issue Management</h1>
         <p class="warning-text">Columns and Issues are core configurations. Modifications require Editor-in-Chief approval. Do not delete arbitrarily.</p>
         <div class="header-actions">
-          <button class="btn btn-red" @click="handleAddColumn">Add Column</button>
-          <button class="btn btn-red" @click="handleCreateIssue">Create Issue</button>
+          <button class="btn btn-primary" @click="handleAddColumn">Add Column</button>
+          <button class="btn btn-primary" @click="handleCreateIssue">Create Issue</button>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ const handlePublish = (issue) => {
         <div class="section-header">
           <h2>Column Management</h2>
         </div>
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th style="width: 50px">Order</th>
@@ -153,7 +153,7 @@ const handlePublish = (issue) => {
         <div class="section-header">
           <h2>Issue Scheduling</h2>
         </div>
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Vol / Issue</th>
@@ -177,7 +177,7 @@ const handlePublish = (issue) => {
               <td>{{ issue.count }}</td>
               <td class="actions">
                 <button class="btn-text" :disabled="issue.status === 'published' || issue.status === 'archived'">Assign</button>
-                <button class="btn-text red" v-if="issue.status === 'pending_publish'" @click="handlePublish(issue)">Publish</button>
+                <button class="btn-text danger" v-if="issue.status === 'pending_publish'" @click="handlePublish(issue)">Publish</button>
                 <button class="btn-text">Details</button>
               </td>
             </tr>
@@ -219,7 +219,7 @@ const handlePublish = (issue) => {
         </div>
         <div class="modal-actions">
           <button class="btn btn-grey" @click="showColumnModal = false">Cancel</button>
-          <button class="btn btn-red" @click="saveColumn">Save</button>
+          <button class="btn btn-primary" @click="saveColumn">Save</button>
         </div>
       </div>
     </div>
@@ -234,7 +234,7 @@ const handlePublish = (issue) => {
         </div>
         <div class="modal-actions">
           <button class="btn btn-grey" @click="showIssueModal = false">Cancel</button>
-          <button class="btn btn-red" @click="saveIssue">Create</button>
+          <button class="btn btn-primary" @click="saveIssue">Create</button>
         </div>
       </div>
     </div>
@@ -243,9 +243,9 @@ const handlePublish = (issue) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
-  background-color: #FFFFFF;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
   min-height: 100vh;
   color: #333333;
 }
@@ -264,16 +264,16 @@ const handlePublish = (issue) => {
 }
 
 .main-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
   text-transform: uppercase;
 }
 
 .warning-text {
-  font-size: 12px;
-  color: #D1202F;
+  font-size: 14px;
+  color: #d9534f;
   margin-bottom: 20px;
 }
 
@@ -291,36 +291,42 @@ const handlePublish = (issue) => {
 }
 
 .section-header h2 {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-  border-left: 3px solid #D1202F;
-  padding-left: 10px;
-  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  border-left: 4px solid #0056B3;
+  padding-left: 12px;
+  margin-bottom: 20px;
 }
 
-.lancet-table {
+.jp-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
-  padding: 10px;
-  border-bottom: 1px solid #CCC;
-  font-weight: bold;
-  color: #555;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  font-weight: 600;
+  color: #495057;
 }
 
-.lancet-table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #EEE;
+.jp-table td {
+  padding: 15px;
+  border-bottom: 1px solid #e9ecef;
   vertical-align: middle;
 }
 
 .hover-row:hover td {
-  background-color: #F9F9F9;
+  background-color: #f8f9fa;
 }
 
 /* Cells */
@@ -329,8 +335,8 @@ const handlePublish = (issue) => {
   flex-direction: column;
 }
 
-.dual-text .cn { font-weight: bold; font-size: 14px; }
-.dual-text .en { font-size: 12px; color: #777; font-style: italic; }
+.dual-text .cn { font-weight: 600; font-size: 14px; color: #333; }
+.dual-text .en { font-size: 12px; color: #6c757d; font-style: italic; }
 
 .status-dot {
   display: inline-block;
@@ -339,58 +345,76 @@ const handlePublish = (issue) => {
   border-radius: 50%;
   margin-right: 5px;
 }
-.status-dot.enabled { background-color: #2E7D32; }
-.status-dot.disabled { background-color: #CCC; }
+.status-dot.enabled { background-color: #28a745; }
+.status-dot.disabled { background-color: #ced4da; }
 
 .status-badge {
-  padding: 2px 6px;
-  font-size: 11px;
-  border: 1px solid #CCC;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #ced4da;
   border-radius: 4px;
   text-transform: uppercase;
+  font-weight: 500;
 }
-.status-badge.published { background: #E8F5E9; border-color: #2E7D32; color: #2E7D32; }
-.status-badge.pending_publish { background: #FFF3E0; border-color: #EF6C00; color: #EF6C00; }
-.status-badge.archived { background: #F5F5F5; color: #757575; }
+.status-badge.published { background: #e8f5e9; border-color: #28a745; color: #28a745; }
+.status-badge.pending_publish { background: #fff3e0; border-color: #fd7e14; color: #fd7e14; }
+.status-badge.archived { background: #f8f9fa; color: #6c757d; }
 
 /* Buttons */
 .btn {
-  padding: 6px 16px;
+  padding: 8px 20px;
   border-radius: 4px;
   border: none;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  font-weight: bold;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.btn-red { background: #D1202F; color: white; }
-.btn-red:hover { background: #B71C2B; }
-.btn-grey { background: #EEE; color: #333; }
-.btn-grey:hover { background: #E0E0E0; }
+.btn-primary { 
+  background: #0056B3; 
+  color: white; 
+}
+.btn-primary:hover { 
+  background: #004494; 
+}
+.btn-grey { 
+  background: #e9ecef; 
+  color: #495057; 
+}
+.btn-grey:hover { 
+  background: #dee2e6; 
+}
 
 .btn-text {
   background: none;
   border: none;
-  color: #666;
+  color: #0056B3;
   cursor: pointer;
-  font-size: 12px;
-  margin-right: 10px;
+  font-size: 14px;
+  margin-right: 15px;
+  text-decoration: none;
+  padding: 0;
 }
-.btn-text:hover { color: #333; text-decoration: underline; }
-.btn-text.red { color: #D1202F; }
+.btn-text:hover { 
+  text-decoration: underline; 
+}
+.btn-text.danger { 
+  color: #dc3545; 
+}
 
 /* Footer */
 .preview-footer {
   margin-top: 40px;
   text-align: center;
-  border-top: 1px solid #EEE;
+  border-top: 1px solid #e9ecef;
   padding-top: 20px;
 }
 
 .audit-note {
-  font-size: 12px;
-  color: #999;
+  font-size: 13px;
+  color: #6c757d;
   margin-top: 10px;
 }
 
@@ -411,7 +435,7 @@ const handlePublish = (issue) => {
 .modal-box h3 { margin-top: 0; margin-bottom: 20px; color: #333; }
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-size: 12px; color: #555; margin-bottom: 5px; font-weight: bold; }
-.form-group input { width: 100%; padding: 8px; border: 1px solid #CCC; font-family: 'Times New Roman'; }
+.form-group input { width: 100%; padding: 8px; border: 1px solid #CCC; font-family: inherit; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
 </style>

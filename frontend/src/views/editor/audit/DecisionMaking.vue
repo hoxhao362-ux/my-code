@@ -4,12 +4,14 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
+import { useI18n } from '../../../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// --- Lancet Style: Tabs for Decision Central ---
+// --- Tabs for Decision Central ---
 const activeTab = ref('consolidation') // consolidation | consensus | appeals
 
 // --- Filter Logic ---
@@ -66,7 +68,7 @@ const currentJournal = ref(null)
 const decisionType = ref('')
 const decisionComments = ref('')
 
-// Lancet: Structured Decision Rationale
+// Structured Decision Rationale
 const decisionRationale = ref({
   scientificRigor: '',
   novelty: '',
@@ -75,7 +77,7 @@ const decisionRationale = ref({
   ethicalCompliance: ''
 })
 
-// Lancet: Consensus Meeting Data
+// Consensus Meeting Data
 const meetingAgenda = ref({
   date: new Date().toISOString().slice(0, 16),
   attendees: ['Editor-in-Chief', 'Senior Editor', 'Statistician'],
@@ -85,7 +87,7 @@ const meetingAgenda = ref({
 const openDecisionModal = (journal) => {
   // Permission check: only editor or admin can handle pending final decision manuscripts
   if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION && !['editor', 'admin'].includes(user.value?.role)) {
-    alert('Only editors can handle manuscripts pending final decision.')
+    alert(t('editor.audit.decisionMaking.alerts.onlyEditors'))
     return
   }
   
@@ -94,26 +96,26 @@ const openDecisionModal = (journal) => {
   decisionComments.value = ''
   // Reset Rationale
   decisionRationale.value = {
-    scientificRigor: 'The study design is robust with appropriate controls.',
-    novelty: 'Findings contribute significantly to current understanding.',
-    methodology: 'Methods are described in sufficient detail.',
-    dataIntegrity: 'Data appears consistent; source data verified.',
+    scientificRigor: t('editor.audit.decisionMaking.modals.decision.placeholders.rigor'),
+    novelty: t('editor.audit.decisionMaking.modals.decision.placeholders.novelty'),
+    methodology: t('editor.audit.decisionMaking.modals.decision.placeholders.methodology'),
+    dataIntegrity: t('editor.audit.decisionMaking.modals.decision.placeholders.dataIntegrity'),
     ethicalCompliance: 'IRB approval confirmed.'
   }
   showModal.value = true
 }
 
-// --- Auto-Consolidation (Lancet Feature) ---
+// --- Auto-Consolidation (System Feature) ---
 const autoConsolidateReviews = (journal) => {
   // Simulate AI/System extraction of key points
   const reviews = journal.reviewHistory || journal.reviews || []
-  const summary = reviews.map(r => `[${r.reviewer || 'Reviewer'}]: ${r.comment ? r.comment.substring(0, 50) + '...' : 'No comment'}`).join('\n')
+  const summary = reviews.map(r => `[${r.reviewer || t('editor.audit.decisionMaking.consolidation.reviewerLabel')}]: ${r.comment ? r.comment.substring(0, 50) + '...' : t('common.noData')}`).join('\n')
   return summary
 }
 
 const submitDecision = () => {
   if (!decisionComments.value) {
-    alert('Please enter decision comments.')
+    alert(t('editor.audit.decisionMaking.alerts.enterComments'))
     return
   }
   
@@ -126,15 +128,15 @@ const submitDecision = () => {
     if (journal.status === 'review_completed' || journal.status === 'Reviews Completed') {
       // If in completed status, move to pending final decision for editor-in-chief
       newStatus = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
-      journal.reviewStage = '待终审'
+      journal.reviewStage = 'Pending Final Decision'
     } else if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION || journal.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION) {
       // If already in final decision stage, move to production process
       newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
-      journal.reviewStage = '生产流程'
+      journal.reviewStage = 'In Production'
     } else {
       // Default case: move to production process
       newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
-      journal.reviewStage = '生产流程'
+      journal.reviewStage = 'In Production'
     }
   } else if (decisionType.value === 'Reject') {
     newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
@@ -150,7 +152,7 @@ const submitDecision = () => {
     journal.decisionStage = 'consensus_meeting'
     userStore.updateJournal(journal)
     showModal.value = false
-    alert('Manuscript moved to Consensus Meeting queue.')
+    alert(t('editor.audit.decisionMaking.alerts.movedToConsensus'))
     return
   }
   
@@ -182,17 +184,15 @@ const submitDecision = () => {
   
   // Show different messages based on status transition
   if (newStatus === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION) {
-    alert(`Decision recorded: ${decisionType.value}. \nManuscript sent to Editor-in-Chief for final decision.`)
-  } else if (newStatus === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
-    alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module.`)
+    alert(t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.sentToEIC'))
   } else {
-    alert(`Decision recorded: ${decisionType.value}. \nDraft letter generated in 'Decisions & Letters' module.`)
+    alert(t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.letterGenerated'))
   }
 }
 
 // --- Meeting Functions ---
 const scheduleMeeting = (journal) => {
-  alert(`Meeting scheduled for ${journal.title}. Notification sent to attendees.`)
+  alert(t('editor.audit.decisionMaking.alerts.meetingScheduled', { title: journal.title }))
 }
 
 const finalizeMeetingDecision = (journal) => {
@@ -201,7 +201,7 @@ const finalizeMeetingDecision = (journal) => {
 
 // --- Appeal Functions ---
 const assignIndependentReviewer = (journal) => {
-  alert(`Independent reviewer assigned for appeal of ${journal.title}.`)
+  alert(t('editor.audit.decisionMaking.alerts.independentAssigned', { title: journal.title }))
   // Logic to change status or assign reviewer
 }
 
@@ -213,8 +213,8 @@ const assignIndependentReviewer = (journal) => {
     
     <main class="content">
       <div class="header">
-        <h1>Decision Central</h1>
-        <p class="subtitle">Lancet-Style Evidence-Based Decision Making System</p>
+        <h1>{{ t('editor.audit.decisionMaking.title') }}</h1>
+        <p class="subtitle">{{ t('editor.audit.decisionMaking.subtitle') }}</p>
       </div>
 
       <!-- Tab Navigation -->
@@ -223,26 +223,26 @@ const assignIndependentReviewer = (journal) => {
           :class="['tab-btn', { active: activeTab === 'consolidation' }]" 
           @click="activeTab = 'consolidation'"
         >
-          Review Consolidation ({{ decisionJournals.length }})
+          {{ t('editor.audit.decisionMaking.tabs.consolidation') }} ({{ decisionJournals.length }})
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'consensus' }]" 
           @click="activeTab = 'consensus'"
         >
-          Consensus Meetings ({{ consensusJournals.length }})
+          {{ t('editor.audit.decisionMaking.tabs.consensus') }} ({{ consensusJournals.length }})
         </button>
         <button 
           :class="['tab-btn', { active: activeTab === 'appeals' }]" 
           @click="activeTab = 'appeals'"
         >
-          Appeals & Rebuttals ({{ appealJournals.length }})
+          {{ t('editor.audit.decisionMaking.tabs.appeals') }} ({{ appealJournals.length }})
         </button>
       </div>
 
       <!-- Tab 1: Review Consolidation -->
       <div v-if="activeTab === 'consolidation'" class="tab-pane">
         <div v-if="allDecisionJournals.length === 0" class="no-data">
-          No manuscripts pending consolidation.
+          {{ t('editor.audit.decisionMaking.consolidation.noManuscripts') }}
         </div>
         <div v-for="journal in allDecisionJournals" :key="journal.id" class="journal-item">
           <div class="journal-header">
@@ -256,31 +256,31 @@ const assignIndependentReviewer = (journal) => {
           <div class="consolidation-grid">
             <!-- Left: Reviews -->
             <div class="reviews-column">
-              <h4>Reviewer Opinions</h4>
+              <h4>{{ t('editor.audit.decisionMaking.consolidation.reviewerOpinions') }}</h4>
               <div v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
                  <div v-for="(review, idx) in journal.reviewHistory" :key="'h-'+idx" class="review-card">
                    <div class="review-meta">
-                     <strong>Reviewer {{ idx + 1 }}</strong>
+                     <strong>{{ t('editor.audit.decisionMaking.consolidation.reviewerLabel') }} {{ idx + 1 }}</strong>
                      <span :class="['decision-tag', review.decision?.toLowerCase()]">{{ review.decision || 'N/A' }}</span>
                    </div>
                    <p class="review-text">{{ review.comment }}</p>
-                   <div class="review-score" v-if="review.score">Score: {{ review.score }}/10</div>
+                   <div class="review-score" v-if="review.score">{{ t('editor.audit.decisionMaking.consolidation.score') }}: {{ review.score }}/10</div>
                  </div>
               </div>
-              <div v-else class="no-reviews">No reviews data available.</div>
+              <div v-else class="no-reviews">{{ t('editor.audit.decisionMaking.consolidation.noReviews') }}</div>
             </div>
 
             <!-- Right: Editor Consolidation -->
             <div class="editor-column">
-              <h4>Editor's Assessment</h4>
+              <h4>{{ t('editor.audit.decisionMaking.consolidation.assessment') }}</h4>
               <div class="assessment-box">
                 <div class="auto-summary">
-                  <span class="ai-badge">System Analysis</span>
-                  <p><strong>Consensus Level:</strong> {{ (journal.reviews && journal.reviews.length > 1) ? 'Mixed' : 'High' }}</p>
-                  <p><strong>Key Issues:</strong> Methodology, Sample Size (Detected)</p>
+                  <span class="ai-badge">{{ t('editor.audit.decisionMaking.consolidation.systemAnalysis') }}</span>
+                  <p><strong>{{ t('editor.audit.decisionMaking.consolidation.consensusLevel') }}:</strong> {{ (journal.reviews && journal.reviews.length > 1) ? t('editor.audit.decisionMaking.consolidation.mixed') : t('editor.audit.decisionMaking.consolidation.high') }}</p>
+                  <p><strong>{{ t('editor.audit.decisionMaking.consolidation.keyIssues') }}:</strong> Methodology, Sample Size ({{ t('editor.audit.decisionMaking.consolidation.detected') }})</p>
                 </div>
-                <button class="btn btn-outline" @click="openDecisionModal(journal)">Draft Decision & Rationale</button>
-                <button class="btn btn-text" @click="decisionType.value = 'Consensus Meeting'; submitDecision()">Request Consensus Meeting</button>
+                <button class="btn btn-outline" @click="openDecisionModal(journal)">{{ t('editor.audit.decisionMaking.consolidation.actions.draftDecision') }}</button>
+                <button class="btn btn-text" @click="decisionType.value = 'Consensus Meeting'; submitDecision()">{{ t('editor.audit.decisionMaking.consolidation.actions.requestConsensus') }}</button>
               </div>
             </div>
           </div>
@@ -290,12 +290,12 @@ const assignIndependentReviewer = (journal) => {
       <!-- Tab 2: Consensus Meetings -->
       <div v-if="activeTab === 'consensus'" class="tab-pane">
         <div class="meeting-toolbar">
-           <button class="btn btn-primary">Schedule New Meeting</button>
-           <span class="meeting-info">Next Meeting: Tomorrow, 10:00 AM (EST)</span>
+           <button class="btn btn-primary">{{ t('editor.audit.decisionMaking.consensus.scheduleNew') }}</button>
+           <span class="meeting-info">{{ t('editor.audit.decisionMaking.consensus.nextMeeting') }}: Tomorrow, 10:00 AM (EST)</span>
         </div>
         
         <div v-if="consensusJournals.length === 0" class="no-data">
-          No manuscripts scheduled for consensus meeting.
+          {{ t('editor.audit.decisionMaking.consensus.noManuscripts') }}
         </div>
         
         <div v-for="journal in consensusJournals" :key="journal.id" class="journal-item meeting-item">
@@ -304,11 +304,11 @@ const assignIndependentReviewer = (journal) => {
                <h3>{{ journal.title }}</h3>
                <span class="priority-tag">High Priority</span>
              </div>
-             <p class="reason"><strong>Reason for Meeting:</strong> Conflicting reviewer recommendations (Accept vs Reject).</p>
+             <p class="reason"><strong>{{ t('editor.audit.decisionMaking.consensus.reasonLabel') }}:</strong> Conflicting reviewer recommendations (Accept vs Reject).</p>
              
              <div class="meeting-actions">
-               <button class="btn btn-success" @click="finalizeMeetingDecision(journal)">Finalize Decision</button>
-               <button class="btn btn-secondary">View Minutes</button>
+               <button class="btn btn-success" @click="finalizeMeetingDecision(journal)">{{ t('editor.audit.decisionMaking.consensus.actions.finalize') }}</button>
+               <button class="btn btn-secondary">{{ t('editor.audit.decisionMaking.consensus.actions.viewMinutes') }}</button>
              </div>
            </div>
         </div>
@@ -317,22 +317,22 @@ const assignIndependentReviewer = (journal) => {
       <!-- Tab 3: Appeals -->
       <div v-if="activeTab === 'appeals'" class="tab-pane">
         <div v-if="appealJournals.length === 0" class="no-data">
-          No active appeals.
+          {{ t('editor.audit.decisionMaking.appeals.noAppeals') }}
         </div>
         <div v-for="journal in appealJournals" :key="journal.id" class="journal-item">
           <h3>{{ journal.title }}</h3>
-          <p><strong>Appeal Reason:</strong> Author claims reviewer 2 misunderstood the statistical model.</p>
-          <button class="btn btn-primary" @click="assignIndependentReviewer(journal)">Assign Independent Reviewer</button>
+          <p><strong>{{ t('editor.audit.decisionMaking.appeals.reasonLabel') }}:</strong> Author claims reviewer 2 misunderstood the statistical model.</p>
+          <button class="btn btn-primary" @click="assignIndependentReviewer(journal)">{{ t('editor.audit.decisionMaking.appeals.actions.assignIndependent') }}</button>
         </div>
       </div>
 
     </main>
 
-    <!-- Detailed Decision Modal (Lancet Style) -->
+    <!-- Detailed Decision Modal -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content large-modal">
         <div class="modal-header">
-          <h2>Final Decision: {{ currentJournal.title }}</h2>
+          <h2>{{ t('editor.audit.decisionMaking.modals.decision.title') }}: {{ currentJournal.title }}</h2>
           <button class="close-btn" @click="showModal = false">&times;</button>
         </div>
         
@@ -340,55 +340,55 @@ const assignIndependentReviewer = (journal) => {
           <div class="decision-form">
             <!-- Section 1: Decision Type -->
             <div class="form-section">
-              <h3>1. Decision</h3>
+              <h3>{{ t('editor.audit.decisionMaking.modals.decision.sections.decision') }}</h3>
               <select v-model="decisionType" class="form-control decision-select">
-                <option value="Accept">Accept (Publish without further changes)</option>
-                <option value="Minor Revision">Minor Revision (Back to Author - Editor Check Only)</option>
-                <option value="Major Revision">Major Revision (Back to Author - Re-review Required)</option>
-                <option value="Return to Reviewer">Return to Reviewer (Special Case: Direct Re-review)</option>
-                <option value="Reject">Reject (Decline Submission)</option>
-                <option value="Transfer">Transfer (Recommend Other Journals)</option>
-                <option value="Consensus Meeting">Escalate to Consensus Meeting</option>
+                <option value="Accept">{{ t('editor.audit.decisionMaking.modals.decision.types.accept') }}</option>
+                <option value="Minor Revision">{{ t('editor.audit.decisionMaking.modals.decision.types.minor') }}</option>
+                <option value="Major Revision">{{ t('editor.audit.decisionMaking.modals.decision.types.major') }}</option>
+                <option value="Return to Reviewer">{{ t('editor.audit.decisionMaking.modals.decision.types.return') }}</option>
+                <option value="Reject">{{ t('editor.audit.decisionMaking.modals.decision.types.reject') }}</option>
+                <option value="Transfer">{{ t('editor.audit.decisionMaking.modals.decision.types.transfer') }}</option>
+                <option value="Consensus Meeting">{{ t('editor.audit.decisionMaking.modals.decision.types.consensus') }}</option>
               </select>
               <div v-if="decisionType === 'Return to Reviewer'" class="alert-box warning">
-                <small><strong>Note:</strong> This option bypasses the author and sends the manuscript directly back to reviewers. Use only for arbitration or internal re-evaluation.</small>
+                <small><strong>Note:</strong> {{ t('editor.audit.decisionMaking.modals.decision.returnWarning') }}</small>
               </div>
             </div>
 
-            <!-- Section 2: Structured Rationale (Lancet Requirement) -->
+            <!-- Section 2: Structured Rationale -->
             <div class="form-section">
-              <h3>2. Evidence-Based Rationale</h3>
+              <h3>{{ t('editor.audit.decisionMaking.modals.decision.sections.rationale') }}</h3>
               <div class="rationale-grid">
                 <div class="rationale-item">
-                  <label>Scientific Rigor</label>
-                  <textarea v-model="decisionRationale.scientificRigor" placeholder="Comment on study design and controls..."></textarea>
+                  <label>{{ t('editor.audit.decisionMaking.modals.decision.rationaleLabels.rigor') }}</label>
+                  <textarea v-model="decisionRationale.scientificRigor" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.rigor')"></textarea>
                 </div>
                 <div class="rationale-item">
-                  <label>Novelty & Innovation</label>
-                  <textarea v-model="decisionRationale.novelty" placeholder="Comment on contribution to the field..."></textarea>
+                  <label>{{ t('editor.audit.decisionMaking.modals.decision.rationaleLabels.novelty') }}</label>
+                  <textarea v-model="decisionRationale.novelty" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.novelty')"></textarea>
                 </div>
                 <div class="rationale-item">
-                  <label>Methodology</label>
-                  <textarea v-model="decisionRationale.methodology" placeholder="Comment on methods..."></textarea>
+                  <label>{{ t('editor.audit.decisionMaking.modals.decision.rationaleLabels.methodology') }}</label>
+                  <textarea v-model="decisionRationale.methodology" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.methodology')"></textarea>
                 </div>
                 <div class="rationale-item">
-                  <label>Data Integrity</label>
-                  <textarea v-model="decisionRationale.dataIntegrity" placeholder="Comment on data quality..."></textarea>
+                  <label>{{ t('editor.audit.decisionMaking.modals.decision.rationaleLabels.dataIntegrity') }}</label>
+                  <textarea v-model="decisionRationale.dataIntegrity" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.dataIntegrity')"></textarea>
                 </div>
               </div>
             </div>
 
             <!-- Section 3: Decision Letter -->
             <div class="form-section">
-              <h3>3. Decision Letter to Author</h3>
-              <textarea v-model="decisionComments" rows="6" class="form-control" placeholder="Draft your letter here. The structured rationale above will be attached for internal records."></textarea>
+              <h3>{{ t('editor.audit.decisionMaking.modals.decision.sections.letter') }}</h3>
+              <textarea v-model="decisionComments" rows="6" class="form-control" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.letter')"></textarea>
             </div>
           </div>
         </div>
         
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="submitDecision">Confirm Decision</button>
+          <button class="btn btn-secondary" @click="showModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="submitDecision">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>

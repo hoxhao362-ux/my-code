@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 import InitialReviewModal from '../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../components/admin/manuscript/AssignReviewersModal.vue'
 import DraftDecisionModal from '../../components/admin/manuscript/DraftDecisionModal.vue'
@@ -16,6 +17,7 @@ import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../constants
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const { t } = useI18n()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
 // State for Modal
@@ -110,20 +112,20 @@ onMounted(() => {
 const activeTab = ref('all')
 
 // --- Filter State ---
-const selectedStatus = ref('All Statuses')
+const selectedStatus = ref('all')
 const selectedDateRange = ref('custom') // custom, today, this_week, this_month, this_year
 const dateRange = ref({ start: '', end: '' })
 const showAdvancedFilters = ref(false)
 const advancedFilters = ref({ writer: '', field: '' })
 
 // Date range options
-const dateRangeOptions = [
-  { label: 'Custom Range', value: 'custom' },
-  { label: 'Today', value: 'today' },
-  { label: 'This Week', value: 'this_week' },
-  { label: 'This Month', value: 'this_month' },
-  { label: 'This Year', value: 'this_year' }
-]
+const dateRangeOptions = computed(() => [
+  { label: t('editor.manuscripts.dateRanges.custom'), value: 'custom' },
+  { label: t('editor.manuscripts.dateRanges.today'), value: 'today' },
+  { label: t('editor.manuscripts.dateRanges.thisWeek'), value: 'this_week' },
+  { label: t('editor.manuscripts.dateRanges.thisMonth'), value: 'this_month' },
+  { label: t('editor.manuscripts.dateRanges.thisYear'), value: 'this_year' }
+])
 
 // Calculate date range based on selected option
 const calculateDateRange = () => {
@@ -167,20 +169,20 @@ watch(() => route.query.status, (newStatus) => {
   }
 })
 
-const statusOptions = [
-  { label: 'All Statuses', value: 'All Statuses' },
-  { label: 'Pending Screening', value: 'Pending Screening' },
-  { label: 'Under Review', value: 'Under Review' },
-  { label: 'Decision Pending', value: 'Decision Pending' },
-  { label: 'Accepted', value: 'Accepted' },
-  { label: 'Rejected', value: 'Rejected' },
-  { label: 'In Production', value: 'In Production' }
-]
+const statusOptions = computed(() => [
+  { label: t('statusFilter.all'), value: 'all' },
+  { label: t('statusFilter.pendingScreening'), value: 'pending_screening' },
+  { label: t('statusFilter.underReview'), value: 'under_review' },
+  { label: t('statusFilter.decisionPending'), value: 'decision_pending' },
+  { label: t('statusFilter.accepted'), value: 'accepted' },
+  { label: t('statusFilter.rejected'), value: 'rejected' },
+  { label: t('statusFilter.inProduction'), value: 'in_production' }
+])
 
 const fieldOptions = ['Medical Imaging', 'Drug Delivery', 'Clinical Research', 'Public Health', 'Genetics', 'Cardiology']
 
 const resetFilters = () => {
-  selectedStatus.value = 'All Statuses'
+  selectedStatus.value = 'all'
   selectedDateRange.value = 'custom'
   dateRange.value = { start: '', end: '' }
   advancedFilters.value = { writer: '', field: '' }
@@ -224,20 +226,26 @@ const filteredManuscripts = computed(() => {
   }
   
   // 4. Status Filter (New)
-  if (selectedStatus.value !== 'All Statuses') {
+  if (selectedStatus.value !== 'all') {
     list = list.filter(m => {
       switch (selectedStatus.value) {
-        case 'Pending Screening':
+        case 'pending_screening':
           return [MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW, MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW].includes(m.status)
-        case 'Under Review':
-          return m.status === MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
-        case 'Decision Pending':
-          return [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION, MANUSCRIPT_STATUS.UNDER_FINAL_DECISION].includes(m.status)
-        case 'Accepted':
+        case 'under_review':
+          return [
+            MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
+            MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+            MANUSCRIPT_STATUS.REVIEW_COMPLETED,
+            MANUSCRIPT_STATUS.REVISION_REQUIRED,
+            MANUSCRIPT_STATUS.REVISION_SUBMITTED
+          ].includes(m.status)
+        case 'decision_pending':
+          return [MANUSCRIPT_STATUS.PENDING_FINAL_DECISION, MANUSCRIPT_STATUS.UNDER_FINAL_DECISION, MANUSCRIPT_STATUS.FINAL_DECISION_REVISION].includes(m.status)
+        case 'accepted':
           return m.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
-        case 'Rejected':
+        case 'rejected':
           return [MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED, MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED].includes(m.status)
-        case 'In Production':
+        case 'in_production':
           return [
             MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
             MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
@@ -280,7 +288,7 @@ const canFormatCheck = computed(() => userStore.hasRolePermission(user.value?.ro
 const isReadOnly = computed(() => user.value?.role === 'advisory_editor')
 
 // Helper
-const getStatusLabel = (s) => STATUS_LABELS[s] || s
+const getStatusLabel = (s) => t(`status.${s}`) || s
 const getStatusColor = (s) => STATUS_COLORS[s] || '#999'
 
 // Generic Action Handler
@@ -508,7 +516,7 @@ const handleStartPublication = (id) => {
     <!-- Full Screen Overlay for Heavy Tasks -->
     <div v-if="showChecklist || showFinalDecision || showReviewSummary || showAuditLog || showRevisionCheck" class="fullscreen-overlay">
       <div class="overlay-header">
-        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false">← Back to Dashboard</button>
+        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false">← {{ t('editor.manuscripts.back') }}</button>
       </div>
       
       <div v-if="showChecklist" class="overlay-content">
@@ -561,20 +569,20 @@ const handleStartPublication = (id) => {
     <!-- Main Dashboard List (Hidden when overlay active) -->
     <div v-else>
       <div class="page-header">
-        <h2>Manuscript Management</h2>
-        <div class="role-badge">Current Role: {{ user?.role }}</div>
+        <h2>{{ t('editor.manuscripts.title') }}</h2>
+        <div class="role-badge">{{ t('editor.manuscripts.currentRole') }}: {{ user?.role }}</div>
       </div>
 
       <div class="tabs">
         <div class="tab-group">
-          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">All Manuscripts</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'assigned' }" @click="activeTab = 'assigned'">My Assigned</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">Pending Action</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">{{ t('editor.manuscripts.tabs.all') }}</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'assigned' }" @click="activeTab = 'assigned'">{{ t('editor.manuscripts.tabs.assigned') }}</button>
+          <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">{{ t('editor.manuscripts.tabs.pending') }}</button>
         </div>
         
         <div class="search-container">
           <div class="search-wrapper">
-            <input type="text" v-model="searchKeyword" placeholder="Search..." class="search-input" @focus="showSearchHistory = true" @blur="setTimeout(() => showSearchHistory = false, 200)" />
+            <input type="text" v-model="searchKeyword" :placeholder="t('editor.manuscripts.search.placeholder')" class="search-input" @focus="showSearchHistory = true" @blur="setTimeout(() => showSearchHistory = false, 200)" />
           </div>
         </div>
       </div>
@@ -584,13 +592,13 @@ const handleStartPublication = (id) => {
         <!-- Row 1: Status, Date, Advanced Toggle, Reset -->
         <div class="filter-row">
            <div class="filter-group">
-              <label>Status Filter</label>
+              <label>{{ t('editor.manuscripts.filter.status') }}</label>
               <select v-model="selectedStatus" class="filter-select">
                 <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
            </div>
            <div class="filter-group">
-              <label>Submission Date</label>
+              <label>{{ t('editor.manuscripts.filter.dateRange') }}</label>
               <select v-model="selectedDateRange" class="filter-select date-range-select">
                 <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -599,10 +607,10 @@ const handleStartPublication = (id) => {
            </div>
            <div class="filter-actions">
               <button class="btn-text filter-toggle" @click="showAdvancedFilters = !showAdvancedFilters">
-                {{ showAdvancedFilters ? 'Hide Advanced Filters' : 'Advanced Filters' }}
+                {{ showAdvancedFilters ? t('editor.manuscripts.filter.hideAdvanced') : t('editor.manuscripts.filter.advanced') }}
                 <span class="toggle-icon">{{ showAdvancedFilters ? '▲' : '▼' }}</span>
               </button>
-              <button class="btn-text reset-btn" @click="resetFilters">Reset Filters</button>
+              <button class="btn-text reset-btn" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
            </div>
         </div>
         
@@ -610,13 +618,13 @@ const handleStartPublication = (id) => {
         <transition name="slide-fade">
           <div v-if="showAdvancedFilters" class="advanced-panel">
              <div class="filter-group">
-                <label>Writer Name</label>
-                <input type="text" v-model="advancedFilters.writer" placeholder="Search writer name..." class="filter-input">
+                <label>{{ t('editor.manuscripts.filter.writer') }}</label>
+                <input type="text" v-model="advancedFilters.writer" :placeholder="t('editor.manuscripts.filter.writer')" class="filter-input">
              </div>
              <div class="filter-group">
-                <label>Research Field</label>
+                <label>{{ t('editor.manuscripts.filter.field') }}</label>
                 <select v-model="advancedFilters.field" class="filter-select">
-                   <option value="">All Fields</option>
+                   <option value="">{{ t('editor.manuscripts.filter.allFields') }}</option>
                    <option v-for="f in fieldOptions" :key="f" :value="f">{{ f }}</option>
                 </select>
              </div>
@@ -626,8 +634,8 @@ const handleStartPublication = (id) => {
 
       <div class="manuscript-list">
         <div v-if="filteredManuscripts.length === 0" class="empty-state">
-          <p>没有找到符合条件的稿件</p>
-          <button class="btn-text" @click="resetFilters">清除筛选</button>
+          <p>{{ t('editor.manuscripts.noManuscripts') }}</p>
+          <button class="btn-text" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
         </div>
         <div v-else v-for="ms in filteredManuscripts" :key="ms.id" class="manuscript-card">
           <div class="ms-header">
@@ -638,9 +646,9 @@ const handleStartPublication = (id) => {
             {{ ms.title }}
           </h3>
           <div class="ms-meta">
-            <span>作者: {{ ms.writer || ms.author }}</span>
-            <span>领域: {{ ms.field }}</span>
-            <span>日期: {{ ms.submittedDate }}</span>
+            <span>{{ t('editor.manuscripts.columns.writer') }}: {{ ms.writer || ms.author }}</span>
+            <span>{{ t('editor.manuscripts.columns.field') }}: {{ ms.field }}</span>
+            <span>{{ t('editor.manuscripts.columns.date') }}: {{ ms.submittedDate }}</span>
           </div>
           
           <div class="ms-actions" v-if="!isReadOnly">

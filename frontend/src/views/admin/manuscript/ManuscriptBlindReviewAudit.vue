@@ -21,7 +21,7 @@ const scanReport = ref({
 })
 
 const scanHistory = ref([
-  { time: '2026-02-13 10:00:00', editor: 'System', action: '扫描完成。结果：通过。' }
+  { time: '2026-02-13 10:00:00', editor: 'System', action: 'Scan Completed. Result: Passed.' }
 ])
 
 // --- Mock Data: 2. Reference Anonymization Audit ---
@@ -39,8 +39,8 @@ const refAudit = ref({
     },
     { 
       id: 2, 
-      original: 'Brown K. 2023. Previous studies on heart failure. Lancet. 301:112.', 
-      anonymized: 'Brown K. 2023. Previous studies on heart failure. Lancet. 301:112.',
+      original: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.', 
+      anonymized: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.',
       isSelfCite: false 
     },
     { 
@@ -70,7 +70,7 @@ const selfCiteAudit = ref({
 
 // --- Logs ---
 const auditLogs = ref([
-  { time: '2026-02-13 10:20:00', editor: 'System', content: '作者已确认自引检查结果。' }
+  { time: '2026-02-13 10:20:00', editor: 'System', content: 'Author confirmed self-citation checks.' }
 ])
 
 // --- Methods ---
@@ -87,54 +87,54 @@ const addLog = (content) => {
 
 // 1. Scan Actions
 const approveScan = () => {
-  if (confirm('确认稿件匿名化符合要求吗？')) {
+  if (confirm('Confirm that the manuscript anonymization is compliant?')) {
     scanReport.value.status = 'Approved'
-    addLog('批准稿件匿名化。')
+    addLog('Approved manuscript anonymization.')
   }
 }
 
 const requestScanRevision = () => {
-  const feedback = prompt('请输入给作者的修改指示:')
+  const feedback = prompt('Please enter revision instructions for the author:')
   if (feedback) {
     scanReport.value.status = 'Needs Revision'
-    addLog(`请求匿名化修改。反馈: ${feedback}`)
+    addLog(`Requested revision for anonymization. Feedback: ${feedback}`)
   }
 }
 
 // 2. Reference Actions
 const approveRef = () => {
-  if (confirm('确认参考文献匿名化符合要求吗？')) {
-    addLog('批准参考文献匿名化。')
-    alert('参考文献匿名化已批准。')
+  if (confirm('Confirm that the reference anonymization is compliant?')) {
+    addLog('Approved reference anonymization.')
+    alert('Reference anonymization approved.')
   }
 }
 
 const requestRefRevision = () => {
-  const feedback = prompt('输入具体的参考文献错误:')
+  const feedback = prompt('Enter specific reference errors:')
   if (feedback) {
-    addLog(`请求参考文献修改。反馈: ${feedback}`)
+    addLog(`Requested revision for references. Feedback: ${feedback}`)
   }
 }
 
 // 3. Self-Cite Actions
 const approveSelfCite = () => {
-  if (confirm('确认自引处理符合要求吗？')) {
-    addLog('批准自引检测结果。')
-    alert('自引审计已批准。')
+  if (confirm('Confirm that self-citation handling is compliant?')) {
+    addLog('Approved self-citation detection results.')
+    alert('Self-citation audit approved.')
   }
 }
 
 const requestSelfCiteReverify = () => {
-  const feedback = prompt('重新验证请求的原因:')
+  const feedback = prompt('Reason for re-verification request:')
   if (feedback) {
-    addLog(`请求重新验证自引。原因: ${feedback}`)
+    addLog(`Requested re-verification of self-citations. Reason: ${feedback}`)
   }
 }
 
 const reDetectSelfCite = () => {
-  if (confirm('重新运行自引检测？这将重置作者的确认。')) {
-    addLog('触发了自引重新检测。')
-    alert('检测已重新运行。')
+  if (confirm('Re-run self-citation detection? This will reset author confirmations.')) {
+    addLog('Triggered re-detection of self-citations.')
+    alert('Detection re-run successfully.')
   }
 }
 
@@ -146,19 +146,19 @@ const reDetectSelfCite = () => {
     <!-- 1. Manuscript Anonymization Scan Report -->
     <section class="audit-section">
       <div class="section-header">
-        <h2 class="section-title">稿件匿名化扫描报告</h2>
+        <h2 class="section-title">Manuscript Anonymization Scan Report</h2>
         <div class="status-tag" :class="scanReport.status.toLowerCase().replace(' ', '-')">
-          {{ scanReport.status === 'Passed' ? '通过' : (scanReport.status === 'Approved' ? '已批准' : '需修改') }}
+          {{ scanReport.status }}
         </div>
       </div>
       
       <div class="info-grid">
         <div class="info-item">
-          <span class="label">扫描时间:</span>
+          <span class="label">Scan Time:</span>
           <span class="value">{{ scanReport.scanTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">发现风险项:</span>
+          <span class="label">Risk Items Found:</span>
           <span class="value">{{ scanReport.risks.length }}</span>
         </div>
       </div>
@@ -167,16 +167,16 @@ const reDetectSelfCite = () => {
       <div v-if="scanReport.risks.length > 0" class="risk-list">
         <div v-for="(risk, idx) in scanReport.risks" :key="idx" class="risk-item">
           <span class="risk-dot">●</span>
-          第 {{ risk.page }} 页, {{ risk.location || '第 ' + risk.line + ' 行' }}: {{ risk.type }} - <span class="risk-content">{{ risk.content }}</span>
+          Page {{ risk.page }}, {{ risk.location || 'Line ' + risk.line }}: {{ risk.type }} - <span class="risk-content">{{ risk.content }}</span>
         </div>
       </div>
       <div v-else class="success-message">
-        ✅ 未检测到作者身份信息。
+        ✅ No author identifying information detected.
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveScan">批准匿名化</button>
-        <button class="btn-action btn-gray" @click="requestScanRevision">请求修改</button>
+        <button class="btn-action btn-primary" @click="approveScan">Approve Anonymization</button>
+        <button class="btn-action btn-secondary" @click="requestScanRevision">Request Revision</button>
       </div>
     </section>
 
@@ -185,28 +185,28 @@ const reDetectSelfCite = () => {
     <!-- 2. Reference Anonymization Audit -->
     <section class="audit-section">
       <div class="section-header">
-        <h2 class="section-title">参考文献匿名化审计</h2>
+        <h2 class="section-title">Reference Anonymization Audit</h2>
       </div>
 
       <div class="info-grid">
         <div class="info-item">
-          <span class="label">处理时间:</span>
+          <span class="label">Processed:</span>
           <span class="value">{{ refAudit.processTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">作者确认:</span>
+          <span class="label">Author Confirmed:</span>
           <span class="value">{{ refAudit.confirmTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">总数 / 已匿名化:</span>
+          <span class="label">Total / Anonymized:</span>
           <span class="value">{{ refAudit.totalRefs }} / {{ refAudit.anonymizedCount }}</span>
         </div>
       </div>
 
       <div class="ref-comparison-table">
         <div class="ref-header">
-          <div class="col">原始参考文献列表</div>
-          <div class="col">匿名化参考文献列表</div>
+          <div class="col">Original Reference List</div>
+          <div class="col">Anonymized Reference List</div>
         </div>
         <div class="ref-body">
           <div v-for="item in refAudit.list" :key="item.id" class="ref-row">
@@ -222,8 +222,8 @@ const reDetectSelfCite = () => {
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveRef">批准匿名化</button>
-        <button class="btn-action btn-gray" @click="requestRefRevision">请求修改</button>
+        <button class="btn-action btn-primary" @click="approveRef">Approve Anonymization</button>
+        <button class="btn-action btn-gray" @click="requestRefRevision">Request Revision</button>
       </div>
     </section>
 
@@ -232,41 +232,41 @@ const reDetectSelfCite = () => {
     <!-- 3. Self-Citation Detection Audit -->
     <section class="audit-section">
       <div class="section-header">
-        <h2 class="section-title">自引检测审计 (Self-Citation Audit)</h2>
+        <h2 class="section-title">Self-Citation Detection Audit</h2>
       </div>
 
       <div class="info-grid">
         <div class="info-item">
-          <span class="label">检测时间:</span>
+          <span class="label">Detected:</span>
           <span class="value">{{ selfCiteAudit.detectTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">确认时间:</span>
+          <span class="label">Confirmed:</span>
           <span class="value">{{ selfCiteAudit.confirmTime }}</span>
         </div>
         <div class="info-item">
-          <span class="label">明确自引 / 潜在自引:</span>
+          <span class="label">Explicit / Potential:</span>
           <span class="value">{{ selfCiteAudit.explicitCount }} / {{ selfCiteAudit.potentialCount }}</span>
         </div>
       </div>
 
       <div class="potential-check-list" v-if="selfCiteAudit.potentialList.length > 0">
-        <h4 class="sub-title">作者验证记录 (潜在自引)</h4>
+        <h4 class="sub-title">Author Verification Records (Potential Self-Citations)</h4>
         <div v-for="item in selfCiteAudit.potentialList" :key="item.id" class="check-item">
           <div class="check-content">
             <div class="ref-text">{{ item.ref }}</div>
-            <div class="reason-text">原因: {{ item.reason }}</div>
+            <div class="reason-text">Reason: {{ item.reason }}</div>
           </div>
           <div class="check-result">
-            作者选择: <span class="tag-verify">{{ item.authorVerify === 'Is Self-Citation' ? '确认为自引' : '非自引' }}</span>
+            Author Selection: <span class="tag-verify">{{ item.authorVerify }}</span>
           </div>
         </div>
       </div>
 
       <div class="action-bar">
-        <button class="btn-action btn-red" @click="approveSelfCite">批准</button>
-        <button class="btn-action btn-gray" @click="requestSelfCiteReverify">请求重新验证</button>
-        <button class="btn-action btn-gray" @click="reDetectSelfCite">重新检测</button>
+        <button class="btn-action btn-primary" @click="approveSelfCite">Approve</button>
+        <button class="btn-action btn-gray" @click="requestSelfCiteReverify">Request Re-verification</button>
+        <button class="btn-action btn-gray" @click="reDetectSelfCite">Re-detect</button>
       </div>
     </section>
 
@@ -274,7 +274,7 @@ const reDetectSelfCite = () => {
 
     <!-- Audit Logs -->
     <section class="audit-section">
-      <h3 class="history-title">审计日志</h3>
+      <h3 class="history-title">Audit Logs</h3>
       <div class="log-list">
         <div v-for="(log, idx) in auditLogs" :key="idx" class="log-item">
           {{ log.time }} | {{ log.editor }} | {{ log.content }}
@@ -288,7 +288,7 @@ const reDetectSelfCite = () => {
 <style scoped>
 .blind-review-audit {
   padding: 1rem 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .audit-section {
@@ -316,7 +316,7 @@ const reDetectSelfCite = () => {
   font-weight: bold;
 }
 .status-tag.passed, .status-tag.approved { color: #28A745; background: rgba(40, 167, 69, 0.1); }
-.status-tag.needs-revision { color: #C93737; background: rgba(201, 55, 55, 0.1); }
+.status-tag.needs-revision { color: #dc3545; background: rgba(201, 55, 55, 0.1); }
 
 .info-grid {
   display: flex;
@@ -350,7 +350,7 @@ const reDetectSelfCite = () => {
   margin-bottom: 1.5rem;
 }
 .risk-item { font-size: 14px; color: #333; margin-bottom: 8px; }
-.risk-dot { color: #C93737; margin-right: 8px; }
+.risk-dot { color: #dc3545; margin-right: 8px; }
 .risk-content { font-weight: bold; }
 .success-message { color: #28A745; font-size: 14px; margin-bottom: 1.5rem; font-weight: 500; }
 
@@ -385,9 +385,9 @@ const reDetectSelfCite = () => {
   color: #333;
 }
 .col.original { border-right: 1px solid #eee; }
-.text-red { color: #C93737; }
+.text-red { color: #dc3545; }
 .text-green { color: #28A745; }
-.self-cite-mark { color: #C93737; margin-right: 4px; font-weight: bold; }
+.self-cite-mark { color: #dc3545; margin-right: 4px; font-weight: bold; }
 
 /* Potential Check List */
 .sub-title { font-size: 15px; color: #333; margin-bottom: 10px; }
@@ -425,8 +425,10 @@ const reDetectSelfCite = () => {
   font-weight: 500;
   transition: all 0.2s;
 }
-.btn-red { background: #C93737; color: white; }
-.btn-red:hover { background: #B02E2E; }
+.btn-primary { background: #0056B3; color: white; }
+.btn-primary:hover { background: #004494; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5a6268; }
 .btn-gray { background: #E0E0E0; color: #333; }
 .btn-gray:hover { background: #D0D0D0; }
 

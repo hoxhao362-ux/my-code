@@ -48,18 +48,40 @@ const tabCounts = computed(() => {
       const status = j.status
       const stage = j.reviewStage
       const overdue = isOverdue(j.date)
-      const hasReviewed = (j.reviewHistory || j.reviews) && (j.reviewHistory || j.reviews).some(r => r.reviewer === user.value.username)
-
       const isUnderReview = status === 'under_peer_review' || status === '审稿中' || status === 'Under Review'
+      const isRevisionStage = stage === '复审' || stage === 'Re-review'
+      
+      // Check if current user is assigned to this manuscript
+      const isAssigned = !j.assignedReviewers || j.assignedReviewers.length === 0 || 
+                         j.assignedReviewers.some(r => {
+                           // Support both old string format and new object format
+                           if (typeof r === 'string') {
+                             return r === user.value.username || r.includes(user.value.username)
+                           } else if (typeof r === 'object' && r !== null) {
+                             return r.name === user.value.username || 
+                                    r.id === user.value.username ||
+                                    String(r.id) === String(user.value.id)
+                           }
+                           return false
+                         })
+      
+      // Check if user has reviewed in current stage (for pending/re-reviews filter)
+      const reviews = j.reviewHistory || j.reviews || []
+      const hasReviewedCurrentStage = isRevisionStage 
+        ? reviews.some(r => r.reviewer === user.value.username && (r.stage === 'Re-review' || r.stage === '复审'))
+        : reviews.some(r => r.reviewer === user.value.username)
+      
+      // Check if user has ANY review history (for completed filter)
+      const hasAnyReviewHistory = reviews.some(r => r.reviewer === user.value.username)
 
-      // Pending: Under Review, not Re-review, not overdue, not reviewed yet
-      if (isUnderReview && stage !== '复审' && !overdue && !hasReviewed) counts.pending++
-      // Re-reviews: Under Review, Re-review stage, not overdue, not reviewed yet
-      if (isUnderReview && stage === '复审' && !overdue && !hasReviewed) counts['re-reviews']++
-      // Completed: User is in review history
-      if (hasReviewed) counts.completed++
-      // Overdue: Under Review and overdue, not reviewed yet
-      if (isUnderReview && overdue && !hasReviewed) counts.overdue++
+      // Pending: Under Review, not Re-review, not overdue, not reviewed yet in current stage, assigned to user
+      if (isUnderReview && !isRevisionStage && !overdue && !hasReviewedCurrentStage && isAssigned) counts.pending++
+      // Re-reviews: Under Review, Re-review stage, not overdue, not reviewed yet in current stage, assigned to user
+      if (isUnderReview && isRevisionStage && !overdue && !hasReviewedCurrentStage && isAssigned) counts['re-reviews']++
+      // Completed: User has ANY review history (show all historical reviews)
+      if (hasAnyReviewHistory) counts.completed++
+      // Overdue: Under Review and overdue, not reviewed yet in current stage, assigned to user
+      if (isUnderReview && overdue && !hasReviewedCurrentStage && isAssigned) counts.overdue++
     })
   }
 
@@ -132,23 +154,47 @@ const assignments = computed(() => {
       const status = j.status
       const stage = j.reviewStage
       const overdue = isOverdue(j.date)
-      const hasReviewed = (j.reviewHistory || j.reviews) && (j.reviewHistory || j.reviews).some(r => r.reviewer === user.value.username)
       const isUnderReview = status === 'under_peer_review' || status === '审稿中' || status === 'Under Review'
+      const isRevisionStage = stage === '复审' || stage === 'Re-review'
+      
+      // Check if current user is assigned to this manuscript
+      const isAssigned = !j.assignedReviewers || j.assignedReviewers.length === 0 || 
+                         j.assignedReviewers.some(r => {
+                           // Support both old string format and new object format
+                           if (typeof r === 'string') {
+                             return r === user.value.username || r.includes(user.value.username)
+                           } else if (typeof r === 'object' && r !== null) {
+                             return r.name === user.value.username || 
+                                    r.id === user.value.username ||
+                                    String(r.id) === String(user.value.id)
+                           }
+                           return false
+                         })
+      
+      // Check if user has reviewed in current stage (for pending/re-reviews/overdue filter)
+      const reviews = j.reviewHistory || j.reviews || []
+      const hasReviewedCurrentStage = isRevisionStage 
+        ? reviews.some(r => r.reviewer === user.value.username && (r.stage === 'Re-review' || r.stage === '复审'))
+        : reviews.some(r => r.reviewer === user.value.username)
+      
+      // Check if user has ANY review history (for completed filter)
+      const hasAnyReviewHistory = reviews.some(r => r.reviewer === user.value.username)
       
       if (currentFilter.value === 'pending') {
-        return isUnderReview && stage !== '复审' && !overdue && !hasReviewed
+        return isUnderReview && !isRevisionStage && !overdue && !hasReviewedCurrentStage && isAssigned
       }
       
       if (currentFilter.value === 're-reviews') {
-         return isUnderReview && stage === '复审' && !overdue && !hasReviewed
+         return isUnderReview && isRevisionStage && !overdue && !hasReviewedCurrentStage && isAssigned
       }
       
       if (currentFilter.value === 'completed') {
-        return hasReviewed
+        // Show all manuscripts that user has reviewed (any stage)
+        return hasAnyReviewHistory
       }
       
       if (currentFilter.value === 'overdue') {
-         return isUnderReview && overdue && !hasReviewed
+         return isUnderReview && overdue && !hasReviewedCurrentStage && isAssigned
       }
       
       return false
@@ -265,7 +311,7 @@ const submitDecline = () => {
 
 const getStatusDisplay = (status, stage) => {
   if (status === 'under_peer_review' || status === '审稿中' || status === 'Under Review') {
-    if (stage === '复审') return 'Revision Pending'
+    if (stage === '复审' || stage === 'Re-review') return 'Revision Pending'
     return 'Under Review'
   }
   if (status === 'Invited') return 'Invited'
@@ -378,8 +424,8 @@ const viewAssignment = (id) => {
               </td>
               <td>
                 <span class="status-badge" :class="{
-                  'status-pending': (item.status === 'under_peer_review' || item.status === '审稿中') && item.reviewStage !== '复审',
-                  'status-revision': (item.status === 'under_peer_review' || item.status === '审稿中') && item.reviewStage === '复审',
+                  'status-pending': (item.status === 'under_peer_review' || item.status === '审稿中') && item.reviewStage !== '复审' && item.reviewStage !== 'Re-review',
+                  'status-revision': (item.status === 'under_peer_review' || item.status === '审稿中') && (item.reviewStage === '复审' || item.reviewStage === 'Re-review'),
                   'status-invited': item.status === 'Invited',
                   'status-accepted': item.status === 'Accepted',
                   'status-declined': item.status === 'Declined',
@@ -393,7 +439,7 @@ const viewAssignment = (id) => {
                 
                 <!-- 1. Pending / Overdue -->
                 <template v-if="['pending', 'overdue'].includes(currentFilter)">
-                  <template v-if="item.reviewStage !== '复审'">
+                  <template v-if="item.reviewStage !== '复审' && item.reviewStage !== 'Re-review'">
                      <button class="action-btn btn-primary" @click="viewAssignment(item.id)">
                       {{ drafts[item.id] ? 'Continue Review' : 'Start Review' }}
                     </button>

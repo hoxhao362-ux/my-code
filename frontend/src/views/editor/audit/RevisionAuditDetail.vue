@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from '../../../composables/useI18n'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -14,6 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['back', 'update'])
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const activeTab = ref('preview') // 'preview' | 'response'
 const isPreviewed = ref(false) // Check if revision is previewed
@@ -47,7 +49,7 @@ const showApproveModal = ref(false)
 
 const handleApproveClick = () => {
   if (!isPreviewed.value) {
-    alert('Please review the revision before approving.')
+    alert(t('editor.audit.revisionHandling.detail.modals.approve.reviewRequired'))
     return
   }
   showApproveModal.value = true
@@ -74,8 +76,8 @@ const confirmApprove = () => {
   const existingNotifications = JSON.parse(localStorage.getItem('notifications') || '[]')
   existingNotifications.unshift({
     id: Date.now(),
-    title: 'Revision Approved',
-    message: `Your revision for MS ${props.manuscript.ms_id} has been approved. Proceed to final review.`,
+    title: t('editor.audit.revisionHandling.alerts.notification.approvedTitle'),
+    message: t('editor.audit.revisionHandling.alerts.notification.approvedMsg', { id: props.manuscript.ms_id, comment: 'Revision approved. Proceeding to final acceptance.' }),
     type: 'success',
     createdAt: new Date().toISOString(),
     isRead: false,
@@ -90,7 +92,7 @@ const confirmApprove = () => {
 // --- SEND REQUEST LOGIC ---
 const showSendRequestModal = ref(false)
 const showSendRequestDoubleConfirm = ref(false)
-const revisionType = ref('Minor Revision')
+const revisionType = ref(t('editor.audit.revisionHandling.detail.modals.sendRequest.types.minor'))
 const revisionDeadline = ref('')
 const sendRequestComment = ref('')
 const isReviewerCommentsCollapsed = ref(false)
@@ -102,7 +104,7 @@ const editorialDeclarations = ref({
 
 const openSendRequestModal = () => {
   // Reset state
-  revisionType.value = 'Minor Revision'
+  revisionType.value = t('editor.audit.revisionHandling.detail.modals.sendRequest.types.minor')
   const date = new Date()
   date.setDate(date.getDate() + 14)
   revisionDeadline.value = date.toISOString().split('T')[0]
@@ -124,10 +126,10 @@ const isSendRequestValid = computed(() => {
 
 const getSendRequestTooltip = computed(() => {
   const isCommentValid = sendRequestComment.value && sendRequestComment.value.trim().length > 0 && sendRequestComment.value !== '<p><br></p>'
-  if (!isCommentValid) return 'Please provide editorial comments before sending the request.'
+  if (!isCommentValid) return t('editor.audit.revisionHandling.detail.modals.sendRequest.tooltips.provideComments')
   
   const areDeclarationsValid = Object.values(editorialDeclarations.value).every(val => val === true)
-  if (!areDeclarationsValid) return 'Please confirm all editorial declarations before sending the request.'
+  if (!areDeclarationsValid) return t('editor.audit.revisionHandling.detail.modals.sendRequest.tooltips.confirmDeclarations')
   
   return ''
 })
@@ -160,8 +162,8 @@ const confirmSendRequest = () => {
   const existingNotifications = JSON.parse(localStorage.getItem('notifications') || '[]')
   existingNotifications.unshift({
     id: Date.now(),
-    title: 'Revision Required',
-    message: `Your manuscript requires a ${revisionType.value}. Please submit by ${revisionDeadline.value}.`,
+    title: t('editor.audit.revisionHandling.alerts.notification.rejectedTitle'),
+    message: t('editor.audit.revisionHandling.alerts.notification.rejectedMsg', { id: props.manuscript.ms_id, comment: sendRequestComment.value }),
     type: 'warning',
     createdAt: new Date().toISOString(),
     isRead: false,
@@ -218,8 +220,8 @@ const confirmReject = () => {
   const existingNotifications = JSON.parse(localStorage.getItem('notifications') || '[]')
   existingNotifications.unshift({
     id: Date.now(),
-    title: 'Revision Rejected',
-    message: 'The revision did not address reviewer comments adequately. Manuscript rejected.',
+    title: t('editor.audit.revisionHandling.alerts.notification.rejectedTitle'),
+    message: t('editor.audit.revisionHandling.alerts.notification.rejectedMsg', { id: props.manuscript.ms_id, comment: rejectReason.value }),
     type: 'error',
     createdAt: new Date().toISOString(),
     isRead: false,
@@ -238,13 +240,13 @@ const confirmReject = () => {
   <div class="detail-container">
     <!-- Header -->
     <div class="detail-header">
-      <button class="back-btn" @click="$emit('back')">← Back to List</button>
+      <button class="back-btn" @click="$emit('back')">{{ t('editor.audit.revisionHandling.detail.backToList') }}</button>
       <div class="meta-info">
         <h2>{{ manuscript.title }}</h2>
         <div class="meta-row">
-          <span class="meta-item"><strong>ID:</strong> {{ manuscript.ms_id }}</span>
-          <span class="meta-item"><strong>Status:</strong> <span class="status-tag">{{ manuscript.status.replace('_', ' ').toUpperCase() }}</span></span>
-          <span class="meta-item"><strong>Submitted:</strong> {{ manuscript.submit_time }}</span>
+          <span class="meta-item"><strong>{{ t('editor.audit.revisionHandling.detail.id') }}</strong> {{ manuscript.ms_id }}</span>
+          <span class="meta-item"><strong>{{ t('editor.audit.revisionHandling.detail.status') }}</strong> <span class="status-tag">{{ manuscript.status.replace('_', ' ').toUpperCase() }}</span></span>
+          <span class="meta-item"><strong>{{ t('editor.audit.revisionHandling.detail.submitted') }}</strong> {{ manuscript.submit_time }}</span>
         </div>
       </div>
     </div>
@@ -257,14 +259,14 @@ const confirmReject = () => {
           :class="{ active: activeTab === 'preview' }" 
           @click="activeTab = 'preview'"
         >
-          Revision Preview (Track Changes)
+          {{ t('editor.audit.revisionHandling.detail.tabs.preview') }}
         </button>
         <button 
           class="tab-btn" 
           :class="{ active: activeTab === 'response' }" 
           @click="activeTab = 'response'"
         >
-          Point-by-Point Response
+          {{ t('editor.audit.revisionHandling.detail.tabs.response') }}
         </button>
       </div>
 
@@ -272,10 +274,10 @@ const confirmReject = () => {
         <!-- Preview Tab -->
         <div v-show="activeTab === 'preview'" class="preview-panel">
           <div class="preview-mock">
-            <p class="preview-note">[Simulation] Displaying Revised Manuscript with Track Changes...</p>
+            <p class="preview-note">{{ t('editor.audit.revisionHandling.detail.preview.simulationNote') }}</p>
             <div class="document-page">
-              <h3>Introduction</h3>
-              <p>The <del style="color:red;background:#ffe6e6;">old</del> <ins style="color:green;background:#e6ffec;">new</ins> methodology implementation shows significant improvement...</p>
+              <h3>{{ t('editor.audit.revisionHandling.detail.preview.introduction') }}</h3>
+              <p v-html="t('editor.audit.revisionHandling.detail.preview.trackChanges', { old: '<del style=\'color:red;background:#ffe6e6;\'>old</del>', new: '<ins style=\'color:green;background:#e6ffec;\'>new</ins>' })"></p>
               <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
               <br><br>
               <p>... (More content) ...</p>
@@ -283,7 +285,7 @@ const confirmReject = () => {
           </div>
           <div class="preview-confirmation">
             <label>
-              <input type="checkbox" v-model="isPreviewed"> I have reviewed the revision content.
+              <input type="checkbox" v-model="isPreviewed"> {{ t('editor.audit.revisionHandling.detail.preview.reviewedLabel') }}
             </label>
           </div>
         </div>
@@ -293,7 +295,7 @@ const confirmReject = () => {
           <!-- Reviewer Comments Summary (Collapsible in Response Tab too for reference) -->
           <div class="reviewer-comments-section">
             <div class="collapse-header" @click="isReviewerCommentsCollapsed = !isReviewerCommentsCollapsed">
-              <span>Original Reviewer Comments (Anonymized)</span>
+              <span>{{ t('editor.audit.revisionHandling.detail.response.originalComments') }}</span>
               <span class="arrow" :class="{ 'collapsed': isReviewerCommentsCollapsed }">▼</span>
             </div>
             <div class="collapse-content" v-show="!isReviewerCommentsCollapsed">
@@ -307,15 +309,15 @@ const confirmReject = () => {
           </div>
 
           <div class="author-response">
-            <h3>Author's Response</h3>
+            <h3>{{ t('editor.audit.revisionHandling.detail.response.authorResponse') }}</h3>
             <div class="response-item" v-for="(reviewer, index) in reviewerComments" :key="index">
-              <h4>Response to {{ reviewer.reviewerId }}</h4>
+              <h4>{{ t('editor.audit.revisionHandling.detail.response.responseTo', { reviewer: reviewer.reviewerId }) }}</h4>
               <div class="response-box">
-                <p><strong>Author:</strong> Thank you for your comment. We have addressed this by...</p>
+                <p><strong>{{ t('editor.audit.revisionHandling.detail.response.authorLabel') }}</strong> {{ t('editor.audit.revisionHandling.detail.response.thankYou') }}</p>
                 <div class="quote-box">
                   <em>"{{ reviewer.comments[0] }}"</em>
                 </div>
-                <p>As requested, we have updated Figure 2 and clarified the methodology section (lines 145-150).</p>
+                <p>{{ t('editor.audit.revisionHandling.detail.response.updatedFigure') }}</p>
               </div>
             </div>
           </div>
@@ -325,10 +327,10 @@ const confirmReject = () => {
 
     <!-- Actions Footer -->
     <div class="actions-footer">
-      <button class="btn btn-danger" @click="openRejectModal">Reject</button>
+      <button class="btn btn-danger" @click="openRejectModal">{{ t('editor.audit.revisionHandling.detail.actions.reject') }}</button>
       <div class="right-actions">
-        <button class="btn btn-warning" @click="openSendRequestModal">Request Further Revision</button>
-        <button class="btn btn-success" @click="handleApproveClick">Approve</button>
+        <button class="btn btn-warning" @click="openSendRequestModal">{{ t('editor.audit.revisionHandling.detail.actions.requestFurther') }}</button>
+        <button class="btn btn-success" @click="handleApproveClick">{{ t('editor.audit.revisionHandling.detail.actions.approve') }}</button>
       </div>
     </div>
 
@@ -338,15 +340,15 @@ const confirmReject = () => {
     <div v-if="showApproveModal" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>Confirm Action: APPROVE</h3>
+          <h3>{{ t('editor.audit.revisionHandling.detail.modals.approve.title') }}</h3>
           <button class="close-btn" @click="showApproveModal = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Are you sure you want to approve this revision? The manuscript will proceed to the next stage (e.g., final acceptance).</p>
+          <p>{{ t('editor.audit.revisionHandling.detail.modals.approve.msg') }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showApproveModal = false">Cancel</button>
-          <button class="btn btn-success" @click="confirmApprove">Approve</button>
+          <button class="btn btn-secondary" @click="showApproveModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-success" @click="confirmApprove">{{ t('editor.audit.revisionHandling.detail.actions.approve') }}</button>
         </div>
       </div>
     </div>
@@ -355,16 +357,16 @@ const confirmReject = () => {
     <div v-if="showSendRequestModal" class="modal-overlay">
       <div class="modal-box modal-lg">
         <div class="modal-header">
-          <h3>Confirm Action: SEND_REQUEST</h3>
+          <h3>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.title') }}</h3>
           <button class="close-btn" @click="showSendRequestModal = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p class="mb-4">Draft Revision Request for Manuscript ID: {{ manuscript.ms_id }}</p>
+          <p class="mb-4">{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.draftMsg', { id: manuscript.ms_id }) }}</p>
 
           <!-- Reviewer Comments Summary -->
           <div class="reviewer-comments-section">
             <div class="collapse-header" @click="isReviewerCommentsCollapsed = !isReviewerCommentsCollapsed">
-              <span>Reviewer Comments Summary (Anonymized)</span>
+              <span>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.commentsSummary') }}</span>
               <span class="arrow" :class="{ 'collapsed': isReviewerCommentsCollapsed }">▼</span>
             </div>
             <div class="collapse-content" v-show="!isReviewerCommentsCollapsed">
@@ -381,22 +383,22 @@ const confirmReject = () => {
           <div class="form-group">
              <div class="row">
                <div class="col">
-                 <label>Revision Type:</label>
+                 <label>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.revisionType') }}</label>
                  <select v-model="revisionType" class="form-control">
-                   <option>Minor Revision</option>
-                   <option>Major Revision</option>
+                   <option>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.types.minor') }}</option>
+                   <option>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.types.major') }}</option>
                  </select>
                </div>
                <div class="col">
-                 <label>Deadline:</label>
+                 <label>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.deadline') }}</label>
                  <input type="date" v-model="revisionDeadline" class="form-control">
                </div>
              </div>
           </div>
 
           <div class="form-group">
-            <label>Revision Requirements / Editor Comments:</label>
-            <div class="editor-tip">Please summarize your editorial decision and provide clear guidance to the author on how to address the reviewer comments.</div>
+            <label>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.requirementsLabel') }}</label>
+            <div class="editor-tip">{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.requirementsTip') }}</div>
             <div class="quill-wrapper">
               <QuillEditor theme="snow" v-model:content="sendRequestComment" contentType="html" toolbar="essential" style="height: 200px;" />
             </div>
@@ -404,32 +406,32 @@ const confirmReject = () => {
 
           <!-- Editorial Declaration -->
           <div class="editorial-declaration">
-            <h4>Editorial Declaration</h4>
+            <h4>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.declaration.title') }}</h4>
             <div class="checkbox-group">
               <label class="checkbox-item">
                 <input type="checkbox" v-model="editorialDeclarations.reviewedComments">
-                <span>I have reviewed all reviewer comments and ensured they are accurately reflected in this request.</span>
+                <span>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.declaration.reviewedComments') }}</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" v-model="editorialDeclarations.deadlineGuidelines">
-                <span>The revision deadline is set in accordance with the Journal Submission Platform's editorial guidelines.</span>
+                <span>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.declaration.deadlineGuidelines') }}</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" v-model="editorialDeclarations.scopePolicy">
-                <span>I confirm that this revision request is consistent with the journal's scope and policies.</span>
+                <span>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.declaration.scopePolicy') }}</span>
               </label>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showSendRequestModal = false">Cancel</button>
+          <button class="btn btn-secondary" @click="showSendRequestModal = false">{{ t('common.cancel') }}</button>
           <div class="btn-wrapper" :title="getSendRequestTooltip">
             <button 
               class="btn btn-primary" 
               @click="handleSendRequestClick"
               :disabled="!isSendRequestValid"
             >
-               Send Request
+               {{ t('common.submit') }}
             </button>
           </div>
         </div>
@@ -440,18 +442,18 @@ const confirmReject = () => {
     <div v-if="showSendRequestDoubleConfirm" class="modal-overlay" style="z-index: 1100;">
       <div class="modal-box" style="width: 400px;">
         <div class="modal-header">
-          <h3>Confirm Send Request</h3>
+          <h3>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.doubleConfirm.title') }}</h3>
           <button class="close-btn" @click="showSendRequestDoubleConfirm = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Are you sure you want to send this revision request to the author?</p>
+          <p>{{ t('editor.audit.revisionHandling.detail.modals.sendRequest.doubleConfirm.msg') }}</p>
           <p class="text-muted" style="font-size: 0.9rem; margin-top: 10px;">
-            The manuscript status will be updated to 'Revision Required' and the author will be notified.
+            {{ t('editor.audit.revisionHandling.detail.modals.sendRequest.doubleConfirm.note') }}
           </p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showSendRequestDoubleConfirm = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmSendRequest">Confirm</button>
+          <button class="btn btn-secondary" @click="showSendRequestDoubleConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="confirmSendRequest">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>
@@ -460,24 +462,24 @@ const confirmReject = () => {
     <div v-if="showRejectModal" class="modal-overlay">
       <div class="modal-box modal-lg">
         <div class="modal-header">
-          <h3>Confirm Action: REJECT</h3>
+          <h3>{{ t('editor.audit.revisionHandling.detail.modals.reject.title') }}</h3>
           <button class="close-btn" @click="showRejectModal = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Are you sure you want to <strong>Reject</strong> the revision for Manuscript ID: {{ manuscript.ms_id }}?</p>
+          <p>{{ t('editor.audit.revisionHandling.detail.modals.reject.areYouSure', { id: manuscript.ms_id }) }}</p>
           
           <div class="form-group">
-            <label>Rejection Reason:</label>
-            <div class="editor-tip warning">Please provide a clear reason for rejecting this revision. This will be sent to the author.</div>
+            <label>{{ t('editor.audit.revisionHandling.detail.modals.reject.reasonLabel') }}</label>
+            <div class="editor-tip warning">{{ t('editor.audit.revisionHandling.detail.modals.reject.reasonTip') }}</div>
             <div class="quill-wrapper">
               <QuillEditor theme="snow" v-model:content="rejectReason" contentType="html" toolbar="essential" style="height: 200px;" />
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showRejectModal = false">Cancel</button>
-          <div class="btn-wrapper" :title="!isRejectValid ? 'Please provide a clear reason for rejecting this revision.' : ''">
-             <button class="btn btn-danger" @click="handleRejectClick" :disabled="!isRejectValid">Reject</button>
+          <button class="btn btn-secondary" @click="showRejectModal = false">{{ t('common.cancel') }}</button>
+          <div class="btn-wrapper" :title="!isRejectValid ? t('editor.audit.revisionHandling.detail.modals.reject.reasonRequiredTooltip') : ''">
+             <button class="btn btn-danger" @click="handleRejectClick" :disabled="!isRejectValid">{{ t('editor.audit.revisionHandling.detail.actions.reject') }}</button>
           </div>
         </div>
       </div>
@@ -487,15 +489,15 @@ const confirmReject = () => {
     <div v-if="showRejectDoubleConfirm" class="modal-overlay" style="z-index: 1100;">
       <div class="modal-box warning-box" style="width: 450px;">
         <div class="modal-header warning-header">
-          <h3>High Risk Action</h3>
+          <h3>{{ t('editor.audit.revisionHandling.detail.modals.reject.doubleConfirm.title') }}</h3>
           <button class="close-btn" @click="showRejectDoubleConfirm = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p style="color: #d32f2f; font-weight: 600;">WARNING: This action will reject the manuscript and terminate the review process. Are you absolutely sure?</p>
+          <p style="color: #d32f2f; font-weight: 600;">{{ t('editor.audit.revisionHandling.detail.modals.reject.doubleConfirm.msg') }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showRejectDoubleConfirm = false">Cancel</button>
-          <button class="btn btn-danger" @click="confirmReject">Yes, Reject Manuscript</button>
+          <button class="btn btn-secondary" @click="showRejectDoubleConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-danger" @click="confirmReject">{{ t('editor.audit.revisionHandling.detail.modals.reject.doubleConfirm.confirmBtn') }}</button>
         </div>
       </div>
     </div>

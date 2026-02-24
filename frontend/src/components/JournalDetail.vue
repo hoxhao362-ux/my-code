@@ -44,7 +44,7 @@ const handleLogout = () => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
-          <h1>The Lancet</h1>
+          <h1>Journal Platform</h1>
         </div>
         <ul class="navbar-menu">
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">Home</a></li>
@@ -142,7 +142,7 @@ const handleLogout = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 The Lancet. All rights reserved.</p>
+        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -158,7 +158,7 @@ const handleLogout = () => {
 
 /* 导航栏样式 */
 .navbar {
-  background: #e74c3c;
+  background: #0056B3;
   color: white;
   padding: 1rem 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -177,7 +177,7 @@ const handleLogout = () => {
   font-size: 1.8rem;
   font-weight: bold;
   margin: 0;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .navbar-menu {
@@ -267,12 +267,12 @@ const handleLogout = () => {
 }
 
 .pdf-btn {
-  background: #e74c3c;
+  background: #0056B3;
   color: white;
 }
 
 .pdf-btn:hover {
-  background: #c0392b;
+  background: #004494;
 }
 
 .cite-btn {
@@ -281,7 +281,7 @@ const handleLogout = () => {
 }
 
 .cite-btn:hover {
-  background: #2c3e50;
+  background: #5a6268;
 }
 
 /* 文章标题和元数据 */
@@ -297,7 +297,7 @@ const handleLogout = () => {
   color: #2c3e50;
   margin: 0 0 1.5rem 0;
   line-height: 1.3;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .journal-meta {
@@ -489,8 +489,8 @@ const handleLogout = () => {
   color: #2c3e50;
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e74c3c;
-  font-family: 'Times New Roman', Times, serif;
+  border-bottom: 2px solid #0056B3;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .section-content {
@@ -541,7 +541,7 @@ const handleLogout = () => {
   font-weight: 600;
   line-height: 1.3;
   color: #2c3e50;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .article-content h1 {
@@ -632,14 +632,14 @@ const handleLogout = () => {
 
 /* 链接样式 */
 .article-content a {
-  color: #e74c3c;
+  color: #0056B3;
   text-decoration: none;
-  border-bottom: 1px solid #e74c3c;
+  border-bottom: 1px solid #0056B3;
 }
 
 .article-content a:hover {
-  color: #c0392b;
-  border-bottom: 1px solid #c0392b;
+  color: #004494;
+  border-bottom: 1px solid #004494;
 }
 
 /* 图片样式 */
@@ -665,7 +665,7 @@ const handleLogout = () => {
 
 /* 块引用样式 */
 .article-content blockquote {
-  border-left: 4px solid #e74c3c;
+  border-left: 4px solid #0056B3;
   padding-left: 1rem;
   margin: 1.5rem 0;
   font-style: italic;

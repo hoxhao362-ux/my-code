@@ -3,9 +3,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
+import { useI18n } from '../../composables/useI18n'
 
 const userStore = useUserStore()
 const router = useRouter()
+const { t } = useI18n()
 
 // 多步骤注册状态
 const currentStep = ref(1)
@@ -97,23 +99,20 @@ const goToPrevStep = () => {
 // 处理注册
 const handleRegister = async () => {
   if (!isCurrentStepValid.value) {
-    error.value = 'Please fill in all required fields'
+    error.value = t('submission.register.error.required')
     return
   }
   
   if (password.value.length < 6) {
-    error.value = 'Password length must be at least 6 characters'
+    error.value = t('submission.register.error.passwordLength')
     return
   }
-  
-  // 加密密码
-  const encryptedPassword = encryptPassword(password.value)
   
   // 模拟注册逻辑
   const userData = {
     username: username.value,
-    password: encryptedPassword,
-    role: 'writer', // 默认角色为作者
+    password: password.value, // Pass plaintext password to loginSubmission
+    role: 'writer', // 默认角色为撰稿人
     email: email.value,
     firstName: firstName.value,
     lastName: lastName.value,
@@ -177,7 +176,7 @@ const editPersonalKeywords = () => {
 <template>
   <div class="admin-register-form">
     <!-- 注册标题 -->
-    <h2 class="admin-register-title">Journal Platform - Register Account</h2>
+    <h2 class="admin-register-title">{{ t('submission.register.title') }}</h2>
     
     <!-- 步骤指示器 -->
     <div class="step-indicator">
@@ -193,276 +192,276 @@ const editPersonalKeywords = () => {
     
     <!-- 第一步：基本信息 -->
     <div v-if="currentStep === 1" class="step-content">
-      <h3 class="step-title">Choose a Registration Method</h3>
+      <h3 class="step-title">{{ t('submission.register.step1.title') }}</h3>
       
       <div class="orcid-section">
-        <p>Retrieve your details from the ORCID registry:</p>
+        <p>{{ t('submission.register.step1.orcidLabel') }}</p>
         <button class="orcid-button" @click="useORCID">
-          <span class="orcid-icon">🔍</span> Use My ORCID Record
+          <span class="orcid-icon">🔍</span> {{ t('submission.register.step1.orcidBtn') }}
         </button>
       </div>
       
       <div class="manual-registration">
-        <p>Or type in your details and continue to register without using ORCID:</p>
+        <p>{{ t('submission.register.step1.manualLabel') }}</p>
         
         <div class="admin-form-group required">
-          <label for="firstName">Given/First Name*</label>
+          <label for="firstName">{{ t('submission.register.fields.firstName') }}*</label>
           <input 
             type="text" 
             id="firstName" 
             v-model="firstName" 
-            placeholder="Enter your first name"
+            :placeholder="t('submission.register.placeholder.firstName')"
           />
         </div>
         
         <div class="admin-form-group required">
-          <label for="lastName">Family/Last Name*</label>
+          <label for="lastName">{{ t('submission.register.fields.lastName') }}*</label>
           <input 
             type="text" 
             id="lastName" 
             v-model="lastName" 
-            placeholder="Enter your last name"
+            :placeholder="t('submission.register.placeholder.lastName')"
           />
         </div>
         
         <div class="admin-form-group required">
-          <label for="email">E-mail Address*</label>
+          <label for="email">{{ t('submission.register.fields.email') }}*</label>
           <input 
             type="email" 
             id="email" 
             v-model="email" 
-            placeholder="Enter your email address"
+            :placeholder="t('submission.register.placeholder.email')"
           />
         </div>
       </div>
       
       <div class="warning-section">
-        <h4>WARNING</h4>
-        <p>If you think you already have an existing registration of any type (Author, Reviewer, or Editor) in this system, please DO NOT register again. This will cause delays or prevent the processing of any manuscript you submit. If you are unsure if you are already registered, click the 'Forgot Your Login Details?' button.</p>
-        <p>If you are registering again because you want to change your current information, changes must be made to your existing information by clicking the 'Update My Information' link on the menu bar. If you are unsure how to perform these functions, please contact the editorial office.</p>
+        <h4>{{ t('submission.register.step1.warning.title') }}</h4>
+        <p>{{ t('submission.register.step1.warning.msg1') }}</p>
+        <p>{{ t('submission.register.step1.warning.msg2') }}</p>
       </div>
     </div>
     
     <!-- 第二步：登录详情 -->
     <div v-if="currentStep === 2" class="step-content">
-      <h3 class="step-title">Login Details</h3>
+      <h3 class="step-title">{{ t('submission.register.step2.title') }}</h3>
       
       <div class="info-section">
-        <p>The username you choose must be unique within the system.</p>
-        <p>If the one you choose is already in use, you will be asked for another.</p>
+        <p>{{ t('submission.register.step2.info1') }}</p>
+        <p>{{ t('submission.register.step2.info2') }}</p>
       </div>
       
       <div class="admin-form-group required">
-        <label for="username">Enter preferred user name*</label>
+        <label for="username">{{ t('submission.register.fields.username') }}*</label>
         <input 
           type="text" 
           id="username" 
           v-model="username" 
-          placeholder="Enter your username"
+          :placeholder="t('submission.register.placeholder.username')"
         />
       </div>
       
       <div class="admin-form-group required">
-        <label for="password">Password*</label>
+        <label for="password">{{ t('submission.register.fields.password') }}*</label>
         <input 
           type="password" 
           id="password" 
           v-model="password" 
-          placeholder="Enter your password"
+          :placeholder="t('submission.register.placeholder.password')"
         />
       </div>
       
       <div class="admin-form-group required">
-        <label for="confirmPassword">Re-type Password*</label>
+        <label for="confirmPassword">{{ t('submission.register.fields.confirmPassword') }}*</label>
         <input 
           type="password" 
           id="confirmPassword" 
           v-model="confirmPassword" 
-          placeholder="Re-enter your password"
+          :placeholder="t('submission.register.placeholder.confirmPassword')"
         />
       </div>
       
       <div class="password-rules">
-        <a href="#" class="password-rules-link">Password Rules</a>
+        <a href="#" class="password-rules-link">{{ t('submission.register.step2.passwordRules') }}</a>
       </div>
     </div>
     
     <!-- 第三步：个人信息 -->
     <div v-if="currentStep === 3" class="step-content">
-      <h3 class="step-title">Personal Information</h3>
+      <h3 class="step-title">{{ t('submission.register.step3.title') }}</h3>
       
       <div class="admin-form-group required">
-        <label for="title">Title*</label>
+        <label for="title">{{ t('submission.register.fields.title') }}*</label>
         <input 
           type="text" 
           id="title" 
           v-model="title" 
-          placeholder="Enter your title"
+          :placeholder="t('submission.register.placeholder.title')"
         />
       </div>
       
       <div class="admin-form-group required">
-        <label for="firstName3">Given/First Name*</label>
+        <label for="firstName3">{{ t('submission.register.fields.firstName') }}*</label>
         <input 
           type="text" 
           id="firstName3" 
           v-model="firstName" 
-          placeholder="Enter your first name"
+          :placeholder="t('submission.register.placeholder.firstName')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="middleName">Middle Name</label>
+        <label for="middleName">{{ t('submission.register.fields.middleName') }}</label>
         <input 
           type="text" 
           id="middleName" 
           v-model="middleName" 
-          placeholder="Enter your middle name"
+          :placeholder="t('submission.register.placeholder.middleName')"
         />
       </div>
       
       <div class="admin-form-group required">
-        <label for="lastName3">Family/Last Name*</label>
+        <label for="lastName3">{{ t('submission.register.fields.lastName') }}*</label>
         <input 
           type="text" 
           id="lastName3" 
           v-model="lastName" 
-          placeholder="Enter your last name"
+          :placeholder="t('submission.register.placeholder.lastName')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="degree">Degree</label>
+        <label for="degree">{{ t('submission.register.fields.degree') }}</label>
         <div class="input-with-hint">
           <input 
             type="text" 
             id="degree" 
             v-model="degree" 
-            placeholder="Enter your degree"
+            :placeholder="t('submission.register.placeholder.degree')"
           />
-          <span class="input-hint">(Ph.D., M.D., etc.)</span>
+          <span class="input-hint">{{ t('submission.register.step3.degreeHint') }}</span>
         </div>
       </div>
       
       <div class="admin-form-group required">
-        <label for="email3">E-mail Address*</label>
+        <label for="email3">{{ t('submission.register.fields.email') }}*</label>
         <input 
           type="email" 
           id="email3" 
           v-model="email" 
-          placeholder="Enter your email address"
+          :placeholder="t('submission.register.placeholder.email')"
         />
       </div>
       
       <div class="email-info">
-        <p>If entering more than one e-mail address, use a semi-colon between each address (e.g., joe@example.com;joe@yahoo.com). Entering a second e-mail address from a different e-mail provider decreases the chance that SPAM filters will trap e-mails sent to you from online systems.</p>
+        <p>{{ t('submission.register.step3.emailInfo') }}</p>
       </div>
       
       <div class="orcid-info">
-        <p>You are encouraged to link to your ORCID ID and authenticate it. This will allow you to share information with other systems, ensure you get recognition for all your contributions and reduce the risk of errors.</p>
-        <p>You will only need to do this once in this journal to permanently associate your ORCID ID with your account and you can do this by clicking on the fetch/register link below.</p>
+        <p>{{ t('submission.register.step3.orcidInfo1') }}</p>
+        <p>{{ t('submission.register.step3.orcidInfo2') }}</p>
       </div>
       
       <div class="orcid-input-group">
-        <label for="orcid">ORCID</label>
+        <label for="orcid">{{ t('submission.register.fields.orcid') }}</label>
         <div class="orcid-input-wrapper">
           <input 
             type="text" 
             id="orcid" 
             v-model="orcid" 
-            placeholder="Enter your ORCID"
+            :placeholder="t('submission.register.placeholder.orcid')"
           />
-          <button class="orcid-fetch-button">Fetch/Register</button>
+          <button class="orcid-fetch-button">{{ t('submission.register.step3.orcidFetchBtn') }}</button>
         </div>
-        <a href="#" class="orcid-link">What is ORCID?</a>
+        <a href="#" class="orcid-link">{{ t('submission.register.step3.whatIsOrcid') }}</a>
       </div>
     </div>
     
     <!-- 第四步：机构信息 -->
     <div v-if="currentStep === 4" class="step-content">
-      <h3 class="step-title">Institution Related Information</h3>
+      <h3 class="step-title">{{ t('submission.register.step4.title') }}</h3>
       
       <div class="admin-form-group">
-        <label for="position">Position</label>
+        <label for="position">{{ t('submission.register.fields.position') }}</label>
         <input 
           type="text" 
           id="position" 
           v-model="position" 
-          placeholder="Enter your position"
+          :placeholder="t('submission.register.placeholder.position')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="institution">Institution</label>
+        <label for="institution">{{ t('submission.register.fields.institution') }}</label>
         <div class="input-with-hint">
           <input 
             type="text" 
             id="institution" 
             v-model="institution" 
-            placeholder="Enter your institution"
+            :placeholder="t('submission.register.placeholder.institution')"
           />
-          <span class="input-hint">Start typing to display potentially matching institutions.</span>
+          <span class="input-hint">{{ t('submission.register.step4.institutionHint') }}</span>
         </div>
       </div>
       
       <div class="admin-form-group">
-        <label for="department">Department</label>
+        <label for="department">{{ t('submission.register.fields.department') }}</label>
         <input 
           type="text" 
           id="department" 
           v-model="department" 
-          placeholder="Enter your department"
+          :placeholder="t('submission.register.placeholder.department')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="streetAddress">Street Address</label>
+        <label for="streetAddress">{{ t('submission.register.fields.streetAddress') }}</label>
         <input 
           type="text" 
           id="streetAddress" 
           v-model="streetAddress" 
-          placeholder="Enter your street address"
+          :placeholder="t('submission.register.placeholder.streetAddress')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="city">City</label>
+        <label for="city">{{ t('submission.register.fields.city') }}</label>
         <input 
           type="text" 
           id="city" 
           v-model="city" 
-          placeholder="Enter your city"
+          :placeholder="t('submission.register.placeholder.city')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="stateProvince">State or Province</label>
+        <label for="stateProvince">{{ t('submission.register.fields.stateProvince') }}</label>
         <input 
           type="text" 
           id="stateProvince" 
           v-model="stateProvince" 
-          placeholder="Enter your state or province"
+          :placeholder="t('submission.register.placeholder.stateProvince')"
         />
       </div>
       
       <div class="admin-form-group">
-        <label for="zipCode">Zip or Postal Code</label>
+        <label for="zipCode">{{ t('submission.register.fields.zipCode') }}</label>
         <input 
           type="text" 
           id="zipCode" 
           v-model="zipCode" 
-          placeholder="Enter your zip code"
+          :placeholder="t('submission.register.placeholder.zipCode')"
         />
       </div>
       
       <div class="admin-form-group required">
-        <label for="country">Country or Region*</label>
+        <label for="country">{{ t('submission.register.fields.country') }}*</label>
         <select 
           id="country" 
           v-model="country"
           class="admin-role-select"
         >
-          <option value="">Select country or region</option>
+          <option value="">{{ t('submission.register.placeholder.country') }}</option>
           <option value="China">China</option>
           <option value="United States">United States</option>
           <option value="United Kingdom">United Kingdom</option>
@@ -475,39 +474,39 @@ const editPersonalKeywords = () => {
     
     <!-- 第五步：专业领域 -->
     <div v-if="currentStep === 5" class="step-content">
-      <h3 class="step-title">Areas of Interest or Expertise</h3>
+      <h3 class="step-title">{{ t('submission.register.step5.title') }}</h3>
       
       <div class="expertise-info">
-        <p>Please indicate your areas of expertise either by selecting from the pre-defined list using the "Select Personal Classifications" button or by adding your own keywords individually using the "New Keyword" field and associated "Add" button.</p>
+        <p>{{ t('submission.register.step5.info') }}</p>
       </div>
       
       <div class="admin-form-group required">
-        <label for="personalClassifications">Personal Classifications*</label>
+        <label for="personalClassifications">{{ t('submission.register.fields.classifications') }}*</label>
         <div class="classifications-section">
           <div class="selected-classifications">
-            {{ personalClassifications.length > 0 ? personalClassifications.join(', ') : '(None Selected)' }}
+            {{ personalClassifications.length > 0 ? personalClassifications.join(', ') : t('submission.register.step5.noneSelected') }}
           </div>
           <button class="classifications-button" @click="selectPersonalClassifications">
-            Select Personal Classifications
+            {{ t('submission.register.step5.selectBtn') }}
           </button>
-          <div class="required-note">Select 1+ Classifications</div>
+          <div class="required-note">{{ t('submission.register.step5.requiredNote') }}</div>
         </div>
       </div>
       
       <div class="admin-form-group">
-        <label for="personalKeywords">Personal Keywords</label>
+        <label for="personalKeywords">{{ t('submission.register.fields.keywords') }}</label>
         <div class="keywords-section">
           <div class="selected-keywords">
-            {{ personalKeywords.length > 0 ? personalKeywords.join(', ') : '(None Defined)' }}
+            {{ personalKeywords.length > 0 ? personalKeywords.join(', ') : t('submission.register.step5.noneDefined') }}
           </div>
           <button class="keywords-button" @click="editPersonalKeywords">
-            Edit Personal Keywords
+            {{ t('submission.register.step5.editKeywordsBtn') }}
           </button>
         </div>
       </div>
       
       <div class="registration-info">
-        <p>After successful registration, additional user details can be added by navigating to the Update My Information page.</p>
+        <p>{{ t('submission.register.step5.finalInfo') }}</p>
       </div>
     </div>
     
@@ -521,7 +520,7 @@ const editPersonalKeywords = () => {
         class="back-button"
         @click="goToPrevStep"
       >
-        Back
+        {{ t('common.back') }}
       </button>
       
       <button 
@@ -530,7 +529,7 @@ const editPersonalKeywords = () => {
         @click="goToNextStep"
         :disabled="!isCurrentStepValid"
       >
-        Continue >>
+        {{ t('submission.register.btn.continue') }}
       </button>
       
       <button 
@@ -539,14 +538,14 @@ const editPersonalKeywords = () => {
         @click="handleRegister"
         :disabled="!isCurrentStepValid"
       >
-        Complete Registration
+        {{ t('submission.register.btn.complete') }}
       </button>
     </div>
     
     <!-- 登录链接 -->
     <div class="admin-login-link">
-      <span>Already have an account?</span>
-      <a href="#" @click.prevent="goToLogin">Login now</a>
+      <span>{{ t('submission.register.alreadyHaveAccount') }}</span>
+      <a href="#" @click.prevent="goToLogin">{{ t('submission.register.backToLogin') }}</a>
     </div>
     
 

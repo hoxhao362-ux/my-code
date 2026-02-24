@@ -293,7 +293,7 @@ const getFieldError = (value, type, minLength = 0) => {
     }
   }
 
-  // Lancet Standard: If any required field is missing, the popup handles the main message.
+  // Journal Platform Standard: If any required field is missing, the popup handles the main message.
   // Inline errors remain specific but aligned with the requirement "Complete all required fields".
   
   return ''
@@ -769,7 +769,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .required {
-  color: #C93737;
+  color: #dc3545;
 }
 
 .form-textarea {
@@ -783,9 +783,9 @@ const handleConfirmAnonymization = () => {
 }
 
 .form-textarea:focus {
-  border-color: #C93737;
+  border-color: #0056B3;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(201, 55, 55, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 86, 179, 0.25);
 }
 
 .form-input, .form-select {
@@ -797,13 +797,13 @@ const handleConfirmAnonymization = () => {
 }
 
 .form-input:focus, .form-select:focus {
-  border-color: #C93737;
+  border-color: #0056B3;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(201, 55, 55, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 86, 179, 0.25);
 }
 
 .input-error {
-  border-color: #C93737 !important;
+  border-color: #dc3545 !important;
 }
 
 .char-count {
@@ -814,12 +814,12 @@ const handleConfirmAnonymization = () => {
 }
 
 .char-count.error {
-  color: #C93737;
+  color: #dc3545;
   font-weight: bold;
 }
 
 .error-text, .error-msg {
-  color: #C93737;
+  color: #dc3545;
   font-size: 12px;
   margin-top: 5px;
 }
@@ -911,7 +911,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .add-btn:hover:not(:disabled) {
-  background-color: #B02E2E;
+  background-color: #004494;
 }
 
 .add-btn:disabled {
@@ -944,14 +944,14 @@ const handleConfirmAnonymization = () => {
   border-radius: 4px;
 }
 
-.text-red { color: #C93737; font-weight: bold; }
+.text-red { color: #dc3545; font-weight: bold; }
 
 .scan-status-container { margin: 10px 0; font-size: 14px; }
 .status-label { font-weight: 600; color: #333; margin-right: 5px; }
 .status-value { font-weight: bold; }
 .status-pending { color: #4A90E2; }
 .status-completed { color: #28A745; }
-.status-error { color: #C93737; }
+.status-error { color: #dc3545; }
 .status-gray { color: #666; }
 
 .scan-target-info { font-size: 14px; color: #666; margin-bottom: 10px; }
@@ -962,15 +962,15 @@ const handleConfirmAnonymization = () => {
 
 .result-title { margin: 0 0 5px 0; font-size: 16px; font-weight: bold; }
 .success .result-title { color: #28A745; }
-.error .result-title { color: #C93737; }
+.error .result-title { color: #dc3545; }
 
 .result-desc { font-size: 14px; color: #333; margin: 0 0 10px 0; }
 
 .risk-list { list-style: none; padding: 0; margin: 10px 0; }
 .risk-list li { font-size: 14px; margin-bottom: 5px; color: #333; }
-.risk-dot { color: #C93737; margin-right: 5px; }
+.risk-dot { color: #dc3545; margin-right: 5px; }
 
-.revision-hint { color: #C93737; font-weight: bold; font-size: 14px; margin: 10px 0; }
+.revision-hint { color: #dc3545; font-weight: bold; font-size: 14px; margin: 10px 0; }
 
 .btn-confirm-green {
   background: #28A745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;
@@ -984,7 +984,7 @@ const handleConfirmAnonymization = () => {
 .ref-col-title { font-size: 16px; color: #333; margin: 0 0 10px 0; }
 .ref-list { max-height: 200px; overflow-y: auto; font-size: 13px; color: #555; }
 .ref-item { margin-bottom: 8px; line-height: 1.4; }
-.self-citation { color: #C93737; }
+.self-citation { color: #dc3545; }
 .red-star { color: #C93737; font-weight: bold; }
 
 .self-cite-stats { display: flex; gap: 15px; margin: 15px 0; padding: 10px; background: white; border: 1px solid #eee; border-radius: 8px; }
@@ -1035,7 +1035,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .btn-brand-red {
-  background-color: #C93737;
+  background-color: #dc3545;
   color: white;
   border: none;
   border-radius: 4px;
@@ -1046,7 +1046,7 @@ const handleConfirmAnonymization = () => {
 }
 
 .btn-brand-red:hover {
-  background-color: #B02E2E;
+  background-color: #c82333;
 }
 
 .btn-brand-red.confirmed {

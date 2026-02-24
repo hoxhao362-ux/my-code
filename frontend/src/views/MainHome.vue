@@ -3,20 +3,19 @@ import { ref, computed } from 'vue'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 const router = useRouter()
 
-// 处理投稿按钮点击事件
 const goToSubmit = () => {
-  if (user.value) {
-    // 已登录用户直接跳转到投稿系统的投稿页面
-    router.push('/admin/author-submit')
-  } else {
-    // 未登录用户跳转到第二层登录页面
-    router.push('/submission/login')
-  }
+  router.push('/submission')
+}
+
+const goToFullText = (id) => {
+  router.push(`/journal/${id}`)
 }
 
 // 虚拟数据模拟平台统计
@@ -55,7 +54,7 @@ const showSearchResults = ref(false)
     <!-- 顶部极窄顶条 -->
     <div class="top-bar">
       <div class="top-bar-content">
-        <span>Trusted academic publishing platform since 2026</span>
+        <span>{{ t('home.topBar') }}</span>
       </div>
     </div>
 
@@ -70,13 +69,13 @@ const showSearchResults = ref(false)
     <section class="hero-section">
       <div class="hero-content">
         <div class="hero-text">
-          <h1 class="hero-title">Journal Submission Platform</h1>
-          <p class="hero-subtitle">A trusted platform for academic publishing and peer review</p>
+          <h1 class="hero-title">{{ t('home.hero.title') }}</h1>
+          <p class="hero-subtitle">{{ t('home.hero.subtitle') }}</p>
           <button 
             class="hero-submit-btn"
             @click="goToSubmit"
           >
-            Submit your paper
+            {{ t('home.hero.submit') }}
           </button>
         </div>
         <div class="hero-graphic">
@@ -90,7 +89,7 @@ const showSearchResults = ref(false)
     <main class="main-content">
       <!-- 最新文章 -->
       <section class="latest-articles-section">
-        <h2 class="section-title">Latest Articles</h2>
+        <h2 class="section-title">{{ t('home.sections.latestArticles') }}</h2>
         <div class="articles-grid">
           <div 
             v-for="journal in recentJournals" 
@@ -98,28 +97,28 @@ const showSearchResults = ref(false)
             class="article-card"
           >
             <div class="article-category">{{ journal.module || 'Research' }}</div>
-            <h3 class="article-title">{{ journal.title }}</h3>
-            <p class="article-meta">Journal Submission Platform | {{ journal.date || journal.submissionDate }}</p>
-            <p class="article-author">Author: {{ journal.author }}</p>
+            <h3 class="article-title clickable" @click="goToFullText(journal.id)">{{ journal.title }}</h3>
+            <p class="article-meta">{{ t('nav.logo') }} | {{ journal.date || journal.submissionDate }}</p>
+            <p class="article-author">{{ t('allPending.author') }}: {{ journal.author }}</p>
           </div>
         </div>
       </section>
 
       <!-- 期刊家族 -->
       <section class="journal-family-section">
-        <h2 class="section-title">Journal Family</h2>
+        <h2 class="section-title">{{ t('home.sections.journalFamily') }}</h2>
         <div class="journal-family-grid">
           <div class="journal-family-item">
-            <h3 class="journal-family-name">Main Journal</h3>
+            <h3 class="journal-family-name">{{ t('home.journalFamily.main') }}</h3>
           </div>
           <div class="journal-family-item">
-            <h3 class="journal-family-name">Research Letters</h3>
+            <h3 class="journal-family-name">{{ t('home.journalFamily.letters') }}</h3>
           </div>
           <div class="journal-family-item">
-            <h3 class="journal-family-name">Reviews</h3>
+            <h3 class="journal-family-name">{{ t('home.journalFamily.reviews') }}</h3>
           </div>
           <div class="journal-family-item">
-            <h3 class="journal-family-name">Case Reports</h3>
+            <h3 class="journal-family-name">{{ t('home.journalFamily.caseReports') }}</h3>
           </div>
         </div>
       </section>
@@ -128,7 +127,7 @@ const showSearchResults = ref(false)
       <section class="special-collections-section">
         <div class="special-collections-content">
           <div class="special-collection-main">
-            <h3 class="special-collection-title">Special Collection: Emerging Research</h3>
+            <h3 class="special-collection-title">{{ t('home.sections.specialCollections') }}: Emerging Research</h3>
           </div>
           <div class="special-collection-side">
             <div class="special-collection-item">
@@ -145,7 +144,7 @@ const showSearchResults = ref(false)
       <section class="news-views-section">
         <div class="news-views-content">
           <div class="news-main">
-            <h3 class="news-title">Announcements</h3>
+            <h3 class="news-title">{{ t('reviewerDashboard.announcements.title') }}</h3>
             <div 
               v-for="announcement in announcements.slice(0, 1)" 
               :key="announcement.id" 
@@ -172,8 +171,8 @@ const showSearchResults = ref(false)
       <!-- 订阅/推广区块 -->
       <section class="subscribe-section">
         <div class="subscribe-content">
-          <h2 class="subscribe-title">Stay Updated</h2>
-          <p class="subscribe-text">Subscribe to our newsletter for the latest publications and platform updates</p>
+          <h2 class="subscribe-title">{{ t('home.subscribe.title') }}</h2>
+          <p class="subscribe-text">{{ t('home.subscribe.text') }}</p>
         </div>
       </section>
     </main>
@@ -183,44 +182,44 @@ const showSearchResults = ref(false)
       <div class="footer-content">
         <div class="footer-grid">
           <div class="footer-column">
-            <h3 class="footer-column-title">About</h3>
+            <h3 class="footer-column-title">{{ t('footer.about.title') }}</h3>
             <ul class="footer-links">
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Mission</a></li>
-              <li><a href="#">Team</a></li>
-              <li><a href="#">Contact</a></li>
+              <li><a href="#">{{ t('footer.about.us') }}</a></li>
+              <li><a href="#">{{ t('footer.about.mission') }}</a></li>
+              <li><a href="#">{{ t('footer.about.team') }}</a></li>
+              <li><a href="#">{{ t('footer.about.contact') }}</a></li>
             </ul>
           </div>
           <div class="footer-column">
-            <h3 class="footer-column-title">Journals</h3>
+            <h3 class="footer-column-title">{{ t('footer.journals.title') }}</h3>
             <ul class="footer-links">
-              <li><a href="#">Main Journal</a></li>
-              <li><a href="#">Research Letters</a></li>
-              <li><a href="#">Reviews</a></li>
-              <li><a href="#">Case Reports</a></li>
+              <li><a href="#">{{ t('home.journalFamily.main') }}</a></li>
+              <li><a href="#">{{ t('home.journalFamily.letters') }}</a></li>
+              <li><a href="#">{{ t('home.journalFamily.reviews') }}</a></li>
+              <li><a href="#">{{ t('home.journalFamily.caseReports') }}</a></li>
             </ul>
           </div>
           <div class="footer-column">
-            <h3 class="footer-column-title">Authors</h3>
+            <h3 class="footer-column-title">{{ t('footer.authors.title') }}</h3>
             <ul class="footer-links">
-              <li><a href="#">Instructions for Authors</a></li>
-              <li><a href="#">Submission Guidelines</a></li>
-              <li><a href="#">Peer Review Process</a></li>
-              <li><a href="#">Publication Ethics</a></li>
+              <li><a href="#">{{ t('footer.authors.instructions') }}</a></li>
+              <li><a href="#">{{ t('footer.authors.guidelines') }}</a></li>
+              <li><a href="#">{{ t('footer.authors.process') }}</a></li>
+              <li><a href="#">{{ t('footer.authors.ethics') }}</a></li>
             </ul>
           </div>
           <div class="footer-column">
-            <h3 class="footer-column-title">Resources</h3>
+            <h3 class="footer-column-title">{{ t('footer.resources.title') }}</h3>
             <ul class="footer-links">
-              <li><a href="#">FAQ</a></li>
-              <li><a href="#">Help Center</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Terms of Service</a></li>
+              <li><a href="#">{{ t('footer.resources.faq') }}</a></li>
+              <li><a href="#">{{ t('footer.resources.help') }}</a></li>
+              <li><a href="#">{{ t('footer.resources.privacy') }}</a></li>
+              <li><a href="#">{{ t('footer.resources.terms') }}</a></li>
             </ul>
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+          <p>&copy; 2026 {{ t('nav.logo') }}. {{ t('footer.rights') }}</p>
         </div>
       </div>
     </footer>
@@ -428,6 +427,14 @@ const showSearchResults = ref(false)
 
 .article-card:hover .article-title {
   color: #003366;
+}
+
+.article-title.clickable {
+  cursor: pointer;
+}
+
+.article-title.clickable:hover{
+  text-decoration: underline;
 }
 
 .article-meta {

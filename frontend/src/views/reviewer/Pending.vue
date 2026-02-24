@@ -3,9 +3,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
+import { useI18n } from '../../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
@@ -64,71 +67,70 @@ const processReview = (journal, action, comment) => {
     }
 
     // Logic based on Stage and Action
-    if (journal.reviewStage === '初审') {
+    if (journal.reviewStage === 'Initial Review' || journal.reviewStage === '初审') {
       if (action === 'approve') {
-        journal.reviewStage = '复审'
-        journal.status = '审稿中'
+        journal.reviewStage = 'Peer Review'
+        journal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
         updateMessage = `Passed Editor Screening. Proceeding to Peer Review.`
         journal.reviewHistory.push({
-          stage: '初审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Initial Review', status: 'Approved', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'reject') {
-        journal.status = '未通过' // Immediate Rejection
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+        journal.reviewResult = 'Rejected'
         updateMessage = `Rejected at Screening.`
         journal.reviewHistory.push({
-          stage: '初审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Initial Review', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'revise') {
-         // Screening usually doesn't have R&R, but if chosen:
-         journal.status = '修改再审'
+         journal.status = MANUSCRIPT_STATUS.REVISION_REQUIRED
          updateMessage = `Revision Requested (Screening).`
          journal.reviewHistory.push({
-          stage: '初审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Initial Review', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       }
-    } else if (journal.reviewStage === '复审') {
+    } else if (journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审') {
       if (action === 'approve') {
-        journal.reviewStage = '终审'
-        journal.status = '审稿中'
+        journal.reviewStage = 'Final Decision'
+        journal.status = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
         updateMessage = `Passed Peer Review. Proceeding to Final Decision.`
         journal.reviewHistory.push({
-          stage: '复审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Peer Review', status: 'Approved', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'reject') {
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+        journal.reviewResult = 'Rejected'
         updateMessage = `Rejected after Peer Review.`
         journal.reviewHistory.push({
-          stage: '复审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Peer Review', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'revise') {
-        journal.status = '修改再审'
+        journal.status = MANUSCRIPT_STATUS.REVISION_REQUIRED
         updateMessage = `Revision Requested (Peer Review). Waiting for Author.`
         journal.reviewHistory.push({
-          stage: '复审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Peer Review', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       }
-    } else if (journal.reviewStage === '终审') {
+    } else if (journal.reviewStage === 'Final Decision' || journal.reviewStage === '终审') {
        if (action === 'approve') {
-        journal.status = '已发表'
-        journal.reviewResult = '已通过'
-        updateMessage = `Accepted! Manuscript Published.`
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+        journal.reviewResult = 'Accepted'
+        updateMessage = `Accepted! Manuscript will proceed to publication.`
         journal.reviewHistory.push({
-          stage: '终审', status: '通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Final Decision', status: 'Accepted', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'reject') {
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+        journal.reviewResult = 'Rejected'
         updateMessage = `Rejected at Final Decision.`
         journal.reviewHistory.push({
-          stage: '终审', status: '未通过', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Final Decision', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       } else if (action === 'revise') {
-        journal.status = '修改再审'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
         updateMessage = `Revision Requested (Final).`
         journal.reviewHistory.push({
-          stage: '终审', status: '修改再审', reviewer: user.value.username, date: today, comment: comment, type: '完全保密'
+          stage: 'Final Decision', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
         })
       }
     }
@@ -137,9 +139,8 @@ const processReview = (journal, action, comment) => {
     userStore.updateJournal(journal)
     alert(updateMessage)
 
-    // Auto-promote author if published
-    if (journal.status === '已发表') {
-       // ... existing auto-promote logic ...
+    // Auto-promote author if accepted
+    if (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
        const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
        if (authorIndex !== -1) {
          const authorUser = userStore.users[authorIndex];
@@ -175,10 +176,23 @@ const pendingJournalsFiltered = computed(() => {
   // 管理员看到初审和终审阶段的稿件，审核员只看到复审阶段的稿件
   let journals = userStore.journals.filter(journal => {
     const isAdmin = user.value?.role === 'admin';
-    const allowedStages = isAdmin ? ['初审', '终审'] : ['复审'];
-    // 包含所有待审核状态：待审核、审稿中、待初审、待复审、待终审
-    const isPendingStatus = ['待审核', '审稿中', '待初审', '待复审', '待终审'].includes(journal.status);
-    return isPendingStatus && allowedStages.includes(journal.reviewStage);
+    const allowedStages = isAdmin 
+      ? ['Initial Review', 'Final Decision', '初审', '终审'] 
+      : ['Peer Review', '复审'];
+    // 包含所有待审核状态
+    const isPendingStatus = [
+      MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
+      MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+      MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
+      MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
+      '待审核', '审稿中', '待初审', '待复审', '待终审'
+    ].includes(journal.status);
+    return isPendingStatus && allowedStages.some(stage => 
+      journal.reviewStage === stage || 
+      (stage === 'Initial Review' && journal.reviewStage === '初审') ||
+      (stage === 'Peer Review' && journal.reviewStage === '复审') ||
+      (stage === 'Final Decision' && journal.reviewStage === '终审')
+    );
   })
   
   // 模块筛选
@@ -300,13 +314,13 @@ const handleReview = (id, action) => {
     const isAdmin = user.value?.role === 'admin';
     const isReviewer = user.value?.role === 'reviewer';
     
-    if (isAdmin && journal.reviewStage === '复审') {
-      alert('管理员不能处理复审阶段的稿件！');
+    if (isAdmin && (journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审')) {
+      alert('Admin cannot process Peer Review stage manuscripts!');
       return;
     }
     
-    if (isReviewer && journal.reviewStage !== '复审') {
-      alert('审核员只能处理复审阶段的稿件！');
+    if (isReviewer && journal.reviewStage !== 'Peer Review' && journal.reviewStage !== '复审') {
+      alert('Reviewer can only process Peer Review stage manuscripts!');
       return;
     }
     
@@ -319,119 +333,119 @@ const handleReview = (id, action) => {
     const currentStageComment = journal[`${journal.reviewStage.toLowerCase()}Comment`] || ''
     
     // 根据当前审核阶段处理
-    if (journal.reviewStage === '初审') {
+    if (journal.reviewStage === 'Initial Review' || journal.reviewStage === '初审') {
       if (action === 'approve') {
         // 初审通过，进入复审阶段
-        journal.reviewStage = '复审'
-        journal.status = '审稿中'
-        updateMessage = `已通过初审审核，进入复审阶段：${journal.title}`
+        journal.reviewStage = 'Peer Review'
+        journal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
+        updateMessage = `Initial review approved, proceeding to peer review: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '初审',
-          status: '通过',
+          stage: 'Initial Review',
+          status: 'Approved',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '初审通过，进入复审阶段',
-          type: '完全保密'
+          comment: currentStageComment || 'Initial review approved, proceeding to peer review',
+          type: 'Confidential'
         })
         
         // 清空初审评论，为复审阶段准备
         delete journal.chuShenComment
       } else {
         // 初审拒绝，直接未通过
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+        journal.reviewResult = 'Rejected'
         journal.reviewDate = today
-        updateMessage = `已拒绝初审：${journal.title}`
+        updateMessage = `Initial review rejected: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '初审',
-          status: '未通过',
+          stage: 'Initial Review',
+          status: 'Rejected',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '初审未通过',
-          type: '完全保密'
+          comment: currentStageComment || 'Initial review rejected',
+          type: 'Confidential'
         })
         
         // 清空初审评论
         delete journal.chuShenComment
       }
-    } else if (journal.reviewStage === '复审') {
+    } else if (journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审') {
       if (action === 'approve') {
         // 复审通过，进入终审阶段
-        journal.reviewStage = '终审'
-        journal.status = '审稿中'
-        updateMessage = `已通过复审，进入终审阶段：${journal.title}`
+        journal.reviewStage = 'Final Decision'
+        journal.status = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
+        updateMessage = `Peer review approved, proceeding to final decision: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '复审',
-          status: '通过',
+          stage: 'Peer Review',
+          status: 'Approved',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '复审通过，进入终审阶段',
-          type: '完全保密'
+          comment: currentStageComment || 'Peer review approved, proceeding to final decision',
+          type: 'Confidential'
         })
         
         // 清空复审评论，为终审阶段准备
         delete journal.fuShenComment
       } else {
         // 复审拒绝，直接未通过
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+        journal.reviewResult = 'Rejected'
         journal.reviewDate = today
-        updateMessage = `已拒绝复审：${journal.title}`
+        updateMessage = `Peer review rejected: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '复审',
-          status: '未通过',
+          stage: 'Peer Review',
+          status: 'Rejected',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '复审未通过',
-          type: '完全保密'
+          comment: currentStageComment || 'Peer review rejected',
+          type: 'Confidential'
         })
         
         // 清空复审评论
         delete journal.fuShenComment
       }
-    } else if (journal.reviewStage === '终审') {
+    } else if (journal.reviewStage === 'Final Decision' || journal.reviewStage === '终审') {
       if (action === 'approve') {
         // 终审通过，审核完成
-        journal.status = '已发表'
-        journal.reviewResult = '已通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+        journal.reviewResult = 'Accepted'
         journal.reviewDate = today
-        updateMessage = `已通过终审审核，稿件已发表：${journal.title}`
+        updateMessage = `Final decision approved, manuscript accepted: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '终审',
-          status: '通过',
+          stage: 'Final Decision',
+          status: 'Accepted',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '终审通过，稿件已发表',
-          type: '完全保密'
+          comment: currentStageComment || 'Final decision approved, manuscript accepted',
+          type: 'Confidential'
         })
         
         // 清空终审评论
         delete journal.zhongShenComment
       } else {
         // 终审拒绝，直接未通过
-        journal.status = '未通过'
-        journal.reviewResult = '未通过'
+        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+        journal.reviewResult = 'Rejected'
         journal.reviewDate = today
-        updateMessage = `已拒绝终审：${journal.title}`
+        updateMessage = `Final decision rejected: ${journal.title}`
         
         // 添加审核记录
         journal.reviewHistory.push({
-          stage: '终审',
-          status: '未通过',
+          stage: 'Final Decision',
+          status: 'Rejected',
           reviewer: user.value.username,
           date: today,
-          comment: currentStageComment || '终审未通过',
-          type: '完全保密'
+          comment: currentStageComment || 'Final decision rejected',
+          type: 'Confidential'
         })
         
         // 清空终审评论
@@ -445,8 +459,8 @@ const handleReview = (id, action) => {
     // 显示审核结果
     alert(updateMessage)
     
-    // 自动升级作者角色：只要稿件发布，不管是哪个阶段，只要状态为已发表，就自动升级
-    if (journal.status === '已发表') {
+    // 自动升级作者角色：稿件被接受后自动升级
+    if (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
       // 查找作者在用户列表中的记录
       const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
       if (authorIndex !== -1) {
@@ -468,7 +482,7 @@ const handleReview = (id, action) => {
           }
           
           // 提示审核员升级成功
-          alert(`作者 ${journal.author} 已自动升级为作者角色！`);
+          alert(`Author ${journal.author} has been automatically upgraded to author role!`);
         }
       }
     }

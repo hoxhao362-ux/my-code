@@ -69,7 +69,7 @@ const exportReport = () => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user" 
@@ -169,7 +169,7 @@ const exportReport = () => {
       <!-- Detailed Table -->
       <div class="detail-section">
         <h3 class="section-title">Top Performing Reviewers</h3>
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Reviewer Name</th>
@@ -217,8 +217,8 @@ const exportReport = () => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f4f6f8;
   min-height: 100vh;
   color: #333;
@@ -297,7 +297,7 @@ const exportReport = () => {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   text-align: center;
-  border-top: 4px solid #D1202F; /* Lancet Red */
+  border-top: 4px solid #0056B3; /* Journal Blue */
 }
 
 .metric-value {
@@ -452,12 +452,12 @@ const exportReport = () => {
   color: #333;
 }
 
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
   padding: 12px;
   background: #f8f9fa;
@@ -466,12 +466,12 @@ const exportReport = () => {
   color: #555;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 12px;
   border-bottom: 1px solid #eee;
 }
 
-.lancet-table tr:last-child td {
+.jp-table tr:last-child td {
   border-bottom: none;
 }
 </style>

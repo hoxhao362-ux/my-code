@@ -36,7 +36,7 @@ const reviewComments = ref([
   { id: 2, reviewer: 'Reviewer 2', rating: 'Minor Revision', comment: 'Good study, but needs some clarifications in methodology.' }
 ])
 const aeSuggestions = ref("I recommend acceptance after minor revisions regarding the statistical analysis.")
-const sisterJournals = ['Lancet Global Health', 'Lancet Oncology', 'Lancet Public Health']
+const sisterJournals = ['Journal Platform Global Health', 'Journal Platform Oncology', 'Journal Platform Public Health']
 
 // Options
 const decisionOptions = ['Accept', 'Minor Revision', 'Major Revision', 'Reject', 'Transfer to Sister Journal']

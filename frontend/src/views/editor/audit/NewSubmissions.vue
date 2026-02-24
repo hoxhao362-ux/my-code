@@ -5,7 +5,9 @@ import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
+import { useI18n } from '../../../composables/useI18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
@@ -13,9 +15,8 @@ const user = computed(() => userStore.user)
 // Filter for New Submissions
 const pendingJournals = computed(() => {
   return userStore.journals.filter(journal => 
-    journal.status === 'pending_initial_review' || 
+    journal.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || 
     // Legacy support
-    journal.status === '待审核' || 
     journal.status === 'Submitted' || 
     journal.status === 'Pending Screening'
   )
@@ -93,7 +94,7 @@ const viewAttachment = (fileName, type) => {
   if (type === 'image' || type === 'pdf') {
     previewFile.value = { name: fileName, type }
   } else {
-    alert('Preview Unavailable\n\nThis file type is not supported for preview. Please download to view.')
+    alert(t('editor.audit.newSubmissions.alerts.previewUnavailable'))
   }
 }
 
@@ -106,7 +107,7 @@ const downloadAllAttachments = () => {
   isPreparingDownload.value = true
   setTimeout(() => {
     isPreparingDownload.value = false
-    alert('Download started for all attachments.')
+    alert(t('editor.audit.newSubmissions.alerts.downloadStarted'))
   }, 1500)
 }
 
@@ -163,7 +164,7 @@ const sendRevisionRequest = () => {
   updatedJournal.ethicsStatus = 'Revision Requested'
   userStore.updateJournal(updatedJournal)
   showRevisionRequest.value = false
-  alert('Revision request sent to writer.')
+  alert(t('editor.audit.newSubmissions.alerts.revisionSent'))
 }
 
 const printStatement = () => {
@@ -171,7 +172,7 @@ const printStatement = () => {
 }
 
 const downloadFile = (fileName) => {
-  alert(`Downloading ${fileName}...`)
+  alert(t('editor.audit.newSubmissions.alerts.downloading', { name: fileName }))
 }
 
 const toggleTransferPreview = ref(false)
@@ -294,7 +295,7 @@ const confirmScreen = async () => {
         manuscriptId: updatedJournal.id
       })
       
-      assignStatus.value = `Status: Assigned to ${screenForm.value.selectedEditorName}`
+      assignStatus.value = `${t('common.status')}: Assigned to ${screenForm.value.selectedEditorName}`
       
       // Add Log
       userStore.addSystemLog({
@@ -303,20 +304,9 @@ const confirmScreen = async () => {
         action: 'Editor Assigned',
         target: `Manuscript ID: ${updatedJournal.id} assigned to ${screenForm.value.selectedEditorName}`
       })
-
-      // Delay close to show status? User requirement says "Top shows status". 
-      // But usually we close the modal after success. 
-      // "Click Confirm -> API calls -> Status Update in Modal?" 
-      // If we close immediately, user won't see it.
-      // Let's assume we show an alert (standard flow) or keep it open briefly?
-      // User says: "Submission after data update... Modal top shows status text".
-      // This implies the modal might stay open or we show it on the *next* view?
-      // Actually "Confirm & Proceed" usually implies moving forward.
-      // Let's show an alert and close, or just close. 
-      // "Confirm & Proceed" -> Close Modal.
       
     } catch (error) {
-      alert('Assignment failed. Please try again.')
+      alert(t('editor.audit.newSubmissions.alerts.assignmentFailed'))
       return
     }
   } else {
@@ -333,7 +323,7 @@ const confirmScreen = async () => {
   }
 
   showScreenModal.value = false
-  alert('Screening confirmed. Manuscript moved to next stage.')
+  alert(t('editor.audit.newSubmissions.alerts.screenConfirmed'))
 }
 
 // --- Suggest Transfer Logic ---
@@ -349,20 +339,20 @@ const openTransferModal = (journal) => {
   currentJournal.value = journal
   Object.assign(transferForm, {
     reason: '',
-    targetJournal: 'Lancet Digital Health',
-    letter: `Dear ${journal.writer},
-
-We have reviewed your manuscript "${journal.title}". While it is of high quality, we believe it would be better suited for our sister journal, Journal of Medical Science.
-
-Best regards,
-The Journal Submission Platform Editorial Team`
+    targetJournal: 'Journal of Medical Science',
+    letter: t('editor.audit.newSubmissions.modals.transfer.letterTemplate', {
+      writer: journal.writer,
+      title: journal.title,
+      targetJournal: 'Journal of Medical Science',
+      journalName: t('common.journalName')
+    })
   })
   showTransferModal.value = true
 }
 
 const sendTransfer = () => {
   if (!transferForm.reason) {
-    alert('Please enter a reason for transfer.')
+    alert(t('editor.audit.newSubmissions.alerts.transferReasonRequired'))
     return
   }
 
@@ -371,7 +361,7 @@ const sendTransfer = () => {
   userStore.updateJournal(updatedJournal)
 
   showTransferModal.value = false
-  alert('Transfer suggestion sent to writer.')
+  alert(t('editor.audit.newSubmissions.alerts.transferSent'))
 }
 
 // --- Reject Logic ---
@@ -395,12 +385,12 @@ const openRejectModal = (journal) => {
 
 const confirmReject = () => {
   if (rejectForm.value.reasons.length === 0 || !rejectForm.value.comments) {
-    alert('Please fill in all required fields.')
+    alert(t('editor.audit.newSubmissions.alerts.fieldsRequired'))
     return
   }
   
   if (rejectForm.value.reasons.includes('Other') && !rejectForm.value.otherReason) {
-    alert('Please specify the other reason.')
+    alert(t('editor.audit.newSubmissions.alerts.specifyOther'))
     return
   }
 
@@ -414,7 +404,7 @@ const confirmReject = () => {
   userStore.updateJournal(updatedJournal)
 
   showRejectModal.value = false
-  alert('Rejection confirmed. Manuscript marked as Desk Rejected.')
+  alert(t('editor.audit.newSubmissions.alerts.rejectConfirmed'))
 }
 
 const viewDetail = (id) => {
@@ -428,8 +418,8 @@ const viewDetail = (id) => {
     
     <main class="content">
       <div class="header">
-        <h1>New Submissions</h1>
-        <p class="subtitle">Screening & Initial Check</p>
+        <h1>{{ t('editor.audit.newSubmissions.title') }}</h1>
+        <p class="subtitle">{{ t('editor.audit.newSubmissions.subtitle') }}</p>
       </div>
 
       <div class="journals-list">
@@ -437,25 +427,25 @@ const viewDetail = (id) => {
           <div class="journal-info">
             <h3 class="journal-title" @click="viewDetail(journal.id)">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>Writer:</strong> {{ journal.writer }}</span>
-              <span><strong>Date:</strong> {{ journal.date }}</span>
-              <span><strong>Module:</strong> {{ journal.module }}</span>
+              <span><strong>{{ t('editor.audit.newSubmissions.columns.writer') }}:</strong> {{ journal.writer }}</span>
+              <span><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ journal.date }}</span>
+              <span><strong>{{ t('editor.audit.newSubmissions.columns.module') }}:</strong> {{ journal.module }}</span>
             </div>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract), 200) }}</p>
             <div class="materials-links">
-              <a href="#" @click.prevent="openManuscriptModal(journal)" class="link">View Manuscript</a>
-              <a href="#" @click.prevent="openAttachmentsModal(journal)" class="link">View Attachments</a>
-              <a href="#" @click.prevent="openEthicsModal(journal)" class="link">Ethics Statement</a>
+              <a href="#" @click.prevent="openManuscriptModal(journal)" class="link">{{ t('editor.audit.newSubmissions.links.viewManuscript') }}</a>
+              <a href="#" @click.prevent="openAttachmentsModal(journal)" class="link">{{ t('editor.audit.newSubmissions.links.viewAttachments') }}</a>
+              <a href="#" @click.prevent="openEthicsModal(journal)" class="link">{{ t('editor.audit.newSubmissions.links.ethicsStatement') }}</a>
             </div>
           </div>
           <div class="journal-actions">
-            <button class="btn btn-primary" @click="openScreenModal(journal)">Screen & Send</button>
-            <button class="btn btn-warning" @click="openTransferModal(journal)">Suggest Transfer</button>
-            <button class="btn btn-danger" @click="openRejectModal(journal)">Reject</button>
+            <button class="btn btn-primary" @click="openScreenModal(journal)">{{ t('editor.audit.newSubmissions.actions.screen') }}</button>
+            <button class="btn btn-warning" @click="openTransferModal(journal)">{{ t('editor.audit.newSubmissions.actions.transfer') }}</button>
+            <button class="btn btn-danger" @click="openRejectModal(journal)">{{ t('editor.audit.newSubmissions.actions.reject') }}</button>
           </div>
         </div>
         <div v-if="pendingJournals.length === 0" class="no-data">
-          No new submissions pending screening.
+          {{ t('editor.audit.newSubmissions.noData') }}
         </div>
       </div>
     </main>
@@ -464,47 +454,47 @@ const viewDetail = (id) => {
     <div v-if="showScreenModal" class="modal-overlay">
       <div class="modal-content fixed-size-modal screen-modal">
         <div class="modal-header">
-          <h2>Screen & Send Confirmation</h2>
+          <h2>{{ t('editor.audit.newSubmissions.modals.screen.title') }}</h2>
         </div>
         
         <div class="modal-body">
           <div class="modal-section info-section">
-            <p><strong>Title:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>Writer:</strong> {{ currentJournal?.writer }}</p>
-            <p><strong>Module:</strong> {{ currentJournal?.module }}</p>
-            <p><strong>Submission Date:</strong> {{ currentJournal?.date }}</p>
+            <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
+            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('common.module') }}:</strong> {{ currentJournal?.module }}</p>
+            <p><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ currentJournal?.date }}</p>
           </div>
 
           <div class="modal-section">
-            <label class="input-label">Initial Screening Notes (Optional)</label>
-            <textarea v-model="screenForm.notes" placeholder="Enter brief screening notes (optional)" class="lancet-input short-textarea"></textarea>
+            <label class="input-label">{{ t('editor.audit.newSubmissions.modals.screen.notesLabel') }}</label>
+            <textarea v-model="screenForm.notes" :placeholder="t('editor.audit.newSubmissions.modals.screen.notesPlaceholder')" class="jp-input short-textarea"></textarea>
           </div>
 
           <div class="modal-section">
-            <label class="input-label">Assignment Options</label>
+            <label class="input-label">{{ t('editor.audit.newSubmissions.modals.screen.assignmentLabel') }}</label>
             <div class="radio-group">
               <label class="radio-item">
                 <input type="radio" v-model="screenForm.assignmentType" value="auto" @change="handleAssignmentTypeChange">
-                Auto-assign to Assign Reviewers task pool
+                {{ t('editor.audit.newSubmissions.modals.screen.autoAssign') }}
               </label>
               <label class="radio-item">
                 <input type="radio" v-model="screenForm.assignmentType" value="specific" @change="handleAssignmentTypeChange" :disabled="noEditorsAvailable">
-                Assign to specific editor
+                {{ t('editor.audit.newSubmissions.modals.screen.specificAssign') }}
               </label>
             </div>
             
             <div v-if="noEditorsAvailable" class="warning-text">
-              No active editors are available for manual assignment. This manuscript will be auto-assigned to the Assign Reviewers task pool.
+              {{ t('editor.audit.newSubmissions.modals.screen.noEditors') }}
             </div>
 
             <div v-if="screenForm.assignmentType === 'specific'" class="sub-option">
                <div class="custom-dropdown" @click="toggleEditorsDropdown">
                  <div class="dropdown-header" :class="{ 'placeholder': !screenForm.selectedEditorId }">
-                   {{ screenForm.selectedEditorName || 'Select Editor' }}
+                   {{ screenForm.selectedEditorName || t('editor.audit.newSubmissions.modals.screen.selectEditor') }}
                  </div>
                  <div v-if="isEditorsDropdownOpen" class="dropdown-list">
-                   <div v-if="isLoadingEditors" class="dropdown-status">Loading editors...</div>
-                   <div v-else-if="editorsList.length === 0" class="dropdown-status">No active editors available</div>
+                   <div v-if="isLoadingEditors" class="dropdown-status">{{ t('editor.audit.newSubmissions.modals.screen.loadingEditors') }}</div>
+                   <div v-else-if="editorsList.length === 0" class="dropdown-status">{{ t('editor.audit.newSubmissions.modals.screen.noActiveEditors') }}</div>
                    <template v-else>
                      <div 
                        v-for="editor in editorsList" 
@@ -524,11 +514,11 @@ const viewDetail = (id) => {
 
         <div class="modal-footer fixed-footer">
           <div v-if="assignStatus" class="status-text">{{ assignStatus }}</div>
-          <button class="btn btn-secondary" @click="showScreenModal = false">Cancel</button>
+          <button class="btn btn-secondary" @click="showScreenModal = false">{{ t('common.cancel') }}</button>
           <button class="btn btn-primary" 
             @click="confirmScreen"
             :class="{ 'disabled-grey': screenForm.assignmentType === 'specific' && !screenForm.selectedEditorId }"
-          >Confirm & Proceed</button>
+          >{{ t('editor.audit.newSubmissions.modals.screen.confirmBtn') }}</button>
         </div>
       </div>
     </div>
@@ -536,10 +526,10 @@ const viewDetail = (id) => {
     <!-- Validation Modal -->
     <div v-if="showValidationModal" class="modal-overlay" style="z-index: 2000;">
       <div class="validation-modal-content">
-        <h3>Required Selection Missing</h3>
-        <p>Please select an editor to assign this manuscript to before proceeding.</p>
+        <h3>{{ t('editor.audit.newSubmissions.modals.validation.title') }}</h3>
+        <p>{{ t('editor.audit.newSubmissions.modals.validation.message') }}</p>
         <div class="validation-footer">
-          <button class="btn-text-only-bordered" @click="closeValidationModal">OK</button>
+          <button class="btn-text-only-bordered" @click="closeValidationModal">{{ t('common.ok') }}</button>
         </div>
       </div>
     </div>
@@ -548,39 +538,39 @@ const viewDetail = (id) => {
     <div v-if="showTransferModal" class="modal-overlay">
       <div class="modal-content fixed-size-modal transfer-modal">
         <div class="modal-header">
-          <h2>Suggest Transfer to Another Journal</h2>
+          <h2>{{ t('editor.audit.newSubmissions.modals.transfer.title') }}</h2>
         </div>
         
         <div class="modal-body">
           <div class="modal-section info-section">
-            <p><strong>Title:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>Writer:</strong> {{ currentJournal?.writer }}</p>
-            <p><strong>Module:</strong> {{ currentJournal?.module }}</p>
+            <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
+            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('common.module') }}:</strong> {{ currentJournal?.module }}</p>
           </div>
 
           <div class="modal-section">
-            <label class="input-label required">Transfer Reason</label>
-            <textarea v-model="transferForm.reason" placeholder="Enter reason for transfer suggestion (required)" class="lancet-input medium-textarea"></textarea>
+            <label class="input-label required">{{ t('editor.audit.newSubmissions.modals.transfer.reasonLabel') }}</label>
+            <textarea v-model="transferForm.reason" :placeholder="t('editor.audit.newSubmissions.modals.transfer.reasonPlaceholder')" class="jp-input medium-textarea"></textarea>
           </div>
 
           <div class="modal-section">
-            <label class="input-label">Journal Selection</label>
-            <select v-model="transferForm.targetJournal" class="lancet-select">
+            <label class="input-label">{{ t('editor.audit.newSubmissions.modals.transfer.journalLabel') }}</label>
+            <select v-model="transferForm.targetJournal" class="jp-select">
               <option v-for="j in transferJournals" :key="j" :value="j">{{ j }}</option>
             </select>
           </div>
 
           <div class="modal-section">
             <div class="section-header clickable" @click="toggleTransferPreview = !toggleTransferPreview">
-              <label class="input-label">Transfer Letter Preview {{ toggleTransferPreview ? '(-)' : '(+)' }}</label>
+              <label class="input-label">{{ t('editor.audit.newSubmissions.modals.transfer.previewLabel') }} {{ toggleTransferPreview ? '(-)' : '(+)' }}</label>
             </div>
-            <textarea v-if="toggleTransferPreview" v-model="transferForm.letter" class="lancet-input letter-preview"></textarea>
+            <textarea v-if="toggleTransferPreview" v-model="transferForm.letter" class="jp-input letter-preview"></textarea>
           </div>
         </div>
 
         <div class="modal-footer fixed-footer">
-          <button class="btn btn-secondary" @click="showTransferModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="sendTransfer" :disabled="!transferForm.reason">Send Transfer Suggestion</button>
+          <button class="btn btn-secondary" @click="showTransferModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="sendTransfer" :disabled="!transferForm.reason">{{ t('editor.audit.newSubmissions.modals.transfer.sendBtn') }}</button>
         </div>
       </div>
     </div>
@@ -589,73 +579,73 @@ const viewDetail = (id) => {
     <div v-if="showRejectModal" class="modal-overlay">
       <div class="modal-content fixed-size-modal reject-modal">
         <div class="modal-header">
-          <h2>Reject Manuscript</h2>
+          <h2>{{ t('editor.audit.newSubmissions.modals.reject.title') }}</h2>
         </div>
         
         <div class="modal-body">
           <div class="modal-section info-section">
-            <p><strong>Title:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>Writer:</strong> {{ currentJournal?.writer }}</p>
-            <p><strong>Submission Date:</strong> {{ currentJournal?.date }}</p>
+            <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
+            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ currentJournal?.date }}</p>
           </div>
 
           <div class="modal-section">
-            <label class="input-label required">Rejection Reason</label>
+            <label class="input-label required">{{ t('editor.audit.newSubmissions.modals.reject.reasonLabel') }}</label>
             
             <!-- Group: Scope & Novelty -->
             <div class="reason-group">
               <div class="group-header clickable" @click="toggleRejectGroup('Scope & Novelty')">
-                <strong>Scope & Novelty</strong> {{ activeRejectGroup === 'Scope & Novelty' ? '(-)' : '(+)' }}
+                <strong>{{ t('editor.audit.newSubmissions.modals.reject.categories.scope') }}</strong> {{ activeRejectGroup === 'Scope & Novelty' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Scope & Novelty'" class="group-content">
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Out of scope"> Out of scope for this journal</label>
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Insufficient novelty"> Insufficient novelty or originality</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" :value="t('editor.audit.newSubmissions.modals.reject.reasons.outOfScope')"> {{ t('editor.audit.newSubmissions.modals.reject.reasons.outOfScope') }}</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" :value="t('editor.audit.newSubmissions.modals.reject.reasons.insufficientNovelty')"> {{ t('editor.audit.newSubmissions.modals.reject.reasons.insufficientNovelty') }}</label>
               </div>
             </div>
 
             <!-- Group: Methodology -->
             <div class="reason-group">
               <div class="group-header clickable" @click="toggleRejectGroup('Methodology')">
-                <strong>Methodology</strong> {{ activeRejectGroup === 'Methodology' ? '(-)' : '(+)' }}
+                <strong>{{ t('editor.audit.newSubmissions.modals.reject.categories.methodology') }}</strong> {{ activeRejectGroup === 'Methodology' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Methodology'" class="group-content">
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Major methodological flaws"> Major methodological flaws</label>
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Statistical errors"> Statistical errors</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" :value="t('editor.audit.newSubmissions.modals.reject.reasons.methodologicalFlaws')"> {{ t('editor.audit.newSubmissions.modals.reject.reasons.methodologicalFlaws') }}</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" :value="t('editor.audit.newSubmissions.modals.reject.reasons.statisticalErrors')"> {{ t('editor.audit.newSubmissions.modals.reject.reasons.statisticalErrors') }}</label>
               </div>
             </div>
 
             <!-- Group: Presentation & Other -->
             <div class="reason-group">
               <div class="group-header clickable" @click="toggleRejectGroup('Presentation')">
-                <strong>Presentation & Other</strong> {{ activeRejectGroup === 'Presentation' ? '(-)' : '(+)' }}
+                <strong>{{ t('editor.audit.newSubmissions.modals.reject.categories.presentation') }}</strong> {{ activeRejectGroup === 'Presentation' ? '(-)' : '(+)' }}
               </div>
               <div v-show="activeRejectGroup === 'Presentation'" class="group-content">
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Poor presentation"> Poor presentation or language quality</label>
-                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Other"> Other</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" :value="t('editor.audit.newSubmissions.modals.reject.reasons.poorPresentation')"> {{ t('editor.audit.newSubmissions.modals.reject.reasons.poorPresentation') }}</label>
+                <label class="radio-item"><input type="checkbox" v-model="rejectForm.reasons" value="Other"> {{ t('editor.audit.newSubmissions.modals.reject.otherLabel') }}</label>
                  <div v-if="rejectForm.reasons.includes('Other')" class="sub-option">
-                   <input v-model="rejectForm.otherReason" placeholder="Specify other reason" class="lancet-input" />
+                   <input v-model="rejectForm.otherReason" :placeholder="t('editor.audit.newSubmissions.modals.reject.otherLabel')" class="jp-input" />
                 </div>
               </div>
             </div>
           </div>
 
           <div class="modal-section">
-            <label class="input-label required">Detailed Rejection Comments</label>
-            <textarea v-model="rejectForm.comments" placeholder="Enter detailed rejection comments (required)" class="lancet-input medium-textarea"></textarea>
+            <label class="input-label required">{{ t('editor.audit.newSubmissions.modals.reject.commentsLabel') }}</label>
+            <textarea v-model="rejectForm.comments" :placeholder="t('editor.audit.newSubmissions.modals.reject.commentsPlaceholder')" class="jp-input medium-textarea"></textarea>
           </div>
 
           <div class="modal-section">
-            <label class="input-label">Rejection Letter Template</label>
-            <select v-model="rejectForm.template" class="lancet-select">
-              <option>Standard Template</option>
-              <option>Custom Template</option>
+            <label class="input-label">{{ t('editor.audit.newSubmissions.modals.reject.templateLabel') }}</label>
+            <select v-model="rejectForm.template" class="jp-select">
+              <option :value="t('editor.audit.newSubmissions.modals.reject.templates.standard')">{{ t('editor.audit.newSubmissions.modals.reject.templates.standard') }}</option>
+              <option :value="t('editor.audit.newSubmissions.modals.reject.templates.custom')">{{ t('editor.audit.newSubmissions.modals.reject.templates.custom') }}</option>
             </select>
           </div>
         </div>
 
         <div class="modal-footer fixed-footer">
-          <button class="btn btn-secondary" @click="showRejectModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmReject" :disabled="rejectForm.reasons.length === 0 || !rejectForm.comments">Confirm Rejection</button>
+          <button class="btn btn-secondary" @click="showRejectModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="confirmReject" :disabled="rejectForm.reasons.length === 0 || !rejectForm.comments">{{ t('editor.audit.newSubmissions.modals.reject.confirmBtn') }}</button>
         </div>
       </div>
     </div>
@@ -663,30 +653,30 @@ const viewDetail = (id) => {
     <!-- 4. View Manuscript Modal -->
     <div v-if="showManuscriptModal" class="modal-overlay">
       <div class="modal-content wide-modal">
-        <h2 v-if="!isFullScreen">Manuscript: {{ truncateText(currentJournal?.title, 50) }}</h2>
+        <h2 v-if="!isFullScreen">{{ t('editor.audit.newSubmissions.modals.manuscript.title') }}: {{ truncateText(currentJournal?.title, 50) }}</h2>
         
         <div class="modal-top-bar" v-if="!isFullScreen">
-          <span><strong>ID:</strong> {{ currentJournal?.id }}</span>
-          <span><strong>Writer:</strong> {{ currentJournal?.writer }}</span>
-          <span><strong>Date:</strong> {{ currentJournal?.date }}</span>
-          <span><strong>Status:</strong> {{ currentJournal?.status }}</span>
+          <span><strong>{{ t('common.id') }}:</strong> {{ currentJournal?.id }}</span>
+          <span><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</span>
+          <span><strong>{{ t('common.date') }}:</strong> {{ currentJournal?.date }}</span>
+          <span><strong>{{ t('common.status') }}:</strong> {{ currentJournal?.status }}</span>
         </div>
         
         <div class="viewer-controls" :class="{ 'fullscreen-controls': isFullScreen }">
           <div class="control-group">
-            <button class="btn-text" @click="handleZoomIn" :disabled="zoomLevel >= 200" :class="{ disabled: zoomLevel >= 200 }">Zoom In</button>
+            <button class="btn-text" @click="handleZoomIn" :disabled="zoomLevel >= 200" :class="{ disabled: zoomLevel >= 200 }">{{ t('editor.audit.newSubmissions.modals.manuscript.zoomIn') }}</button>
             <span class="control-label">Zoom: {{ zoomLevel }}%</span>
-            <button class="btn-text" @click="handleZoomOut" :disabled="zoomLevel <= 50" :class="{ disabled: zoomLevel <= 50 }">Zoom Out</button>
+            <button class="btn-text" @click="handleZoomOut" :disabled="zoomLevel <= 50" :class="{ disabled: zoomLevel <= 50 }">{{ t('editor.audit.newSubmissions.modals.manuscript.zoomOut') }}</button>
           </div>
           
           <div class="control-group">
-             <button class="btn-text" @click="handlePrevPage" :disabled="currentPage <= 1" :class="{ disabled: currentPage <= 1 }">Previous Page</button>
+             <button class="btn-text" @click="handlePrevPage" :disabled="currentPage <= 1" :class="{ disabled: currentPage <= 1 }">{{ t('editor.audit.newSubmissions.modals.manuscript.prevPage') }}</button>
              <span class="control-label">Page {{ currentPage }} of {{ totalPages }}</span>
-             <button class="btn-text" @click="handleNextPage" :disabled="currentPage >= totalPages" :class="{ disabled: currentPage >= totalPages }">Next Page</button>
+             <button class="btn-text" @click="handleNextPage" :disabled="currentPage >= totalPages" :class="{ disabled: currentPage >= totalPages }">{{ t('editor.audit.newSubmissions.modals.manuscript.nextPage') }}</button>
           </div>
 
           <div class="control-group">
-            <button class="btn-text" @click="toggleFullScreen">{{ isFullScreen ? 'Exit Full Screen' : 'Full Screen' }}</button>
+            <button class="btn-text" @click="toggleFullScreen">{{ isFullScreen ? t('editor.audit.newSubmissions.modals.manuscript.exitFullScreen') : t('editor.audit.newSubmissions.modals.manuscript.fullScreen') }}</button>
           </div>
         </div>
 
@@ -696,24 +686,24 @@ const viewDetail = (id) => {
             <p>[PDF Viewer Placeholder - Page {{ currentPage }}]</p>
             <p>Rendering manuscript content for: {{ currentJournal?.title }}</p>
             <div class="abstract-preview">
-              <h3>Abstract</h3>
+              <h3>{{ t('common.abstract') }}</h3>
               <p v-if="currentJournal?.abstract && currentJournal.abstract.trim()" class="content-text">{{ currentJournal.abstract }}</p>
-              <p v-else class="placeholder-text">Author's abstract will be displayed here once the manuscript is submitted successfully.</p>
+              <p v-else class="placeholder-text">{{ t('common.noData') }}</p>
               
-              <h3>Manuscript Content</h3>
+              <h3>{{ t('common.content') }}</h3>
               <p v-if="currentJournal?.content && currentJournal.content.trim()" class="content-text">{{ currentJournal.content }}</p>
-              <p v-else class="placeholder-text">Manuscript content will be displayed here after submission and verification.</p>
+              <p v-else class="placeholder-text">{{ t('common.noData') }}</p>
               
-              <h3>References</h3>
+              <h3>{{ t('common.references') }}</h3>
               <p v-if="currentJournal?.references && currentJournal.references.trim()" class="content-text">{{ currentJournal.references }}</p>
-              <p v-else class="placeholder-text">References will be listed here once provided by the author.</p>
+              <p v-else class="placeholder-text">{{ t('common.noData') }}</p>
             </div>
           </div>
         </div>
 
         <div class="modal-footer" v-if="!isFullScreen">
-          <button class="btn btn-primary" @click="downloadFile('manuscript.pdf')">Download Manuscript</button>
-          <button class="btn btn-secondary" @click="showManuscriptModal = false">Close</button>
+          <button class="btn btn-primary" @click="downloadFile('manuscript.pdf')">{{ t('editor.audit.newSubmissions.modals.attachments.download') }} {{ t('common.manuscript') }}</button>
+          <button class="btn btn-secondary" @click="showManuscriptModal = false">{{ t('common.close') }}</button>
         </div>
       </div>
     </div>
@@ -721,28 +711,28 @@ const viewDetail = (id) => {
     <!-- 5. View Attachments Modal -->
     <div v-if="showAttachmentsModal" class="modal-overlay">
       <div class="modal-content wide-modal">
-        <h2>Attachments for: {{ truncateText(currentJournal?.title, 50) }}</h2>
+        <h2>{{ t('editor.audit.newSubmissions.modals.attachments.title') }}: {{ truncateText(currentJournal?.title, 50) }}</h2>
         
         <div class="modal-top-bar">
            <button class="btn-text" @click="downloadAllAttachments" :disabled="isPreparingDownload" :class="{ disabled: isPreparingDownload }">
-             {{ isPreparingDownload ? 'Preparing Download...' : 'DOWNLOAD ALL ATTACHMENTS' }}
+             {{ isPreparingDownload ? t('common.loading') : t('editor.audit.newSubmissions.modals.attachments.downloadAll') }}
            </button>
            <button class="btn-text" @click="refreshAttachmentList" :disabled="isRefreshingList" :class="{ disabled: isRefreshingList }">
-             {{ isRefreshingList ? 'Refreshing...' : 'Refresh List' }}
+             {{ isRefreshingList ? t('common.loading') : t('editor.audit.newSubmissions.modals.attachments.refresh') }}
            </button>
         </div>
 
         <div v-if="isRefreshingList" class="loading-state">
-          Refreshing Attachment List...
+          {{ t('common.loading') }}
         </div>
 
         <div v-else-if="previewFile" class="attachment-preview-area">
            <div class="preview-header">
-             <span>Preview: {{ previewFile.name }}</span>
-             <button class="btn-text" @click="closePreview">Close Preview</button>
+             <span>{{ t('editor.audit.newSubmissions.modals.attachments.preview') }}: {{ previewFile.name }}</span>
+             <button class="btn-text" @click="closePreview">{{ t('common.close') }} {{ t('editor.audit.newSubmissions.modals.attachments.preview') }}</button>
            </div>
            <div class="preview-content">
-             [Preview Content for {{ previewFile.type }}]
+             [{{ t('editor.audit.newSubmissions.modals.attachments.preview') }} {{ t('common.content') }} {{ t('common.for') }} {{ previewFile.type }}]
              <br>
              (Zoom In / Zoom Out controls would be here for images)
            </div>
@@ -751,37 +741,37 @@ const viewDetail = (id) => {
         <div v-else class="attachments-list">
           <!-- Group: Supplementary Materials -->
           <div class="attachment-group">
-            <h3>Supplementary Materials</h3>
+            <h3>{{ t('editor.audit.newSubmissions.modals.attachments.groups.supplementary') }}</h3>
             <div class="attachment-item">
               <div class="file-info">
                 <span class="file-name">Supplementary_Data_S1.xlsx</span>
-                <span class="file-meta">2.4 MB • Uploaded on {{ currentJournal?.date }}</span>
+                <span class="file-meta">2.4 MB • {{ t('common.uploadedOn') }} {{ currentJournal?.date }}</span>
               </div>
               <div class="file-actions">
-                 <button class="btn-text" @click="viewAttachment('Supplementary_Data_S1.xlsx', 'xlsx')">View</button>
-                 <button class="btn-text" @click="downloadFile('Supplementary_Data_S1.xlsx')">Download</button>
+                 <button class="btn-text" @click="viewAttachment('Supplementary_Data_S1.xlsx', 'xlsx')">{{ t('editor.audit.newSubmissions.modals.attachments.preview') }}</button>
+                 <button class="btn-text" @click="downloadFile('Supplementary_Data_S1.xlsx')">{{ t('editor.audit.newSubmissions.modals.attachments.download') }}</button>
               </div>
             </div>
           </div>
 
           <!-- Group: Figures -->
           <div class="attachment-group">
-            <h3>Figures & Tables</h3>
+            <h3>{{ t('editor.audit.newSubmissions.modals.attachments.groups.figures') }}</h3>
             <div class="attachment-item">
               <div class="file-info">
                 <span class="file-name">Figure_1_HighRes.tiff</span>
-                <span class="file-meta">15.2 MB • Uploaded on {{ currentJournal?.date }}</span>
+                <span class="file-meta">15.2 MB • {{ t('common.uploadedOn') }} {{ currentJournal?.date }}</span>
               </div>
               <div class="file-actions">
-                 <button class="btn-text" @click="viewAttachment('Figure_1_HighRes.tiff', 'image')">View</button>
-                 <button class="btn-text" @click="downloadFile('Figure_1_HighRes.tiff')">Download</button>
+                 <button class="btn-text" @click="viewAttachment('Figure_1_HighRes.tiff', 'image')">{{ t('editor.audit.newSubmissions.modals.attachments.preview') }}</button>
+                 <button class="btn-text" @click="downloadFile('Figure_1_HighRes.tiff')">{{ t('editor.audit.newSubmissions.modals.attachments.download') }}</button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showAttachmentsModal = false">Close</button>
+          <button class="btn btn-secondary" @click="showAttachmentsModal = false">{{ t('common.close') }}</button>
         </div>
       </div>
     </div>
@@ -789,20 +779,20 @@ const viewDetail = (id) => {
     <!-- 6. Ethics Statement Modal -->
     <div v-if="showEthicsModal" class="modal-overlay">
       <div class="modal-content wide-modal">
-        <h2>Ethics Statement: {{ truncateText(currentJournal?.title, 50) }}</h2>
+        <h2>{{ t('editor.audit.newSubmissions.modals.ethics.title') }}: {{ truncateText(currentJournal?.title, 50) }}</h2>
         
         <div class="ethics-content">
            <div class="ethics-section">
-             <h3>IRB Approval</h3>
-             <p>This study was approved by the Institutional Review Board of [Hospital Name] (Approval No. IRB-2023-001) on January 15, 2023.</p>
+             <h3>{{ t('editor.audit.newSubmissions.modals.ethics.sections.irb') }}</h3>
+             <p>{{ t('editor.audit.newSubmissions.modals.ethics.mockData.irb') }}</p>
            </div>
            <div class="ethics-section">
-             <h3>Informed Consent</h3>
-             <p>Written informed consent was obtained from all participants prior to their inclusion in the study.</p>
+             <h3>{{ t('editor.audit.newSubmissions.modals.ethics.sections.consent') }}</h3>
+             <p>{{ t('editor.audit.newSubmissions.modals.ethics.mockData.consent') }}</p>
            </div>
            <div class="ethics-section">
-             <h3>Data Sharing</h3>
-             <p>De-identified participant data will be made available upon reasonable request to the corresponding writer.</p>
+             <h3>{{ t('editor.audit.newSubmissions.modals.ethics.sections.data') }}</h3>
+             <p>{{ t('editor.audit.newSubmissions.modals.ethics.mockData.data') }}</p>
            </div>
         </div>
 
@@ -811,34 +801,34 @@ const viewDetail = (id) => {
           'pending': !ethicsVerified && currentJournal?.ethicsStatus !== 'Revision Requested',
           'revision': currentJournal?.ethicsStatus === 'Revision Requested'
         }">
-          Status: {{ currentJournal?.ethicsStatus || (ethicsVerified ? 'Verified' : 'Pending Verification') }}
+          {{ t('common.status') }}: {{ currentJournal?.ethicsStatus || (ethicsVerified ? t('editor.audit.newSubmissions.modals.ethics.verified') : t('editor.audit.newSubmissions.modals.ethics.pending')) }}
         </div>
         
         <!-- Revision Request Modal (Nested) -->
         <div v-if="showRevisionRequest" class="nested-modal">
-           <h3>Request Ethics Statement Revision</h3>
-           <textarea v-model="revisionComments" placeholder="Add additional comments for the writer (optional)" class="lancet-input"></textarea>
+           <h3>{{ t('editor.audit.newSubmissions.modals.ethics.requestRevision') }}</h3>
+           <textarea v-model="revisionComments" :placeholder="t('editor.audit.newSubmissions.alerts.revisionSent')" class="jp-input"></textarea>
            <div class="nested-actions">
-             <button class="btn btn-primary" @click="sendRevisionRequest">SEND REQUEST</button>
-             <button class="btn btn-secondary" @click="showRevisionRequest = false">CANCEL</button>
+             <button class="btn btn-primary" @click="sendRevisionRequest">{{ t('common.submit') }}</button>
+             <button class="btn btn-secondary" @click="showRevisionRequest = false">{{ t('common.cancel') }}</button>
            </div>
         </div>
 
         <div class="modal-footer" v-if="!showRevisionRequest">
-          <button class="btn-text" @click="printStatement">Print Statement</button>
+          <button class="btn-text" @click="printStatement">{{ t('editor.audit.newSubmissions.modals.ethics.print') }}</button>
           
           <template v-if="currentJournal?.ethicsStatus !== 'Revision Requested'">
             <button v-if="!ethicsVerified" class="btn btn-primary" @click="verifyEthics">
-              {{ isVerifying ? 'Verifying...' : 'VERIFY ETHICS STATEMENT' }}
+              {{ isVerifying ? t('common.loading') : t('editor.audit.newSubmissions.modals.ethics.verifyBtn') }}
             </button>
             <button v-else class="btn btn-danger" @click="unverifyEthics">
-              {{ isVerifying ? 'Unverifying...' : 'UNVERIFY' }}
+              {{ isVerifying ? t('common.loading') : t('editor.audit.newSubmissions.modals.ethics.unverifyBtn') }}
             </button>
             
-            <button v-if="!ethicsVerified" class="btn btn-warning" @click="openRevisionRequest">REQUEST REVISION</button>
+            <button v-if="!ethicsVerified" class="btn btn-warning" @click="openRevisionRequest">{{ t('editor.audit.newSubmissions.modals.ethics.requestRevision') }}</button>
           </template>
           
-          <button class="btn btn-secondary" @click="showEthicsModal = false">CLOSE</button>
+          <button class="btn btn-secondary" @click="showEthicsModal = false">{{ t('common.close') }}</button>
         </div>
       </div>
     </div>
@@ -897,7 +887,7 @@ const viewDetail = (id) => {
   font-weight: bold;
 }
 .journal-title:hover {
-  color: #e30613; /* Lancet Red */
+  color: #0056B3;
 }
 .journal-meta {
   display: flex;
@@ -917,13 +907,13 @@ const viewDetail = (id) => {
   gap: 1rem;
 }
 .link {
-  color: #e30613;
+  color: #0056B3;
   text-decoration: none;
   font-size: 14px;
   border-bottom: 1px solid transparent;
 }
 .link:hover {
-  border-bottom-color: #e30613;
+  border-bottom-color: #0056B3;
 }
 .journal-actions {
   display: flex;
@@ -943,14 +933,14 @@ const viewDetail = (id) => {
   letter-spacing: 0.5px;
 }
 .btn-primary { 
-  background: #e30613; /* Lancet Red */
+  background: #0056B3;
   color: white; 
 }
 .btn-primary:hover { 
-  background: #c00410; 
+  background: #004494; 
 }
 .btn-primary:disabled {
-  background: #ffcccc;
+  background: #a0aec0;
   cursor: not-allowed;
 }
 .btn-warning { 
@@ -963,8 +953,8 @@ const viewDetail = (id) => {
 }
 .btn-danger { 
   background: white; 
-  color: #e30613; 
-  border: 1px solid #e30613;
+  color: #dc3545; 
+  border: 1px solid #dc3545;
 }
 .btn-danger:hover { 
   background: #fff0f0; 
@@ -1005,7 +995,7 @@ const viewDetail = (id) => {
   font-size: 20px;
   color: #333;
   margin: 0;
-  border-bottom: 2px solid #e30613;
+  border-bottom: 2px solid #dc3545;
   padding-bottom: 10px;
   text-transform: uppercase;
 }
@@ -1032,9 +1022,9 @@ const viewDetail = (id) => {
 }
 .input-label.required::after {
   content: " *";
-  color: #e30613;
+  color: #dc3545;
 }
-.lancet-input, .lancet-select {
+.jp-input, .jp-select {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 0;
@@ -1042,11 +1032,11 @@ const viewDetail = (id) => {
   width: 100%;
   box-sizing: border-box;
 }
-.lancet-input:focus, .lancet-select:focus {
+.jp-input:focus, .jp-select:focus {
   outline: none;
-  border-color: #e30613;
+  border-color: #0056B3;
 }
-textarea.lancet-input {
+textarea.jp-input {
   min-height: 80px;
   resize: vertical;
 }
@@ -1085,7 +1075,7 @@ textarea.lancet-input {
 
 .modal-header {
   padding: 20px 30px;
-  border-bottom: 2px solid #e30613;
+  border-bottom: 2px solid #dc3545;
   background: white;
   flex-shrink: 0;
 }
@@ -1458,13 +1448,13 @@ textarea.lancet-input {
 }
 .status-text {
   font-size: 14px;
-  color: #e30613;
+  color: #0056B3;
   margin-right: auto;
   font-weight: bold;
   align-self: center;
 }
 .warning-text {
-  color: #e30613;
+  color: #dc3545;
   font-size: 14px;
   margin-top: 5px;
   padding: 10px;

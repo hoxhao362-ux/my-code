@@ -1,17 +1,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../../../composables/useI18n'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
 import { truncateText } from '../../../utils/helpers'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 import RevisionAuditDetail from './RevisionAuditDetail.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// Stage 2: Editor receives revision (The Lancet Editor Norms)
+// Stage 2: Editor receives revision (Journal Platform Editor Norms)
 // Auth Filter: Only Editor can access
 const authFilter = () => {
   if (user.value?.role !== 'editor' && user.value?.role !== 'admin') {
@@ -46,8 +48,8 @@ const getPendingRevisions = async () => {
     revision_type: journal.revisionType || 'Minor Revision', // Mock revision type
     deadline: journal.deadline || '2026-03-01', // Mock deadline
     status: journal.status,
-    version: journal.version || 'R1', // Lancet: Version Control
-    format_checked: journal.format_checked || false, // Lancet: Format Check Status
+    version: journal.version || 'R1', // Journal Platform: Version Control
+    format_checked: journal.format_checked || false, // Journal Platform: Format Check Status
     raw_data: journal // Keep reference to original object for updates
   }))
 }
@@ -108,21 +110,33 @@ const getReviewerComments = (item) => {
   // 尝试从稿件数据中获取真实评论
   if (item.raw_data && item.raw_data.reviews && item.raw_data.reviews.length > 0) {
     return item.raw_data.reviews.map((review, index) => ({
-      reviewerId: `Reviewer ${index + 1}`,
-      comments: review.comments || review.comment || []
+      reviewerId: `Reviewer #${index + 1}`,
+      realName: review.reviewer, // 保存真实姓名供编辑参考
+      comments: typeof review.comments === 'string' ? [review.comments] : 
+                typeof review.comment === 'string' ? [review.comment] : 
+                review.comments || review.comment || []
+    })).filter(reviewer => reviewer.comments && reviewer.comments.length > 0)
+  }
+  // 尝试从 reviewHistory 中获取评论
+  if (item.raw_data && item.raw_data.reviewHistory && item.raw_data.reviewHistory.length > 0) {
+    return item.raw_data.reviewHistory.map((review, index) => ({
+      reviewerId: `Reviewer #${index + 1}`,
+      realName: review.reviewer, // 保存真实姓名供编辑参考
+      comments: typeof review.comment === 'string' ? [review.comment] : 
+                review.comment || []
     })).filter(reviewer => reviewer.comments && reviewer.comments.length > 0)
   }
   // 模拟数据作为 fallback
   return [
     {
-      reviewerId: 'Reviewer 1',
+      reviewerId: 'Reviewer #1',
       comments: [
         'The methodology section requires clarification on sample size calculation.',
         'Figure 2 needs to be updated to include the new data points.'
       ]
     },
     {
-      reviewerId: 'Reviewer 2',
+      reviewerId: 'Reviewer #2',
       comments: [
         'The discussion should be revised to better contextualize the findings.'
       ]
@@ -153,14 +167,14 @@ const selectedItem = ref(null)
 const actionType = ref('') // 'approve', 'reject', 'revision'
 const comment = ref('') 
 
-// Lancet: Format Check
+// Journal Platform: Format Check
 const showFormatCheckModal = ref(false)
 const formatChecklist = ref([
-  { id: 1, label: 'Manuscript word count limits', checked: false },
-  { id: 2, label: 'Abstract structure (Background, Methods, Findings, Interpretation)', checked: false },
-  { id: 3, label: 'Conflict of Interest declaration', checked: false },
-  { id: 4, label: 'Figure quality and legends', checked: false },
-  { id: 5, label: 'Reference formatting (Vancouver style)', checked: false }
+  { id: 1, label: t('editor.audit.revisionHandling.formatCheck.checklist.wordCount'), checked: false },
+  { id: 2, label: t('editor.audit.revisionHandling.formatCheck.checklist.abstract'), checked: false },
+  { id: 3, label: t('editor.audit.revisionHandling.formatCheck.checklist.coi'), checked: false },
+  { id: 4, label: t('editor.audit.revisionHandling.formatCheck.checklist.figures'), checked: false },
+  { id: 5, label: t('editor.audit.revisionHandling.formatCheck.checklist.references'), checked: false }
 ])
 
 const openFormatCheck = (item) => {
@@ -173,7 +187,7 @@ const openFormatCheck = (item) => {
 const confirmFormatCheck = () => {
   const allChecked = formatChecklist.value.every(i => i.checked)
   if (!allChecked) {
-    alert('All format checks must be passed before proceeding.')
+    alert(t('editor.audit.revisionHandling.alerts.allChecksRequired'))
     return
   }
   
@@ -186,10 +200,10 @@ const confirmFormatCheck = () => {
     userStore.updateJournal(journal)
   }
   showFormatCheckModal.value = false
-  alert('Format check passed. You may now proceed with the review process.')
+  alert(t('editor.audit.revisionHandling.alerts.formatPassed'))
 }
 
-// Lancet: Re-review Coordination
+// Journal Platform: Re-review Coordination
 const showReviewerSelectModal = ref(false)
 const selectedReviewers = ref([])
 const availableReviewers = ref([])
@@ -201,12 +215,25 @@ const openAuditModal = (item, action) => {
   
   if (action === 'revision') {
     // Open Reviewer Selection for Re-review
-    availableReviewers.value = [
-      { id: 'r1', name: 'Dr. Smith (Reviewer 1)', status: 'Available' },
-      { id: 'r2', name: 'Prof. Johnson (Reviewer 2)', status: 'Available' },
-      { id: 'r3', name: 'Dr. Lee (New)', status: 'Available' }
-    ]
-    selectedReviewers.value = ['r1', 'r2'] // Default to original
+    // Load all reviewers from userStore
+    availableReviewers.value = userStore.users
+      .filter(user => user.role === 'reviewer')
+      .map(user => ({
+        id: user.id || user.username,
+        name: user.username,
+        status: 'Available'
+      }))
+    
+    // If no reviewers in store, use mock data as fallback
+    if (availableReviewers.value.length === 0) {
+      availableReviewers.value = [
+        { id: 'r1', name: 'Dr. Smith (Reviewer 1)', status: 'Available' },
+        { id: 'r2', name: 'Prof. Johnson (Reviewer 2)', status: 'Available' },
+        { id: 'r3', name: 'Dr. Lee (New)', status: 'Available' }
+      ]
+    }
+    
+    selectedReviewers.value = availableReviewers.value.slice(0, 2).map(r => r.id) // Default to first two reviewers
     showReviewerSelectModal.value = true
   } else {
     showConfirmModal.value = true
@@ -216,7 +243,7 @@ const openAuditModal = (item, action) => {
 const confirmReReview = () => {
   showReviewerSelectModal.value = false
   // Proceed to confirmation with selected reviewers note
-  comment.value = `Sent back to reviewers: ${selectedReviewers.value.join(', ')}`
+  comment.value = t('editor.audit.revisionHandling.alerts.sentToReviewers', { reviewers: selectedReviewers.value.join(', ') })
   showConfirmModal.value = true
 }
 
@@ -225,7 +252,7 @@ const isCommentValid = computed(() => {
 })
 
 const getConfirmTooltip = computed(() => {
-  if (!isCommentValid.value) return 'Please provide an editor comment to document your decision before proceeding.'
+  if (!isCommentValid.value) return t('editor.audit.decisionMaking.alerts.enterComments')
   return ''
 })
 
@@ -243,26 +270,42 @@ const auditRevision = async () => {
   // Determine new status based on action
   let newStatus = ''
   let historyAction = ''
+  let notificationTitle = ''
   let notificationMsg = ''
 
   if (actionType.value === 'approve') {
-    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED 
+    newStatus = MANUSCRIPT_STATUS.REVIEW_COMPLETED 
     historyAction = 'Approved revision'
-    notificationMsg = `Your revision for MS ${selectedItem.value.ms_id} has been approved. Editor Comment: ${comment.value}`
+    notificationTitle = t('editor.audit.revisionHandling.alerts.notification.approvedTitle')
+    notificationMsg = t('editor.audit.revisionHandling.alerts.notification.approvedMsg', { id: selectedItem.value.ms_id, comment: comment.value })
   } else if (actionType.value === 'reject') {
-    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
-    historyAction = 'Rejected revision'
-    notificationMsg = `The revision did not address reviewer comments adequately. Manuscript rejected. Editor Comment: ${comment.value}`
+    newStatus = MANUSCRIPT_STATUS.REVISION_REQUIRED
+    historyAction = 'Returned for revision'
+    notificationTitle = t('editor.audit.revisionHandling.alerts.notification.rejectedTitle')
+    notificationMsg = t('editor.audit.revisionHandling.alerts.notification.rejectedMsg', { id: selectedItem.value.ms_id, comment: comment.value })
   } else if (actionType.value === 'revision') {
     newStatus = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW // Return to reviewers
-    historyAction = 'Sent back to reviewers'
-    notificationMsg = 'Your manuscript has been sent back to reviewers for further evaluation.'
+    historyAction = 'Sent back to reviewers for re-review'
+    notificationTitle = t('editor.audit.revisionHandling.alerts.notification.statusUpdateTitle')
+    notificationMsg = t('editor.audit.revisionHandling.alerts.notification.reReviewMsg')
   }
 
   // Update Status (Frontend Simulation)
   const journal = selectedItem.value.raw_data
   const updatedJournal = { ...journal }
   updatedJournal.status = newStatus
+  
+  // If sent back to reviewers for re-review, set reviewStage to 'Re-review'
+  if (actionType.value === 'revision') {
+    updatedJournal.reviewStage = 'Re-review'
+    // Assign selected reviewers to the manuscript (store both id and name)
+    if (selectedReviewers.value && selectedReviewers.value.length > 0) {
+      updatedJournal.assignedReviewers = selectedReviewers.value.map(id => {
+        const reviewer = availableReviewers.value.find(r => String(r.id) === String(id))
+        return reviewer ? { id: reviewer.id, name: reviewer.name } : { id: id, name: id }
+      })
+    }
+  }
   
   // Add History Entry
   const historyEntry = {
@@ -284,7 +327,7 @@ const auditRevision = async () => {
   // Notify Author
   existingNotifications.unshift({
     id: Date.now(),
-    title: `Revision ${actionType.value === 'approve' ? 'Approved' : actionType.value === 'reject' ? 'Rejected' : 'Status Update'}`,
+    title: notificationTitle,
     message: notificationMsg,
     type: actionType.value === 'approve' ? 'success' : actionType.value === 'reject' ? 'error' : 'info',
     createdAt: new Date().toISOString(),
@@ -296,8 +339,8 @@ const auditRevision = async () => {
   if (actionType.value === 'revision') {
      existingNotifications.unshift({
         id: Date.now() + 1,
-        title: 'Re-Review Request',
-        message: `Manuscript ${selectedItem.value.ms_id} has been returned for re-review. Please check your assignments.`,
+        title: t('editor.audit.revisionHandling.alerts.notification.reReviewTitle'),
+        message: t('editor.audit.revisionHandling.alerts.notification.reviewerMsg', { id: selectedItem.value.ms_id }),
         type: 'warning',
         createdAt: new Date().toISOString(),
         isRead: false,
@@ -314,7 +357,12 @@ const auditRevision = async () => {
   // Refresh List
   await loadRevisions()
   
-  alert(`Manuscript ${selectedItem.value.ms_id} has been ${actionType.value === 'approve' ? 'approved for final review' : actionType.value}.`)
+  alert(t('editor.audit.revisionHandling.alerts.auditSuccess', { 
+    id: selectedItem.value.ms_id, 
+    action: actionType.value === 'approve' ? t('editor.audit.revisionHandling.actions.approve').toLowerCase() : 
+            actionType.value === 'reject' ? t('editor.audit.revisionHandling.actions.returnForRevision').toLowerCase() : 
+            actionType.value 
+  }))
 }
 </script>
 
@@ -325,29 +373,29 @@ const auditRevision = async () => {
     <main class="content">
       <template v-if="currentView === 'list'">
         <div class="header">
-          <h1>Revision Handling</h1>
-          <p class="subtitle">Lancet-Style Revision Audit & Control</p>
+          <h1>{{ t('editor.audit.revisionHandling.title') }}</h1>
+          <p class="subtitle">{{ t('editor.audit.revisionHandling.subtitle') }}</p>
         </div>
 
         <div class="table-container">
           <table class="revision-table">
             <thead>
               <tr>
-                <th>MS ID</th>
-                <th>Title</th>
-                <th>Version</th>
-                <th>Deadline</th>
-                <th>Status</th>
-                <th>Format Check</th>
-                <th>Actions</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.id') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.title') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.version') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.deadline') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.status') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.formatCheck') }}</th>
+                <th>{{ t('editor.audit.revisionHandling.columns.actions') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="7" class="text-center">Loading revisions...</td>
+                <td colspan="7" class="text-center">{{ t('common.loading') }}</td>
               </tr>
               <tr v-else-if="revisionList.length === 0">
-                <td colspan="7" class="text-center">No pending revisions found.</td>
+                <td colspan="7" class="text-center">{{ t('editor.audit.revisionHandling.noManuscripts') }}</td>
               </tr>
               <tr v-else v-for="item in revisionList" :key="item.ms_id">
                 <td>{{ item.ms_id }}</td>
@@ -362,14 +410,14 @@ const auditRevision = async () => {
                   <span class="status-tag">{{ item.status.replace('_', ' ').toUpperCase() }}</span>
                 </td>
                 <td>
-                  <span v-if="item.format_checked" class="check-pass">✔ Passed</span>
-                  <button v-else class="btn btn-sm btn-outline" @click="openFormatCheck(item)">Run Check</button>
+                  <span v-if="item.format_checked" class="check-pass">{{ t('editor.audit.revisionHandling.formatCheck.passed') }}</span>
+                  <button v-else class="btn btn-sm btn-outline" @click="openFormatCheck(item)">{{ t('editor.audit.revisionHandling.formatCheck.runCheck') }}</button>
                 </td>
                 <td class="actions-cell">
-                  <button class="btn btn-sm btn-info" @click="previewRevisionFile(item)">Preview</button>
-                  <button class="btn btn-sm btn-success" :disabled="!item.format_checked" @click="openAuditModal(item, 'approve')">Approve</button>
-                  <button class="btn btn-sm btn-warning" :disabled="!item.format_checked" @click="openAuditModal(item, 'revision')">Re-Review</button>
-                  <button class="btn btn-sm btn-danger" @click="openAuditModal(item, 'reject')">Reject</button>
+                  <button class="btn btn-sm btn-info" @click="previewRevisionFile(item)">{{ t('editor.audit.revisionHandling.actions.preview') }}</button>
+                  <button class="btn btn-sm btn-success" :disabled="!item.format_checked" @click="openAuditModal(item, 'approve')">{{ t('editor.audit.revisionHandling.actions.approve') }}</button>
+                  <button class="btn btn-sm btn-warning" :disabled="!item.format_checked" @click="openAuditModal(item, 'revision')">{{ t('editor.audit.revisionHandling.actions.reReview') }}</button>
+                  <button class="btn btn-sm btn-danger" @click="openAuditModal(item, 'reject')">{{ t('editor.audit.revisionHandling.actions.returnForRevision') }}</button>
                 </td>
               </tr>
             </tbody>
@@ -390,11 +438,11 @@ const auditRevision = async () => {
     <div v-if="showFormatCheckModal" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>Format Compliance Check</h3>
+          <h3>{{ t('editor.audit.revisionHandling.formatCheck.title') }}</h3>
           <button class="close-btn" @click="showFormatCheckModal = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Please verify the following items for the revision ({{ selectedItem?.version }}):</p>
+          <p>{{ t('editor.audit.revisionHandling.formatCheck.verifyItems', { version: selectedItem?.version }) }}</p>
           <div class="checklist">
              <div v-for="check in formatChecklist" :key="check.id" class="check-item">
                <label>
@@ -405,8 +453,8 @@ const auditRevision = async () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showFormatCheckModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmFormatCheck">Confirm & Pass</button>
+          <button class="btn btn-secondary" @click="showFormatCheckModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="confirmFormatCheck">{{ t('editor.audit.revisionHandling.formatCheck.passBtn') }}</button>
         </div>
       </div>
     </div>
@@ -415,11 +463,11 @@ const auditRevision = async () => {
     <div v-if="showReviewerSelectModal" class="modal-overlay">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>Coordinate Re-Review</h3>
+          <h3>{{ t('editor.audit.revisionHandling.reReview.title') }}</h3>
           <button class="close-btn" @click="showReviewerSelectModal = false">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Select reviewers for this round of revision:</p>
+          <p>{{ t('editor.audit.revisionHandling.reReview.selectReviewers') }}</p>
           <div class="reviewer-list">
              <div v-for="r in availableReviewers" :key="r.id" class="reviewer-select-item">
                <label>
@@ -430,8 +478,8 @@ const auditRevision = async () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showReviewerSelectModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="confirmReReview">Send to Selected Reviewers</button>
+          <button class="btn btn-secondary" @click="showReviewerSelectModal = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="confirmReReview">{{ t('editor.audit.revisionHandling.reReview.sendBtn') }}</button>
         </div>
       </div>
     </div>
@@ -440,30 +488,30 @@ const auditRevision = async () => {
     <div v-if="showConfirmModal" class="modal-overlay">
       <div class="modal-box modal-lg">
         <div class="modal-header">
-          <h3>Confirm Action: {{ actionType.toUpperCase() }}</h3>
+          <h3>{{ t('editor.audit.revisionHandling.modals.confirmAction', { action: actionType.toUpperCase() }) }}</h3>
           <button class="close-btn" @click="showConfirmModal = false">&times;</button>
         </div>
         <div class="modal-content">
           <p>
-            Are you sure you want to <strong>{{ actionType }}</strong> the revision for Manuscript ID: {{ selectedItem?.ms_id }}?
+            {{ t('editor.audit.revisionHandling.modals.areYouSure', { action: actionType, id: selectedItem?.ms_id }) }}
           </p>
 
           <div class="form-group">
-            <label>{{ actionType === 'approve' || actionType === 'reject' ? 'Editor Comment / Decision Rationale:' : 'Editor Comments (Optional):' }}</label>
+            <label>{{ actionType === 'approve' || actionType === 'reject' ? t('editor.audit.revisionHandling.modals.editorComment') : t('editor.audit.revisionHandling.modals.editorCommentsOptional') }}</label>
             
             <template v-if="actionType === 'approve' || actionType === 'reject'">
-               <div class="editor-tip" v-if="actionType === 'approve'">Please document the rationale for approving this manuscript.</div>
-               <div class="editor-tip warning" v-else-if="actionType === 'reject'">Please provide a clear and constructive reason for rejecting this manuscript.</div>
+               <div class="editor-tip" v-if="actionType === 'approve'">{{ t('editor.audit.revisionHandling.modals.approveRationale') }}</div>
+               <div class="editor-tip warning" v-else-if="actionType === 'reject'">{{ t('editor.audit.revisionHandling.modals.rejectRationale') }}</div>
                
                <textarea v-model="comment" rows="6" class="form-control"></textarea>
             </template>
             <template v-else>
-               <textarea v-model="comment" rows="3" placeholder="Enter comments for the author..." class="form-control"></textarea>
+               <textarea v-model="comment" rows="3" :placeholder="t('editor.audit.revisionHandling.modals.commentPlaceholder')" class="form-control"></textarea>
             </template>
           </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" @click="showConfirmModal = false">Cancel</button>
+            <button class="btn btn-secondary" @click="showConfirmModal = false">{{ t('common.cancel') }}</button>
             
             <div class="btn-wrapper" :title="getConfirmTooltip">
               <button 
@@ -472,7 +520,7 @@ const auditRevision = async () => {
                 @click="actionType === 'approve' || actionType === 'reject' ? handleConfirmClick() : auditRevision()"
                 :disabled="(actionType === 'approve' || actionType === 'reject') && !isCommentValid"
               >
-                 Confirm {{ actionType.charAt(0).toUpperCase() + actionType.slice(1) }}
+                 {{ t('editor.audit.revisionHandling.modals.confirmBtn', { action: actionType.charAt(0).toUpperCase() + actionType.slice(1) }) }}
               </button>
             </div>
           </div>
@@ -483,20 +531,20 @@ const auditRevision = async () => {
     <div v-if="showDoubleConfirm" class="modal-overlay" style="z-index: 1100;">
       <div class="modal-box" :class="{ 'warning-box': actionType === 'reject' }" style="width: 450px;">
         <div class="modal-header" :class="{ 'warning-header': actionType === 'reject' }">
-          <h3>Confirm {{ actionType === 'approve' ? 'Approval' : 'Rejection' }}</h3>
+          <h3>{{ actionType === 'approve' ? t('editor.audit.revisionHandling.modals.doubleConfirm.approveTitle') : t('editor.audit.revisionHandling.modals.doubleConfirm.rejectTitle') }}</h3>
           <button class="close-btn" @click="showDoubleConfirm = false">&times;</button>
         </div>
         <div class="modal-content">
           <template v-if="actionType === 'approve'">
-            <p>Are you sure you want to approve this manuscript?</p>
+            <p>{{ t('editor.audit.revisionHandling.modals.doubleConfirm.approveMsg') }}</p>
           </template>
           <template v-else-if="actionType === 'reject'">
-            <p style="color: #d32f2f; font-weight: 600;">WARNING: You are about to reject this manuscript. Are you absolutely sure?</p>
+            <p style="color: #d32f2f; font-weight: 600;">{{ t('editor.audit.revisionHandling.modals.doubleConfirm.rejectMsg') }}</p>
           </template>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showDoubleConfirm = false">Cancel</button>
-          <button class="btn" :class="actionType === 'reject' ? 'btn-danger' : 'btn-success'" @click="auditRevision">Confirm</button>
+          <button class="btn btn-secondary" @click="showDoubleConfirm = false">{{ t('common.cancel') }}</button>
+          <button class="btn" :class="actionType === 'reject' ? 'btn-danger' : 'btn-success'" @click="auditRevision">{{ t('common.confirm') }}</button>
         </div>
       </div>
     </div>
@@ -505,7 +553,7 @@ const auditRevision = async () => {
     <div v-if="showPreviewModal" class="modal-overlay" style="z-index: 1050;">
       <div class="modal-box" style="width: 90vw; max-width: 1000px; max-height: 90vh;">
         <div class="modal-header">
-          <h3>Preview: Manuscript ID {{ selectedPreviewItem?.ms_id }}</h3>
+          <h3>{{ t('editor.audit.revisionHandling.preview.title', { id: selectedPreviewItem?.ms_id }) }}</h3>
           <button class="close-btn" @click="closePreviewModal">&times;</button>
         </div>
         <div class="modal-content" style="flex: 1; display: flex; flex-direction: column;">
@@ -516,21 +564,21 @@ const auditRevision = async () => {
               :class="{ 'active': activePreviewTab === 'reviewerComments' }"
               @click="activePreviewTab = 'reviewerComments'"
             >
-              Reviewer Comments
+              {{ t('editor.audit.revisionHandling.preview.tabs.reviewerComments') }}
             </button>
             <button 
               class="tab-btn" 
               :class="{ 'active': activePreviewTab === 'manuscriptPreview' }"
               @click="activePreviewTab = 'manuscriptPreview'"
             >
-              Manuscript Preview
+              {{ t('editor.audit.revisionHandling.preview.tabs.manuscriptPreview') }}
             </button>
             <button 
               class="tab-btn" 
               :class="{ 'active': activePreviewTab === 'revisionHistory' }"
               @click="activePreviewTab = 'revisionHistory'"
             >
-              Revision History
+              {{ t('editor.audit.revisionHandling.preview.tabs.revisionHistory') }}
             </button>
           </div>
           
@@ -540,7 +588,7 @@ const auditRevision = async () => {
             <div v-if="activePreviewTab === 'reviewerComments'" class="tab-pane">
               <div v-if="selectedPreviewItem">
                 <div v-for="(reviewer, index) in getReviewerComments(selectedPreviewItem)" :key="index" class="reviewer-block">
-                  <strong>{{ reviewer.reviewerId }}:</strong>
+                  <strong>{{ reviewer.reviewerId }}{{ reviewer.realName ? ` (${reviewer.realName})` : '' }}:</strong>
                   <ul>
                     <li v-for="(comment, cIndex) in reviewer.comments" :key="cIndex">
                       {{ comment }}
@@ -548,7 +596,7 @@ const auditRevision = async () => {
                   </ul>
                 </div>
                 <div v-if="getReviewerComments(selectedPreviewItem).length === 0" class="no-content">
-                  No preview content available for this manuscript at this stage.
+                  {{ t('editor.audit.revisionHandling.preview.noContent') }}
                 </div>
               </div>
             </div>
@@ -563,32 +611,28 @@ const auditRevision = async () => {
             <!-- Revision History Tab -->
             <div v-if="activePreviewTab === 'revisionHistory'" class="tab-pane">
               <div v-if="selectedPreviewItem">
-                <div class="history-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Actor</th>
-                        <th>Action</th>
-                        <th>Comment</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(entry, index) in getRevisionHistory(selectedPreviewItem)" :key="index">
-                        <td>{{ entry.date }}</td>
-                        <td>{{ entry.actor }}</td>
-                        <td>{{ entry.action }}</td>
-                        <td>{{ entry.comment }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div class="history-list">
+                  <div v-for="(history, index) in getRevisionHistory(selectedPreviewItem)" :key="index" class="history-item">
+                    <div class="history-meta">
+                      <span class="history-date">{{ history.date }}</span>
+                      <span class="history-actor">{{ history.actor }}</span>
+                      <span class="history-action badge">{{ history.action }}</span>
+                    </div>
+                    <div class="history-comment" v-if="history.comment">
+                      {{ history.comment }}
+                    </div>
+                  </div>
+                  <div v-if="getRevisionHistory(selectedPreviewItem).length === 0" class="no-content">
+                    {{ t('editor.audit.revisionHandling.preview.noHistory') }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closePreviewModal">Close</button>
+          <button class="btn btn-secondary" @click="closePreviewModal">{{ t('common.close') }}</button>
+          <button class="btn btn-primary" @click="openDetailView(selectedPreviewItem); closePreviewModal()">{{ t('editor.audit.revisionHandling.preview.openDetail') }}</button>
         </div>
       </div>
     </div>
@@ -596,11 +640,41 @@ const auditRevision = async () => {
 </template>
 
 <style scoped>
-.audit-container { min-height: 100vh; background: #f5f7fa; display: flex; flex-direction: column; }
-.content { flex: 1; max-width: 1200px; margin: 80px auto 0; padding: 2rem; width: 100%; }
-.header { margin-bottom: 2rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem; }
-.header h1 { font-size: 1.8rem; color: #2c3e50; margin: 0; }
-.subtitle { color: #7f8c8d; margin-top: 0.5rem; }
+.audit-container {
+  padding: 30px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  max-width: 1200px;
+  margin: 80px auto 0;
+  padding: 2rem;
+  width: 100%;
+}
+
+.header {
+  border-bottom: 2px solid #0056B3;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
+.header h1 {
+  font-size: 24px;
+  color: #333;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+  font-style: italic;
+}
 
 .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow: hidden; }
 .revision-table { width: 100%; border-collapse: collapse; }

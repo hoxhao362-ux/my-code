@@ -71,7 +71,7 @@ const getRoleName = (role) => {
         <p class="subtitle">Please complete your profile to activate your official appointment.</p>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="lancet-form">
+      <form @submit.prevent="handleSubmit" class="jp-form">
         <!-- Section 1: Identity -->
         <div class="form-section">
           <h3>1. Identity Verification</h3>
@@ -171,7 +171,7 @@ const getRoleName = (role) => {
   justify-content: center;
   align-items: center;
   padding: 40px 20px;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .register-card {
@@ -180,7 +180,7 @@ const getRoleName = (role) => {
   max-width: 700px;
   padding: 40px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  border-top: 5px solid #D1202F;
+  border-top: 5px solid #0056B3;
 }
 
 .header {
@@ -220,7 +220,7 @@ const getRoleName = (role) => {
 .form-section h3 {
   font-size: 16px;
   font-weight: bold;
-  color: #D1202F;
+  color: #0056B3;
   border-bottom: 1px solid #EEE;
   padding-bottom: 8px;
   margin-bottom: 15px;
@@ -248,7 +248,7 @@ input, textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 14px;
 }
 
@@ -283,19 +283,19 @@ input, textarea {
 }
 
 .btn-submit {
-  width: 100%;
-  background: #D1202F;
+  background: #0056B3;
   color: white;
-  padding: 12px;
   border: none;
+  padding: 14px 40px;
   font-size: 16px;
-  font-weight: bold;
+  border-radius: 4px;
   cursor: pointer;
-  font-family: Arial, sans-serif;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
 .btn-submit:hover {
-  background: #B71C2B;
+  background: #004494;
 }
 
 /* Success State */

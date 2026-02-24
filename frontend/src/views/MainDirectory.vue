@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { stripHtmlTags } from '../utils/helpers'
+import { useI18n } from '../composables/useI18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
@@ -52,7 +54,8 @@ const filteredJournals = computed(() => {
   
   // 只展示通过的终稿或已发表的期刊
   result = result.filter(journal => 
-    journal.status === '已通过' || journal.status === '已发表'
+    journal.status === '已通过' || journal.status === '已发表' || 
+    journal.status === 'Accepted' || journal.status === 'Published'
   )
   
   // 按关键词筛选
@@ -163,6 +166,19 @@ const modules = computed(() => {
 const viewJournalDetail = (id) => {
   router.push(`/journal/${id}`)
 }
+
+const getLocalizedStatus = (status) => {
+  const map = {
+    '待审核': 'pending_initial_review',
+    '审核中': 'under_peer_review',
+    '已通过': 'final_decision_accepted',
+    '已发表': 'published',
+    '已拒绝': 'final_decision_rejected'
+  }
+  const key = map[status]
+  if (key) return t(`status.${key}`)
+  return t(`status.${status}`) || status
+}
 </script>
 
 <template>
@@ -178,7 +194,7 @@ const viewJournalDetail = (id) => {
     <main class="main-content">
       <section class="directory-section">
         <div class="directory-container">
-          <h2 class="section-title">期刊目录</h2>
+          <h2 class="section-title">{{ t('directory.title') }}</h2>
           
           <!-- 筛选功能 -->
           <div class="filters-container">
@@ -189,16 +205,16 @@ const viewJournalDetail = (id) => {
                 id="search-input"
                 name="search-input"
                 v-model="searchKeyword"
-                placeholder="请输入关键词搜索..."
+                :placeholder="t('directory.searchPlaceholder')"
                 class="search-input"
               />
             </div>
             
             <!-- 模块筛选 -->
             <div class="filter-group">
-              <label for="module-filter">模块：</label>
+              <label for="module-filter">{{ t('directory.module') }}：</label>
               <select id="module-filter" v-model="selectedModule" class="filter-select">
-                <option value="all">全部模块</option>
+                <option value="all">{{ t('directory.allModules') }}</option>
                 <option v-for="module in modules" :key="module" :value="module">
                   {{ module }}
                 </option>
@@ -207,22 +223,22 @@ const viewJournalDetail = (id) => {
             
             <!-- 时间筛选 -->
             <div class="filter-group">
-              <label for="time-filter">时间范围：</label>
+              <label for="time-filter">{{ t('directory.timeRange') }}：</label>
               <select id="time-filter" v-model="selectedTimeRange" class="filter-select">
-                <option value="all">全部时间</option>
-                <option value="day">最近一天</option>
-                <option value="week">最近一周</option>
-                <option value="month">最近一月</option>
-                <option value="year">最近一年</option>
+                <option value="all">{{ t('directory.allTime') }}</option>
+                <option value="day">{{ t('directory.day') }}</option>
+                <option value="week">{{ t('directory.week') }}</option>
+                <option value="month">{{ t('directory.month') }}</option>
+                <option value="year">{{ t('directory.year') }}</option>
               </select>
             </div>
             
             <!-- 排序筛选 -->
             <div class="filter-group">
-              <label for="sort-filter">排序方式：</label>
+              <label for="sort-filter">{{ t('directory.sort') }}：</label>
               <select id="sort-filter" v-model="selectedSort" class="filter-select">
-                <option value="newest">最新发表</option>
-                <option value="hottest">最热文章</option>
+                <option value="newest">{{ t('directory.newest') }}</option>
+                <option value="hottest">{{ t('directory.hottest') }}</option>
               </select>
             </div>
           </div>
@@ -239,7 +255,7 @@ const viewJournalDetail = (id) => {
                   {{ journal.title }}
                 </h3>
                 <p class="journal-directory-meta">
-                  作者：{{ journal.author }} | 投稿日期：{{ journal.date }}
+                  {{ t('directory.author') }}：{{ journal.author }} | {{ t('directory.date') }}：{{ journal.date }}
                 </p>
                 <div class="journal-directory-abstract" v-html="journal.abstract"></div>
                 <div class="journal-directory-keywords">
@@ -253,20 +269,20 @@ const viewJournalDetail = (id) => {
                 </div>
               </div>
               <div class="journal-directory-status" :class="journal.status.toLowerCase()">
-                {{ journal.status }}
+                {{ getLocalizedStatus(journal.status) }}
               </div>
             </div>
           </div>
           
           <!-- 无数据提示 -->
           <div v-if="filteredJournals.length === 0" class="no-journals">
-            <p>暂无符合条件的期刊数据</p>
+            <p>{{ t('directory.noData') }}</p>
           </div>
           
           <!-- 分页组件 -->
           <div v-if="totalPages > 1" class="pagination-container">
             <div class="pagination-info">
-              <span>第 {{ currentPage }}/{{ totalPages }} 页，共 {{ filteredJournals.length }} 篇</span>
+              <span>{{ t('directory.pageInfo', { current: currentPage, total: totalPages, count: filteredJournals.length }) }}</span>
             </div>
             <div class="pagination-controls">
               <button 
@@ -274,7 +290,7 @@ const viewJournalDetail = (id) => {
                 @click="prevPage"
                 :disabled="currentPage === 1"
               >
-                上一页
+                {{ t('directory.prevPage') }}
               </button>
               
               <!-- 页码按钮 -->
@@ -322,24 +338,24 @@ const viewJournalDetail = (id) => {
                 @click="nextPage"
                 :disabled="currentPage === totalPages"
               >
-                下一页
+                {{ t('directory.nextPage') }}
               </button>
               
               <!-- 页码输入框 -->
               <div class="page-jump-container">
-                <span class="jump-text">跳转到</span>
+                <span class="jump-text">{{ t('directory.jumpTo') }}</span>
                 <input
                   type="number"
                   v-model="jumpPage"
                   class="page-input"
-                  placeholder="页码"
+                  :placeholder="t('directory.page')"
                   min="1"
                   :max="totalPages"
                   @keyup.enter="jumpToPage"
                 />
-                <span class="jump-text">页</span>
+                <span class="jump-text">{{ t('directory.page') }}</span>
                 <button class="jump-btn" @click="jumpToPage">
-                  跳转
+                  {{ t('directory.go') }}
                 </button>
               </div>
             </div>
@@ -351,7 +367,7 @@ const viewJournalDetail = (id) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>

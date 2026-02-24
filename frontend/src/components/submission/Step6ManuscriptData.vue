@@ -15,7 +15,7 @@ const router = useRouter()
 const { t } = useI18n()
 const submitting = ref(false)
 const showPublishingModal = ref(false)
-const showSuccessToast = ref(false) // Lancet Standard Toast State
+const showSuccessToast = ref(false) // Journal Platform Standard Toast State
 const { scrollToError } = useErrorScroll()
 
 // Helper: Institution Search
@@ -189,7 +189,7 @@ const handlePreSubmit = () => {
     if (failedStep) {
       store.goToStep(failedStep.id)
       
-      // Lancet Standard Validation Messages
+      // Journal Platform Standard Validation Messages
       let msg = 'Please complete all required sections (Article Title, Corresponding Author Info, Copyright Agreement) before submission.'
       
       if (failedStep.id === 4) {
@@ -229,7 +229,7 @@ const confirmSubmit = async () => {
   try {
     const manuscriptId = await store.submitManuscript()
     
-    // Lancet Standard: Pure Frontend Cleanup Feedback
+    // Journal Platform Standard: Pure Frontend Cleanup Feedback
     showSuccessToast.value = true
     // Store ID for display if needed, though toast uses fixed text per requirements "Submission successful..."
     // Wait, user said "Submitted status: show ... 'Submitted (Manuscript ID: ${ID})'". 
@@ -472,9 +472,9 @@ const confirmSubmit = async () => {
         </div>
       </div>
     </div>
-    <!-- Lancet Standard Success Toast -->
-    <div v-if="showSuccessToast" class="lancet-toast-overlay">
-      <div class="lancet-toast">
+    <!-- Journal Platform Standard Success Toast -->
+    <div v-if="showSuccessToast" class="jp-toast-overlay">
+      <div class="jp-toast">
         <div class="toast-icon">✓</div>
         <div class="toast-content">
           <h4>Submission successful</h4>
@@ -486,19 +486,19 @@ const confirmSubmit = async () => {
 </template>
 
 <style scoped>
-.lancet-toast-overlay {
+.jp-toast-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 9999;
   display: flex;
   justify-content: center;
-  align-items: center; /* Center screen or top? Lancet usually center or top. Let's do top-center like a toast */
+  align-items: center; /* Center screen or top? Journal Platform usually center or top. Let's do top-center like a toast */
   align-items: flex-start;
   padding-top: 50px;
   pointer-events: none; /* Let clicks pass through if needed, but usually blocks interaction */
 }
 
-.lancet-toast {
+.jp-toast {
   background: #333;
   color: white;
   padding: 16px 24px;
@@ -543,6 +543,7 @@ const confirmSubmit = async () => {
 .step-container {
   max-width: 900px;
   margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .step-title {
@@ -565,7 +566,7 @@ const confirmSubmit = async () => {
   margin-bottom: 1.5rem;
   color: #2c3e50;
   font-size: 1.2rem;
-  border-left: 4px solid #3498db;
+  border-left: 4px solid #0056B3;
   padding-left: 10px;
 }
 
@@ -579,7 +580,7 @@ const confirmSubmit = async () => {
   font-weight: 600;
 }
 
-.required { color: #e74c3c; }
+.required { color: #dc3545; }
 
 .form-input, .form-select {
   width: 100%;
@@ -597,7 +598,7 @@ const confirmSubmit = async () => {
 }
 
 .btn-add {
-  background: #3498db;
+  background: #0056B3;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -619,7 +620,7 @@ const confirmSubmit = async () => {
 }
 
 .writer-card.error-border {
-  border-color: #e74c3c;
+  border-color: #dc3545;
   background: #fff5f5;
 }
 
@@ -807,11 +808,11 @@ const confirmSubmit = async () => {
   border-radius: 50%;
   transform: scale(0);
   transition: 120ms transform ease-in-out;
-  box-shadow: inset 1em 1em #C93737;
+  box-shadow: inset 1em 1em #dc3545;
 }
 
 .role-checkbox:checked {
-  border-color: #C93737;
+  border-color: #dc3545;
 }
 
 .role-checkbox:checked::before {

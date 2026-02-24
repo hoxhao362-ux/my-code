@@ -7,6 +7,7 @@ import Navigation from '../../../components/Navigation.vue'
 import InitialReviewModal from '../../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../../components/admin/manuscript/AssignReviewersModal.vue'
 import { useI18n } from '../../../composables/useI18n'
+import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -49,8 +50,8 @@ const handleAssignConfirm = (data) => {
   if (!assignJournal.value) return
   
   const updatedJournal = { ...assignJournal.value }
-  updatedJournal.status = '审稿中' // Under Review
-  updatedJournal.reviewStage = '复审'
+  updatedJournal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
+  updatedJournal.reviewStage = 'Peer Review'
   updatedJournal.reviewers = data.reviewers.map(r => ({
     id: r.id,
     name: r.name,
@@ -111,24 +112,20 @@ const handleInitialReviewSubmit = (data) => {
   const updatedJournal = { ...reviewJournal.value }
   
   // Update status based on outcome
-  updatedJournal.status = 'Initial Review Completed'
-  updatedJournal.initialReview = data // Save the review data
+  updatedJournal.initialReview = data
   
-  // Logic for different outcomes
   if (data.finalOutcome === 'Reject Directly') {
-    updatedJournal.status = '未通过' // Rejected
-    updatedJournal.reviewResult = '未通过'
+    updatedJournal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+    updatedJournal.reviewResult = 'Rejected'
   } else if (data.finalOutcome === 'Suggest Transfer to Sister Journal') {
-    updatedJournal.status = 'Transferred' // Or similar status
+    updatedJournal.status = 'transferred'
     updatedJournal.transferReason = data.detailedReason
   } else if (data.finalOutcome === 'Forward to Peer Review') {
-    // Enable Assign Reviewers button (already enabled by default in UI but status update helps)
+    updatedJournal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED
     updatedJournal.readyForPeerReview = true
   }
 
   userStore.updateJournal(updatedJournal)
-  
-  // Note: Modal handles success display and auto-close
 }
 
 const handleAssignSubmit = () => {
@@ -137,16 +134,15 @@ const handleAssignSubmit = () => {
     return
   }
   
-  // Logic to assign reviewers
   const journal = { ...currentJournal.value }
-  journal.status = '审稿中' // Under Review
-  journal.reviewStage = '复审' // Move to Peer Review
+  journal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
+  journal.reviewStage = 'Peer Review'
   journal.reviewers = selectedReviewers.value.map(id => {
     const r = availableReviewers.value.find(u => u.id === id)
     return {
       id: r.id,
       name: r.username,
-      status: 'invited', // pending acceptance
+      status: 'invited',
       assignedAt: new Date().toISOString()
     }
   })
@@ -160,19 +156,17 @@ const handleAssignSubmit = () => {
 const handleReject = (journal) => {
   if (confirm(t('screening.confirmReject'))) {
     const updatedJournal = { ...journal }
-    updatedJournal.status = '未通过'
-    updatedJournal.reviewResult = '未通过'
+    updatedJournal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+    updatedJournal.reviewResult = 'Rejected'
     userStore.updateJournal(updatedJournal)
   }
 }
 
-// Filtering
-const searchQuery = ref('')
-const selectedModule = ref('all')
-
 const pendingJournals = computed(() => {
   let journals = userStore.journals.filter(journal => 
-    journal.status === '待审核' || journal.status === 'Submitted'
+    journal.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || 
+    journal.status === 'Submitted' ||
+    journal.status === 'submitted'
   )
   
   if (selectedModule.value !== 'all') {

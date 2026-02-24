@@ -72,7 +72,7 @@ const handleSubmit = () => {
   <div class="summary-container">
     <!-- Header -->
     <header class="header">
-      <h2 class="title">Review Summary Structure (Lancet Compliance)</h2>
+      <h2 class="title">Review Summary Structure</h2>
       <p class="subtitle">Complete summary of all reviewer comments required. Explicit consensus and divergence needed. Cannot submit to Final Decision if incomplete.</p>
       
       <div class="meta-info">
@@ -169,8 +169,8 @@ const handleSubmit = () => {
     <footer class="footer">
       <div class="footer-hint">Report cannot be modified after generation. Submission enters Final Decision process.</div>
       <div class="footer-buttons">
-        <button class="btn btn-red" :disabled="!isFormValid" @click="generateReport">Generate Summary Report</button>
-        <button class="btn btn-red" :disabled="!isFormValid || isSubmitting" @click="handleSubmit">Submit to Editor-in-Chief</button>
+        <button class="btn btn-secondary" :disabled="!isFormValid" @click="generateReport">Generate Summary Report</button>
+        <button class="btn btn-primary" :disabled="!isFormValid || isSubmitting" @click="handleSubmit">Submit to Editor-in-Chief</button>
       </div>
     </footer>
 
@@ -179,7 +179,7 @@ const handleSubmit = () => {
 
 <style scoped>
 .summary-container {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: white;
   padding: 20px;
   height: 100%;
@@ -190,7 +190,7 @@ const handleSubmit = () => {
 
 .header { text-align: center; margin-bottom: 20px; }
 .title { font-size: 18px; font-weight: bold; margin-bottom: 5px; color: #333; }
-.subtitle { font-size: 12px; color: #C93737; margin-bottom: 10px; }
+.subtitle { font-size: 12px; color: #dc3545; margin-bottom: 10px; }
 .meta-info { display: flex; justify-content: center; gap: 20px; font-size: 14px; color: #666; }
 
 .divider { height: 1px; background: #eee; margin: 15px 0; }
@@ -205,19 +205,19 @@ const handleSubmit = () => {
 .review-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; font-weight: bold; }
 .conclusion-badge.accept { color: #28A745; }
 .conclusion-badge.revise { color: #F5A623; }
-.conclusion-badge.reject { color: #C93737; }
+.conclusion-badge.reject { color: #dc3545; }
 .review-text { font-size: 14px; line-height: 1.5; color: #333; margin-bottom: 5px; }
 .btn-text { background: none; border: none; color: #999; cursor: pointer; text-decoration: underline; font-size: 12px; }
 
 /* Right Column */
 .module { margin-bottom: 15px; }
 .label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #333; }
-.label.required::after { content: " *"; color: #C93737; }
+.label.required::after { content: " *"; color: #dc3545; }
 
 .stats-row { display: flex; gap: 15px; font-size: 14px; font-weight: bold; }
 .stat-item.green { color: #28A745; }
 .stat-item.orange { color: #F5A623; }
-.stat-item.red { color: #C93737; }
+.stat-item.red { color: #dc3545; }
 
 .input-area { width: 100%; height: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 14px; resize: vertical; }
 .input-area.h-120 { height: 120px; }
@@ -229,8 +229,11 @@ const handleSubmit = () => {
 .footer-buttons { display: flex; gap: 15px; }
 
 .btn { padding: 8px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-family: inherit; }
-.btn-red { background: #C93737; color: white; }
-.btn-red:hover { background: #B02E2E; }
-.btn-red:disabled { background: #ccc; cursor: not-allowed; }
+.btn-primary { background: #0056B3; color: white; }
+.btn-primary:hover { background: #004494; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-secondary:hover { background: #5a6268; }
+.btn-secondary:disabled { background: #ccc; cursor: not-allowed; }
 
 </style>

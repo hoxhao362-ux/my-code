@@ -1,11 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import StepNavigation from './StepNavigation.vue'
 import { useErrorScroll } from '../../composables/useErrorScroll'
-// Import SparkMD5 for integrity check (Assuming it is available or we use a simple mock)
-// import SparkMD5 from 'spark-md5' 
 
 const store = useSubmissionStore()
 const { t } = useI18n()
@@ -15,9 +13,26 @@ const uploadError = ref('')
 const uploadProgress = ref(0)
 const isUploading = ref(false)
 
-// Custom confirmation dialog
 const showDeleteConfirm = ref(false)
 const fileToDelete = ref(null)
+
+const requiredFileTypes = ['manuscript', 'contribution', 'conflict']
+
+const requiredFilesStatus = computed(() => {
+  const status = {}
+  requiredFileTypes.forEach(type => {
+    status[type] = store.formData.files.some(f => f.type === type && f.uploadStatus !== 'error')
+  })
+  return status
+})
+
+const allRequiredFilesUploaded = computed(() => {
+  return requiredFileTypes.every(type => requiredFilesStatus.value[type])
+})
+
+const missingRequiredFiles = computed(() => {
+  return requiredFileTypes.filter(type => !requiredFilesStatus.value[type])
+})
 
 onMounted(() => {
   if (store.steps[1].status === 'error') {
@@ -302,6 +317,45 @@ const handleAnonFileChange = (e) => {
       {{ uploadError }}
     </div>
 
+    <!-- Required Files Status Section -->
+    <div class="required-files-section">
+      <h3 class="section-title">{{ t('attachFiles.requiredFiles.title') }}</h3>
+      <p class="section-desc">{{ t('attachFiles.requiredFiles.description') }}</p>
+      
+      <div class="required-files-grid">
+        <div 
+          v-for="type in requiredFileTypes" 
+          :key="type" 
+          class="required-file-item"
+          :class="{ 'uploaded': requiredFilesStatus[type] }"
+        >
+          <div class="file-status-icon">
+            <span v-if="requiredFilesStatus[type]" class="status-check">✓</span>
+            <span v-else class="status-pending">○</span>
+          </div>
+          <div class="file-info">
+            <div class="file-name">{{ t(`attachFiles.types.${type}`) }}</div>
+            <div class="file-desc">{{ t(`attachFiles.requiredFiles.descriptions.${type}`) }}</div>
+          </div>
+          <div class="file-required-badge">
+            <span class="required-star">*</span>
+            {{ t('common.required') }}
+          </div>
+        </div>
+      </div>
+      
+      <div v-if="!allRequiredFilesUploaded && store.formData.files.length > 0" class="missing-files-warning">
+        <span class="warning-icon">⚠️</span>
+        {{ t('attachFiles.requiredFiles.missingWarning') }}
+        <strong>{{ missingRequiredFiles.map(f => t(`attachFiles.types.${f}`)).join(', ') }}</strong>
+      </div>
+      
+      <div v-if="allRequiredFilesUploaded" class="all-files-uploaded">
+        <span class="success-icon">✅</span>
+        {{ t('attachFiles.requiredFiles.allUploaded') }}
+      </div>
+    </div>
+
     <!-- Upload Area -->
     <div 
       class="upload-area" 
@@ -394,7 +448,12 @@ const handleAnonFileChange = (e) => {
     </div>
 
     <div v-if="store.steps[1].status === 'error'" class="error-msg">
-      {{ t('attachFiles.errors.noFile') }}
+      <template v-if="!allRequiredFilesUploaded && store.formData.files.length > 0">
+        {{ t('attachFiles.requiredFiles.missingError') }}
+      </template>
+      <template v-else>
+        {{ t('attachFiles.errors.noFile') }}
+      </template>
     </div>
 
     <!-- Reference Anonymization Section -->
@@ -562,6 +621,125 @@ const handleAnonFileChange = (e) => {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #eee;
+}
+
+.required-files-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.required-files-section .section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.section-desc {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.required-files-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.required-file-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.required-file-item.uploaded {
+  background: #f0fff4;
+  border-color: #28a745;
+}
+
+.file-status-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.status-check {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-pending {
+  color: #adb5bd;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-info .file-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.file-info .file-desc {
+  font-size: 0.85rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.file-required-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.required-star {
+  color: #dc3545;
+}
+
+.missing-files-warning {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.warning-icon {
+  margin-right: 0.5rem;
+}
+
+.all-files-uploaded {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #d4edda;
+  border: 1px solid #28a745;
+  border-radius: 4px;
+  color: #155724;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.success-icon {
+  margin-right: 0.5rem;
 }
 
 .upload-area {

@@ -2,9 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const username = ref('')
 const email = ref('')
@@ -13,6 +15,10 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
 const error = ref('')
+const usernameError = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+const confirmPasswordError = ref('')
 
 // Background images
 const backgroundImages = [
@@ -52,27 +58,42 @@ const togglePasswordVisibility = () => {
 const handleRegister = () => {
   // Reset error
   error.value = ''
+  usernameError.value = ''
+  emailError.value = ''
+  passwordError.value = ''
+  confirmPasswordError.value = ''
   
   // Validation
-  if (!username.value || !email.value || !password.value || !confirmPassword.value) {
-    error.value = 'Please complete all fields'
-    return
+  let hasError = false
+  if (!username.value) {
+    usernameError.value = t('auth.register.usernamePlaceholder')
+    hasError = true
+  }
+  if (!email.value) {
+    emailError.value = t('auth.register.emailPlaceholder')
+    hasError = true
+  } else if (!email.value.includes('@')) {
+    emailError.value = 'Invalid email format'
+    hasError = true
   }
   
-  if (!email.value.includes('@')) {
-    error.value = 'Invalid email format'
-    return
+  if (!password.value) {
+    passwordError.value = t('auth.register.passwordPlaceholder')
+    hasError = true
+  } else if (password.value.length < 6) {
+    passwordError.value = 'Password must be at least 6 characters'
+    hasError = true
   }
-  
-  if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match'
-    return
+
+  if (!confirmPassword.value) {
+    confirmPasswordError.value = t('auth.register.confirmPasswordPlaceholder')
+    hasError = true
+  } else if (password.value !== confirmPassword.value) {
+    confirmPasswordError.value = 'Passwords do not match'
+    hasError = true
   }
-  
-  if (password.value.length < 6) {
-    error.value = 'Password must be at least 6 characters'
-    return
-  }
+
+  if (hasError) return
   
   // Simulate Loading
   isLoading.value = true
@@ -111,12 +132,12 @@ const goToLogin = () => {
       <!-- Header Section -->
       <div class="register-header">
         <h1 class="platform-title">
-          Journal <span class="highlight">Submission Platform</span>
+          {{ t('nav.logo') }}
         </h1>
-        <h2 class="register-subtitle">Register - Read-Only Access</h2>
+        <h2 class="register-subtitle">{{ t('auth.register.title') }}</h2>
         <p class="register-desc">
-          Create an account to view content<br>
-          (For submission/review access, please use the Submit System)
+          {{ t('auth.register.subtitle') }}<br>
+          {{ t('auth.register.desc') }}
         </p>
       </div>
 
@@ -124,47 +145,55 @@ const goToLogin = () => {
       <div class="register-form">
         <!-- Username -->
         <div class="form-group">
-          <label>Username</label>
+          <label>{{ t('auth.register.usernameLabel') }}</label>
           <input 
             type="text" 
             v-model="username" 
-            placeholder="Choose a username"
+            :placeholder="t('auth.register.usernamePlaceholder')"
+            :class="{ 'error': usernameError }"
           />
+          <span v-if="usernameError" class="error-msg">{{ usernameError }}</span>
         </div>
         
         <!-- Email -->
         <div class="form-group">
-          <label>Email</label>
+          <label>{{ t('auth.register.emailLabel') }}</label>
           <input 
             type="email" 
             v-model="email" 
-            placeholder="Enter your email"
+            :placeholder="t('auth.register.emailPlaceholder')"
+            :class="{ 'error': emailError }"
           />
+          <span v-if="emailError" class="error-msg">{{ emailError }}</span>
         </div>
 
         <!-- Password -->
         <div class="form-group">
-          <label>Password</label>
+          <label>{{ t('auth.register.passwordLabel') }}</label>
           <div class="password-input-wrapper">
             <input 
               :type="showPassword ? 'text' : 'password'" 
               v-model="password" 
-              placeholder="Create a password"
+              :placeholder="t('auth.register.passwordPlaceholder')"
+              :class="{ 'error': passwordError }"
             />
             <span class="eye-icon" @click="togglePasswordVisibility">
               {{ showPassword ? '👁️' : '👁️‍🗨️' }}
             </span>
           </div>
+          <span v-if="passwordError" class="error-msg">{{ passwordError }}</span>
         </div>
         
         <!-- Confirm Password -->
         <div class="form-group">
-          <label>Confirm Password</label>
+          <label>{{ t('auth.register.confirmPasswordLabel') }}</label>
           <input 
             :type="showPassword ? 'text' : 'password'" 
             v-model="confirmPassword" 
-            placeholder="Confirm your password"
+            :placeholder="t('auth.register.confirmPasswordPlaceholder')"
+            :class="{ 'error': confirmPasswordError }"
           />
+          <span v-if="confirmPasswordError" class="error-msg">{{ confirmPasswordError }}</span>
         </div>
 
         <!-- Error Message -->
@@ -177,25 +206,25 @@ const goToLogin = () => {
           :disabled="isLoading"
           :class="{ 'loading': isLoading }"
         >
-          {{ isLoading ? 'Creating Account...' : 'Register' }}
+          {{ isLoading ? t('auth.register.submitting') : t('auth.register.submit') }}
         </button>
         
         <!-- Back to Login Link -->
         <div class="login-link-wrapper">
-          <span class="login-text-label">Already have an account? </span>
-          <a href="#" class="login-link" @click.prevent="goToLogin">Log in here</a>
+          <span class="login-text-label">{{ t('auth.register.alreadyHaveAccount') }} </span>
+          <a href="#" class="login-link" @click.prevent="goToLogin">{{ t('auth.register.loginLink') }}</a>
         </div>
       </div>
 
       <!-- Footer Section -->
       <div class="register-footer">
         <div class="footer-links">
-          <a href="#" target="_blank">Privacy Policy</a>
+          <a href="#" target="_blank">{{ t('auth.footer.privacy') }}</a>
           <span class="separator">|</span>
-          <a href="#" target="_blank">Terms of Use</a>
+          <a href="#" target="_blank">{{ t('auth.footer.terms') }}</a>
         </div>
         <p class="copyright">
-          &copy; 2026 Journal Submission Platform. All rights reserved.
+          {{ t('auth.footer.copyright') }}
         </p>
       </div>
       </div>
@@ -419,6 +448,17 @@ const goToLogin = () => {
   font-size: 11px;
   color: #999999;
   margin: 0;
+}
+
+.error-msg {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+input.error {
+  border-color: #ef4444;
 }
 
 /* Responsive Design */

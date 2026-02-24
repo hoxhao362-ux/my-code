@@ -85,9 +85,9 @@ const addToCalendar = (event) => {
   // Simple ICS generation
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//The Lancet//Events//EN
+PRODID:-//Journal Platform//Events//EN
 BEGIN:VEVENT
-UID:${event.id}@thelancet.com
+UID:${event.id}@journalplatform.com
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
 DTSTART:${event.year}03${event.day}T090000Z
 SUMMARY:${event.title}
@@ -123,7 +123,7 @@ h1 {
 .timeline {
   position: relative;
   padding-left: 20px;
-  border-left: 2px solid #C93737;
+  border-left: 2px solid #0056B3;
 }
 
 .event-item {
@@ -141,7 +141,7 @@ h1 {
   top: 0;
   width: 16px;
   height: 16px;
-  background: #C93737;
+  background: #0056B3;
   border-radius: 50%;
   border: 4px solid white;
 }
@@ -157,7 +157,7 @@ h1 {
 .day {
   font-size: 24px;
   font-weight: bold;
-  color: #C93737;
+  color: #0056B3;
 }
 
 .month {
@@ -217,7 +217,7 @@ h1 {
 }
 
 .add-calendar:hover {
-  color: #C93737;
+  color: #0056B3;
   text-decoration: underline;
 }
 

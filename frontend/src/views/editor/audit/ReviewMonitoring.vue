@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useI18n } from '../../../composables/useI18n'
 import Navigation from '../../../components/Navigation.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
@@ -12,29 +14,28 @@ const monitoringJournals = computed(() => {
   return userStore.journals.filter(journal => 
     journal.status === 'under_peer_review' || 
     // Legacy support
-    journal.status === 'Under Review' || 
-    journal.status === '审稿中'
+    journal.status === 'Under Review'
   )
 })
 
 const getReviewerStatus = (reviewer) => {
   // Mock status if not present
-  return reviewer.status || 'Invited'
+  return reviewer.status || t('editor.audit.reviewMonitoring.status.invited')
 }
 
 const handleRemind = (journal, reviewer) => {
-  alert(`Reminder sent to ${reviewer.name}.`)
+  alert(t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }))
 }
 
 const handleReplace = (journal, reviewer) => {
-  if (confirm(`Replace reviewer ${reviewer.name}?`)) {
-    alert('Redirecting to replacement selection (mock)...')
+  if (confirm(t('editor.audit.reviewMonitoring.alerts.replaceConfirm', { name: reviewer.name }))) {
+    alert(t('editor.audit.reviewMonitoring.alerts.redirecting'))
     // In real app, this would open a selection modal similar to AssignReviewers
   }
 }
 
 const handleExtend = (journal) => {
-  alert('Extension granted for 7 days.')
+  alert(t('editor.audit.reviewMonitoring.alerts.extensionGranted'))
 }
 
 </script>
@@ -45,8 +46,8 @@ const handleExtend = (journal) => {
     
     <main class="content">
       <div class="header">
-        <h1>Review Monitoring</h1>
-        <p class="subtitle">Track Progress & Manage Delays</p>
+        <h1>{{ t('editor.audit.reviewMonitoring.title') }}</h1>
+        <p class="subtitle">{{ t('editor.audit.reviewMonitoring.subtitle') }}</p>
       </div>
 
       <div class="journals-list">
@@ -54,13 +55,13 @@ const handleExtend = (journal) => {
           <div class="journal-main">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-               <span><strong>Writer:</strong> {{ journal.writer }}</span>
-               <span><strong>Sent to Review:</strong> {{ journal.date }}</span> <!-- Mock date -->
+               <span><strong>{{ t('editor.audit.reviewMonitoring.meta.writer') }}:</strong> {{ journal.writer }}</span>
+               <span><strong>{{ t('editor.audit.reviewMonitoring.meta.sentToReview') }}:</strong> {{ journal.date }}</span> <!-- Mock date -->
             </div>
           </div>
           
           <div class="reviewers-section">
-            <h4>Reviewers Status</h4>
+            <h4>{{ t('editor.audit.reviewMonitoring.reviewerStatus') }}</h4>
             <div v-if="journal.reviewers && journal.reviewers.length > 0" class="reviewers-grid">
                <div v-for="reviewer in journal.reviewers" :key="reviewer.id" class="reviewer-card">
                  <div class="r-info">
@@ -68,23 +69,23 @@ const handleExtend = (journal) => {
                    <span class="r-status" :class="getReviewerStatus(reviewer).toLowerCase()">{{ getReviewerStatus(reviewer) }}</span>
                  </div>
                  <div class="r-actions">
-                   <button class="btn-xs" @click="handleRemind(journal, reviewer)">Remind</button>
-                   <button class="btn-xs" @click="handleReplace(journal, reviewer)">Replace</button>
+                   <button class="btn-xs" @click="handleRemind(journal, reviewer)">{{ t('editor.audit.reviewMonitoring.actions.remind') }}</button>
+                   <button class="btn-xs" @click="handleReplace(journal, reviewer)">{{ t('editor.audit.reviewMonitoring.actions.replace') }}</button>
                  </div>
                </div>
             </div>
             <div v-else class="no-reviewers">
-              No reviewers assigned yet (Data inconsistency).
+              {{ t('editor.audit.reviewMonitoring.noReviewers') }}
             </div>
           </div>
           
           <div class="item-footer">
-             <button class="btn btn-secondary" @click="handleExtend(journal)">Process Extension Request</button>
+             <button class="btn btn-secondary" @click="handleExtend(journal)">{{ t('editor.audit.reviewMonitoring.actions.processExtension') }}</button>
           </div>
         </div>
         
         <div v-if="monitoringJournals.length === 0" class="no-data">
-          No manuscripts currently under review.
+          {{ t('editor.audit.reviewMonitoring.noManuscripts') }}
         </div>
       </div>
     </main>

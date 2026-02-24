@@ -202,7 +202,7 @@ export const useUserStore = defineStore('user', {
       return state.journals.filter(journal => journal.writer === state.user.username)
     },
     pendingJournals: (state) => {
-      // Localization Update: Support Lancet Standard Statuses
+      // Localization Update: Support Journal Platform Standard Statuses
       return state.journals.filter(journal => 
         journal.status === 'Pending' || 
         journal.status === 'Under Review' ||

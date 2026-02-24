@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from '../../composables/useI18n'
 import { useUserStore } from '../../stores/user'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
@@ -50,16 +52,13 @@ const templateHistory = ref([
 // Mock Manuscripts - Sync with User Store
 const manuscripts = computed(() => {
   return userStore.journals.filter(j => 
-    j.status === 'review_completed' || 
-    j.status === '已审核' ||
-    j.status === 'final_decision_pending' ||
-    j.status === 'rejected_after_initial_screen' || // Include legacy/screened-out manuscripts
-    // Include manuscripts with recent decisions for drafting letters
+    j.status === MANUSCRIPT_STATUS.REVIEW_COMPLETED || 
+    j.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION ||
+    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED ||
     j.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED ||
     j.status === MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED ||
     j.status === MANUSCRIPT_STATUS.FINAL_DECISION_REVISION ||
-    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION ||
-    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
+    j.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION
   )
 })
 
@@ -196,9 +195,9 @@ const insertComment = (comment) => {
 }
 
 const handleSaveDraft = () => {
-  autoSaveStatus.value = 'Saving...'
+  autoSaveStatus.value = t('editor.decisions.alerts.saving')
   setTimeout(() => {
-    autoSaveStatus.value = 'Saved at ' + new Date().toLocaleTimeString()
+    autoSaveStatus.value = t('editor.decisions.alerts.savedAt', { time: new Date().toLocaleTimeString() })
   }, 500)
 }
 
@@ -211,16 +210,16 @@ const handleSend = () => {
   if (user.value?.role === 'associate_editor') {
      // AE Workflow
      // 使用alert替代confirm，因为confirm在某些环境中不被支持
-     alert("Submit this decision letter to Editor-in-Chief for approval?")
+     alert(t('editor.decisions.alerts.submitConfirm'))
      // 模拟提交
      approvalStatus.value = 'Pending'
-     alert("Submitted for Approval.")
+     alert(t('editor.decisions.alerts.submitted'))
   } else {
     // Editor Workflow
     if (approvalStatus.value === 'Pending') {
        // Approving AE's draft
        approvalStatus.value = 'Approved'
-       alert("Decision Approved and Sent.")
+       alert(t('editor.decisions.alerts.approvedSent'))
     } else {
        // Direct Send
        approvalStatus.value = 'Approved' // Sent implies approved
@@ -233,7 +232,7 @@ const handleSend = () => {
          let newStatus = 'final_decision_made'
          if (selectedTemplate.value.category === 'Accept') {
            newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
-           updatedJournal.reviewStage = '终审'
+           updatedJournal.reviewStage = 'Final Decision'
          } else if (selectedTemplate.value.category === 'Reject') {
            newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
          } else if (selectedTemplate.value.category.includes('Revision')) {
@@ -254,7 +253,7 @@ const handleSend = () => {
          userStore.updateJournal(updatedJournal)
        }
 
-       alert("Decision Letter Sent to Author.")
+       alert(t('editor.decisions.alerts.sentToAuthor'))
     }
     // Add to sent history
     if (selectedManuscript.value) {
@@ -272,10 +271,10 @@ const handleSend = () => {
 
 const handleRejectApproval = () => {
   // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert("Enter reason for rejection functionality would open a form here.")
+  alert(t('editor.decisions.alerts.rejectConfirm'))
   // 模拟拒绝
   approvalStatus.value = 'Rejected'
-  alert("Draft Rejected. Reason sent to Associate Editor.")
+  alert(t('editor.decisions.alerts.draftRejected'))
 }
 
 
@@ -308,7 +307,7 @@ const handleExportPDF = (letter) => {
 
 const handleCreateTemplate = () => {
   // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert("Template creation functionality would open a form here.")
+  alert(t('editor.decisions.alerts.templateCreationForm'))
   // 模拟创建模板
   const mockName = "New Template " + Date.now()
   decisionTemplates.value.push({ id: Date.now(), name: mockName, category: 'General', field: 'General', usage: 0, content: 'Dear {{writer_name}}, ...' })
@@ -316,15 +315,15 @@ const handleCreateTemplate = () => {
 
 const handleEditTemplate = (tpl) => {
   // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert("Template editing functionality would open an editor here.")
+  alert(t('editor.decisions.alerts.templateEditForm'))
   // 模拟更新模板
   tpl.content += "\n[Updated]"
-  alert("Template updated.")
+  alert(t('editor.decisions.alerts.templateCreated'))
 }
 
 const handleDeleteTemplate = (id) => {
   // 使用alert替代confirm，因为confirm在某些环境中不被支持
-  alert("Template deletion functionality would show a confirmation here.")
+  alert(t('editor.decisions.alerts.templateDeleteConfirm'))
   // 模拟删除模板
   decisionTemplates.value = decisionTemplates.value.filter(t => t.id !== id)
 }
@@ -333,14 +332,14 @@ const handleRollback = (version) => {
   // Permission Check
   if (!canEditDecision.value) return;
   if (user.value?.role === 'associate_editor' && selectedManuscript.value?.assignedTo !== 'ae_user') {
-    alert("You can only rollback drafts you created.");
+    alert(t('editor.decisions.alerts.rollbackOwnOnly'));
     return;
   }
 
-  if (confirm(`Rollback to Version ${version.version} - [${selectedManuscriptId.value}]\n\nConfirm rollback to this version? All unsaved changes to the current draft will be overwritten and cannot be recovered. The rollback operation will generate a new version record.`)) {
+  if (confirm(t('editor.decisions.alerts.rollbackConfirm', { version: version.version, id: selectedManuscriptId.value }))) {
     // Mock Rollback Logic
     decisionContent.value = version.content || `[Content restored from ${version.version}]`; // Use version content if available
-    alert(`Draft rolled back to ${version.version}. New version record generated.`);
+    alert(t('editor.decisions.alerts.rolledBack', { version: version.version }));
     
     // Add new version record
     templateHistory.value.unshift({
@@ -380,7 +379,7 @@ const closeCompareView = () => {
 
 const handleExportComparison = () => {
   if (user.value?.role === 'editorial_assistant' || user.value?.role === 'advisory_editor') return; // EA/AE hidden logic
-  alert(`Exporting Comparison Report: ${selectedManuscriptId.value}-${compareSourceVersion.value.version}-${compareTargetVersion.value.version}.pdf`);
+  alert(t('editor.decisions.alerts.exportComparison', { filename: `${selectedManuscriptId.value}-${compareSourceVersion.value.version}-${compareTargetVersion.value.version}.pdf` }));
 }
 
 const showActionModal = ref(false)
@@ -462,15 +461,15 @@ const openActionModal = (action, item) => {
 const handleConfirmAction = () => {
   const proceed = () => {
     if (currentAction.value === 'resend') {
-      alert(`Resending to ${actionForms.value.resend.recipient}...`)
+      alert(t('editor.decisions.alerts.resending', { recipient: actionForms.value.resend.recipient }))
       currentLetter.value.openStatus = 'Unopened'
       currentLetter.value.date = new Date().toLocaleDateString()
     } else if (currentAction.value === 'forward') {
-      alert(`Forwarding to ${actionForms.value.forward.recipient}...`)
+      alert(t('editor.decisions.alerts.forwarding', { recipient: actionForms.value.forward.recipient }))
     } else if (currentAction.value === 'add_note') {
-      alert('Internal Note Saved.')
+      alert(t('editor.decisions.alerts.noteSaved'))
     } else if (currentAction.value === 'approve') {
-      alert('Decision Approved.')
+      alert(t('editor.decisions.alerts.decisionApproved'))
       // Update queue
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
@@ -485,14 +484,14 @@ const handleConfirmAction = () => {
       })
     } else if (currentAction.value === 'reject') {
       if (actionForms.value.reject.reason === 'Others' && (!actionForms.value.reject.detail || actionForms.value.reject.detail.length < 20)) {
-        alert("Please provide a detailed explanation (at least 20 chars).")
+        alert(t('editor.decisions.alerts.rejectionReason'))
         return
       }
-      alert('Decision Rejected.')
+      alert(t('editor.decisions.alerts.decisionRejected'))
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
     } else if (currentAction.value === 'assign_ae') {
-      alert(`Task reassigned to ${actionForms.value.assignAE.targetAE}.`)
+      alert(t('editor.decisions.alerts.taskReassigned', { name: actionForms.value.assignAE.targetAE }))
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
     }
@@ -585,19 +584,23 @@ const handleOpenVersionHistory = () => {
 
 // Additional Approval Queue Methods
 const handleViewDraft = (item) => {
-  alert(`Viewing draft for manuscript ${item.manuscriptId}: ${item.manuscriptTitle}`)
+  alert(t('editor.decisions.alerts.viewingDraft', { id: item.manuscriptId, title: item.manuscriptTitle }))
   // 模拟查看草稿
   selectedManuscriptId.value = item.manuscriptId
   activeTab.value = 'draft'
-  alert("Displaying decision draft in drafting tab.")
+  alert(t('editor.decisions.alerts.displayingDraft'))
 }
 
 const handleViewDetails = (item) => {
-  alert(`Viewing details for manuscript ${item.manuscriptId}: ${item.manuscriptTitle}`)
+  alert(t('editor.decisions.alerts.viewingDetails', { id: item.manuscriptId, title: item.manuscriptTitle }))
   // 模拟查看详情
   selectedManuscriptId.value = item.manuscriptId
   activeTab.value = 'draft'
-  alert("Displaying decision details in drafting tab.")
+  alert(t('editor.decisions.alerts.displayingDetails'))
+}
+
+const handleAssignToAE = (item) => {
+  openActionModal('assign_ae', item)
 }
 
 // Dropdown State for Template Actions
@@ -616,11 +619,11 @@ const toggleTemplateDropdown = (id) => {
 <template>
   <div class="editor-page">
     <div class="page-header">
-      <h2>Decisions & Letters</h2>
+      <h2>{{ t('editor.decisions.title') }}</h2>
       <div class="tabs">
-        <button class="tab-btn" :class="{ active: activeTab === 'draft' }" @click="activeTab = 'draft'">Drafting</button>
-        <button class="tab-btn" :class="{ active: activeTab === 'sent' }" @click="activeTab = 'sent'">Sent Letters</button>
-        <button v-if="canApprove" class="tab-btn" :class="{ active: activeTab === 'approval' }" @click="activeTab = 'approval'">Approval Queue</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'draft' }" @click="activeTab = 'draft'">{{ t('editor.decisions.tabs.drafting') }}</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'sent' }" @click="activeTab = 'sent'">{{ t('editor.decisions.tabs.sentLetters') }}</button>
+        <button v-if="canApprove" class="tab-btn" :class="{ active: activeTab === 'approval' }" @click="activeTab = 'approval'">{{ t('editor.decisions.tabs.approvalQueue') }}</button>
       </div>
     </div>
 
@@ -630,8 +633,8 @@ const toggleTemplateDropdown = (id) => {
       <!-- Left: Templates -->
       <div class="sidebar templates-sidebar" v-if="!isReadOnly">
         <div class="sidebar-header">
-          <h3>Templates</h3>
-          <button v-if="canManageTemplates" class="icon-btn" @click="handleCreateTemplate" title="Create Template">+</button>
+          <h3>{{ t('editor.decisions.templates.title') }}</h3>
+          <button v-if="canManageTemplates" class="icon-btn" @click="handleCreateTemplate" :title="t('editor.decisions.templates.create')">+</button>
         </div>
         
         <!-- Template Filters -->
@@ -650,20 +653,20 @@ const toggleTemplateDropdown = (id) => {
             :key="tpl.id"
             @click="selectTemplate(tpl)"
             :class="{ active: selectedTemplate?.id === tpl.id }"
-            :title="`Used ${tpl.usage} times in 2026`"
+            :title="t('editor.decisions.templates.usageTitle', { count: tpl.usage })"
           >
             <div class="tpl-item-content">
               <span>{{ tpl.name }}</span>
               <div class="tpl-actions" v-if="canManageTemplates">
                  <button class="dots-btn" @click.stop="toggleTemplateDropdown(tpl.id)">⋮</button>
                  <div v-if="showTemplateDropdown === tpl.id" class="dropdown-menu">
-                    <a @click.stop="handleEditTemplate(tpl)">Edit</a>
-                    <a @click.stop="showTemplateHistory = true; toggleTemplateDropdown(null)">History</a>
-                    <a @click.stop="handleDeleteTemplate(tpl.id)">Delete</a>
+                    <a @click.stop="handleEditTemplate(tpl)">{{ t('editor.decisions.templates.actions.edit') }}</a>
+                    <a @click.stop="showTemplateHistory = true; toggleTemplateDropdown(null)">{{ t('editor.decisions.templates.actions.history') }}</a>
+                    <a @click.stop="handleDeleteTemplate(tpl.id)">{{ t('editor.decisions.templates.actions.delete') }}</a>
                  </div>
               </div>
             </div>
-            <div class="tpl-meta">Usage: {{ tpl.usage }}</div>
+            <div class="tpl-meta">{{ t('editor.decisions.templates.usage') }}: {{ tpl.usage }}</div>
           </li>
         </ul>
       </div>
@@ -673,9 +676,9 @@ const toggleTemplateDropdown = (id) => {
         <div v-if="selectedTemplate || isReadOnly">
           <!-- Manuscript Selection -->
           <div class="form-group" v-if="!isReadOnly">
-            <label>Select Manuscript (Auto-fill variables)</label>
+            <label>{{ t('editor.decisions.editor.selectManuscript') }}</label>
             <select v-model="selectedManuscriptId" @change="handleManuscriptChange" class="ms-select">
-              <option value="" disabled>-- Select Manuscript --</option>
+              <option value="" disabled>-- {{ t('editor.decisions.editor.selectPlaceholder') }} --</option>
               <option v-for="ms in filteredManuscripts" :key="ms.id" :value="ms.id">
                 [{{ ms.id }}] {{ ms.title }}
               </option>
@@ -683,14 +686,14 @@ const toggleTemplateDropdown = (id) => {
           </div>
 
           <div class="editor-header">
-            <h3>Drafting: {{ selectedTemplate?.name || 'New Decision' }}</h3>
+            <h3>{{ t('editor.decisions.editor.drafting') }}: {{ selectedTemplate?.name || t('editor.decisions.editor.newDecision') }}</h3>
             <div class="header-controls">
                <div v-if="canToggleEditMode" class="edit-mode-toggle">
                   <label class="switch">
                     <input type="checkbox" :checked="editMode" @change="handleToggleEditMode">
                     <span class="slider round"></span>
                   </label>
-                  <span>Edit Mode</span>
+                  <span>{{ t('editor.decisions.editor.editMode') }}</span>
                </div>
                <span class="status-tag" :class="approvalStatus.toLowerCase()">{{ approvalStatus }}</span>
             </div>
@@ -701,27 +704,27 @@ const toggleTemplateDropdown = (id) => {
             rows="15" 
             :disabled="isContentReadOnly"
             :class="{ 'read-only': isContentReadOnly }"
-            placeholder="Select a template and manuscript to start..."
+            :placeholder="t('editor.decisions.editor.contentPlaceholder')"
           ></textarea>
           
           <div class="status-bar">
-            <span>{{ autoSaveStatus ? 'Draft Auto-Saved at ' + new Date().toLocaleTimeString() : '' }}</span>
+            <span>{{ autoSaveStatus ? t('editor.decisions.editor.autoSaved', { time: new Date().toLocaleTimeString() }) : '' }}</span>
           </div>
 
           <div class="actions" v-if="!isReadOnly">
-            <button @click="handleSaveDraft" class="btn secondary">Save Draft</button>
-            <button @click="handleOpenVersionHistory" class="btn secondary">Version History</button>
+            <button @click="handleSaveDraft" class="btn secondary">{{ t('editor.decisions.editor.saveDraft') }}</button>
+            <button @click="handleOpenVersionHistory" class="btn secondary">{{ t('editor.decisions.editor.history') }}</button>
             
             <!-- Editor Approval Shortcuts -->
             <template v-if="user.role === 'editor'">
-               <button @click="handleShortcutApprove" class="btn primary-sm">Approve</button>
-               <button @click="handleShortcutReject" class="btn danger-sm">Reject</button>
+               <button @click="handleShortcutApprove" class="btn primary-sm">{{ t('editor.decisions.actions.approve') }}</button>
+               <button @click="handleShortcutReject" class="btn danger-sm">{{ t('editor.decisions.actions.reject') }}</button>
             </template>
             
             <!-- Editor Approval Actions (Original Logic kept for fallback/context) -->
             <template v-if="approvalStatus === 'Pending' && canApprove">
-               <button @click="handleSend" class="btn primary">Approve & Send</button>
-               <button @click="handleRejectApproval" class="btn danger">Reject Draft</button>
+               <button @click="handleSend" class="btn primary">{{ t('editor.decisions.editor.approveSend') }}</button>
+               <button @click="handleRejectApproval" class="btn danger">{{ t('editor.decisions.editor.rejectDraft') }}</button>
             </template>
             
             <!-- Standard Send -->
@@ -731,27 +734,27 @@ const toggleTemplateDropdown = (id) => {
                  @click="handleSend" 
                  class="btn primary"
                >
-                 {{ user?.role === 'associate_editor' ? 'Submit for Approval' : 'Send Decision' }}
+                 {{ user?.role === 'associate_editor' ? t('editor.decisions.editor.submitApproval') : t('editor.decisions.editor.sendDecision') }}
                </button>
             </template>
           </div>
         </div>
         <div v-else class="empty-state">
-          Select a template to start drafting.
+          {{ t('editor.decisions.editor.emptyState') }}
         </div>
       </div>
 
       <!-- Right: Review Comments -->
       <div class="sidebar comments-sidebar" v-if="selectedManuscriptId && !isReadOnly">
-        <h3>Review Comments</h3>
+        <h3>{{ t('editor.decisions.comments.title') }}</h3>
         <div class="comment-list">
           <div v-for="(comment, idx) in reviewComments" :key="idx" class="comment-item">
             <div class="comment-header">
               <strong>{{ comment.reviewer }}</strong>
               <div class="comment-actions">
-                 <button class="action-icon-btn" title="Highlight" @click="comment.highlighted = !comment.highlighted">H</button>
-                 <button class="action-icon-btn danger" title="Delete" @click="reviewComments.splice(idx, 1)">x</button>
-                 <button class="insert-btn" @click="insertComment(comment)" title="Insert into letter">Insert</button>
+                 <button class="action-icon-btn" :title="t('editor.decisions.comments.highlight')" @click="comment.highlighted = !comment.highlighted">H</button>
+                 <button class="action-icon-btn danger" :title="t('editor.decisions.comments.delete')" @click="reviewComments.splice(idx, 1)">x</button>
+                 <button class="insert-btn" @click="insertComment(comment)" :title="t('editor.decisions.comments.insertTitle')">{{ t('editor.decisions.comments.insert') }}</button>
               </div>
             </div>
             <p :class="{ highlighted: comment.highlighted }">{{ comment.content }}</p>
@@ -766,12 +769,12 @@ const toggleTemplateDropdown = (id) => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Recipient</th>
-            <th>Subject</th>
-            <th>Status</th>
-            <th>Open Status</th>
-            <th>Actions</th>
+            <th>{{ t('editor.decisions.sent.columns.date') }}</th>
+            <th>{{ t('editor.decisions.sent.columns.recipient') }}</th>
+            <th>{{ t('editor.decisions.sent.columns.subject') }}</th>
+            <th>{{ t('editor.decisions.sent.columns.status') }}</th>
+            <th>{{ t('editor.decisions.sent.columns.openStatus') }}</th>
+            <th>{{ t('editor.decisions.sent.columns.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -784,15 +787,15 @@ const toggleTemplateDropdown = (id) => {
             <td>
               <div class="action-buttons">
                 <template v-if="canSendDecision">
-                  <button class="btn-text" @click="handleViewSentLetter(letter)">View</button>
-                  <button class="btn-text" v-if="letter.status === 'Sent'" @click="handleResend(letter)">Resend</button>
-                  <button class="btn-text" @click="handleExportPDF(letter)">Export PDF</button>
-                  <button class="btn-text" @click="handleForward(letter)">Forward</button>
-                  <button class="btn-text" @click="handleAddNote(letter)">Add Note</button>
+                  <button class="btn-text" @click="handleViewSentLetter(letter)">{{ t('editor.decisions.sent.actions.view') }}</button>
+                  <button class="btn-text" v-if="letter.status === 'Sent'" @click="handleResend(letter)">{{ t('editor.decisions.sent.actions.resend') }}</button>
+                  <button class="btn-text" @click="handleExportPDF(letter)">{{ t('editor.decisions.sent.actions.export') }}</button>
+                  <button class="btn-text" @click="handleForward(letter)">{{ t('editor.decisions.sent.actions.forward') }}</button>
+                  <button class="btn-text" @click="handleAddNote(letter)">{{ t('editor.decisions.sent.actions.addNote') }}</button>
                 </template>
                 <template v-else-if="canEditDecision"> <!-- AE view only basic actions -->
-                   <button class="btn-text" @click="handleViewSentLetter(letter)">View</button>
-                   <button class="btn-text" @click="handleAddNote(letter)">Add Note</button>
+                   <button class="btn-text" @click="handleViewSentLetter(letter)">{{ t('editor.decisions.sent.actions.view') }}</button>
+                   <button class="btn-text" @click="handleAddNote(letter)">{{ t('editor.decisions.sent.actions.addNote') }}</button>
                 </template>
               </div>
             </td>
@@ -803,28 +806,28 @@ const toggleTemplateDropdown = (id) => {
     
     <!-- Approval Queue Tab (Editor Only) -->
     <div v-if="activeTab === 'approval'" class="approval-queue-container">
-      <h3>Approval Queue</h3>
-      <p>Decisions submitted by Associate Editors awaiting your approval.</p>
+      <h3>{{ t('editor.decisions.approval.title') }}</h3>
+      <p>{{ t('editor.decisions.approval.description') }}</p>
       
       <div class="approval-progress" style="margin-bottom: 30px;">
-          <div class="step completed">Draft</div>
+          <div class="step completed">{{ t('editor.decisions.approval.steps.draft') }}</div>
           <div class="line completed"></div>
-          <div class="step active">Pending</div>
+          <div class="step active">{{ t('editor.decisions.approval.steps.pending') }}</div>
           <div class="line"></div>
-          <div class="step">Approved/Rejected</div>
+          <div class="step">{{ t('editor.decisions.approval.steps.decision') }}</div>
       </div>
       
       <div v-if="approvalQueue.length > 0" class="approval-list">
         <table class="approval-table">
           <thead>
             <tr>
-              <th>Manuscript</th>
-              <th>Author</th>
-              <th>Submitted By</th>
-              <th>Date Submitted</th>
-              <th>Template Used</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th>{{ t('editor.decisions.approval.columns.manuscript') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.author') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.submittedBy') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.submittedDate') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.templateUsed') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.status') }}</th>
+              <th>{{ t('editor.decisions.approval.columns.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -844,10 +847,10 @@ const toggleTemplateDropdown = (id) => {
               </td>
               <td>
                 <div class="action-buttons" v-if="canApprove">
-                  <button class="btn primary-sm" @click="handleApprove(item)">Approve</button>
-                  <button class="btn danger-sm" @click="handleReject(item)">Reject</button>
-                  <button class="btn secondary-sm" @click="handleViewDraft(item)">View Draft</button>
-                  <button class="btn secondary-sm" @click="handleAssignToAE(item)">Assign to Another AE</button>
+                  <button class="btn primary-sm" @click="handleApprove(item)">{{ t('editor.decisions.approval.actions.approve') }}</button>
+                  <button class="btn danger-sm" @click="handleReject(item)">{{ t('editor.decisions.approval.actions.reject') }}</button>
+                  <button class="btn secondary-sm" @click="handleViewDraft(item)">{{ t('editor.decisions.approval.actions.viewDraft') }}</button>
+                  <button class="btn secondary-sm" @click="handleAssignToAE(item)">{{ t('editor.decisions.approval.actions.assignAE') }}</button>
                 </div>
               </td>
             </tr>
@@ -856,38 +859,38 @@ const toggleTemplateDropdown = (id) => {
       </div>
       
       <div v-else class="empty-state" style="margin-top: 50px;">
-        No pending approvals.
+        {{ t('editor.decisions.approval.empty') }}
       </div>
     </div>
 
     <!-- Version History Modal -->
     <div v-if="showTemplateHistory" class="modal-overlay">
        <div class="modal-content">
-          <h3>Template Version History</h3>
+          <h3>{{ t('editor.decisions.history.title') }}</h3>
           <table class="history-table">
-             <thead><tr><th>Version</th><th>Date</th><th>Modifier</th><th>Action</th></tr></thead>
+             <thead><tr><th>{{ t('editor.decisions.history.columns.version') }}</th><th>{{ t('editor.decisions.history.columns.date') }}</th><th>{{ t('editor.decisions.history.columns.modifier') }}</th><th>{{ t('editor.decisions.history.columns.action') }}</th></tr></thead>
              <tbody>
                 <tr v-for="ver in templateHistory" :key="ver.version">
                    <td>{{ ver.version }}</td>
                    <td>{{ ver.date }}</td>
                    <td>{{ ver.modifier }}</td>
                    <td>
-                      <button class="btn secondary-sm" v-if="canEditDecision && (user.role !== 'associate_editor' || selectedManuscript.assignedTo === 'ae_user')" @click="handleRollback(ver)">Rollback</button>
-                      <button class="btn secondary-sm" @click="handleCompare(ver)">Compare</button>
+                      <button class="btn secondary-sm" v-if="canEditDecision && (user.role !== 'associate_editor' || selectedManuscript.assignedTo === 'ae_user')" @click="handleRollback(ver)">{{ t('editor.decisions.history.rollback') }}</button>
+                      <button class="btn secondary-sm" @click="handleCompare(ver)">{{ t('editor.decisions.history.compare') }}</button>
                    </td>
                 </tr>
              </tbody>
           </table>
-          <button @click="showTemplateHistory = false" class="btn secondary">Close</button>
+          <button @click="showTemplateHistory = false" class="btn secondary">{{ t('editor.decisions.history.close') }}</button>
        </div>
     </div>
 
     <!-- Compare Version Selection Modal -->
     <div v-if="showCompareModal" class="modal-overlay">
        <div class="modal-content">
-          <h3>Compare Versions - [{{ selectedManuscriptId }}]</h3>
+          <h3>{{ t('editor.decisions.compare.title', { id: selectedManuscriptId }) }}</h3>
           <div class="form-group">
-             <label>Compare {{ compareSourceVersion?.version }} with:</label>
+             <label>{{ t('editor.decisions.compare.label', { version: compareSourceVersion?.version }) }}</label>
              <select v-model="compareTargetVersion" class="input-text">
                 <option v-for="ver in templateHistory" :key="ver.version" :value="ver" :disabled="ver.version === compareSourceVersion?.version">
                    {{ ver.version }} ({{ ver.modifier }})
@@ -895,8 +898,8 @@ const toggleTemplateDropdown = (id) => {
              </select>
           </div>
           <div class="modal-footer">
-             <button class="btn secondary" @click="showCompareModal = false">Cancel</button>
-             <button class="btn primary" @click="executeCompare">Compare Now</button>
+             <button class="btn secondary" @click="showCompareModal = false">{{ t('editor.decisions.compare.cancel') }}</button>
+             <button class="btn primary" @click="executeCompare">{{ t('editor.decisions.compare.compareNow') }}</button>
           </div>
        </div>
     </div>
@@ -905,7 +908,7 @@ const toggleTemplateDropdown = (id) => {
     <div v-if="showCompareView" class="modal-overlay fullscreen">
        <div class="modal-content fullscreen-content">
           <div class="modal-header">
-             <h3>Comparison: {{ compareSourceVersion?.version }} vs {{ compareTargetVersion?.version }}</h3>
+             <h3>{{ t('editor.decisions.compare.viewTitle', { v1: compareSourceVersion?.version, v2: compareTargetVersion?.version }) }}</h3>
              <button class="close-btn" @click="closeCompareView">×</button>
           </div>
           <div class="compare-container">
@@ -927,8 +930,8 @@ const toggleTemplateDropdown = (id) => {
              </div>
           </div>
           <div class="modal-footer">
-             <button class="btn secondary" @click="closeCompareView">Close</button>
-             <button class="btn primary" v-if="!isReadOnly" @click="handleExportComparison">Export Comparison Report</button>
+             <button class="btn secondary" @click="closeCompareView">{{ t('editor.decisions.history.close') }}</button>
+             <button class="btn primary" v-if="!isReadOnly" @click="handleExportComparison">{{ t('editor.decisions.compare.export') }}</button>
           </div>
        </div>
     </div>
@@ -937,147 +940,147 @@ const toggleTemplateDropdown = (id) => {
     <div v-if="showActionModal" class="modal-overlay">
       <div class="modal-content large" v-if="currentAction === 'view_details'">
          <div class="modal-header">
-           <h3>Decision Letter Details - [{{ currentLetter.subject }}]</h3>
+           <h3>{{ t('editor.decisions.modals.details.title', { subject: currentLetter.subject }) }}</h3>
            <button class="close-btn" @click="showActionModal = false">×</button>
          </div>
          <div class="tabs modal-tabs">
-           <button :class="{ active: viewDetailsTab === 'content' }" @click="viewDetailsTab = 'content'">Letter Content</button>
-           <button :class="{ active: viewDetailsTab === 'history' }" @click="viewDetailsTab = 'history'">Version History</button>
-           <button :class="{ active: viewDetailsTab === 'delivery' }" @click="viewDetailsTab = 'delivery'">Delivery Log</button>
-           <button :class="{ active: viewDetailsTab === 'notes' }" @click="viewDetailsTab = 'notes'">Internal Notes</button>
+           <button :class="{ active: viewDetailsTab === 'content' }" @click="viewDetailsTab = 'content'">{{ t('editor.decisions.modals.details.tabs.content') }}</button>
+           <button :class="{ active: viewDetailsTab === 'history' }" @click="viewDetailsTab = 'history'">{{ t('editor.decisions.modals.details.tabs.history') }}</button>
+           <button :class="{ active: viewDetailsTab === 'delivery' }" @click="viewDetailsTab = 'delivery'">{{ t('editor.decisions.modals.details.tabs.delivery') }}</button>
+           <button :class="{ active: viewDetailsTab === 'notes' }" @click="viewDetailsTab = 'notes'">{{ t('editor.decisions.modals.details.tabs.notes') }}</button>
          </div>
          <div class="tab-content">
             <div v-if="viewDetailsTab === 'content'" class="letter-preview">
-               <p>Dear {{ currentLetter.recipient }},</p>
-               <p>This is the content of the decision letter...</p>
+               <p>{{ t('editor.decisions.modals.details.recipientLabel') }} {{ currentLetter.recipient }},</p>
+               <p>{{ t('editor.decisions.modals.details.contentPlaceholder') }}</p>
             </div>
             <div v-if="viewDetailsTab === 'history'">
                <ul class="timeline">
-                  <li><strong>v1.0</strong> - Sent by Editor on {{ currentLetter.date }}</li>
+                  <li><strong>v1.0</strong> - {{ t('editor.decisions.modals.details.historyEntry', { date: currentLetter.date }) }}</li>
                </ul>
             </div>
             <div v-if="viewDetailsTab === 'delivery'">
-               <p><strong>Sent:</strong> {{ currentLetter.date }}</p>
-               <p><strong>Recipient:</strong> {{ currentLetter.recipient }}</p>
-               <p><strong>Status:</strong> {{ currentLetter.openStatus }}</p>
+               <p><strong>{{ t('editor.decisions.modals.details.delivery.sent') }}:</strong> {{ currentLetter.date }}</p>
+               <p><strong>{{ t('editor.decisions.modals.details.delivery.recipient') }}:</strong> {{ currentLetter.recipient }}</p>
+               <p><strong>{{ t('editor.decisions.modals.details.delivery.status') }}:</strong> {{ currentLetter.openStatus }}</p>
             </div>
             <div v-if="viewDetailsTab === 'notes'">
-               <textarea placeholder="Add a note..." class="note-input"></textarea>
-               <button class="btn primary-sm">Add Note</button>
+               <textarea :placeholder="t('editor.decisions.modals.details.notes.placeholder')" class="note-input"></textarea>
+               <button class="btn primary-sm">{{ t('editor.decisions.modals.details.notes.add') }}</button>
             </div>
          </div>
          <div class="modal-footer">
-            <button class="btn secondary" @click="handleExportPDF(currentLetter)">Export PDF</button>
-            <button class="btn primary" v-if="canSendDecision" @click="handleResend(currentLetter)">Resend</button>
+            <button class="btn secondary" @click="handleExportPDF(currentLetter)">{{ t('editor.decisions.actions.exportPDF') }}</button>
+            <button class="btn primary" v-if="canSendDecision" @click="handleResend(currentLetter)">{{ t('editor.decisions.actions.resend') }}</button>
          </div>
       </div>
 
       <div class="modal-content" v-else>
-         <h3>{{ currentAction === 'resend' ? 'Resend Decision Letter' : 
-                currentAction === 'forward' ? 'Forward Decision Letter' :
-                currentAction === 'add_note' ? 'Add Internal Note' :
-                currentAction === 'approve' ? 'Approve Decision' :
-                currentAction === 'reject' ? 'Reject Decision' :
-                currentAction === 'assign_ae' ? 'Assign to Another AE' : 'Action' }}</h3>
+         <h3>{{ currentAction === 'resend' ? t('editor.decisions.modals.resend.title') : 
+                currentAction === 'forward' ? t('editor.decisions.modals.forward.title') :
+                currentAction === 'add_note' ? t('editor.decisions.modals.addNote.title') :
+                currentAction === 'approve' ? t('editor.decisions.modals.approve.title') :
+                currentAction === 'reject' ? t('editor.decisions.modals.reject.title') :
+                currentAction === 'assign_ae' ? t('editor.decisions.modals.assignAE.title') : t('editor.decisions.actions.confirm') }}</h3>
          
          <!-- Resend Form -->
          <div v-if="currentAction === 'resend'">
             <div class="form-group">
-               <label>Recipient</label>
+               <label>{{ t('editor.decisions.modals.resend.recipient') }}</label>
                <input v-model="actionForms.resend.recipient" class="input-text">
             </div>
             <div class="form-group">
-               <label>Subject</label>
+               <label>{{ t('editor.decisions.modals.resend.subject') }}</label>
                <input v-model="actionForms.resend.subject" class="input-text" disabled>
             </div>
             <div class="form-group">
-               <label>Body</label>
+               <label>{{ t('editor.decisions.modals.resend.body') }}</label>
                <textarea v-model="actionForms.resend.body" rows="5"></textarea>
             </div>
             <div class="form-group">
-               <label>Postscript</label>
-               <input v-model="actionForms.resend.postscript" class="input-text" placeholder="Ignore if received...">
+               <label>{{ t('editor.decisions.modals.resend.postscript') }}</label>
+               <input v-model="actionForms.resend.postscript" class="input-text" :placeholder="t('editor.decisions.modals.resend.placeholder')">
             </div>
          </div>
 
          <!-- Forward Form -->
          <div v-if="currentAction === 'forward'">
             <div class="form-group">
-               <label>Recipient</label>
+               <label>{{ t('editor.decisions.modals.forward.recipient') }}</label>
                <select v-model="actionForms.forward.recipient" class="input-text">
                   <option value="editor1@journal.com">Editor 1</option>
                   <option value="reviewer1@uni.edu">Reviewer 1</option>
                </select>
             </div>
             <div class="form-group">
-               <label>Postscript (Mandatory)</label>
+               <label>{{ t('editor.decisions.modals.forward.postscript') }}</label>
                <textarea v-model="actionForms.forward.postscript" rows="3"></textarea>
             </div>
-            <label><input type="checkbox" v-model="actionForms.forward.includeOriginal"> Include Original Email</label>
+            <label><input type="checkbox" v-model="actionForms.forward.includeOriginal"> {{ t('editor.decisions.modals.forward.includeOriginal') }}</label>
          </div>
 
          <!-- Add Note Form -->
          <div v-if="currentAction === 'add_note'">
             <div class="form-group">
-               <label>Type</label>
+               <label>{{ t('editor.decisions.modals.addNote.type') }}</label>
                <select v-model="actionForms.addNote.type" class="input-text">
-                  <option>Communication Record</option>
-                  <option>To-Do</option>
-                  <option>Special Instructions</option>
+                  <option>{{ t('editor.decisions.modals.addNote.types.communication') }}</option>
+                  <option>{{ t('editor.decisions.modals.addNote.types.todo') }}</option>
+                  <option>{{ t('editor.decisions.modals.addNote.types.instructions') }}</option>
                </select>
             </div>
             <div class="form-group">
-               <label>Content</label>
+               <label>{{ t('editor.decisions.modals.addNote.content') }}</label>
                <textarea v-model="actionForms.addNote.content" rows="4"></textarea>
             </div>
          </div>
 
          <!-- Approve Form -->
          <div v-if="currentAction === 'approve'">
-            <div class="info-block">Preview: Dear Author...</div>
+            <div class="info-block">{{ t('editor.decisions.modals.approve.preview') }}</div>
             <div class="form-group">
-               <label>Approval Remarks</label>
+               <label>{{ t('editor.decisions.modals.approve.remarks') }}</label>
                <textarea v-model="actionForms.approve.remarks" rows="3"></textarea>
             </div>
-            <label><input type="checkbox" v-model="actionForms.approve.autoSend"> Auto-send to Author</label>
+            <label><input type="checkbox" v-model="actionForms.approve.autoSend"> {{ t('editor.decisions.modals.approve.autoSend') }}</label>
          </div>
 
          <!-- Reject Form -->
          <div v-if="currentAction === 'reject'">
             <div class="form-group">
-               <label>Reason</label>
+               <label>{{ t('editor.decisions.modals.reject.reason') }}</label>
                <select v-model="actionForms.reject.reason" class="input-text">
-                  <option>Content needs revision</option>
-                  <option>Logic is not rigorous</option>
-                  <option>Insufficient integration</option>
-                  <option>Others</option>
+                  <option>{{ t('editor.decisions.modals.reject.reasons.content') }}</option>
+                  <option>{{ t('editor.decisions.modals.reject.reasons.logic') }}</option>
+                  <option>{{ t('editor.decisions.modals.reject.reasons.integration') }}</option>
+                  <option>{{ t('editor.decisions.modals.reject.reasons.others') }}</option>
                </select>
             </div>
-            <div class="form-group" v-if="actionForms.reject.reason === 'Others'">
-               <label>Explanation (≥20 chars)</label>
+            <div class="form-group" v-if="actionForms.reject.reason === 'Others' || actionForms.reject.reason === t('editor.decisions.modals.reject.reasons.others')">
+               <label>{{ t('editor.decisions.modals.reject.explanation') }}</label>
                <textarea v-model="actionForms.reject.detail" rows="3"></textarea>
             </div>
-            <label><input type="checkbox" v-model="actionForms.reject.notifyDrafter"> Notify Original Drafter</label>
+            <label><input type="checkbox" v-model="actionForms.reject.notifyDrafter"> {{ t('editor.decisions.modals.reject.notify') }}</label>
          </div>
 
          <!-- Assign AE Form -->
          <div v-if="currentAction === 'assign_ae'">
             <div class="form-group">
-               <label>Target AE</label>
+               <label>{{ t('editor.decisions.modals.assignAE.target') }}</label>
                <select v-model="actionForms.assignAE.targetAE" class="input-text">
                   <option>Dr. AE One</option>
                   <option>Prof. AE Two</option>
                </select>
             </div>
             <div class="form-group">
-               <label>Remarks</label>
+               <label>{{ t('editor.decisions.modals.assignAE.remarks') }}</label>
                <textarea v-model="actionForms.assignAE.remarks" rows="3"></textarea>
             </div>
          </div>
 
          <div class="modal-footer">
-            <button class="btn secondary" @click="showActionModal = false">Cancel</button>
-            <button class="btn primary" @click="handleConfirmAction">Confirm</button>
+            <button class="btn secondary" @click="showActionModal = false">{{ t('editor.decisions.actions.cancel') }}</button>
+            <button class="btn primary" @click="handleConfirmAction">{{ t('editor.decisions.actions.confirm') }}</button>
          </div>
       </div>
     </div>

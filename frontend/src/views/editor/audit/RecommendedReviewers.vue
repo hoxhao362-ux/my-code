@@ -776,7 +776,7 @@ const getRiskClass = (level) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user" 
@@ -835,13 +835,13 @@ const getRiskClass = (level) => {
         <button class="btn btn-primary" @click="handleBulkAccept" :disabled="selectedReviewerIds.length === 0">
           Bulk Accept
         </button>
-        <button class="btn btn-red" @click="handleBulkReject" :disabled="selectedReviewerIds.length === 0">
+        <button class="btn btn-secondary" @click="handleBulkReject" :disabled="selectedReviewerIds.length === 0">
           Bulk Reject
         </button>
       </div>
 
       <!-- Recommended Reviewers List -->
-      <table class="lancet-table">
+      <table class="jp-table">
         <thead>
           <tr>
             <th style="width: 50px;"></th>
@@ -1057,7 +1057,7 @@ const getRiskClass = (level) => {
           </div>
           <div class="right-actions">
             <button class="btn btn-grey" @click="showDetailModal = false">Cancel</button>
-            <button class="btn btn-red" @click="handleReject">Reject</button>
+            <button class="btn btn-secondary" @click="handleReject">Reject</button>
             <button v-if="['pending'].includes(currentReviewer?.status)" class="btn btn-success" @click="openInviteModal(currentReviewer)">Invite</button>
             <button class="btn btn-primary" @click="handleAccept">Accept</button>
           </div>
@@ -1155,9 +1155,9 @@ const getRiskClass = (level) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
-  background-color: #FFFFFF;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
   min-height: 100vh;
   color: #333333;
 }
@@ -1175,16 +1175,16 @@ const getRiskClass = (level) => {
 }
 
 .main-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2c3e50;
   margin-bottom: 5px;
   text-transform: uppercase;
 }
 
 .warning-text {
-  font-size: 12px;
-  color: #D1202F;
+  font-size: 14px;
+  color: #dc3545;
   margin-bottom: 20px;
 }
 
@@ -1198,9 +1198,9 @@ const getRiskClass = (level) => {
 
 .filter-bar select,
 .search-input {
-  padding: 6px 12px;
+  padding: 8px 12px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: inherit;
   min-width: 150px;
   border-radius: 4px;
 }
@@ -1228,14 +1228,14 @@ const getRiskClass = (level) => {
 }
 
 /* Table */
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
   margin-bottom: 30px;
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
   padding: 12px 10px;
   border-bottom: 2px solid #CCC;
@@ -1244,7 +1244,7 @@ const getRiskClass = (level) => {
   background: #f8f9fa;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 15px 10px;
   border-bottom: 1px solid #EEE;
   vertical-align: middle;
@@ -1272,13 +1272,13 @@ const getRiskClass = (level) => {
   font-weight: bold;
   color: white;
 }
-.risk-high { background: #D1202F; }
+.risk-high { background: #dc3545; }
 .risk-medium { background: #FFC107; color: #333; }
 .risk-low { background: #28a745; }
 
 .risk-detail {
   font-size: 11px;
-  color: #D1202F;
+  color: #dc3545;
   margin-top: 4px;
 }
 
@@ -1287,7 +1287,7 @@ const getRiskClass = (level) => {
   color: #28a745;
 }
 .score-low {
-  color: #D1202F;
+  color: #dc3545;
 }
 
 .status-badge {
@@ -1347,8 +1347,7 @@ const getRiskClass = (level) => {
 .btn-primary:hover { background: #2c5282; }
 .btn-primary:disabled { background: #a0aec0; cursor: not-allowed; }
 
-.btn-red { background: #D1202F; color: white; }
-.btn-red:hover { background: #b01b27; }
+
 
 .btn-grey { background: #e2e6ea; color: #333; }
 .btn-eval { background: #FFC107; color: #333; }
@@ -1396,7 +1395,7 @@ const getRiskClass = (level) => {
   color: #1a365d;
   font-size: 14px;
   text-transform: uppercase;
-  border-left: 3px solid #D1202F;
+  border-left: 3px solid #0056B3;
   padding-left: 8px;
 }
 
@@ -1405,7 +1404,7 @@ const getRiskClass = (level) => {
   padding: 10px;
   border-radius: 4px;
 }
-.text-high { color: #D1202F; font-weight: bold; }
+.text-high { color: #dc3545; font-weight: bold; }
 .text-medium { color: #856404; font-weight: bold; }
 .text-low { color: #28a745; font-weight: bold; }
 
@@ -1427,7 +1426,7 @@ textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #CCC;
-  font-family: 'Times New Roman';
+  font-family: inherit;
   resize: vertical;
 }
 

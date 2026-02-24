@@ -18,10 +18,10 @@ const disciplines = ['Clinical', 'Public Health', 'Global Health', 'Oncology']
 
 // Mock Data - Codes
 const codes = ref([
-  { code: 'LANCET-2026-X8Y2', created_at: '2026-02-13 10:00', expires_at: '2026-03-15', discipline: 'Clinical', role: 'senior', status: 'unused', used_by: '-' },
-  { code: 'LANCET-2026-A1B2', created_at: '2026-02-10 09:30', expires_at: '2026-03-12', discipline: 'Public Health', role: 'senior', status: 'used', used_by: 'Dr. Smith (Harvard)' },
-  { code: 'LANCET-2026-K9L0', created_at: '2026-01-01 14:00', expires_at: '2026-01-08', discipline: 'Global Health', role: 'basic', status: 'expired', used_by: '-' },
-  { code: 'LANCET-2026-Q5W6', created_at: '2026-02-12 11:00', expires_at: '2026-03-14', discipline: 'Clinical', role: 'senior', status: 'invalidated', used_by: '-' }
+  { code: 'JP-2026-X8Y2', created_at: '2026-02-13 10:00', expires_at: '2026-03-15', discipline: 'Clinical', role: 'senior', status: 'unused', used_by: '-' },
+  { code: 'JP-2026-A1B2', created_at: '2026-02-10 09:30', expires_at: '2026-03-12', discipline: 'Public Health', role: 'senior', status: 'used', used_by: 'Dr. Smith (Harvard)' },
+  { code: 'JP-2026-K9L0', created_at: '2026-01-01 14:00', expires_at: '2026-01-08', discipline: 'Global Health', role: 'basic', status: 'expired', used_by: '-' },
+  { code: 'JP-2026-Q5W6', created_at: '2026-02-12 11:00', expires_at: '2026-03-14', discipline: 'Clinical', role: 'senior', status: 'invalidated', used_by: '-' }
 ])
 
 // Actions
@@ -36,7 +36,7 @@ const generateCodes = () => {
   for (let i = 0; i < generateForm.value.quantity; i++) {
     const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase()
     newCodes.push({
-      code: `LANCET-2026-${randomStr}`,
+      code: `JP-2026-${randomStr}`,
       created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
       expires_at: new Date(Date.now() + generateForm.value.validity * 86400000).toISOString().split('T')[0],
       discipline: generateForm.value.discipline,
@@ -65,7 +65,7 @@ const copyCode = (code) => {
 </script>
 
 <template>
-  <div class="lancet-container">
+  <div class="jp-container">
     <Navigation 
       v-if="!$attrs.embedded"
       :user="user"
@@ -110,14 +110,14 @@ const copyCode = (code) => {
             </select>
           </div>
           <div class="form-group action">
-            <button class="btn btn-red" @click="generateCodes">Generate Codes</button>
+            <button class="btn btn-primary" @click="generateCodes">Generate Codes</button>
           </div>
         </div>
       </section>
 
       <!-- Code List -->
       <section class="list-section">
-        <table class="lancet-table">
+        <table class="jp-table">
           <thead>
             <tr>
               <th>Invitation Code</th>
@@ -143,7 +143,7 @@ const copyCode = (code) => {
               <td>{{ item.used_by }}</td>
               <td class="actions">
                 <button class="btn-text" v-if="item.status === 'unused'" @click="copyCode(item.code)">Copy</button>
-                <button class="btn-text red" v-if="item.status === 'unused'" @click="invalidateCode(item)">Invalidate</button>
+                <button class="btn-text text-danger" v-if="item.status === 'unused'" @click="invalidateCode(item)">Invalidate</button>
                 <button class="btn-text" v-else disabled>View</button>
               </td>
             </tr>
@@ -166,8 +166,8 @@ const copyCode = (code) => {
 </template>
 
 <style scoped>
-.lancet-container {
-  font-family: 'Times New Roman', Times, serif;
+.jp-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #FFFFFF;
   min-height: 100vh;
   color: #333333;
@@ -194,7 +194,7 @@ const copyCode = (code) => {
 
 .warning-text {
   font-size: 12px;
-  color: #D1202F;
+  color: #dc3545;
 }
 
 /* Generation Form */
@@ -229,31 +229,35 @@ const copyCode = (code) => {
   padding: 8px;
   border: 1px solid #CCC;
   min-width: 150px;
-  font-family: 'Times New Roman';
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .form-group.action {
   padding-bottom: 1px;
 }
 
-.btn-red {
-  background: #D1202F;
+.btn-primary {
+  background: #0056B3;
   color: white;
   border: none;
-  padding: 9px 20px;
+  padding: 10px 24px;
   border-radius: 4px;
   cursor: pointer;
-  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  background: #004494;
 }
 
 /* Table */
-.lancet-table {
+.jp-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
 
-.lancet-table th {
+.jp-table th {
   text-align: left;
   padding: 10px;
   border-bottom: 1px solid #CCC;
@@ -261,7 +265,7 @@ const copyCode = (code) => {
   color: #555;
 }
 
-.lancet-table td {
+.jp-table td {
   padding: 12px 10px;
   border-bottom: 1px solid #EEE;
   vertical-align: middle;
@@ -293,7 +297,7 @@ const copyCode = (code) => {
   margin-right: 10px;
   text-decoration: underline;
 }
-.btn-text.red { color: #D1202F; }
+.btn-text.text-danger { color: #dc3545; }
 .btn-text:disabled { color: #CCC; cursor: not-allowed; text-decoration: none; }
 
 /* Rules */

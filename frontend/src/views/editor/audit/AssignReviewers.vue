@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useI18n } from '../../../composables/useI18n'
 import Navigation from '../../../components/Navigation.vue'
 import IntelligentReviewerRecommendation from '../../../components/audit/IntelligentReviewerRecommendation.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
@@ -85,7 +87,7 @@ const handleSelectRecommended = (reviewer) => {
 
 const confirmAssignment = () => {
   if (selectedReviewerIds.value.length < 1) {
-    alert('Please select at least one reviewer.')
+    alert(t('editor.audit.assignReviewers.alerts.selectAtLeastOne'))
     return
   }
   
@@ -100,7 +102,7 @@ const confirmAssignment = () => {
       return {
         id: realUser.id,
         name: realUser.username,
-        status: 'Pending', // Lancet Standard
+        status: 'Pending', // Journal Platform Standard
         invitedAt: new Date().toISOString()
       }
     }
@@ -112,7 +114,7 @@ const confirmAssignment = () => {
          id: 'rec-' + recReviewer.id, // Temporary ID
          name: recReviewer.reviewerName,
          email: recReviewer.reviewerEmail,
-         status: 'Pending', // Lancet Standard
+         status: 'Pending', // Journal Platform Standard
          invitedAt: new Date().toISOString(),
          isExternal: true
        }
@@ -124,11 +126,11 @@ const confirmAssignment = () => {
   
   userStore.updateJournal(journal)
   showModal.value = false
-  alert(`Reviewers assigned. ${newReviewers.length} invitations sent. Manuscript moved to "Under Review".`)
+  alert(t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: newReviewers.length }))
 }
 
 const handleReinvite = (journal) => {
-  alert('Re-invitation feature would go here.')
+  alert(t('editor.audit.assignReviewers.alerts.reinviteHint'))
 }
 
 </script>
@@ -139,8 +141,8 @@ const handleReinvite = (journal) => {
     
     <main class="content">
       <div class="header">
-        <h1>Assign Reviewers</h1>
-        <p class="subtitle">Select and Invite Peer Reviewers</p>
+        <h1>{{ t('editor.audit.assignReviewers.title') }}</h1>
+        <p class="subtitle">{{ t('editor.audit.assignReviewers.subtitle') }}</p>
       </div>
 
       <div class="journals-list">
@@ -148,20 +150,20 @@ const handleReinvite = (journal) => {
           <div class="journal-info">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>Writer:</strong> {{ journal.writer }}</span>
-              <span><strong>Module:</strong> {{ journal.module }}</span>
+              <span><strong>{{ t('editor.audit.assignReviewers.meta.writer') }}:</strong> {{ journal.writer }}</span>
+              <span><strong>{{ t('editor.audit.assignReviewers.meta.module') }}:</strong> {{ journal.module }}</span>
             </div>
             <div class="tags">
                <span class="tag">AI</span> <span class="tag">Imaging</span> <!-- Mock tags -->
             </div>
           </div>
           <div class="journal-actions">
-            <button class="btn btn-primary" @click="openAssignModal(journal)">Assign Reviewers</button>
-            <button class="btn btn-secondary" @click="handleReinvite(journal)">Re-invite</button>
+            <button class="btn btn-primary" @click="openAssignModal(journal)">{{ t('editor.audit.assignReviewers.actions.assign') }}</button>
+            <button class="btn btn-secondary" @click="handleReinvite(journal)">{{ t('editor.audit.assignReviewers.actions.reinvite') }}</button>
           </div>
         </div>
         <div v-if="assignmentJournals.length === 0" class="no-data">
-          No manuscripts waiting for reviewer assignment.
+          {{ t('editor.audit.assignReviewers.noManuscripts') }}
         </div>
       </div>
     </main>
@@ -169,7 +171,7 @@ const handleReinvite = (journal) => {
     <!-- Modal -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
-        <h2>Select Reviewers</h2>
+        <h2>{{ t('editor.audit.assignReviewers.modalTitle') }}</h2>
         
         <!-- Tabs -->
         <div class="modal-tabs">
@@ -178,7 +180,7 @@ const handleReinvite = (journal) => {
             :class="{ active: activeTab === 'recommended' }"
             @click="activeTab = 'recommended'"
           >
-            👤 Writer Recommended
+            👤 {{ t('editor.audit.assignReviewers.tabs.writerRecommended') }}
             <span v-if="writerRecommendedReviewers.length" class="badge-count">{{ writerRecommendedReviewers.length }}</span>
           </button>
           <button 
@@ -186,22 +188,22 @@ const handleReinvite = (journal) => {
             :class="{ active: activeTab === 'smart' }"
             @click="activeTab = 'smart'"
           >
-            🤖 Smart Recommendation
+            🤖 {{ t('editor.audit.assignReviewers.tabs.smartRecommendation') }}
           </button>
           <button 
             class="tab-btn" 
             :class="{ active: activeTab === 'manual' }"
             @click="activeTab = 'manual'"
           >
-            🔍 Manual Search
+            🔍 {{ t('editor.audit.assignReviewers.tabs.manualSearch') }}
           </button>
         </div>
 
         <!-- Writer Recommended Tab -->
         <div v-if="activeTab === 'recommended'" class="tab-content">
           <div v-if="writerRecommendedReviewers.length === 0" class="no-data-tab">
-            No writer recommendations found for this manuscript.
-            <p class="hint">Please ensure the author has submitted suggestions, or use Smart Recommendation / Manual Search.</p>
+            {{ t('editor.audit.assignReviewers.noWriterRecommendations') }}
+            <p class="hint">{{ t('editor.audit.assignReviewers.writerRecommendationHint') }}</p>
           </div>
           <div v-else class="reviewer-list">
              <div v-for="reviewer in writerRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
@@ -210,7 +212,7 @@ const handleReinvite = (journal) => {
                    <span class="r-name">{{ reviewer.reviewerName }}</span>
                    <span class="r-email">{{ reviewer.reviewerEmail }}</span>
                    <span class="r-aff">{{ reviewer.reviewerAffiliation }}</span>
-                   <div class="r-reason">Reason: {{ reviewer.recommendationReason }}</div>
+                   <div class="r-reason">{{ t('editor.audit.assignReviewers.reason') }}: {{ reviewer.recommendationReason }}</div>
                  </div>
                </label>
             </div>
@@ -228,10 +230,10 @@ const handleReinvite = (journal) => {
         <!-- Manual Tab -->
         <div v-if="activeTab === 'manual'" class="tab-content manual-content">
           <div class="modal-search">
-             <input v-model="searchQuery" placeholder="Search reviewers..." class="search-input" />
+             <input v-model="searchQuery" :placeholder="t('editor.audit.assignReviewers.searchPlaceholder')" class="search-input" />
              <div class="filters">
-               <label><input type="radio" v-model="filterMethod" value="all"> All</label>
-               <label><input type="radio" v-model="filterMethod" value="field"> Match Field</label>
+               <label><input type="radio" v-model="filterMethod" value="all"> {{ t('editor.audit.assignReviewers.filters.all') }}</label>
+               <label><input type="radio" v-model="filterMethod" value="field"> {{ t('editor.audit.assignReviewers.filters.matchField') }}</label>
              </div>
           </div>
           <div class="reviewer-list">
@@ -246,10 +248,10 @@ const handleReinvite = (journal) => {
         </div>
 
         <div class="modal-footer">
-          <div class="selection-count">Selected: {{ selectedReviewerIds.length }}</div>
+          <div class="selection-count">{{ t('editor.audit.assignReviewers.selectionCount', { count: selectedReviewerIds.length }) }}</div>
           <div class="buttons">
-            <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
-            <button class="btn btn-primary" @click="confirmAssignment">Confirm Assignment</button>
+            <button class="btn btn-secondary" @click="showModal = false">{{ t('common.cancel') }}</button>
+            <button class="btn btn-primary" @click="confirmAssignment">{{ t('editor.audit.assignReviewers.actions.confirm') }}</button>
           </div>
         </div>
       </div>

@@ -5,8 +5,11 @@ import { useUserStore } from '../../stores/user'
 import Login from './Login.vue'
 import AdminRegister from '../auth/AdminRegister.vue'
 
+import { useI18n } from '../../composables/useI18n'
+
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 // Use store state for reactivity
 const submissionUser = computed(() => userStore.submissionUser)
 
@@ -17,8 +20,8 @@ const showRegister = ref(false)
 const checkLoginAndRedirect = () => {
   if (submissionUser.value) {
     const role = submissionUser.value.role
-    if (role === 'author' || role === 'writer') {
-      router.push('/admin/writer-dashboard')
+    if (role === 'writer') {
+      router.push('/submission/writer/submit')
     } else if (role === 'reviewer') {
       router.push('/reviewer/dashboard')
     } else if (['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(role)) {
@@ -65,11 +68,11 @@ const goToLogin = () => {
   <div class="submission-module">
     <header class="subnav">
       <div class="subnav-container">
-        <div class="brand">Submission Module</div>
+        <div class="brand">{{ t('submission.brand') }}</div>
         <ul class="nav">
-          <li><a href="#" @click.prevent="goHome">Home</a></li>
-          <li><a href="#" @click.prevent="goAbout">About</a></li>
-          <li><a href="#" @click.prevent="goHelp">Help</a></li>
+          <li><a href="#" @click.prevent="goHome">{{ t('submission.nav.home') }}</a></li>
+          <li><a href="#" @click.prevent="goAbout">{{ t('submission.nav.about') }}</a></li>
+          <li><a href="#" @click.prevent="goHelp">{{ t('submission.nav.help') }}</a></li>
         </ul>
       </div>
     </header>
@@ -77,32 +80,31 @@ const goToLogin = () => {
       <div class="main-container">
         <aside class="sidebar">
           <div class="journal-cover">
-            <!-- Using a placeholder image from public folder -->
-            <img src="/images/24.jpg" alt="Journal Cover" class="cover-img" />
+            <img src="/images/24.jpg" alt="Journal Cover" class="cover-img" @error="(e) => e.target.src = 'https://via.placeholder.com/240x320?text=Journal+Cover'" />
           </div>
           <ul class="sidebar-links">
             <li>
               <a href="#" class="sidebar-link">
                 <span class="icon">ℹ️</span>
-                Instruction for Authors
+                {{ t('submission.sidebar.instruction') }}
               </a>
             </li>
             <li>
               <a href="#" class="sidebar-link">
                 <span class="icon">📖</span>
-                About the Journal
+                {{ t('submission.sidebar.about') }}
               </a>
             </li>
             <li>
               <a href="#" class="sidebar-link">
                 <span class="icon">✅</span>
-                Pre-submission checklist
+                {{ t('submission.sidebar.checklist') }}
               </a>
             </li>
             <li>
               <a href="#" class="sidebar-link">
                 <span class="icon">👥</span>
-                Peer Reviewers
+                {{ t('submission.sidebar.reviewers') }}
               </a>
             </li>
           </ul>
@@ -110,8 +112,8 @@ const goToLogin = () => {
         
         <div class="main-login-area">
           <div class="welcome-banner">
-            <h2>Welcome to Submission Module for</h2>
-            <h3>Journal Submission Platform</h3>
+            <h2>{{ t('submission.welcome.title') }}</h2>
+            <h3>{{ t('submission.welcome.platform') }}</h3>
           </div>
           
           <div v-if="!submissionUser" class="login-wrapper">

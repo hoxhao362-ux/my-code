@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { stripHtmlTags, truncateText } from '../utils/helpers'
+import { MANUSCRIPT_STATUS } from '../constants/manuscriptStatus'
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'logout', 'journals', 'modules', 'incrementJournalView', 'showDirectory', 'toggleDirectory'])
@@ -17,63 +18,63 @@ const stats = ref({
 const allJournals = ref([
   { 
     id: 1, 
-    title: '基于深度学习的医学图像分析', 
-    author: '张三', 
+    title: 'Deep Learning in Medical Image Analysis', 
+    author: 'John Smith', 
     date: '2024-01-01', 
-    status: '待审核',
-    abstract: '本文探讨了深度学习在医学图像分析中的应用，包括图像分类、目标检测和分割等技术，并通过实验验证了其有效性。',
-    keywords: ['深度学习', '医学图像', '图像分析'],
-    content: '<h3>摘要</h3><p>本文探讨了深度学习在医学图像分析中的应用，包括图像分类、目标检测和分割等技术，并通过实验验证了其有效性。</p><h3>引言</h3><p>医学图像分析是医学领域的重要研究方向，随着深度学习技术的发展，其在医学图像分析中的应用越来越广泛。</p><h3>方法</h3><p>本文采用卷积神经网络（CNN）进行医学图像分析，包括数据预处理、模型训练和评估等步骤。</p><h3>结果</h3><p>实验结果表明，深度学习方法在医学图像分析中取得了良好的效果，准确率达到了95%以上。</p><h3>结论</h3><p>深度学习技术在医学图像分析中具有广阔的应用前景，未来可以进一步提高模型的性能和泛化能力。</p>'
+    status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
+    abstract: 'This paper explores the application of deep learning in medical image analysis, including image classification, object detection, and segmentation techniques.',
+    keywords: ['Deep Learning', 'Medical Imaging', 'Image Analysis'],
+    content: '<h3>Abstract</h3><p>This paper explores the application of deep learning in medical image analysis.</p>'
   },
   { 
     id: 2, 
-    title: '新型药物研发进展', 
-    author: '李四', 
+    title: 'Advances in Novel Drug Development', 
+    author: 'Jane Doe', 
     date: '2024-01-02', 
-    status: '审核中',
-    abstract: '本文综述了近年来新型药物研发的进展，包括小分子药物、生物药物和基因治疗等领域，并展望了未来的发展方向。',
-    keywords: ['药物研发', '小分子药物', '生物药物', '基因治疗'],
-    content: '<h3>摘要</h3><p>本文综述了近年来新型药物研发的进展，包括小分子药物、生物药物和基因治疗等领域，并展望了未来的发展方向。</p><h3>引言</h3><p>药物研发是医药行业的核心环节，随着科学技术的发展，新型药物不断涌现，为疾病治疗提供了更多选择。</p><h3>小分子药物</h3><p>小分子药物是传统的药物类型，具有分子量小、易于合成和口服给药等优点，近年来在靶点发现和药物设计方面取得了重要进展。</p><h3>生物药物</h3><p>生物药物包括抗体药物、蛋白质药物和核酸药物等，具有特异性强、疗效好等优点，是当前药物研发的热点领域。</p><h3>基因治疗</h3><p>基因治疗是一种新兴的治疗方法，通过修复或替换缺陷基因来治疗疾病，具有广阔的应用前景。</p><h3>结论</h3><p>新型药物研发的进展为疾病治疗带来了新的希望，未来需要进一步加强基础研究和临床转化，推动药物研发的发展。</p>'
+    status: MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+    abstract: 'This paper reviews recent advances in novel drug development, including small molecule drugs, biologics, and gene therapy.',
+    keywords: ['Drug Development', 'Small Molecule Drugs', 'Biologics', 'Gene Therapy'],
+    content: '<h3>Abstract</h3><p>This paper reviews recent advances in novel drug development.</p>'
   },
   { 
     id: 3, 
-    title: '临床研究方法学探讨', 
-    author: '王五', 
+    title: 'Clinical Research Methodology', 
+    author: 'Robert Johnson', 
     date: '2024-01-03', 
-    status: '已通过',
-    abstract: '本文系统介绍了临床研究的基本方法和设计原则，包括随机对照试验、队列研究、病例对照研究等，并讨论了临床研究中的伦理问题。',
-    keywords: ['临床研究', '方法学', '随机对照试验', '伦理'],
-    content: '<h3>摘要</h3><p>本文系统介绍了临床研究的基本方法和设计原则，包括随机对照试验、队列研究、病例对照研究等，并讨论了临床研究中的伦理问题。</p><h3>引言</h3><p>临床研究是验证药物和治疗方法有效性和安全性的重要手段，其方法学的科学性直接影响研究结果的可靠性。</p><h3>临床研究设计</h3><p>临床研究设计包括研究类型、样本量计算、随机化方法、盲法设计等，不同的研究设计适用于不同的研究目的。</p><h3>随机对照试验</h3><p>随机对照试验是临床研究的金标准，通过随机分组和盲法设计，减少偏倚，提高研究结果的可靠性。</p><h3>队列研究</h3><p>队列研究是一种观察性研究方法，通过随访暴露组和非暴露组，观察疾病的发生情况，用于研究病因和预后。</p><h3>病例对照研究</h3><p>病例对照研究是一种回顾性研究方法，通过比较病例组和对照组的暴露情况，探讨疾病的危险因素。</p><h3>伦理问题</h3><p>临床研究中的伦理问题包括知情同意、隐私保护、风险受益比等，需要严格遵循伦理原则。</p><h3>结论</h3><p>临床研究方法学的不断完善和发展，为提高临床研究质量和推动医学进步提供了重要保障。</p>'
+    status: MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
+    abstract: 'This paper systematically introduces the basic methods and design principles of clinical research.',
+    keywords: ['Clinical Research', 'Methodology', 'RCT', 'Ethics'],
+    content: '<h3>Abstract</h3><p>This paper systematically introduces the basic methods and design principles of clinical research.</p>'
   },
   { 
     id: 4, 
-    title: '公共卫生政策分析', 
-    author: '赵六', 
+    title: 'Public Health Policy Analysis', 
+    author: 'Emily Brown', 
     date: '2024-01-04', 
-    status: '已拒绝',
-    abstract: '本文分析了当前公共卫生政策的现状和存在的问题，并提出了相应的改进建议，旨在提高公共卫生服务的质量和可及性。',
-    keywords: ['公共卫生', '政策分析', '卫生服务', '改进建议'],
-    content: '<h3>摘要</h3><p>本文分析了当前公共卫生政策的现状和存在的问题，并提出了相应的改进建议，旨在提高公共卫生服务的质量和可及性。</p><h3>引言</h3><p>公共卫生政策是保障公众健康的重要手段，其制定和实施直接影响公共卫生服务的质量和效果。</p><h3>公共卫生政策现状</h3><p>当前公共卫生政策在疾病预防控制、卫生监督、健康教育等方面取得了一定成绩，但仍存在一些问题，如政策执行不到位、资源分配不均等。</p><h3>存在的问题</h3><p>公共卫生政策存在的问题包括政策制定缺乏科学性、政策执行机制不完善、公众参与度不高等。</p><h3>改进建议</h3><p>针对存在的问题，提出了加强政策科学性、完善执行机制、提高公众参与度等改进建议。</p><h3>结论</h3><p>公共卫生政策的不断完善和优化，对于提高公共卫生服务质量、保障公众健康具有重要意义。</p>'
+    status: MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED,
+    abstract: 'This paper analyzes the current status and problems of public health policies.',
+    keywords: ['Public Health', 'Policy Analysis', 'Health Services'],
+    content: '<h3>Abstract</h3><p>This paper analyzes the current status and problems of public health policies.</p>'
   },
   { 
     id: 5, 
-    title: '生物信息学在医学研究中的应用', 
-    author: '孙七', 
+    title: 'Bioinformatics in Medical Research', 
+    author: 'Michael Chen', 
     date: '2024-01-05', 
-    status: '已通过',
-    abstract: '本文介绍了生物信息学在医学研究中的应用，包括基因组学、蛋白质组学和代谢组学等领域，并讨论了其在疾病诊断和治疗中的潜力。',
-    keywords: ['生物信息学', '基因组学', '蛋白质组学', '代谢组学', '疾病诊断'],
-    content: '<h3>摘要</h3><p>本文介绍了生物信息学在医学研究中的应用，包括基因组学、蛋白质组学和代谢组学等领域，并讨论了其在疾病诊断和治疗中的潜力。</p><h3>引言</h3><p>生物信息学是一门新兴的交叉学科，通过整合生物学、计算机科学和统计学等知识，分析和解读生物数据，为医学研究提供了新的方法和思路。</p><h3>基因组学应用</h3><p>基因组学研究通过分析基因组序列，揭示疾病的遗传基础，为个性化医疗提供了基础。</p><h3>蛋白质组学应用</h3><p>蛋白质组学研究通过分析蛋白质的表达和功能，探讨疾病的发病机制，为药物研发提供了靶点。</p><h3>代谢组学应用</h3><p>代谢组学研究通过分析代谢物的变化，监测疾病的进展和治疗效果，为临床诊断提供了新的 biomarkers。</p><h3>结论</h3><p>生物信息学在医学研究中的应用前景广阔，未来将在疾病诊断、治疗和预防等方面发挥越来越重要的作用。</p>'
+    status: MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
+    abstract: 'This paper introduces the application of bioinformatics in medical research.',
+    keywords: ['Bioinformatics', 'Genomics', 'Proteomics', 'Metabolomics'],
+    content: '<h3>Abstract</h3><p>This paper introduces the application of bioinformatics in medical research.</p>'
   },
   { 
     id: 6, 
-    title: '人工智能在医疗领域的应用现状与挑战', 
-    author: '周八', 
+    title: 'AI in Healthcare: Current Status and Challenges', 
+    author: 'Sarah Wilson', 
     date: '2024-01-06', 
-    status: '审核中',
-    abstract: '本文综述了人工智能在医疗领域的应用现状，包括医学影像分析、辅助诊断、药物研发等方面，并分析了其面临的挑战和未来发展方向。',
-    keywords: ['人工智能', '医疗领域', '医学影像', '辅助诊断', '药物研发'],
-    content: '<h3>摘要</h3><p>本文综述了人工智能在医疗领域的应用现状，包括医学影像分析、辅助诊断、药物研发等方面，并分析了其面临的挑战和未来发展方向。</p><h3>引言</h3><p>人工智能技术的快速发展为医疗领域带来了新的机遇和挑战，其在医学影像分析、辅助诊断、药物研发等方面的应用不断深入。</p><h3>医学影像分析</h3><p>人工智能在医学影像分析中的应用包括图像分类、目标检测和分割等，能够提高诊断效率和准确性。</p><h3>辅助诊断</h3><p>人工智能辅助诊断系统通过分析患者的临床数据和影像资料，提供诊断建议，有助于提高诊断的准确性和一致性。</p><h3>药物研发</h3><p>人工智能在药物研发中的应用包括靶点发现、药物设计和临床试验优化等，能够缩短药物研发周期，降低研发成本。</p><h3>挑战与展望</h3><p>人工智能在医疗领域的应用面临着数据质量、算法可解释性、伦理和法律等挑战，未来需要加强跨学科合作，推动人工智能技术在医疗领域的健康发展。</p><h3>结论</h3><p>人工智能技术在医疗领域的应用前景广阔，将为医疗行业带来革命性的变化，但需要克服一系列挑战，确保其安全、有效和可持续发展。</p>'
+    status: MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+    abstract: 'This paper reviews the current status of AI applications in healthcare.',
+    keywords: ['Artificial Intelligence', 'Healthcare', 'Medical Imaging', 'Drug Development'],
+    content: '<h3>Abstract</h3><p>This paper reviews the current status of AI applications in healthcare.</p>'
   }
 ])
 

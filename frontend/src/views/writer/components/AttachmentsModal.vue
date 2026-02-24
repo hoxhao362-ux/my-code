@@ -169,7 +169,7 @@ const handleDownload = (file) => {
 .attachments-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #eee; /* Lancet style grey border */
+  border: 1px solid #eee; /* Journal Platform style grey border */
 }
 
 .attachments-table th, .attachments-table td {
@@ -221,7 +221,7 @@ const handleDownload = (file) => {
 }
 
 .btn-action.download {
-  background-color: #C93737; /* Red */
+  background-color: #0056B3; /* Blue */
 }
 
 .modal-footer {

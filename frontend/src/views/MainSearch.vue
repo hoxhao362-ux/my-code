@@ -1,8 +1,12 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from '../composables/useI18n'
 import { useUserStore } from '../stores/user'
 import Navigation from '../components/Navigation.vue'
 
+const router = useRouter()
+const { t } = useI18n()
 const userStore = useUserStore()
 
 // Search State
@@ -64,8 +68,8 @@ const stripHtmlTags = (html) => {
     
     <div class="search-content">
       <header class="search-header">
-        <h1>Search Manuscripts</h1>
-        <p>Find research by ID, title, or author</p>
+        <h1>{{ t('search.title') }}</h1>
+        <p>{{ t('search.subtitle') }}</p>
       </header>
 
       <section class="search-bar-section">
@@ -73,12 +77,12 @@ const stripHtmlTags = (html) => {
           <input
             type="text"
             v-model="searchKeyword"
-            placeholder="Search by Manuscript ID, Title or Author..."
+            :placeholder="t('search.placeholder')"
             class="search-input"
             @keyup.enter="filterJournals"
           />
           <button class="search-btn" @click="filterJournals">
-            Search
+            {{ t('search.button') }}
           </button>
         </div>
         
@@ -97,7 +101,7 @@ const stripHtmlTags = (html) => {
       <!-- Search Results -->
       <section v-if="hasSearched" class="search-results">
         <div class="results-header">
-          <h3>Search Results ({{ searchResults.length }})</h3>
+          <h3>{{ t('search.results', { count: searchResults.length }) }}</h3>
         </div>
         
         <div v-if="searchResults.length > 0" class="results-list">
@@ -109,18 +113,18 @@ const stripHtmlTags = (html) => {
             <div class="result-info">
               <h4 class="result-title">{{ journal.title }}</h4>
               <p class="result-meta">
-                ID: {{ journal.id }} | Author: {{ journal.author }} | Date: {{ journal.date }}
+                {{ t('search.meta', { id: journal.id, author: journal.author, date: journal.date }) }}
               </p>
               <p class="result-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             <div class="result-actions">
-               <button class="action-btn">View Details</button>
-            </div>
+                <button class="action-btn" @click="router.push(`/journal/${journal.id}`)">{{ t('search.viewDetails') }}</button>
+              </div>
           </div>
         </div>
         
         <div v-else class="no-results">
-          <p>No matching results found</p>
+          <p>{{ t('search.noResults') }}</p>
         </div>
       </section>
     </div>

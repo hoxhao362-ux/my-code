@@ -16,7 +16,7 @@ const emit = defineEmits(['close', 'submit'])
 // State
 const isLoading = ref(true)
 const isSubmitting = ref(false)
-const conflictCheckResult = ref('正在检查...')
+const conflictCheckResult = ref('Checking...')
 const batchConflictResults = ref({}) // Map reviewer ID to result
 
 // Forms Data
@@ -57,8 +57,8 @@ const forms = reactive({
   // Under Review Actions
   remindReviewer: {
     selectedReviewers: [],
-    subject: '提醒：稿件评审截止',
-    content: '尊敬的 [Name] 教授/博士：...'
+    subject: 'Reminder: Manuscript Review Due',
+    content: 'Dear Dr. [Name], ...'
   },
   replaceReviewer: {
     originalReviewerId: '',
@@ -114,8 +114,8 @@ const forms = reactive({
   },
   batchRemind: {
     selectedManuscripts: [], // Should map manuscript IDs
-    subject: '提醒：稿件评审截止',
-    content: '尊敬的 [Name] 教授/博士：...'
+    subject: 'Reminder: Manuscript Review Due',
+    content: 'Dear Dr. [Name], ...'
   },
   batchMarkActive: {
     remarks: ''
@@ -135,21 +135,21 @@ const forms = reactive({
 
 // Mock Data
 const aeList = ref([
-  { id: 'ae1', name: '李明 教授', field: '肿瘤学' },
-  { id: 'ae2', name: '王强 博士', field: '心脏病学' }
+  { id: 'ae1', name: 'Dr. Smith', field: 'Oncology' },
+  { id: 'ae2', name: 'Dr. Jones', field: 'Cardiology' }
 ])
 const reviewers = ref([
-  { id: 'r1', name: '审稿人 A', institution: '清华大学', deadline: '2026-03-01' },
-  { id: 'r2', name: '审稿人 B', institution: '北京大学', deadline: '2026-02-28' }
+  { id: 'r1', name: 'Reviewer A', institution: 'Harvard', deadline: '2026-03-01' },
+  { id: 'r2', name: 'Reviewer B', institution: 'Yale', deadline: '2026-02-28' }
 ])
 const historyLogs = ref([
-  { operator: '编辑', type: '初审', time: '2026-02-01 10:00', result: '通过', remarks: '质量良好' },
-  { operator: '作者', type: '投稿', time: '2026-01-30 14:00', result: '已提交', remarks: '-' }
+  { operator: 'Editor', type: 'Initial Review', time: '2026-02-01 10:00', result: 'Pass', remarks: 'Good quality' },
+  { operator: 'Author', type: 'Submission', time: '2026-01-30 14:00', result: 'Submitted', remarks: '-' }
 ])
 // Mock Pending Manuscripts for Reviewer
 const pendingManuscripts = ref([
-  { id: 'MS-001', title: '深度学习在X射线中的应用', status: '评审中', due: '2026-02-20' },
-  { id: 'MS-005', title: '癌症研究更新', status: '待接受', due: '2026-02-25' }
+  { id: 'MS-001', title: 'Deep Learning in X-Ray', status: 'Under Review', due: '2026-02-20' },
+  { id: 'MS-005', title: 'Cancer Research Update', status: 'Pending Acceptance', due: '2026-02-25' }
 ])
 
 // Validation Logic
@@ -230,18 +230,18 @@ const isFormValid = computed(() => {
 // Methods
 const initData = () => {
   isLoading.value = true
-  conflictCheckResult.value = '正在检查...'
+  conflictCheckResult.value = 'Checking...'
   batchConflictResults.value = {}
   
   // Simulate Conflict Check for Invite
   if (props.actionType === 'invite_reviewer') {
     let content = EMAIL_TEMPLATES.reviewerInvitation.content
     content = content.replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
-                     .replace('[Manuscript Title]', props.manuscript?.title || '无标题')
+                     .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
                      .replace('[Submission Date]', '2026-02-10')
                      .replace('[Due Date]', forms.inviteReviewer.deadline || '2026-03-01') // Use form deadline if set, or default
                      .replace('[Reviewer Full Name]', props.reviewer?.name || 'Reviewer')
-                     .replace('[Relevant Field, e.g., cardiovascular research]', props.reviewer?.reason || '您的专业领域') // Use reason or field
+                     .replace('[Relevant Field, e.g., cardiovascular research]', props.reviewer?.reason || 'your expertise') // Use reason or field
     
     // Dynamic Link based on Reviewer Type
     const isExternal = props.reviewer?.type === 'External'
@@ -257,10 +257,10 @@ const initData = () => {
     // Set Subject
     forms.inviteReviewer.subject = EMAIL_TEMPLATES.reviewerInvitation.subject
       .replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
-      .replace('[Manuscript Title]', props.manuscript?.title || '无标题')
+      .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
 
     setTimeout(() => {
-      conflictCheckResult.value = '未发现冲突 (可以邀请)'
+      conflictCheckResult.value = 'No conflicts found (Safe to Invite)'
     }, 1500)
   }
 
@@ -268,10 +268,10 @@ const initData = () => {
   if (props.actionType === 'batch_invite') {
     forms.batchInvite.selectedReviewers = props.reviewers.map(r => r.id)
     props.reviewers.forEach(r => {
-      batchConflictResults.value[r.id] = '正在检查...'
+      batchConflictResults.value[r.id] = 'Checking...'
       setTimeout(() => {
         // Mock random conflict
-        batchConflictResults.value[r.id] = Math.random() > 0.8 ? '发现冲突' : '安全'
+        batchConflictResults.value[r.id] = Math.random() > 0.8 ? 'Conflict Found' : 'Safe'
       }, 1000 + Math.random() * 1000)
     })
   }
@@ -287,7 +287,7 @@ const initData = () => {
     
     // Replace Basic Info
     content = content.replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
-                     .replace('[Manuscript Title]', props.manuscript?.title || '无标题')
+                     .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
                      .replace('[Submission Time]', '2026-02-10 10:00')
                      .replace('[Corresponding Author Full Name]', 'Dr. Author')
                      .replace('[Date]', new Date().toLocaleDateString())
@@ -296,14 +296,14 @@ const initData = () => {
     let reviewersHtml = ''
     props.reviewers.forEach((r, index) => {
       const decisionColor = r.status === 'Rejected' ? '#999' : '#C93737' // Gray for Reject, Red for Approved (per template)
-      const decisionText = r.status === 'Rejected' ? '已拒绝' : '已通过'
+      const decisionText = r.status === 'Rejected' ? 'Rejected' : 'Approved'
       
       let detailLine = ''
       if (r.status === 'Rejected') {
-        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">拒绝原因：${r.rejectionReason || '利益冲突'}</p>`
+        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">Rejection Reason: ${r.rejectionReason || 'Conflict of Interest'}</p>`
       } else {
-        const inviteStatus = r.status === 'Invited' ? '邀请已发送' : '邀请即将发送'
-        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">邀请状态：${inviteStatus}</p>`
+        const inviteStatus = r.status === 'Invited' ? 'Invitation Sent' : 'Invitation will be sent shortly'
+        detailLine = `<p style="margin: 0; font-size: 14px; color: #555;">Invitation Status: ${inviteStatus}</p>`
       }
 
       // Add border for all except last one (logic can be simple: always add margin bottom)
@@ -312,8 +312,8 @@ const initData = () => {
       reviewersHtml += `
         <div style="${borderStyle}">
           <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">${r.name}</p>
-          <p style="margin: 0 0 5px 0; font-size: 14px; color: #555;">所属机构：${r.affiliation || 'N/A'}</p>
-          <p style="margin: 0 0 5px 0; font-size: 14px; color: ${decisionColor}; font-weight: bold;">编辑决定：${decisionText}</p>
+          <p style="margin: 0 0 5px 0; font-size: 14px; color: #555;">Affiliation: ${r.affiliation || 'N/A'}</p>
+          <p style="margin: 0 0 5px 0; font-size: 14px; color: ${decisionColor}; font-weight: bold;">Editorial Decision: ${decisionText}</p>
           ${detailLine}
         </div>
       `
@@ -326,7 +326,7 @@ const initData = () => {
     
     // Simple robust replacement: Find the container "Reviewer Recommendation Results" and "Next Processing Flow"
     // And replace the content between them.
-    const containerStart = '审稿人推荐结果</p>'
+    const containerStart = 'Reviewer Recommendation Results</p>'
     const containerEnd = '<div style="margin-bottom: 20px;">\n               <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold;'
     
     // Actually, finding unique strings is better.
@@ -354,7 +354,7 @@ const initData = () => {
     // Set Subject
     forms.notifyWriterRecommendation.subject = EMAIL_TEMPLATES.recommendationResults.subject
       .replace('[Manuscript ID]', props.manuscript?.id || 'MS-2026-001')
-      .replace('[Manuscript Title]', props.manuscript?.title || '无标题')
+      .replace('[Manuscript Title]', props.manuscript?.title || 'Untitled')
   }
 
   // Reset forms based on actionType if needed
@@ -387,30 +387,30 @@ watch(() => props.visible, (val) => {
 // Titles
 const modalTitle = computed(() => {
   const map = {
-    format_check: '格式检查',
-    desk_reject: '直接拒稿 (Desk Reject)',
-    assign_editor: '分配编辑',
-    request_revision: '要求修回',
-    withdraw: '撤稿',
-    add_note: '添加内部备注',
-    view_history: '稿件历史',
-    remind_reviewer: '提醒审稿人',
-    replace_reviewer: '更换审稿人',
-    extend_deadline: '延长审稿截止日期',
-    request_further_review: '要求进一步审稿',
-    approve_decision: '批准决定',
-    generate_decision_letter: '生成决定信',
-    send_to_production: '发送至出版',
-    archive: '归档稿件',
-    invite_reviewer: '邀请审稿人',
-    cancel_invitation: '取消邀请',
-    batch_invite: '批量邀请审稿人',
-    batch_remind: '批量提醒审稿人',
-    batch_mark_active: '批量标记为活跃',
-    batch_mark_inactive: '批量标记为非活跃',
-    notify_writer_recommendation: '通知作者推荐结果'
+    format_check: 'Format Check',
+    desk_reject: 'Desk Reject',
+    assign_editor: 'Assign to Editor',
+    request_revision: 'Request Revision',
+    withdraw: 'Withdraw Manuscript',
+    add_note: 'Add Internal Note',
+    view_history: 'Manuscript History',
+    remind_reviewer: 'Remind Reviewer',
+    replace_reviewer: 'Replace Reviewer',
+    extend_deadline: 'Extend Review Deadline',
+    request_further_review: 'Request Further Review',
+    approve_decision: 'Approve Decision',
+    generate_decision_letter: 'Generate Decision Letter',
+    send_to_production: 'Send to Production',
+    archive: 'Archive Manuscript',
+    invite_reviewer: 'Invite Reviewer',
+    cancel_invitation: 'Cancel Invitation',
+    batch_invite: 'Batch Invite Reviewers',
+    batch_remind: 'Batch Remind Reviewers',
+    batch_mark_active: 'Batch Mark as Active',
+    batch_mark_inactive: 'Batch Mark as Inactive',
+    notify_writer_recommendation: 'Notify Writer Recommendation Results'
   }
-  let title = map[props.actionType] || '操作'
+  let title = map[props.actionType] || 'Action'
   if (props.manuscript) {
     title += ` - [${props.manuscript.id}]`
   } else if (props.reviewer) {
@@ -434,37 +434,37 @@ const modalTitle = computed(() => {
         <!-- 1. Format Check -->
         <div v-if="actionType === 'format_check'">
            <div class="info-block">
-             <p><strong>编号：</strong> {{ manuscript.id }} | <strong>标题：</strong> {{ manuscript.title }}</p>
+             <p><strong>ID:</strong> {{ manuscript.id }} | <strong>Title:</strong> {{ manuscript.title }}</p>
            </div>
            <div class="check-list">
-             <label><input type="checkbox" v-model="forms.formatCheck.docFormat"> 文档格式 (Word/PDF 符合要求)</label>
-             <label><input type="checkbox" v-model="forms.formatCheck.figures"> 图片/表格清晰度 (≥300dpi)</label>
-             <label><input type="checkbox" v-model="forms.formatCheck.references"> 参考文献格式</label>
-             <label><input type="checkbox" v-model="forms.formatCheck.abstract"> 摘要字数 (≤250 words)</label>
-             <label><input type="checkbox" v-model="forms.formatCheck.keywords"> 关键词数量 (3-6 个)</label>
-             <label><input type="checkbox" v-model="forms.formatCheck.ethics"> 伦理声明</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.docFormat"> Document Format (Word/PDF meets requirements)</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.figures"> Figure/Tables Clarity (≥300dpi)</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.references"> Reference Format</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.abstract"> Abstract Word Count (≤250 words)</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.keywords"> Keyword Quantity (3-6 keywords)</label>
+             <label><input type="checkbox" v-model="forms.formatCheck.ethics"> Ethics Statement</label>
            </div>
            <div class="form-group">
-             <label>备注 (如果不合格必填)</label>
+             <label>Remarks (Required if unqualified)</label>
              <textarea v-model="forms.formatCheck.remarks" rows="3" class="textarea-input"></textarea>
            </div>
         </div>
 
         <!-- 2. Desk Reject -->
         <div v-if="actionType === 'desk_reject'">
-          <div class="warning-banner">直接拒稿仅适用于明显超出范围或学术质量极低的稿件</div>
+          <div class="warning-banner">Desk Reject is only for manuscripts clearly outside the scope /with extremely low academic quality</div>
           <div class="form-group">
-            <label class="required">拒稿原因</label>
+            <label class="required">Rejection Reason</label>
             <select v-model="forms.deskReject.reason" class="select-input">
-              <option value="" disabled>请选择原因</option>
-              <option value="Out of Scope">超出范围</option>
-              <option value="Insufficient Originality">创新性不足</option>
-              <option value="Methodological Flaws">方法学缺陷</option>
-              <option value="Severe Format Errors">严重格式错误</option>
+              <option value="" disabled>Select Reason</option>
+              <option value="Out of Scope">Out of Scope</option>
+              <option value="Insufficient Originality">Insufficient Originality</option>
+              <option value="Methodological Flaws">Methodological Flaws</option>
+              <option value="Severe Format Errors">Severe Format Errors</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="required">详细原因 (≥50 字)</label>
+            <label class="required">Detailed Reason (≥50 words)</label>
             <textarea v-model="forms.deskReject.detail" rows="6" class="textarea-input"></textarea>
           </div>
         </div>
@@ -472,14 +472,14 @@ const modalTitle = computed(() => {
         <!-- 3. Assign to Editor -->
         <div v-if="actionType === 'assign_editor'">
            <div class="form-group">
-             <label class="required">副编辑 (AE) 列表</label>
+             <label class="required">Associate Editor List</label>
              <select v-model="forms.assignEditor.aeId" class="select-input">
-               <option value="" disabled>选择副编辑</option>
+               <option value="" disabled>Select AE</option>
                <option v-for="ae in aeList" :key="ae.id" :value="ae.id">{{ ae.name }} - {{ ae.field }}</option>
              </select>
            </div>
            <div class="form-group">
-             <label>分配备注</label>
+             <label>Assignment Remarks</label>
              <textarea v-model="forms.assignEditor.remarks" rows="3" class="textarea-input"></textarea>
            </div>
         </div>
@@ -487,37 +487,37 @@ const modalTitle = computed(() => {
         <!-- 4. Request Revision -->
         <div v-if="actionType === 'request_revision'">
            <div class="form-group">
-             <label class="required">修回类型</label>
+             <label class="required">Revision Type</label>
              <select v-model="forms.requestRevision.type" class="select-input">
-               <option value="Format Revision">格式修改</option>
-               <option value="Content Revision">内容修改</option>
-               <option value="Attachment Revision">附件修改</option>
+               <option value="Format Revision">Format Revision</option>
+               <option value="Content Revision">Content Revision</option>
+               <option value="Attachment Revision">Attachment Revision</option>
              </select>
            </div>
            <div class="form-group">
-             <label class="required">内容</label>
-             <textarea v-model="forms.requestRevision.content" rows="6" class="textarea-input" placeholder="富文本编辑器占位符..."></textarea>
+             <label class="required">Content</label>
+             <textarea v-model="forms.requestRevision.content" rows="6" class="textarea-input" placeholder="Rich Text Editor placeholder..."></textarea>
            </div>
            <div class="form-group">
-             <label class="required">截止日期</label>
+             <label class="required">Deadline</label>
              <input type="date" v-model="forms.requestRevision.deadline" class="input-text">
            </div>
         </div>
 
         <!-- 5. Withdraw Manuscript -->
         <div v-if="actionType === 'withdraw'">
-           <div class="warning-banner red">撤稿将终止流程且无法恢复，请谨慎操作</div>
+           <div class="warning-banner red">Withdrawal terminates the process and the manuscript cannot be recovered, please proceed with caution</div>
            <div class="form-group">
-             <label class="required">撤稿原因</label>
+             <label class="required">Withdrawal Reason</label>
              <select v-model="forms.withdraw.reason" class="select-input">
-               <option value="Author's Initiative">作者主动撤稿</option>
-               <option value="Academic Misconduct">学术不端</option>
-               <option value="Duplicate Submission">一稿多投</option>
-               <option value="Others">其他</option>
+               <option value="Author's Initiative">Author's Initiative</option>
+               <option value="Academic Misconduct">Academic Misconduct</option>
+               <option value="Duplicate Submission">Duplicate Submission</option>
+               <option value="Others">Others</option>
              </select>
            </div>
            <div class="form-group">
-             <label class="required">详细说明</label>
+             <label class="required">Detailed Explanation</label>
              <textarea v-model="forms.withdraw.detail" rows="4" class="textarea-input"></textarea>
            </div>
         </div>
@@ -525,15 +525,15 @@ const modalTitle = computed(() => {
         <!-- 6. Add Note -->
         <div v-if="actionType === 'add_note'">
            <div class="form-group">
-             <label class="required">备注类型</label>
+             <label class="required">Note Type</label>
              <select v-model="forms.addNote.type" class="select-input">
-               <option value="Communication Record">沟通记录</option>
-               <option value="To-Do">待办事项</option>
-               <option value="Special Instructions">特殊说明</option>
+               <option value="Communication Record">Communication Record</option>
+               <option value="To-Do">To-Do</option>
+               <option value="Special Instructions">Special Instructions</option>
              </select>
            </div>
            <div class="form-group">
-             <label class="required">内容</label>
+             <label class="required">Content</label>
              <textarea v-model="forms.addNote.content" rows="4" class="textarea-input"></textarea>
            </div>
         </div>
@@ -555,23 +555,23 @@ const modalTitle = computed(() => {
           <div v-if="manuscript" class="reviewer-select-list">
              <label v-for="r in reviewers" :key="r.id">
                <input type="checkbox" :value="r.id" v-model="forms.remindReviewer.selectedReviewers">
-               {{ r.name }} (截止: {{ r.deadline }})
+               {{ r.name }} (Due: {{ r.deadline }})
              </label>
           </div>
           <div v-if="reviewer" class="pending-manuscripts">
-             <h4>待处理稿件</h4>
+             <h4>Pending Manuscripts</h4>
              <ul>
                <li v-for="ms in pendingManuscripts" :key="ms.id">
-                 {{ ms.id }} - {{ ms.title }} (截止: {{ ms.due }})
+                 {{ ms.id }} - {{ ms.title }} (Due: {{ ms.due }})
                </li>
              </ul>
           </div>
           <div class="form-group">
-            <label>邮件主题</label>
+            <label>Email Subject</label>
             <input v-model="forms.remindReviewer.subject" class="input-text">
           </div>
           <div class="form-group">
-            <label>邮件内容</label>
+            <label>Email Content</label>
             <textarea v-model="forms.remindReviewer.content" rows="4" class="textarea-input"></textarea>
           </div>
         </div>
@@ -579,71 +579,71 @@ const modalTitle = computed(() => {
         <!-- 9. Replace Reviewer -->
         <div v-if="actionType === 'replace_reviewer'">
           <div v-if="manuscript" class="form-group">
-            <label class="required">原审稿人</label>
+            <label class="required">Original Reviewer</label>
             <select v-model="forms.replaceReviewer.originalReviewerId" class="select-input">
               <option v-for="r in reviewers" :key="r.id" :value="r.id">{{ r.name }}</option>
             </select>
           </div>
           <div v-if="reviewer" class="info-block">
-             正在更换审稿人：<strong>{{ reviewer.name }}</strong>
+             Replacing Reviewer: <strong>{{ reviewer.name }}</strong>
              <div class="pending-list">
-               影响 {{ pendingManuscripts.length }} 篇待处理稿件
+               Affects {{ pendingManuscripts.length }} Pending Manuscripts
              </div>
           </div>
           <div class="form-group">
-            <label class="required">原因</label>
+            <label class="required">Reason</label>
             <select v-model="forms.replaceReviewer.reason" class="select-input">
-              <option value="Rejected Review">拒绝审稿</option>
-              <option value="Unreachable">无法联系</option>
-              <option value="Conflict of Interest">利益冲突</option>
+              <option value="Rejected Review">Rejected Review</option>
+              <option value="Unreachable">Unreachable</option>
+              <option value="Conflict of Interest">Conflict of Interest</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="required">新审稿人 (模拟选择)</label>
+            <label class="required">New Reviewer (Mock Select)</label>
             <select v-model="forms.replaceReviewer.newReviewerId" class="select-input">
-               <option value="new_rev_1">推荐审稿人 1 (相同领域)</option>
-               <option value="new_rev_2">推荐审稿人 2</option>
+               <option value="new_rev_1">Dr. Recommended 1 (Same Field)</option>
+               <option value="new_rev_2">Dr. Recommended 2</option>
             </select>
           </div>
-          <div class="info-block">系统将自动生成取消和新邀请邮件。</div>
+          <div class="info-block">System will automatically generate cancellation and new invitation emails.</div>
         </div>
 
         <!-- 16. Invite Reviewer -->
         <div v-if="actionType === 'invite_reviewer'">
            <div class="info-block">
-             <p><strong>审稿人：</strong> {{ reviewer?.name }} | <strong>邮箱：</strong> {{ reviewer?.email }}</p>
-             <p><strong>领域：</strong> {{ reviewer?.field }} | <strong>指标：</strong> {{ reviewer?.avgTurnaround }} / {{ reviewer?.completedReviews }} 次审稿</p>
+             <p><strong>Reviewer:</strong> {{ reviewer?.name }} | <strong>Email:</strong> {{ reviewer?.email }}</p>
+             <p><strong>Field:</strong> {{ reviewer?.field }} | <strong>Metrics:</strong> {{ reviewer?.avgTurnaround }} / {{ reviewer?.completedReviews }} reviews</p>
            </div>
-           <div class="info-block" :class="conflictCheckResult.includes('Safe') || conflictCheckResult.includes('可以邀请') ? 'green' : 'orange'">
-             <strong>冲突检查：</strong> {{ conflictCheckResult }}
+           <div class="info-block" :class="conflictCheckResult.includes('Safe') ? 'green' : 'orange'">
+             <strong>Conflict Check:</strong> {{ conflictCheckResult }}
            </div>
            <div class="form-group">
-             <label class="required">截止日期</label>
+             <label class="required">Deadline</label>
              <input type="date" v-model="forms.inviteReviewer.deadline" class="input-text">
            </div>
            <div class="form-group">
-             <label class="required">邮件主题</label>
+             <label class="required">Email Subject</label>
              <input v-model="forms.inviteReviewer.subject" class="input-text">
            </div>
            <div class="form-group">
-             <label class="required">邮件内容</label>
+             <label class="required">Email Content</label>
              <textarea v-model="forms.inviteReviewer.content" rows="6" class="textarea-input"></textarea>
            </div>
         </div>
 
         <!-- 17. Cancel Invitation -->
          <div v-if="actionType === 'cancel_invitation'">
-            <div class="warning-banner red">取消邀请后，系统将自动通知审稿人</div>
+            <div class="warning-banner red">The system will automatically notify the reviewer after canceling the invitation</div>
             <div class="form-group">
-              <label class="required">原因</label>
+              <label class="required">Reason</label>
               <select v-model="forms.cancelInvitation.reason" class="select-input">
-                <option value="Mistaken Invitation">误操作邀请</option>
-                <option value="Reviewer Request">审稿人要求</option>
-                <option value="Others">其他</option>
+                <option value="Mistaken Invitation">Mistaken Invitation</option>
+                <option value="Reviewer Request">Reviewer Request</option>
+                <option value="Others">Others</option>
               </select>
             </div>
             <div class="form-group">
-              <label>备注</label>
+              <label>Remarks</label>
               <textarea v-model="forms.cancelInvitation.remarks" rows="3" class="textarea-input"></textarea>
             </div>
          </div>
@@ -656,21 +656,21 @@ const modalTitle = computed(() => {
                     <input type="checkbox" :value="r.id" v-model="forms.batchInvite.selectedReviewers">
                     {{ r.name }} ({{ r.email }})
                   </label>
-                  <span class="conflict-tag" :class="batchConflictResults[r.id] === '安全' || batchConflictResults[r.id] === 'Safe' ? 'green' : 'orange'">
+                  <span class="conflict-tag" :class="batchConflictResults[r.id] === 'Safe' ? 'green' : 'orange'">
                      {{ batchConflictResults[r.id] }}
                   </span>
                </div>
             </div>
             <div class="form-group">
-              <label class="required">截止日期</label>
+              <label class="required">Deadline</label>
               <input type="date" v-model="forms.batchInvite.deadline" class="input-text">
             </div>
             <div class="form-group">
-              <label class="required">邮件主题</label>
+              <label class="required">Email Subject</label>
               <input v-model="forms.batchInvite.subject" class="input-text">
             </div>
             <div class="form-group">
-              <label class="required">邮件内容</label>
+              <label class="required">Email Content</label>
               <textarea v-model="forms.batchInvite.content" rows="6" class="textarea-input"></textarea>
             </div>
          </div>
@@ -678,7 +678,7 @@ const modalTitle = computed(() => {
          <!-- 19. Batch Remind -->
          <div v-if="actionType === 'batch_remind'">
             <div class="info-block">
-               选择要提醒的稿件 (模拟列表):
+               Select Manuscripts to Remind (Mock List):
             </div>
             <div class="manuscript-select-list">
                <!-- Mocking manuscript list based on reviewers -->
@@ -688,17 +688,17 @@ const modalTitle = computed(() => {
                      <label>
                         <!-- Mock MS ID generation -->
                         <input type="checkbox" :value="`MS-${r.id}-${i}`" v-model="forms.batchRemind.selectedManuscripts">
-                        MS-2026-{{ r.id }}0{{ i }} (待处理)
+                        MS-2026-{{ r.id }}0{{ i }} (Pending)
                      </label>
                   </div>
                </div>
             </div>
             <div class="form-group">
-              <label class="required">邮件主题</label>
+              <label class="required">Email Subject</label>
               <input v-model="forms.batchRemind.subject" class="input-text">
             </div>
             <div class="form-group">
-              <label class="required">邮件内容</label>
+              <label class="required">Email Content</label>
               <textarea v-model="forms.batchRemind.content" rows="6" class="textarea-input"></textarea>
             </div>
          </div>
@@ -706,13 +706,13 @@ const modalTitle = computed(() => {
          <!-- 20. Batch Mark Active -->
          <div v-if="actionType === 'batch_mark_active'">
             <div class="info-block">
-               确认将 {{ reviewers.length }} 位审稿人标记为 <strong>活跃</strong> 状态？
+               Confirm marking {{ reviewers.length }} reviewers as <strong>Active</strong>?
             </div>
             <div class="reviewer-names-list">
                {{ reviewers.map(r => r.name).join(', ') }}
             </div>
             <div class="form-group">
-               <label>可选备注</label>
+               <label>Optional Remarks</label>
                <textarea v-model="forms.batchMarkActive.remarks" rows="3" class="textarea-input"></textarea>
             </div>
          </div>
@@ -720,22 +720,22 @@ const modalTitle = computed(() => {
          <!-- 21. Batch Mark Inactive -->
          <div v-if="actionType === 'batch_mark_inactive'">
             <div class="info-block">
-               确认将 {{ reviewers.length }} 位审稿人标记为 <strong>非活跃</strong> 状态？
+               Confirm marking {{ reviewers.length }} reviewers as <strong>Inactive</strong>?
             </div>
             <div class="reviewer-names-list">
                {{ reviewers.map(r => r.name).join(', ') }}
             </div>
             <div class="form-group">
-              <label class="required">原因</label>
+              <label class="required">Reason</label>
               <select v-model="forms.batchMarkInactive.reason" class="select-input">
-                <option value="Long-term Rejection of Review">长期拒绝审稿</option>
-                <option value="Unreachable">无法联系</option>
-                <option value="Academic Misconduct">学术不端</option>
-                <option value="Others">其他</option>
+                <option value="Long-term Rejection of Review">Long-term Rejection of Review</option>
+                <option value="Unreachable">Unreachable</option>
+                <option value="Academic Misconduct">Academic Misconduct</option>
+                <option value="Others">Others</option>
               </select>
             </div>
             <div class="form-group" v-if="forms.batchMarkInactive.reason === 'Others'">
-              <label class="required">详细说明 (≥20 字)</label>
+              <label class="required">Detailed Explanation (≥20 chars)</label>
               <textarea v-model="forms.batchMarkInactive.othersDetail" rows="3" class="textarea-input"></textarea>
             </div>
          </div>
@@ -743,24 +743,24 @@ const modalTitle = computed(() => {
          <!-- 22. Notify Author Recommendation Results -->
          <div v-if="actionType === 'notify_writer_recommendation'">
             <div class="info-block">
-               <p>通知作者关于其推荐审稿人的决定。</p>
+               <p>Notify writer about the decision on their recommended reviewers.</p>
             </div>
             
             <div class="form-group">
-               <label class="required">通知渠道</label>
+               <label class="required">Notification Channels</label>
                <div class="check-list horizontal">
-                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="email"> 邮件</label>
-                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="system_message"> 站内信</label>
+                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="email"> Email</label>
+                  <label><input type="checkbox" v-model="forms.notifyWriterRecommendation.channels" value="system_message"> Station Message</label>
                </div>
             </div>
 
             <div class="form-group">
-              <label class="required">邮件主题</label>
+              <label class="required">Email Subject</label>
               <input v-model="forms.notifyWriterRecommendation.subject" class="input-text">
             </div>
             
             <div class="form-group">
-               <label>邮件内容预览 (自动生成)</label>
+               <label>Email Content Preview (Auto-generated)</label>
                <!-- Use a read-only div for HTML preview if possible, or textarea -->
                <!-- The requirement says "Preview content... optional input for additional notes" -->
                <!-- Let's show the HTML content in a preview box and allow editing raw HTML or just show it read-only? -->
@@ -773,21 +773,21 @@ const modalTitle = computed(() => {
             </div>
 
             <div class="form-group">
-               <label>附加说明 (可选)</label>
-               <textarea v-model="forms.notifyWriterRecommendation.additionalNote" rows="3" class="textarea-input" placeholder="输入给作者的附加说明..."></textarea>
+               <label>Additional Notes (Optional)</label>
+               <textarea v-model="forms.notifyWriterRecommendation.additionalNote" rows="3" class="textarea-input" placeholder="Enter any additional explanation for the writer..."></textarea>
             </div>
          </div>
         
         <!-- 10. Extend Deadline -->
         <div v-if="actionType === 'extend_deadline'">
            <div class="form-group">
-            <label class="required">审稿人</label>
+            <label class="required">Reviewer</label>
             <select v-model="forms.extendDeadline.reviewerId" class="select-input">
               <option v-for="r in reviewers" :key="r.id" :value="r.id">{{ r.name }}</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="required">新截止日期</label>
+            <label class="required">New Deadline</label>
             <input type="date" v-model="forms.extendDeadline.newDeadline" class="input-text">
           </div>
         </div>
@@ -795,14 +795,14 @@ const modalTitle = computed(() => {
         <!-- 11. Request Further Review -->
         <div v-if="actionType === 'request_further_review'">
            <div class="form-group">
-             <label class="required">原因</label>
+             <label class="required">Reason</label>
              <select v-model="forms.requestFurtherReview.reason" class="select-input">
-               <option value="Conflicting Reviews">审稿意见冲突</option>
-               <option value="Insufficient Comments">意见不充分</option>
+               <option value="Conflicting Reviews">Conflicting Reviews</option>
+               <option value="Insufficient Comments">Insufficient Comments</option>
              </select>
            </div>
            <div class="form-group">
-             <label class="required">说明</label>
+             <label class="required">Explanation</label>
              <textarea v-model="forms.requestFurtherReview.detail" rows="3" class="textarea-input"></textarea>
            </div>
         </div>
@@ -810,16 +810,16 @@ const modalTitle = computed(() => {
         <!-- Ready for Decision -->
         <!-- 12. Approve Decision -->
         <div v-if="actionType === 'approve_decision'">
-           <div class="info-block">副编辑推荐：接受 (模拟)</div>
+           <div class="info-block">AE Recommendation: Accept (Mock)</div>
            <div class="form-group">
-             <label class="required">批准结果</label>
+             <label class="required">Approval Result</label>
              <select v-model="forms.approveDecision.result" class="select-input">
-               <option value="Approve">批准</option>
-               <option value="Reject & Revise">拒绝并要求修改</option>
+               <option value="Approve">Approve</option>
+               <option value="Reject & Revise">Reject & Revise</option>
              </select>
            </div>
            <div class="form-group">
-             <label class="required">备注</label>
+             <label class="required">Remarks</label>
              <textarea v-model="forms.approveDecision.remarks" rows="3" class="textarea-input"></textarea>
            </div>
         </div>
@@ -828,34 +828,34 @@ const modalTitle = computed(() => {
         <!-- 13. Generate Decision Letter -->
         <div v-if="actionType === 'generate_decision_letter'">
            <div class="form-group">
-             <label class="required">决定信内容</label>
-             <textarea v-model="forms.generateDecisionLetter.content" rows="10" class="textarea-input" placeholder="尊敬的作者..."></textarea>
+             <label class="required">Letter Content</label>
+             <textarea v-model="forms.generateDecisionLetter.content" rows="10" class="textarea-input" placeholder="Dear Author..."></textarea>
            </div>
         </div>
         
         <!-- 14. Send to Production -->
         <div v-if="actionType === 'send_to_production'">
            <div class="form-group">
-             <label class="required">优先级</label>
+             <label class="required">Priority</label>
              <select v-model="forms.sendToProduction.priority" class="select-input">
-               <option value="Normal">普通</option>
-               <option value="Urgent">紧急</option>
+               <option value="Normal">Normal</option>
+               <option value="Urgent">Urgent</option>
              </select>
            </div>
            <div class="form-group">
-             <label>备注</label>
+             <label>Remarks</label>
              <textarea v-model="forms.sendToProduction.remarks" rows="3" class="textarea-input"></textarea>
            </div>
         </div>
         
         <!-- 15. Archive -->
         <div v-if="actionType === 'archive'">
-           <div class="warning-banner red">归档稿件将被移至历史库，流程信息将无法修改</div>
+           <div class="warning-banner red">Archived manuscripts will be moved to historical library, process information cannot be modified</div>
            <div class="form-group">
-             <label class="required">归档类型</label>
+             <label class="required">Archive Type</label>
              <select v-model="forms.archive.type" class="select-input">
-               <option value="Accepted Archive">已接受归档</option>
-               <option value="Rejected Archive">已拒稿归档</option>
+               <option value="Accepted Archive">Accepted Archive</option>
+               <option value="Rejected Archive">Rejected Archive</option>
              </select>
            </div>
         </div>
@@ -863,8 +863,8 @@ const modalTitle = computed(() => {
       </div>
 
       <footer class="modal-footer">
-        <button v-if="actionType !== 'view_history'" class="btn btn-cancel" @click="$emit('close')">取消</button>
-        <button v-else class="btn btn-primary" @click="$emit('close')">关闭</button>
+        <button v-if="actionType !== 'view_history'" class="btn btn-cancel" @click="$emit('close')">Cancel</button>
+        <button v-else class="btn btn-primary" @click="$emit('close')">Close</button>
         
         <button 
           v-if="actionType !== 'view_history'" 
@@ -872,7 +872,7 @@ const modalTitle = computed(() => {
           :disabled="!isFormValid || isSubmitting"
           @click="handleSubmit"
         >
-          确认
+          Confirm
         </button>
       </footer>
     </div>
@@ -926,4 +926,16 @@ const modalTitle = computed(() => {
 
 .reviewer-list-batch { max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 0.5rem; margin-bottom: 1rem; border-radius: 4px; }
 .batch-item { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px dashed #f0f0f0; }
+.conflict-tag { font-size: 0.8rem; padding: 1px 5px; border-radius: 3px; }
+.conflict-tag.green { background: #e8f5e9; color: #2e7d32; }
+.conflict-tag.orange { background: #fff3e0; color: #e65100; }
+
+.manuscript-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 0.5rem; margin-bottom: 1rem; border-radius: 4px; }
+.ms-item { margin-left: 1rem; font-size: 0.9rem; color: #555; }
+.reviewer-names-list { font-size: 0.9rem; color: #666; margin-bottom: 1rem; line-height: 1.4; }
+
+.btn { padding: 0.6rem 1.5rem; border-radius: 4px; border: none; cursor: pointer; }
+.btn-primary { background: #3498db; color: white; }
+.btn-primary:disabled { background: #bdc3c7; cursor: not-allowed; }
+.btn-cancel { background: #eee; color: #333; }
 </style>
