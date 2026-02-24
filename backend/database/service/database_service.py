@@ -254,6 +254,30 @@ class DatabaseService:
                     )
                     """
                 }
+            case 'payment_order':
+                return {
+                    'payment_orders': """
+                    CREATE TABLE IF NOT EXISTS payment_orders (
+                        order_id SERIAL PRIMARY KEY,
+                        merchant_order_id TEXT UNIQUE NOT NULL,
+                        transaction_id TEXT,
+                        uid INTEGER NOT NULL,
+                        amount DECIMAL(10, 2) NOT NULL,
+                        currency TEXT NOT NULL DEFAULT 'CNY',
+                        subject TEXT NOT NULL,
+                        provider TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending',
+                        create_time TEXT NOT NULL,
+                        update_time TEXT,
+                        pay_time TEXT,
+                        refund_time TEXT,
+                        refund_amount DECIMAL(10, 2),
+                        refund_reason TEXT,
+                        extra_data TEXT,
+                        FOREIGN KEY (uid) REFERENCES users (uid)
+                    )
+                    """
+                }
             case _:
                 return {}
     
@@ -378,6 +402,13 @@ class DatabaseService:
                 indexes['users'] = [
                     "CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)",
                     "CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)"
+                ]
+            case 'payment_order':
+                indexes['payment_orders'] = [
+                    "CREATE INDEX IF NOT EXISTS idx_payment_orders_merchant_order_id ON payment_orders (merchant_order_id)",
+                    "CREATE INDEX IF NOT EXISTS idx_payment_orders_uid ON payment_orders (uid)",
+                    "CREATE INDEX IF NOT EXISTS idx_payment_orders_status ON payment_orders (status)",
+                    "CREATE INDEX IF NOT EXISTS idx_payment_orders_create_time ON payment_orders (create_time)"
                 ]
         return indexes
 
