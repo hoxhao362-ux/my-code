@@ -3,12 +3,12 @@ from typing import Optional
 from datetime import datetime
 
 from utils.jwt import jwt_util
-from utils.redis import redis_client
-from utils.admin_log import record_admin_log
+from service.redis_service import redis_service
+from service.admin_log_service import admin_log_service
 from model.user import LoginRequest, LoginResponse
 from database import db_manager
 
-from core import dependencies as deps
+from api import dependencies as deps
 
 user_db = db_manager.get_service('user_account')
 journal_db = db_manager.get_service('journal_submit')
@@ -127,7 +127,7 @@ async def update_user_role(
     await user_db.execute("UPDATE users SET role = $1 WHERE uid = $2", (role, uid))
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="修改用户角色",
@@ -161,7 +161,7 @@ async def delete_user(
     await user_db.execute("DELETE FROM users WHERE uid = $1", (uid,))
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="删除用户",

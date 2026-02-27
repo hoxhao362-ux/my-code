@@ -9,7 +9,7 @@ from pathlib import Path
 from core.config import config
 
 from utils.jwt import jwt_util
-from utils.redis import redis_client
+from service.redis_service import redis_service
 from utils.generator import generator
 
 from model.journal import (
@@ -20,7 +20,7 @@ from model.journal import (
     JournalStatusUpdateRequest
 )
 from model.user import LoginRequest, LoginResponse
-from core import dependencies as deps
+from api import dependencies as deps
 
 # 获取数据库服务实例
 from database import db_manager
@@ -52,7 +52,7 @@ async def author_login(request: LoginRequest, req: Request):
     client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
-    allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
+    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
     if not allowed:
         raise HTTPException(
             status_code=429,
@@ -93,7 +93,7 @@ async def author_login(request: LoginRequest, req: Request):
     
     # 设置用户在线状态
     expire_time = 3600 * 24 * 30 if request.is_remember else 3600
-    await redis_client.set_user_online(
+    await redis_service.set_user_online(
         user_id=user["uid"],
         token=token,
         expire_time=expire_time

@@ -1,9 +1,14 @@
+"""
+频率限制服务模块
+
+提供内存级频率限制功能。
+"""
 import time
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 from collections import defaultdict
 
-class RateLimiter:
-    """简单的内存频率限制器"""
+class RateLimitService:
+    """简单的内存频率限制服务"""
     def __init__(self):
         # 存储请求记录: {key: [(timestamp, count), ...]}
         self.requests: Dict[str, list[Tuple[float, int]]] = defaultdict(list)
@@ -49,5 +54,5 @@ class RateLimiter:
         now = time.time()
         self.requests[key].append((now, count))
 
-# 创建全局频率限制器实例
-rate_limiter = RateLimiter()
+# 创建全局频率限制服务实例
+rate_limit_service = RateLimitService()

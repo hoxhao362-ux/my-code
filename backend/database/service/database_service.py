@@ -429,9 +429,9 @@ class DatabaseManager(BaseManagedService):
         """定制化启动：环境变量配置 -> 进程启动 -> 连接池初始化 -> 结构同步"""
         global_logger.info("Database", "启动数据库托管服务...")
         
-        exe_path = config["global.global.database_service_path"]
-        args = await self._check_args(config["global.global.database_service_args"])
-        db_dir = config["global.global.database_dir"]
+        exe_path = config["database.database.database_service_path"]
+        args = await self._check_args(config["database.database.database_service_args"])
+        db_dir = config["database.database.database_dir"]
         
         os.environ["PGDATA"] = db_dir
         
@@ -459,8 +459,8 @@ class DatabaseManager(BaseManagedService):
         """安全关闭计划"""
         global_logger.info("Database", "安全关闭数据库服务...")
         
-        exe_path = config["global.global.database_service_path"]
-        db_dir = config["global.global.database_dir"]
+        exe_path = config["database.database.database_service_path"]
+        db_dir = config["database.database.database_dir"]
         
         stop_cmd = f'"{exe_path}" stop -D "{db_dir}" -m fast'
         try:
@@ -481,11 +481,11 @@ class DatabaseManager(BaseManagedService):
             return
             
         try:
-            host = config["global.global.database_host"]
-            port = config["global.global.database_port"]
-            user = config["global.global.database_user"]
-            password = config.get("global.global.database_password")
-            database = config["global.global.database_name"]
+            host = config["database.database.database_host"]
+            port = config["database.database.database_port"]
+            user = config["database.database.database_user"]
+            password = config.get("database.database.database_password")
+            database = config["database.database.database_name"]
             
             if password is None or (isinstance(password, float) and password != password):
                 password = None

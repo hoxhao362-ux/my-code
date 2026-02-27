@@ -1,6 +1,11 @@
+"""
+Redis 服务模块
+
+用于处理 Redis 连接和操作。
+"""
 import asyncio
-from typing import Any, Dict, Optional, Union
-from datetime import datetime, timedelta
+from typing import Optional
+from datetime import timedelta
 
 import redis.asyncio as redis
 
@@ -8,8 +13,10 @@ from core.config import config
 from core.service_manager import BaseManagedService
 from utils.log import global_logger
 
-class RedisClient(BaseManagedService):
-    """Redis 客户端类，用于处理 Redis 连接和操作。
+
+class RedisService(BaseManagedService):
+    """
+    Redis 服务管理类
     
     继承自 BaseManagedService，实现定制化的 Redis 启动和就绪检查计划。
     """
@@ -28,8 +35,8 @@ class RedisClient(BaseManagedService):
         global_logger.info("Redis", "执行 Redis 定制化启动计划...")
         
         # 1. 获取配置
-        exe_path = config["global.global.redis_service_path"]
-        args = await self._check_args(config["global.global.redis_service_args"])
+        exe_path = config["redis.redis.redis_service_path"]
+        args = await self._check_args(config["redis.redis.redis_service_args"])
         
         # 2. 启动进程
         cmd_parts = [f'"{exe_path}"']
@@ -44,10 +51,10 @@ class RedisClient(BaseManagedService):
             await self._create_process(start_cmd)
             
             # 3. 就绪检查与连接
-            host = config["global.global.redis_host"]
-            port = config["global.global.redis_port"]
-            password = config.get("global.global.redis_password")
-            db = config.get("global.global.redis_db", 0)
+            host = config["redis.redis.redis_host"]
+            port = config["redis.redis.redis_port"]
+            password = config.get("redis.redis.redis_password")
+            db = config.get("redis.redis.redis_db", 0)
             
             # 处理 TOML 中的 nan 值
             if password is None or (isinstance(password, float) and password != password):
@@ -215,5 +222,5 @@ class RedisClient(BaseManagedService):
         attempts = await self.client.get(f"login:limit:{ip_address}")
         return int(attempts) if attempts else 0
 
-# 创建全局Redis客户端实例
-redis_client = RedisClient()
+# 创建全局 Redis 服务实例
+redis_service = RedisService()

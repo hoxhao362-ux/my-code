@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from database import db_manager
-from utils.admin_log import record_admin_log
-from core import dependencies as deps
+from service.admin_log_service import admin_log_service
+from api import dependencies as deps
 
 from .users import router as users_router
 from .journals import router as journals_router
@@ -50,7 +50,7 @@ async def get_system_statistics(
     total_reviews = await journal_db.fetchval("SELECT COUNT(*) FROM review_records")
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看系统统计",

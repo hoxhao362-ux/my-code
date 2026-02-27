@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Optional
 from datetime import datetime
 
-from utils.admin_log import record_admin_log
-from utils.invitation import invitation_util
+from service.admin_log_service import admin_log_service
+from service.invitation_service import invitation_service
 from utils.jwt import jwt_util
 from model.invitation import (
     InvitationCodeCreateRequest,
@@ -12,7 +12,7 @@ from model.invitation import (
     InvitationCodeStatusUpdateRequest,
     InvitationCodeValidateResponse
 )
-from core import dependencies as deps
+from api import dependencies as deps
 
 router = APIRouter(tags=["管理员-邀请码管理"])
 
@@ -24,7 +24,7 @@ async def create_invitation_code(
 ):
     """创建邀请码，仅限管理员访问"""
     # 创建邀请码
-    code = await invitation_util.create_invitation_code(
+    code = await invitation_service.create_invitation_code(
         role=request.role,
         created_by=current_user["username"],
         created_by_uid=current_user["uid"],
@@ -34,7 +34,7 @@ async def create_invitation_code(
     )
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="创建邀请码",
@@ -68,7 +68,7 @@ async def get_invitation_codes(
 ):
     """获取邀请码列表，仅限管理员访问"""
     # 获取邀请码列表
-    result = await invitation_util.get_invitation_codes(
+    result = await invitation_service.get_invitation_codes(
         page=page,
         page_size=page_size,
         status=status,
@@ -76,7 +76,7 @@ async def get_invitation_codes(
     )
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看邀请码列表",
@@ -100,12 +100,12 @@ async def update_invitation_code_status(
 ):
     """更新邀请码状态，仅限管理员访问"""
     # 更新邀请码状态
-    success = await invitation_util.update_code_status(code, request.status)
+    success = await invitation_service.update_code_status(code, request.status)
     if not success:
         raise HTTPException(status_code=404, detail="邀请码不存在")
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="更新邀请码状态",
@@ -125,10 +125,10 @@ async def validate_invitation_code(
 ):
     """验证邀请码有效性，仅限管理员访问"""
     # 验证邀请码
-    result = await invitation_util.validate_invitation_code(code)
+    result = await invitation_service.validate_invitation_code(code)
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="验证邀请码",

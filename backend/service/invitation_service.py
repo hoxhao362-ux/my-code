@@ -1,6 +1,7 @@
 """
-邀请码工具模块
-提供邀请码生成、验证、管理等功能
+邀请码服务模块
+
+提供邀请码生成、验证、管理等功能。
 """
 import secrets
 import string
@@ -9,14 +10,14 @@ from typing import Optional, Dict, Any
 
 from database import db_manager
 
-# 获取数据库服务实例
-invitation_db = db_manager.get_service('invitation_code')
-
-class InvitationCodeUtil:
-    """邀请码工具类"""
+class InvitationService:
+    """邀请码服务类"""
     
-    @staticmethod
-    def generate_code(length: int = 8) -> str:
+    def __init__(self):
+        # 获取数据库服务实例
+        self.db = db_manager.get_service('invitation_code')
+    
+    def generate_code(self, length: int = 8) -> str:
         """
         生成邀请码
         
@@ -29,8 +30,8 @@ class InvitationCodeUtil:
         alphabet = string.ascii_uppercase + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(length))
     
-    @staticmethod
     async def create_invitation_code(
+        self,
         role: str, 
         created_by: str,
         created_by_uid: int,
@@ -52,11 +53,11 @@ class InvitationCodeUtil:
         Returns:
             str: 生成的邀请码
         """
-        code = InvitationCodeUtil.generate_code()
+        code = self.generate_code()
         create_time = datetime.now().isoformat()
         expire_time_str = expire_time.isoformat() if expire_time else None
         
-        await invitation_db.execute(
+        await self.db.execute(
             """
             INSERT INTO invitation_codes (
                 code, role, status, max_uses, used_count, description,
@@ -68,8 +69,7 @@ class InvitationCodeUtil:
         
         return code
     
-    @staticmethod
-    async def validate_invitation_code(code: str) -> Dict[str, Any]:
+    async def validate_invitation_code(self, code: str) -> Dict[str, Any]:
         """
         验证邀请码
         
@@ -80,7 +80,7 @@ class InvitationCodeUtil:
             Dict[str, Any]: 验证结果，包含valid、role、message
         """
         # 查询邀请码
-        invitation = await invitation_db.fetchone(
+        invitation = await self.db.fetchone(
             """
             SELECT code, role, status, max_uses, used_count, expire_time
             FROM invitation_codes 
@@ -112,8 +112,7 @@ class InvitationCodeUtil:
             "message": "邀请码有效"
         }
     
-    @staticmethod
-    async def use_invitation_code(code: str, used_by_uid: int, used_by_username: str) -> bool:
+    async def use_invitation_code(self, code: str, used_by_uid: int, used_by_username: str) -> bool:
         """
         使用邀请码
         
@@ -126,19 +125,19 @@ class InvitationCodeUtil:
             bool: 是否使用成功
         """
         # 验证邀请码
-        validation_result = await InvitationCodeUtil.validate_invitation_code(code)
+        validation_result = await self.validate_invitation_code(code)
         if not validation_result["valid"]:
             return False
         
         # 更新使用次数
-        await invitation_db.execute(
+        await self.db.execute(
             "UPDATE invitation_codes SET used_count = used_count + 1 WHERE code = $1",
             (code,)
         )
         
         # 记录使用记录
         use_time = datetime.now().isoformat()
-        await invitation_db.execute(
+        await self.db.execute(
             """
             INSERT INTO invitation_code_usage (
                 code, used_by_uid, used_by_username, use_time
@@ -148,21 +147,20 @@ class InvitationCodeUtil:
         )
         
         # 检查是否达到最大使用次数，如果是则更新状态
-        invitation = await invitation_db.fetchone(
+        invitation = await self.db.fetchone(
             "SELECT used_count, max_uses FROM invitation_codes WHERE code = $1",
             (code,)
         )
         
         if invitation["used_count"] >= invitation["max_uses"]:
-            await invitation_db.execute(
+            await self.db.execute(
                 "UPDATE invitation_codes SET status = 'inactive' WHERE code = $1",
                 (code,)
             )
         
         return True
     
-    @staticmethod
-    async def update_code_status(code: str, status: str) -> bool:
+    async def update_code_status(self, code: str, status: str) -> bool:
         """
         更新邀请码状态
         
@@ -173,16 +171,15 @@ class InvitationCodeUtil:
         Returns:
             bool: 是否更新成功
         """
-        status_str = await invitation_db.execute(
+        status_str = await self.db.execute(
             "UPDATE invitation_codes SET status = $1 WHERE code = $2",
             (status, code)
         )
         
-        # 解析 asyncpg 的状态字符串，例如 "UPDATE 1"
         return "UPDATE 1" in status_str
     
-    @staticmethod
     async def get_invitation_codes(
+        self,
         page: int = 1, 
         page_size: int = 10,
         status: Optional[str] = None,
@@ -216,7 +213,7 @@ class InvitationCodeUtil:
         
         # 查询总数
         count_sql = f"SELECT COUNT(*) FROM invitation_codes {where_clause}"
-        total = await invitation_db.fetchval(count_sql, tuple(params))
+        total = await self.db.fetchval(count_sql, tuple(params))
         
         # 查询列表
         limit_idx = len(params) + 1
@@ -224,7 +221,7 @@ class InvitationCodeUtil:
         
         list_sql = f"""
             SELECT code, role, status, max_uses, used_count, description,
-                   created_by, create_time, expire_time
+                   created_by, created_by_uid, create_time, expire_time
             FROM invitation_codes
             {where_clause}
             ORDER BY create_time DESC
@@ -232,11 +229,12 @@ class InvitationCodeUtil:
         """
         params.extend([page_size, offset])
         
-        codes = await invitation_db.fetchall(list_sql, tuple(params))
+        codes = await self.db.fetchall(list_sql, tuple(params))
         
         return {
             "total": total,
             "codes": [dict(code) for code in codes]
         }
 
-invitation_util = InvitationCodeUtil()
+# 全局邀请码服务实例
+invitation_service = InvitationService()

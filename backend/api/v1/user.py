@@ -4,11 +4,11 @@ from datetime import datetime
 
 from core.config import config
 from utils.jwt import jwt_util
-from utils.redis import redis_client
+from service.redis_service import redis_service
 from utils.generator import generator
-from utils.invitation import invitation_util
+from service.invitation_service import invitation_service
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse, RoleUpgradeRequest
-from core import dependencies as deps
+from api import dependencies as deps
 
 # 获取数据库服务实例
 from database import db_manager
@@ -34,7 +34,7 @@ async def register(request: RegisterRequest, req: Request):
     client_ip = req.client.host
     
     # 检查登录频率限制
-    allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=3, expire_time=3600)
+    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=3, expire_time=3600)
     if not allowed:
         raise HTTPException(
             status_code=429,
@@ -61,7 +61,7 @@ async def register(request: RegisterRequest, req: Request):
     user_role = 'normal'  # 默认角色
     if request.invite_code:
         # 验证邀请码
-        validation_result = await invitation_util.validate_invitation_code(request.invite_code)
+        validation_result = await invitation_service.validate_invitation_code(request.invite_code)
         if not validation_result["valid"]:
             raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
         user_role = validation_result["role"]
@@ -95,7 +95,7 @@ async def register(request: RegisterRequest, req: Request):
 
     # 使用邀请码（如果有）
     if request.invite_code:
-        await invitation_util.use_invitation_code(
+        await invitation_service.use_invitation_code(
             request.invite_code, 
             new_user["uid"], 
             new_user["username"]
@@ -110,7 +110,7 @@ async def register(request: RegisterRequest, req: Request):
     })
     
     # 设置用户在线状态
-    await redis_client.set_user_online(
+    await redis_service.set_user_online(
         user_id=new_user["uid"],
         token=token,
         expire_time=3600 * 24 if request.is_remember else 3600
@@ -129,7 +129,7 @@ async def login(request: LoginRequest, req: Request):
     client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
-    allowed, attempts = await redis_client.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
+    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
     if not allowed:
         raise HTTPException(
             status_code=429,
@@ -182,7 +182,7 @@ async def login(request: LoginRequest, req: Request):
 async def get_current_user_info(current_user: dict = Depends(deps.get_current_user)):
     """获取当前用户信息接口"""
     # 从Redis验证用户在线状态
-    is_online = await redis_client.is_user_online(current_user["uid"])
+    is_online = await redis_service.is_user_online(current_user["uid"])
     
     # 从数据库获取最新用户信息 (已经在deps中获取了，但这里为了保持字段完整性，特别是avatar_hash，可能deps没拿全)
     # deps中只拿了: uid, username, email, role, is_verified
@@ -247,7 +247,7 @@ async def upgrade_role(
     )
     
     # 使用邀请码
-    await invitation_util.use_invitation_code(
+    await invitation_service.use_invitation_code(
         request.invite_code, 
         current_user["uid"], 
         current_user["username"]

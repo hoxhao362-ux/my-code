@@ -1,22 +1,23 @@
-from typing import Generator, Optional, Dict, Any
+"""
+安全认证相关依赖
+
+提供JWT令牌解析、用户认证、权限校验等功能。
+"""
+from typing import Optional, Dict, Any
 from fastapi import Depends, HTTPException, status, Query, Header
-from fastapi.security import OAuth2PasswordBearer
 
 from utils.jwt import jwt_util
-from utils.redis import redis_client
+from service.redis_service import redis_service
 from database import db_manager
 
-# Reusable OAuth2 scheme (optional, mostly for Swagger UI if we wanted to standard Auth header)
-# But since frontend uses query param, we'll stick to custom dependency.
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/user/login")
-
 async def get_token(
-    token: Optional[str] = Query(None, description="Access Token"),
-    authorization: Optional[str] = Header(None, description="Authorization Header")
+    token: Optional[str] = Query(None, description="访问令牌"),
+    authorization: Optional[str] = Header(None, description="认证头")
 ) -> str:
     """
-    Extract token from Query param 'token' OR 'Authorization: Bearer <token>' header.
-    Query param takes precedence to support existing frontend.
+    获取认证令牌
+    
+    优先从查询参数 'token' 获取，其次从 'Authorization: Bearer <token>' 头获取。
     """
     if token:
         return token
@@ -32,20 +33,17 @@ async def get_token(
 
 async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
     """
-    Get current user from token.
-    Validates token via Redis (for logout/expiry) and JWT signature.
-    Fetches latest user data from DB.
+    获取当前登录用户
+    
+    1. 尝试从 Redis 获取会话信息
+    2. 验证 JWT 令牌有效性
+    3. 从数据库查询用户最新信息
+    4. 刷新 Redis 中的令牌过期时间
     """
-    # 1. Check Redis for session status
-    user_id = await redis_client.get_user_by_token(token)
+    # 1. 检查Redis中的会话状态
+    user_id = await redis_service.get_user_by_token(token)
     
-    # 2. If not in Redis, try to decode JWT (stateless fallback, or if Redis key expired but JWT valid?)
-    # However, existing logic in user.py prefers Redis but falls back to JWT.
-    # But if user logged out, Redis key is deleted. So if not in Redis, strictly speaking it might be invalid session if we enforce server-side logout.
-    # But user.py line 186 says: "If not in Redis, try to parse from token".
-    # We will keep this logic to be safe, but generally if we want secure logout, we should require Redis.
-    # For now, let's stick to the existing hybrid approach to not break anything.
-    
+    # 2. 验证JWT令牌
     token_payload = jwt_util.verify_token(token)
     if not token_payload:
          raise HTTPException(
@@ -54,6 +52,7 @@ async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 如果Redis中没有（可能过期），使用JWT中的uid
     if not user_id:
         user_id = token_payload.get("uid")
     
@@ -64,10 +63,11 @@ async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 3. Fetch user from DB
+    # 3. 从数据库获取用户
     user_db = db_manager.get_service('user_account')
+    # 使用 $1 占位符（PostgreSQL）
     user = await user_db.fetchone(
-        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = ?",
+        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = $1",
         (user_id,)
     )
     
@@ -78,17 +78,25 @@ async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    # Refresh token expire time in Redis
-    await redis_client.refresh_token_expire(user_id, token)
+    # 4. 在Redis中刷新令牌过期时间
+    await redis_service.refresh_token_expire(user_id, token)
     
     return dict(user)
 
 async def get_current_active_user(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    # If we had an 'is_active' field, we would check it here.
-    # For now, just return the user.
+    """
+    获取当前活跃用户
+    
+    可以在此扩展用户状态检查逻辑（如是否被封禁）
+    """
     return current_user
 
 async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    """
+    获取管理员用户
+    
+    仅限 role='admin' 的用户访问
+    """
     if current_user["role"] != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -97,6 +105,11 @@ async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_acti
     return current_user
 
 async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    """
+    获取审稿人用户
+    
+    允许 role 为 'reviewer' 或 'admin' 的用户访问
+    """
     if current_user["role"] not in ["reviewer", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -105,6 +118,11 @@ async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_a
     return current_user
 
 async def get_writer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
+    """
+    获取作者用户
+    
+    允许 role 为 'writer', 'reviewer', 'admin' 的用户访问
+    """
     if current_user["role"] not in ["writer", "reviewer", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

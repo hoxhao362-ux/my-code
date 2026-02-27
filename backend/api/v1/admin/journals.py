@@ -3,9 +3,9 @@ from typing import Optional
 from pathlib import Path
 from datetime import datetime
 
-from utils.admin_log import record_admin_log
+from service.admin_log_service import admin_log_service
 from database import db_manager
-from core import dependencies as deps
+from api import dependencies as deps
 from core.config import config
 
 journal_db = db_manager.get_service('journal_submit')
@@ -53,7 +53,7 @@ async def get_all_journals(
     journals = await journal_db.fetchall(journals_sql, tuple(params))
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看所有文献",
@@ -113,7 +113,7 @@ async def admin_delete_journal(
     )
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="删除文献",
@@ -153,7 +153,7 @@ async def get_all_review_records(
     )
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看审核记录",
@@ -197,7 +197,7 @@ async def get_deleted_journals(
     )
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看已删除文献",
@@ -244,7 +244,7 @@ async def permanently_delete_journal(
     await journal_db.execute("DELETE FROM journals WHERE jid = $1", (jid,))
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="彻底删除文献",

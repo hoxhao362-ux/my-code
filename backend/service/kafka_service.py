@@ -1,19 +1,12 @@
 """
-Kafka 服务工具类 - 统一管理 Kafka 服务的生命周期与消息生产
+Kafka 服务模块
 
-本模块提供了基于 kafka-python 的 Kafka 服务管理，主要功能包括：
-1. 管理 Kafka 服务进程的启动与停止（通过外部脚本）。
-2. 提供全局单例的 Kafka 生产者实例。
-3. 封装消息发送接口，支持 JSON 序列化。
-4. 深度集成项目全局日志与配置系统。
-
-主要类：
-- KafkaService: 继承自 BaseManagedService，负责 Kafka 服务的全生命周期管理。
+统一管理 Kafka 服务的生命周期与消息生产。
 """
 import asyncio
 import json
 import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, NoBrokersAvailable
@@ -47,13 +40,13 @@ class KafkaService(BaseManagedService):
         global_logger.info("Kafka", "执行 Kafka 定制化启动计划...")
         
         # 1. 获取配置
-        exe_path = config["global.global.kafka_service_path"]
+        exe_path = config["kafka.kafka.kafka_service_path"]
         # 注意：这里假设 args 是列表，如果为空则为空列表
-        args_config = config.get("global.global.kafka_service_args", [])
+        args_config = config.get("kafka.kafka.kafka_service_args", [])
         args = await self._check_args(args_config)
         
-        host = config["global.global.kafka_host"]
-        port = config["global.global.kafka_port"]
+        host = config["kafka.kafka.kafka_host"]
+        port = config["kafka.kafka.kafka_port"]
         bootstrap_servers = f"{host}:{port}"
         
         # 2. 启动进程
@@ -67,10 +60,6 @@ class KafkaService(BaseManagedService):
         
         try:
             # 创建进程
-            # 注意：如果启动脚本是阻塞式的（如直接运行 kafka-server-start.bat），
-            # create_subprocess_shell 会返回一个正在运行的进程对象。
-            # 如果脚本是启动后退出的（如使用 start 命令），进程对象会很快结束。
-            # 这里的逻辑兼容两种情况，关键在于后续的连接检查。
             await self._create_process(start_cmd)
             
             # 3. 就绪检查与连接初始化
@@ -80,7 +69,6 @@ class KafkaService(BaseManagedService):
             while retry_count < max_retries:
                 try:
                     # 尝试初始化 Producer 来验证连接
-                    # kafka-python 的 Producer 初始化会尝试连接 bootstrap_servers
                     self.producer = KafkaProducer(
                         bootstrap_servers=bootstrap_servers,
                         value_serializer=lambda v: json.dumps(v).encode('utf-8'),
@@ -135,7 +123,7 @@ class KafkaService(BaseManagedService):
                 global_logger.info("Kafka", "Kafka Producer 已关闭")
             
             # 2. 执行停止脚本
-            stop_path = config.get("global.global.kafka_stop_path")
+            stop_path = config.get("kafka.kafka.kafka_stop_path")
             if stop_path:
                 global_logger.info("Kafka", f"执行停止脚本: {stop_path}")
                 stop_process = await asyncio.create_subprocess_shell(
@@ -193,8 +181,6 @@ class KafkaService(BaseManagedService):
             future.add_callback(on_send_success)
             future.add_errback(on_send_error)
             
-            # 只要成功调用 send 并入队，就视为暂时的“成功”
-            # 实际发送结果由回调处理
             return True
             
         except Exception as e:
@@ -202,5 +188,4 @@ class KafkaService(BaseManagedService):
             return False
 
 # 创建全局 Kafka 服务实例
-# 实例化时会自动调用 service_manager.register(self)
 kafka_service = KafkaService()

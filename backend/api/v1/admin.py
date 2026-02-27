@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List, Optional
 from datetime import datetime
 
@@ -11,7 +11,8 @@ journal_db = db_manager.get_service('journal_submit')
 deleted_journal_db = db_manager.get_service('deleted_journal')
 
 from utils.jwt import jwt_util
-from utils.admin_log import record_admin_log
+from service.admin_log_service import admin_log_service
+from api import dependencies as deps
 
 admin_router = APIRouter(
     prefix="/admin",

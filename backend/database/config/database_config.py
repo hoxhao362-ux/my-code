@@ -61,7 +61,7 @@ class DatabaseConfig:
         configs = {}
         
         # 获取数据库目录
-        database_dir = Path(self.global_config.get('global', {}).get('database_dir', './database'))
+        database_dir = Path(self.database_config.get('database', {}).get('database_dir', './database'))
         
         # 从database.toml解析数据库配置
         files_config = self.database_config.get('files', {})
@@ -174,10 +174,6 @@ class DatabaseConfig:
     def get_all_database_names(self) -> List[str]:
         """获取所有数据库名称"""
         return list(self.get_database_config().keys())
-    
-    def get_redis_config(self) -> Dict[str, Any]:
-        """获取Redis配置"""
-        return self.global_config.get('global', {})
 
 
 # 全局配置实例
