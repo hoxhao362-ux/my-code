@@ -4,15 +4,30 @@
 提供管理员操作日志的记录和查询功能。
 """
 from datetime import datetime
-from typing import Dict, Any, Optional
-from database import db_manager
+from typing import Dict, Any, Optional, AsyncIterator
+from contextlib import asynccontextmanager
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.service.database_service import db_manager
+from database.orm.models.admin_log import AdminLog
+from database.repositories.admin_log_repo import AdminLogRepository
+from database.uow import transactional
 
 class AdminLogService:
     """管理员日志服务类"""
     
     def __init__(self):
-        # 获取管理员日志数据库服务实例
-        self.db = db_manager.get_service('admin_log')
+        pass
+
+    @asynccontextmanager
+    async def _ensure_session(self, session: Optional[AsyncSession]) -> AsyncIterator[AsyncSession]:
+        if session is not None:
+            yield session
+            return
+
+        async with db_manager.get_session() as owned_session:
+            yield owned_session
     
     async def record_admin_log(
         self,
@@ -22,7 +37,8 @@ class AdminLogService:
         operation_object: str,
         operation_details: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        session: Optional[AsyncSession] = None,
     ):
         """
         记录管理员操作日志
@@ -36,24 +52,21 @@ class AdminLogService:
             ip_address: IP地址（可选）
             user_agent: 用户代理（可选）
         """
-        await self.db.execute(
-            """
-            INSERT INTO admin_logs (
-                admin_uid, admin_username, operation_time, operation_type, 
-                operation_object, operation_details, ip_address, user_agent
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            """,
-            (
-                admin_uid,
-                admin_username,
-                datetime.now().isoformat(),
-                operation_type,
-                operation_object,
-                operation_details,
-                ip_address,
-                user_agent
-            )
-        )
+        async with self._ensure_session(session) as s:
+            repo = AdminLogRepository(s)
+            async with transactional(s):
+                repo.add(
+                    AdminLog(
+                        admin_uid=admin_uid,
+                        admin_username=admin_username,
+                        operation_time=datetime.now().isoformat(),
+                        operation_type=operation_type,
+                        operation_object=operation_object,
+                        operation_details=operation_details,
+                        ip_address=ip_address,
+                        user_agent=user_agent,
+                    )
+                )
 
     async def get_admin_logs(
         self,
@@ -61,7 +74,8 @@ class AdminLogService:
         page_size: int = 10,
         operation_type: Optional[str] = None,
         start_time: Optional[str] = None,
-        end_time: Optional[str] = None
+        end_time: Optional[str] = None,
+        session: Optional[AsyncSession] = None,
     ) -> Dict[str, Any]:
         """
         获取管理员操作日志列表
@@ -77,43 +91,18 @@ class AdminLogService:
             包含日志总数和日志列表的字典
         """
         offset = (page - 1) * page_size
-        
-        where_clause = "WHERE 1=1"
-        params = []
-        
-        if operation_type:
-            where_clause += f" AND operation_type = ${len(params) + 1}"
-            params.append(operation_type)
-        
-        if start_time:
-            where_clause += f" AND operation_time >= ${len(params) + 1}"
-            params.append(start_time)
-        
-        if end_time:
-            where_clause += f" AND operation_time <= ${len(params) + 1}"
-            params.append(end_time)
-        
-        count_sql = f"SELECT COUNT(*) FROM admin_logs {where_clause}"
-        total = await self.db.fetchval(count_sql, tuple(params))
-        
-        limit_idx = len(params) + 1
-        offset_idx = limit_idx + 1
-        
-        logs_sql = f"""
-        SELECT log_id, admin_uid, admin_username, operation_time, operation_type,
-               operation_object, operation_details, ip_address, user_agent
-        FROM admin_logs
-        {where_clause}
-        ORDER BY operation_time DESC
-        LIMIT ${limit_idx} OFFSET ${offset_idx}
-        """
-        params.extend([page_size, offset])
-        logs = await self.db.fetchall(logs_sql, tuple(params))
-        
-        return {
-            "total": total,
-            "logs": [dict(log) for log in logs]
-        }
+
+        async with self._ensure_session(session) as s:
+            repo = AdminLogRepository(s)
+            total = await repo.count(operation_type=operation_type, start_time=start_time, end_time=end_time)
+            logs = await repo.list_page(
+                page=page,
+                page_size=page_size,
+                operation_type=operation_type,
+                start_time=start_time,
+                end_time=end_time,
+            )
+            return {"total": total, "logs": logs}
 
 # 全局管理员日志服务实例
 admin_log_service = AdminLogService()

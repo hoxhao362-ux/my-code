@@ -10,10 +10,12 @@ from service.invitation_service import invitation_service
 from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse, RoleUpgradeRequest
 from api import dependencies as deps
 
-# 获取数据库服务实例
-from database import db_manager
-user_db = db_manager.get_service('user_account')
-journal_db = db_manager.get_service('journal_submit')
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.dependencies import get_db_session
+from database.orm.models.user import User
+from database.repositories.user_repo import UserRepository
+from database.uow import transactional
 
 # 创建用户相关路由
 user_router = APIRouter(
@@ -28,7 +30,11 @@ user_router = APIRouter(
 )
 
 @user_router.post("/register", summary="用户注册", response_model=RegisterResponse)
-async def register(request: RegisterRequest, req: Request):
+async def register(
+    request: RegisterRequest,
+    req: Request,
+    session: AsyncSession = Depends(get_db_session),
+):
     """用户注册接口"""
     # 获取客户端IP
     client_ip = req.client.host
@@ -41,27 +47,21 @@ async def register(request: RegisterRequest, req: Request):
             detail=f"注册请求过于频繁，请稍后再试。当前尝试次数：{attempts}/3"
         )
     
+    repo = UserRepository(session)
+
     # 检查用户名是否已存在
-    existing_user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = $1",
-        (request.username,)
-    )
-    if existing_user:
+    if await repo.username_exists(request.username):
         raise HTTPException(status_code=400, detail="用户名已存在")
     
     # 检查邮箱是否已存在
-    existing_email = await user_db.fetchone(
-        "SELECT * FROM users WHERE email = $1",
-        (request.email,)
-    )
-    if existing_email:
+    if await repo.email_exists(request.email):
         raise HTTPException(status_code=400, detail="邮箱已被注册")
     
     # 确定用户角色（基于邀请码）
     user_role = 'normal'  # 默认角色
     if request.invite_code:
         # 验证邀请码
-        validation_result = await invitation_service.validate_invitation_code(request.invite_code)
+        validation_result = await invitation_service.validate_invitation_code(request.invite_code, session=session)
         if not validation_result["valid"]:
             raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
         user_role = validation_result["role"]
@@ -74,44 +74,45 @@ async def register(request: RegisterRequest, req: Request):
     
     # 注册时间
     create_time = datetime.now().isoformat()
-    
-    # 插入用户数据
-    await user_db.execute(
-        """
-        INSERT INTO users (uid_hash, username, password, email, role, create_time)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        """,
-        (uid_hash, request.username, hashed_password, request.email, user_role, create_time)
-    )
-    
-    # 获取新注册用户信息
-    new_user = await user_db.fetchone(
-        "SELECT uid, username, email, role FROM users WHERE username = $1",
-        (request.username,)
-    )
-    
-    if new_user is None:
-        raise HTTPException(status_code=500, detail="用户数据库查询失败")
 
-    # 使用邀请码（如果有）
-    if request.invite_code:
-        await invitation_service.use_invitation_code(
-            request.invite_code, 
-            new_user["uid"], 
-            new_user["username"]
+    async with transactional(session):
+        new_user = User(
+            uid_hash=uid_hash,
+            username=request.username,
+            password=hashed_password,
+            email=request.email,
+            role=user_role,
+            is_verified=False,
+            verification_code=None,
+            avatar_path=None,
+            avatar_hash=None,
+            create_time=create_time,
+            last_login_time=None,
         )
+        repo.add(new_user)
+        await session.flush()
+
+        if request.invite_code:
+            ok = await invitation_service.use_invitation_code(
+                request.invite_code,
+                new_user.uid,
+                new_user.username,
+                session=session,
+            )
+            if not ok:
+                raise HTTPException(status_code=400, detail="邀请码使用失败")
     
     # 生成token
     token = jwt_util.create_access_token({
-        "uid": new_user["uid"],
-        "username": new_user["username"],
-        "email": new_user["email"],
-        "role": new_user["role"]
+        "uid": new_user.uid,
+        "username": new_user.username,
+        "email": new_user.email,
+        "role": new_user.role,
     })
     
     # 设置用户在线状态
     await redis_service.set_user_online(
-        user_id=new_user["uid"],
+        user_id=new_user.uid,
         token=token,
         expire_time=3600 * 24 if request.is_remember else 3600
     )
@@ -123,7 +124,11 @@ async def register(request: RegisterRequest, req: Request):
     )
 
 @user_router.post("/login", summary="用户登录", response_model=LoginResponse)
-async def login(request: LoginRequest, req: Request):
+async def login(
+    request: LoginRequest,
+    req: Request,
+    session: AsyncSession = Depends(get_db_session),
+):
     """用户登录接口"""
     # 获取客户端IP
     client_ip = req.client.host if req.client else "unknown"
@@ -137,39 +142,30 @@ async def login(request: LoginRequest, req: Request):
         )
     
     # 检查用户是否存在
-    user = await user_db.fetchone(
-        "SELECT * FROM users WHERE username = $1",
-        (request.username,)
-    )
+    repo = UserRepository(session)
+    user = await repo.get_by_username(request.username)
     if not user:
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     
     # 验证密码
-    if not jwt_util.verify_password(request.password, user["password"]):
+    if not jwt_util.verify_password(request.password, user.password):
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     
     # 更新最后登录时间
-    last_login_time = datetime.now().isoformat()
-    await user_db.execute(
-        "UPDATE users SET last_login_time = $1 WHERE uid = $2",
-        (last_login_time, user["uid"])
-    )
+    async with transactional(session):
+        user.last_login_time = datetime.now().isoformat()
     
     # 生成token
     token = jwt_util.create_access_token({
-        "uid": user["uid"],
-        "username": user["username"],
-        "email": user["email"],
-        "role": user["role"]
+        "uid": user.uid,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
     })
     
     # 设置用户在线状态
     expire_time = 3600 * 24 * 30 if request.is_remember else 3600
-    await redis_client.set_user_online(
-        user_id=user["uid"],
-        token=token,
-        expire_time=expire_time
-    )
+    await redis_service.set_user_online(user_id=user.uid, token=token, expire_time=expire_time)
     
     return LoginResponse(
         login_time=datetime.now(),
@@ -179,7 +175,10 @@ async def login(request: LoginRequest, req: Request):
     )
 
 @user_router.get("/me", summary="获取当前用户信息")
-async def get_current_user_info(current_user: dict = Depends(deps.get_current_user)):
+async def get_current_user_info(
+    current_user: dict = Depends(deps.get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+):
     """获取当前用户信息接口"""
     # 从Redis验证用户在线状态
     is_online = await redis_service.is_user_online(current_user["uid"])
@@ -192,19 +191,17 @@ async def get_current_user_info(current_user: dict = Depends(deps.get_current_us
     # 让我们修改deps返回所有字段? 不，deps只负责鉴权。
     # 这里我们重新查询完整信息。
     
-    user = await user_db.fetchone(
-        "SELECT uid, username, email, role, create_time, last_login_time, avatar_hash FROM users WHERE uid = $1",
-        (current_user["uid"],)
-    )
+    repo = UserRepository(session)
+    user = await repo.get_profile_fields_by_id(current_user["uid"])
     
     return {
-        "uid": user["uid"],
-        "username": user["username"],
-        "email": user["email"],
-        "role": user["role"],
-        "create_time": user["create_time"],
-        "last_login_time": user["last_login_time"],
-        "avatar_hash": user["avatar_hash"],
+        "uid": user["uid"] if user else current_user["uid"],
+        "username": user["username"] if user else current_user.get("username"),
+        "email": user["email"] if user else current_user.get("email"),
+        "role": user["role"] if user else current_user.get("role"),
+        "create_time": user.get("create_time") if user else None,
+        "last_login_time": user.get("last_login_time") if user else None,
+        "avatar_hash": user.get("avatar_hash") if user else None,
         "is_online": is_online
     }
 
@@ -212,21 +209,22 @@ async def get_current_user_info(current_user: dict = Depends(deps.get_current_us
 async def logout(token: str = Depends(deps.get_token)):
     """用户登出接口"""
     # 从Redis验证用户在线状态
-    user_id = await redis_client.get_user_by_token(token)
+    user_id = await redis_service.get_user_by_token(token)
     if user_id:
         # 设置用户离线状态
-        await redis_client.set_user_offline(user_id, token)
+        await redis_service.set_user_offline(user_id, token)
     
     return {"message": "登出成功"}
 
 @user_router.post("/upgrade", summary="用户角色升级")
 async def upgrade_role(
     request: RoleUpgradeRequest,
-    current_user: dict = Depends(deps.get_current_user)
+    current_user: dict = Depends(deps.get_current_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
     """使用邀请码升级用户角色"""
     # 验证邀请码
-    validation_result = await invitation_util.validate_invitation_code(request.invite_code)
+    validation_result = await invitation_service.validate_invitation_code(request.invite_code, session=session)
     if not validation_result["valid"]:
         raise HTTPException(status_code=400, detail=f"邀请码无效: {validation_result['message']}")
     
@@ -241,16 +239,20 @@ async def upgrade_role(
         raise HTTPException(status_code=400, detail=f"当前角色已是或高于 {new_role}，无需升级")
 
     # 更新数据库
-    await user_db.execute(
-        "UPDATE users SET role = $1 WHERE uid = $2",
-        (new_role, current_user["uid"])
-    )
-    
-    # 使用邀请码
-    await invitation_service.use_invitation_code(
-        request.invite_code, 
-        current_user["uid"], 
-        current_user["username"]
-    )
+    repo = UserRepository(session)
+    async with transactional(session):
+        user = await repo.get_by_id(current_user["uid"])
+        if not user:
+            raise HTTPException(status_code=404, detail="用户不存在")
+        user.role = new_role
+
+        ok = await invitation_service.use_invitation_code(
+            request.invite_code,
+            current_user["uid"],
+            current_user["username"],
+            session=session,
+        )
+        if not ok:
+            raise HTTPException(status_code=400, detail="邀请码使用失败")
     
     return {"message": f"成功升级为 {new_role}", "new_role": new_role}

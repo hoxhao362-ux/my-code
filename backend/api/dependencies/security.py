@@ -8,7 +8,10 @@ from fastapi import Depends, HTTPException, status, Query, Header
 
 from utils.jwt import jwt_util
 from service.redis_service import redis_service
-from database import db_manager
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.dependencies import get_db_session
+from database.repositories.user_repo import UserRepository
 
 async def get_token(
     token: Optional[str] = Query(None, description="访问令牌"),
@@ -31,7 +34,10 @@ async def get_token(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
+async def get_current_user(
+    token: str = Depends(get_token),
+    session: AsyncSession = Depends(get_db_session),
+) -> Dict[str, Any]:
     """
     获取当前登录用户
     
@@ -63,13 +69,9 @@ async def get_current_user(token: str = Depends(get_token)) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 3. 从数据库获取用户
-    user_db = db_manager.get_service('user_account')
-    # 使用 $1 占位符（PostgreSQL）
-    user = await user_db.fetchone(
-        "SELECT uid, username, email, role, is_verified FROM users WHERE uid = $1",
-        (user_id,)
-    )
+    # 3. 从数据库获取用户（ORM 查询）
+    repo = UserRepository(session)
+    user = await repo.get_public_fields_by_id(int(user_id))
     
     if not user:
         raise HTTPException(

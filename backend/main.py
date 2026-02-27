@@ -9,12 +9,15 @@ from pathlib import Path
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
+from sqlalchemy import select
+
 from utils.log import global_logger
 from core.config import setup_core, config
 from core.service_manager import service_manager
 
 # 显式导入单例，触发它们向 service_manager 注册
 from database.service.database_service import db_manager
+from database.orm.models.user import User
 from service.redis_service import redis_service
 from service.kafka_service import kafka_service
 from service.payment_service import payment_service
@@ -46,34 +49,40 @@ async def lifespan(app: FastAPI):
     
     # 检查并创建初始管理员
     try:
-        user_db = db_manager.get_service('user_account')
-        admin_exists = await user_db.fetchone("SELECT 1 FROM users WHERE role = 'admin'")
-        if not admin_exists:
-            global_logger.info('main', "未检测到管理员账号，正在创建初始管理员...")
-            from utils.jwt import jwt_util
-            from utils.generator import generator
+        async with db_manager.get_session() as session:
+            admin_uid = await session.scalar(select(User.uid).where(User.role == "admin"))
+            if not admin_uid:
+                global_logger.info("main", "未检测到管理员账号，正在创建初始管理员...")
+                from utils.jwt import jwt_util
+                from utils.generator import generator
 
-            # 尝试从配置获取
-            try:
-                admin_username = config["admin.admin.default_username"]
-                admin_password = config["admin.admin.default_password"]
-                admin_email = config["admin.admin.default_email"]
-            except:
-                raise ValueError("管理员配置缺失必要字段")
+                try:
+                    admin_username = config["admin.admin.default_username"]
+                    admin_password = config["admin.admin.default_password"]
+                    admin_email = config["admin.admin.default_email"]
+                except Exception as e:
+                    raise ValueError("管理员配置缺失必要字段") from e
 
-            uid_hash = generator.generate_uid_hash(admin_username)
-            hashed_password = jwt_util.hash_password(admin_password)
-            create_time = datetime.now().isoformat()
-            
-            # 使用 PostgreSQL 的 $1, $2... 占位符
-            await user_db.execute(
-                """
-                INSERT INTO users (uid_hash, username, password, email, role, create_time, is_verified)
-                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-                """,
-                (uid_hash, admin_username, hashed_password, admin_email, 'admin', create_time)
-            )
-            global_logger.info('main', f"初始管理员创建成功: 用户名={admin_username}")
+                uid_hash = generator.generate_uid_hash(admin_username)
+                hashed_password = jwt_util.hash_password(admin_password)
+
+                session.add(
+                    User(
+                        uid_hash=uid_hash,
+                        username=admin_username,
+                        password=hashed_password,
+                        email=admin_email,
+                        role="admin",
+                        is_verified=True,
+                        verification_code=None,
+                        avatar_path=None,
+                        avatar_hash=None,
+                        create_time=datetime.now().isoformat(),
+                        last_login_time=None,
+                    )
+                )
+                await session.commit()
+                global_logger.info("main", f"初始管理员创建成功: 用户名={admin_username}")
             
         # 初始化支付服务
         payment_service.initialize()

@@ -6,16 +6,38 @@
 import secrets
 import string
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncIterator
+from contextlib import asynccontextmanager
 
-from database import db_manager
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.service.database_service import db_manager
+from database.orm.models.invitation import InvitationCode, InvitationCodeUsage
+from database.repositories.invitation_repo import InvitationRepository
+from database.uow import transactional
 
 class InvitationService:
     """邀请码服务类"""
     
     def __init__(self):
-        # 获取数据库服务实例
-        self.db = db_manager.get_service('invitation_code')
+        pass
+
+    @asynccontextmanager
+    async def _ensure_session(self, session: Optional[AsyncSession]) -> AsyncIterator[AsyncSession]:
+        """
+        确保存在可用的 AsyncSession。
+
+        说明：
+        - 若上层（如 FastAPI 路由）已注入 session，则复用该 session，避免重复建连与多事务；
+        - 若未传入 session，则内部创建并自动关闭。
+        """
+
+        if session is not None:
+            yield session
+            return
+
+        async with db_manager.get_session() as owned_session:
+            yield owned_session
     
     def generate_code(self, length: int = 8) -> str:
         """
@@ -37,7 +59,8 @@ class InvitationService:
         created_by_uid: int,
         description: Optional[str] = None,
         max_uses: int = 1,
-        expire_time: Optional[datetime] = None
+        expire_time: Optional[datetime] = None,
+        session: Optional[AsyncSession] = None,
     ) -> str:
         """
         创建邀请码
@@ -56,20 +79,28 @@ class InvitationService:
         code = self.generate_code()
         create_time = datetime.now().isoformat()
         expire_time_str = expire_time.isoformat() if expire_time else None
-        
-        await self.db.execute(
-            """
-            INSERT INTO invitation_codes (
-                code, role, status, max_uses, used_count, description,
-                created_by, created_by_uid, create_time, expire_time
-            ) VALUES ($1, $2, 'active', $3, 0, $4, $5, $6, $7, $8)
-            """,
-            (code, role, max_uses, description, created_by, created_by_uid, create_time, expire_time_str)
-        )
-        
+
+        async with self._ensure_session(session) as s:
+            repo = InvitationRepository(s)
+            async with transactional(s):
+                repo.add(
+                    InvitationCode(
+                        code=code,
+                        role=role,
+                        status="active",
+                        max_uses=max_uses,
+                        used_count=0,
+                        description=description,
+                        created_by=created_by,
+                        created_by_uid=created_by_uid,
+                        create_time=create_time,
+                        expire_time=expire_time_str,
+                    )
+                )
+
         return code
     
-    async def validate_invitation_code(self, code: str) -> Dict[str, Any]:
+    async def validate_invitation_code(self, code: str, session: Optional[AsyncSession] = None) -> Dict[str, Any]:
         """
         验证邀请码
         
@@ -79,40 +110,33 @@ class InvitationService:
         Returns:
             Dict[str, Any]: 验证结果，包含valid、role、message
         """
-        # 查询邀请码
-        invitation = await self.db.fetchone(
-            """
-            SELECT code, role, status, max_uses, used_count, expire_time
-            FROM invitation_codes 
-            WHERE code = $1
-            """,
-            (code,)
-        )
-        
-        if not invitation:
-            return {"valid": False, "role": None, "message": "邀请码不存在"}
-        
-        # 检查状态
-        if invitation["status"] != "active":
-            return {"valid": False, "role": None, "message": "邀请码已失效"}
-        
-        # 检查使用次数
-        if invitation["used_count"] >= invitation["max_uses"]:
-            return {"valid": False, "role": None, "message": "邀请码已达到最大使用次数"}
-        
-        # 检查过期时间
-        if invitation["expire_time"]:
-            expire_time = datetime.fromisoformat(invitation["expire_time"])
-            if datetime.now() > expire_time:
-                return {"valid": False, "role": None, "message": "邀请码已过期"}
-        
-        return {
-            "valid": True, 
-            "role": invitation["role"], 
-            "message": "邀请码有效"
-        }
+        async with self._ensure_session(session) as s:
+            repo = InvitationRepository(s)
+            invitation = await repo.get_by_code(code)
+
+            if not invitation:
+                return {"valid": False, "role": None, "message": "邀请码不存在"}
+
+            if invitation.status != "active":
+                return {"valid": False, "role": None, "message": "邀请码已失效"}
+
+            if invitation.used_count >= invitation.max_uses:
+                return {"valid": False, "role": None, "message": "邀请码已达到最大使用次数"}
+
+            if invitation.expire_time:
+                expire_time = datetime.fromisoformat(invitation.expire_time)
+                if datetime.now() > expire_time:
+                    return {"valid": False, "role": None, "message": "邀请码已过期"}
+
+            return {"valid": True, "role": invitation.role, "message": "邀请码有效"}
     
-    async def use_invitation_code(self, code: str, used_by_uid: int, used_by_username: str) -> bool:
+    async def use_invitation_code(
+        self,
+        code: str,
+        used_by_uid: int,
+        used_by_username: str,
+        session: Optional[AsyncSession] = None,
+    ) -> bool:
         """
         使用邀请码
         
@@ -124,43 +148,45 @@ class InvitationService:
         Returns:
             bool: 是否使用成功
         """
-        # 验证邀请码
-        validation_result = await self.validate_invitation_code(code)
-        if not validation_result["valid"]:
-            return False
-        
-        # 更新使用次数
-        await self.db.execute(
-            "UPDATE invitation_codes SET used_count = used_count + 1 WHERE code = $1",
-            (code,)
-        )
-        
-        # 记录使用记录
-        use_time = datetime.now().isoformat()
-        await self.db.execute(
-            """
-            INSERT INTO invitation_code_usage (
-                code, used_by_uid, used_by_username, use_time
-            ) VALUES ($1, $2, $3, $4)
-            """,
-            (code, used_by_uid, used_by_username, use_time)
-        )
-        
-        # 检查是否达到最大使用次数，如果是则更新状态
-        invitation = await self.db.fetchone(
-            "SELECT used_count, max_uses FROM invitation_codes WHERE code = $1",
-            (code,)
-        )
-        
-        if invitation["used_count"] >= invitation["max_uses"]:
-            await self.db.execute(
-                "UPDATE invitation_codes SET status = 'inactive' WHERE code = $1",
-                (code,)
-            )
-        
-        return True
+        async with self._ensure_session(session) as s:
+            repo = InvitationRepository(s)
+            try:
+                async with transactional(s):
+                    invitation = await repo.get_by_code(code, for_update=True)
+
+                    if not invitation:
+                        return False
+
+                    if invitation.status != "active":
+                        return False
+
+                    if invitation.used_count >= invitation.max_uses:
+                        return False
+
+                    if invitation.expire_time:
+                        expire_time = datetime.fromisoformat(invitation.expire_time)
+                        if datetime.now() > expire_time:
+                            return False
+
+                    invitation.used_count += 1
+                    if invitation.used_count >= invitation.max_uses:
+                        invitation.status = "inactive"
+
+                    use_time = datetime.now().isoformat()
+                    s.add(
+                        InvitationCodeUsage(
+                            code=code,
+                            used_by_uid=used_by_uid,
+                            used_by_username=used_by_username,
+                            use_time=use_time,
+                        )
+                    )
+
+                return True
+            except Exception:
+                return False
     
-    async def update_code_status(self, code: str, status: str) -> bool:
+    async def update_code_status(self, code: str, status: str, session: Optional[AsyncSession] = None) -> bool:
         """
         更新邀请码状态
         
@@ -171,19 +197,22 @@ class InvitationService:
         Returns:
             bool: 是否更新成功
         """
-        status_str = await self.db.execute(
-            "UPDATE invitation_codes SET status = $1 WHERE code = $2",
-            (status, code)
-        )
-        
-        return "UPDATE 1" in status_str
+        async with self._ensure_session(session) as s:
+            repo = InvitationRepository(s)
+            async with transactional(s):
+                invitation = await repo.get_by_code(code)
+                if not invitation:
+                    return False
+                invitation.status = status
+            return True
     
     async def get_invitation_codes(
         self,
         page: int = 1, 
         page_size: int = 10,
         status: Optional[str] = None,
-        role: Optional[str] = None
+        role: Optional[str] = None,
+        session: Optional[AsyncSession] = None,
     ) -> Dict[str, Any]:
         """
         获取邀请码列表
@@ -198,43 +227,12 @@ class InvitationService:
             Dict[str, Any]: 邀请码列表和总数
         """
         offset = (page - 1) * page_size
-        
-        # 构建查询条件
-        where_clause = "WHERE 1=1"
-        params = []
-        
-        if status:
-            where_clause += f" AND status = ${len(params) + 1}"
-            params.append(status)
-        
-        if role:
-            where_clause += f" AND role = ${len(params) + 1}"
-            params.append(role)
-        
-        # 查询总数
-        count_sql = f"SELECT COUNT(*) FROM invitation_codes {where_clause}"
-        total = await self.db.fetchval(count_sql, tuple(params))
-        
-        # 查询列表
-        limit_idx = len(params) + 1
-        offset_idx = limit_idx + 1
-        
-        list_sql = f"""
-            SELECT code, role, status, max_uses, used_count, description,
-                   created_by, created_by_uid, create_time, expire_time
-            FROM invitation_codes
-            {where_clause}
-            ORDER BY create_time DESC
-            LIMIT ${limit_idx} OFFSET ${offset_idx}
-        """
-        params.extend([page_size, offset])
-        
-        codes = await self.db.fetchall(list_sql, tuple(params))
-        
-        return {
-            "total": total,
-            "codes": [dict(code) for code in codes]
-        }
+
+        async with self._ensure_session(session) as s:
+            repo = InvitationRepository(s)
+            total = await repo.count(status=status, role=role)
+            codes = await repo.list_page(page=page, page_size=page_size, status=status, role=role)
+            return {"total": total, "codes": codes}
 
 # 全局邀请码服务实例
 invitation_service = InvitationService()
