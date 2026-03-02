@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 const props = defineProps({
@@ -31,14 +33,11 @@ onMounted(() => {
   }
 })
 
-// 保存配置
 const saveConfig = () => {
-  // 保存配置到userStore，会自动持久化到localStorage
   userStore.setBasicConfig(basicConfig.value)
-  alert('基础配置已保存！')
+  toastStore.add({ message: '基础配置已保存！', type: 'success' })
 }
 
-// 重置配置
 const resetConfig = () => {
   const defaultConfig = {
     platformName: '期刊投稿平台',
@@ -48,13 +47,11 @@ const resetConfig = () => {
     contactPhone: '13800138000',
     copyrightInfo: '© 2026 期刊投稿平台. All rights reserved.'
   }
-  // 更新表单数据
   basicConfig.value = {
     ...defaultConfig
   }
-  // 保存到userStore
   userStore.setBasicConfig(defaultConfig)
-  alert('配置已重置为默认值！')
+  toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
 }
 </script>
 

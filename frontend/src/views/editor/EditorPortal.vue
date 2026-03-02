@@ -20,7 +20,7 @@ import NotificationConfig from '../admin/system/NotificationConfig.vue'
 import Modules from '../admin/Modules.vue'
 import InvitationCodes from '../admin/InvitationCodes.vue'
 import LogsManagement from '../admin/system/LogsManagement.vue'
-import WriterProfile from '../writer/Profile.vue'
+import AuthorProfile from '../author/Profile.vue'
 import ProfileSecurity from '../admin/ProfileSecurity.vue'
 import Notifications from '../admin/Notifications.vue'
 import Help from '../submission/Help.vue'
@@ -217,7 +217,7 @@ const componentMap = {
   'audit-my-tasks': MyTasksHistory,
   'admin-profile-manuscript-status': ProfileManuscriptStatus,
   'submission-system-status': SystemStatus,
-  'submission-writer-profile': WriterProfile,
+  'submission-author-profile': AuthorProfile,
   'submission-profile-security': ProfileSecurity,
   'submission-notifications': Notifications,
   'submission-help': Help,

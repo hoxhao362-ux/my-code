@@ -2,6 +2,7 @@
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -9,6 +10,7 @@ import { useI18n } from '../../../composables/useI18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -69,7 +71,7 @@ const toggleFullScreen = () => {
   const elem = document.querySelector('.modal-content')
   if (!document.fullscreenElement) {
     elem.requestFullscreen().catch(err => {
-      alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`)
+      toastStore.add({ message: `Error attempting to enable full-screen mode: ${err.message}`, type: 'error' })
     })
     isFullScreen.value = true
   } else {
@@ -94,7 +96,7 @@ const viewAttachment = (fileName, type) => {
   if (type === 'image' || type === 'pdf') {
     previewFile.value = { name: fileName, type }
   } else {
-    alert(t('editor.audit.newSubmissions.alerts.previewUnavailable'))
+    toastStore.add({ message: t('editor.audit.newSubmissions.alerts.previewUnavailable'), type: 'warning' })
   }
 }
 
@@ -107,7 +109,7 @@ const downloadAllAttachments = () => {
   isPreparingDownload.value = true
   setTimeout(() => {
     isPreparingDownload.value = false
-    alert(t('editor.audit.newSubmissions.alerts.downloadStarted'))
+    toastStore.add({ message: t('editor.audit.newSubmissions.alerts.downloadStarted'), type: 'success' })
   }, 1500)
 }
 
@@ -164,7 +166,7 @@ const sendRevisionRequest = () => {
   updatedJournal.ethicsStatus = 'Revision Requested'
   userStore.updateJournal(updatedJournal)
   showRevisionRequest.value = false
-  alert(t('editor.audit.newSubmissions.alerts.revisionSent'))
+  toastStore.add({ message: t('editor.audit.newSubmissions.alerts.revisionSent'), type: 'success' })
 }
 
 const printStatement = () => {
@@ -172,7 +174,7 @@ const printStatement = () => {
 }
 
 const downloadFile = (fileName) => {
-  alert(t('editor.audit.newSubmissions.alerts.downloading', { name: fileName }))
+  toastStore.add({ message: t('editor.audit.newSubmissions.alerts.downloading', { name: fileName }), type: 'info' })
 }
 
 const toggleTransferPreview = ref(false)
@@ -306,7 +308,7 @@ const confirmScreen = async () => {
       })
       
     } catch (error) {
-      alert(t('editor.audit.newSubmissions.alerts.assignmentFailed'))
+      toastStore.add({ message: t('editor.audit.newSubmissions.alerts.assignmentFailed'), type: 'error' })
       return
     }
   } else {
@@ -323,7 +325,7 @@ const confirmScreen = async () => {
   }
 
   showScreenModal.value = false
-  alert(t('editor.audit.newSubmissions.alerts.screenConfirmed'))
+  toastStore.add({ message: t('editor.audit.newSubmissions.alerts.screenConfirmed'), type: 'success' })
 }
 
 // --- Suggest Transfer Logic ---
@@ -341,7 +343,7 @@ const openTransferModal = (journal) => {
     reason: '',
     targetJournal: 'Journal of Medical Science',
     letter: t('editor.audit.newSubmissions.modals.transfer.letterTemplate', {
-      writer: journal.writer,
+      author: journal.author,
       title: journal.title,
       targetJournal: 'Journal of Medical Science',
       journalName: t('common.journalName')
@@ -352,7 +354,7 @@ const openTransferModal = (journal) => {
 
 const sendTransfer = () => {
   if (!transferForm.reason) {
-    alert(t('editor.audit.newSubmissions.alerts.transferReasonRequired'))
+    toastStore.add({ message: t('editor.audit.newSubmissions.alerts.transferReasonRequired'), type: 'warning' })
     return
   }
 
@@ -361,7 +363,7 @@ const sendTransfer = () => {
   userStore.updateJournal(updatedJournal)
 
   showTransferModal.value = false
-  alert(t('editor.audit.newSubmissions.alerts.transferSent'))
+  toastStore.add({ message: t('editor.audit.newSubmissions.alerts.transferSent'), type: 'success' })
 }
 
 // --- Reject Logic ---
@@ -385,18 +387,16 @@ const openRejectModal = (journal) => {
 
 const confirmReject = () => {
   if (rejectForm.value.reasons.length === 0 || !rejectForm.value.comments) {
-    alert(t('editor.audit.newSubmissions.alerts.fieldsRequired'))
+    toastStore.add({ message: t('editor.audit.newSubmissions.alerts.fieldsRequired'), type: 'warning' })
     return
   }
   
   if (rejectForm.value.reasons.includes('Other') && !rejectForm.value.otherReason) {
-    alert(t('editor.audit.newSubmissions.alerts.specifyOther'))
+    toastStore.add({ message: t('editor.audit.newSubmissions.alerts.specifyOther'), type: 'warning' })
     return
   }
 
   const updatedJournal = { ...currentJournal.value }
-  // Update status to 'initial_review_rejected' so it correctly appears in "Submissions with a Decision"
-  // and flows to Decisions module as a completed decision
   updatedJournal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
   
   updatedJournal.screeningNotes = `[Initial Screening Rejection]\nReasons: ${rejectForm.value.reasons.join(', ')}\nComments: ${rejectForm.value.comments}`
@@ -404,7 +404,7 @@ const confirmReject = () => {
   userStore.updateJournal(updatedJournal)
 
   showRejectModal.value = false
-  alert(t('editor.audit.newSubmissions.alerts.rejectConfirmed'))
+  toastStore.add({ message: t('editor.audit.newSubmissions.alerts.rejectConfirmed'), type: 'success' })
 }
 
 const viewDetail = (id) => {
@@ -427,7 +427,7 @@ const viewDetail = (id) => {
           <div class="journal-info">
             <h3 class="journal-title" @click="viewDetail(journal.id)">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>{{ t('editor.audit.newSubmissions.columns.writer') }}:</strong> {{ journal.writer }}</span>
+              <span><strong>{{ t('editor.audit.newSubmissions.columns.author') }}:</strong> {{ journal.author }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ journal.date }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.module') }}:</strong> {{ journal.module }}</span>
             </div>
@@ -460,7 +460,7 @@ const viewDetail = (id) => {
         <div class="modal-body">
           <div class="modal-section info-section">
             <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('common.author') }}:</strong> {{ currentJournal?.author }}</p>
             <p><strong>{{ t('common.module') }}:</strong> {{ currentJournal?.module }}</p>
             <p><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ currentJournal?.date }}</p>
           </div>
@@ -544,7 +544,7 @@ const viewDetail = (id) => {
         <div class="modal-body">
           <div class="modal-section info-section">
             <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('common.author') }}:</strong> {{ currentJournal?.author }}</p>
             <p><strong>{{ t('common.module') }}:</strong> {{ currentJournal?.module }}</p>
           </div>
 
@@ -585,7 +585,7 @@ const viewDetail = (id) => {
         <div class="modal-body">
           <div class="modal-section info-section">
             <p><strong>{{ t('common.title') }}:</strong> {{ currentJournal?.title }}</p>
-            <p><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</p>
+            <p><strong>{{ t('common.author') }}:</strong> {{ currentJournal?.author }}</p>
             <p><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ currentJournal?.date }}</p>
           </div>
 
@@ -657,7 +657,7 @@ const viewDetail = (id) => {
         
         <div class="modal-top-bar" v-if="!isFullScreen">
           <span><strong>{{ t('common.id') }}:</strong> {{ currentJournal?.id }}</span>
-          <span><strong>{{ t('common.writer') }}:</strong> {{ currentJournal?.writer }}</span>
+          <span><strong>{{ t('common.author') }}:</strong> {{ currentJournal?.author }}</span>
           <span><strong>{{ t('common.date') }}:</strong> {{ currentJournal?.date }}</span>
           <span><strong>{{ t('common.status') }}:</strong> {{ currentJournal?.status }}</span>
         </div>

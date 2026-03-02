@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import { useRoute, useRouter } from 'vue-router'
 import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../../constants/manuscriptStatus'
 import Navigation from '../../../components/Navigation.vue'
@@ -15,6 +16,7 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // State
 const manuscript = ref(null)
@@ -109,7 +111,7 @@ const loadManuscript = () => {
       forms.value = { ...forms.value, ...found.publicationData }
     } else {
       // Pre-fill with templates
-      forms.value.acceptance.acceptanceLetter = `Dear ${found.writer || 'Author'},
+      forms.value.acceptance.acceptanceLetter = `Dear ${found.author || found.writer || 'Author'},
 
 Re: Manuscript ID ${found.id}
 Title: ${found.title}
@@ -217,7 +219,7 @@ const handlePublish = async () => {
       status: 'success'
     })
     
-    alert('Manuscript published successfully!')
+    toastStore.add({ message: 'Manuscript published successfully!', type: 'success' })
     router.push({ name: 'editor-manuscripts' })
   } catch (error) {
     errorMessage.value = 'Failed to publish manuscript'
@@ -250,7 +252,7 @@ const handleSaveDraft = () => {
     lastUpdated: new Date().toISOString()
   }
   userStore.updateJournal(updatedManuscript)
-  alert('Draft saved successfully')
+  toastStore.add({ message: 'Draft saved successfully', type: 'success' })
 }
 
 const handleAcceptanceConfirmation = () => {

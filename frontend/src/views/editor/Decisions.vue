@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from '../../composables/useI18n'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.submissionUser || userStore.user)
 
 // Permissions
@@ -18,10 +20,10 @@ const isReadOnly = computed(() => user.value?.role === 'advisory_editor' || user
 
 // Data
 const decisionTemplates = ref([
-  { id: 1, name: 'Accept', category: 'Accept', field: 'General', usage: 12, content: 'Dear {{writer_name}},\n\nWe are pleased to accept your manuscript "{{manuscript_title}}" (ID: {{manuscript_id}}) for publication.\n\nBest regards,\n{{editor_name}}' },
-  { id: 2, name: 'Minor Revision', category: 'Minor Revision', field: 'General', usage: 45, content: 'Dear {{writer_name}},\n\nYour manuscript "{{manuscript_title}}" requires minor revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
-  { id: 3, name: 'Major Revision', category: 'Major Revision', field: 'General', usage: 30, content: 'Dear {{writer_name}},\n\nYour manuscript "{{manuscript_title}}" requires major revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
-  { id: 4, name: 'Reject', category: 'Reject', field: 'General', usage: 8, content: 'Dear {{writer_name}},\n\nWe regret to inform you that we cannot accept your manuscript "{{manuscript_title}}" for publication at this time.\n\nBest regards,\n{{editor_name}}' }
+  { id: 1, name: 'Accept', category: 'Accept', field: 'General', usage: 12, content: 'Dear {{author_name}},\n\nWe are pleased to accept your manuscript "{{manuscript_title}}" (ID: {{manuscript_id}}) for publication.\n\nBest regards,\n{{editor_name}}' },
+  { id: 2, name: 'Minor Revision', category: 'Minor Revision', field: 'General', usage: 45, content: 'Dear {{author_name}},\n\nYour manuscript "{{manuscript_title}}" requires minor revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
+  { id: 3, name: 'Major Revision', category: 'Major Revision', field: 'General', usage: 30, content: 'Dear {{author_name}},\n\nYour manuscript "{{manuscript_title}}" requires major revisions.\n\nReview Comments:\n{{review_comments}}\n\nBest regards,\n{{editor_name}}' },
+  { id: 4, name: 'Reject', category: 'Reject', field: 'General', usage: 8, content: 'Dear {{author_name}},\n\nWe regret to inform you that we cannot accept your manuscript "{{manuscript_title}}" for publication at this time.\n\nBest regards,\n{{editor_name}}' }
 ])
 
 const templateCategories = ['All', 'Accept', 'Minor Revision', 'Major Revision', 'Reject']
@@ -174,7 +176,7 @@ const selectTemplate = (tpl) => {
 
 const fillTemplate = (content, ms) => {
   let text = content
-  text = text.replace(/{{writer_name}}/g, ms.author)
+  text = text.replace(/{{author_name}}/g, ms.author)
   text = text.replace(/{{manuscript_title}}/g, ms.title)
   text = text.replace(/{{manuscript_id}}/g, ms.id)
   text = text.replace(/{{editor_name}}/g, user.value?.username || 'Editor')
@@ -210,16 +212,16 @@ const handleSend = () => {
   if (user.value?.role === 'associate_editor') {
      // AE Workflow
      // 使用alert替代confirm，因为confirm在某些环境中不被支持
-     alert(t('editor.decisions.alerts.submitConfirm'))
+     toastStore.add({ message: t('editor.decisions.alerts.submitConfirm'), type: 'info' })
      // 模拟提交
      approvalStatus.value = 'Pending'
-     alert(t('editor.decisions.alerts.submitted'))
+     toastStore.add({ message: t('editor.decisions.alerts.submitted'), type: 'success' })
   } else {
     // Editor Workflow
     if (approvalStatus.value === 'Pending') {
        // Approving AE's draft
        approvalStatus.value = 'Approved'
-       alert(t('editor.decisions.alerts.approvedSent'))
+       toastStore.add({ message: t('editor.decisions.alerts.approvedSent'), type: 'success' })
     } else {
        // Direct Send
        approvalStatus.value = 'Approved' // Sent implies approved
@@ -253,7 +255,7 @@ const handleSend = () => {
          userStore.updateJournal(updatedJournal)
        }
 
-       alert(t('editor.decisions.alerts.sentToAuthor'))
+       toastStore.add({ message: t('editor.decisions.alerts.sentToAuthor'), type: 'success' })
     }
     // Add to sent history
     if (selectedManuscript.value) {
@@ -271,10 +273,10 @@ const handleSend = () => {
 
 const handleRejectApproval = () => {
   // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert(t('editor.decisions.alerts.rejectConfirm'))
+  toastStore.add({ message: t('editor.decisions.alerts.rejectConfirm'), type: 'info' })
   // 模拟拒绝
   approvalStatus.value = 'Rejected'
-  alert(t('editor.decisions.alerts.draftRejected'))
+  toastStore.add({ message: t('editor.decisions.alerts.draftRejected'), type: 'info' })
 }
 
 
@@ -300,48 +302,38 @@ const handleRejectApproval = () => {
 // }
 
 const handleExportPDF = (letter) => {
-  alert(`Exporting PDF for decision to ${letter.recipient}...\nIncluding sending time and metadata.`)
-  // Mock Archive
+  toastStore.add({ message: `Exporting PDF for decision to ${letter.recipient}...`, type: 'info' })
   console.log("Archiving export record for", letter.id)
 }
 
 const handleCreateTemplate = () => {
-  // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert(t('editor.decisions.alerts.templateCreationForm'))
-  // 模拟创建模板
+  toastStore.add({ message: t('editor.decisions.alerts.templateCreationForm'), type: 'info' })
   const mockName = "New Template " + Date.now()
-  decisionTemplates.value.push({ id: Date.now(), name: mockName, category: 'General', field: 'General', usage: 0, content: 'Dear {{writer_name}}, ...' })
+  decisionTemplates.value.push({ id: Date.now(), name: mockName, category: 'General', field: 'General', usage: 0, content: 'Dear {{author_name}}, ...' })
 }
 
 const handleEditTemplate = (tpl) => {
-  // 使用alert替代prompt，因为prompt在某些环境中不被支持
-  alert(t('editor.decisions.alerts.templateEditForm'))
-  // 模拟更新模板
+  toastStore.add({ message: t('editor.decisions.alerts.templateEditForm'), type: 'info' })
   tpl.content += "\n[Updated]"
-  alert(t('editor.decisions.alerts.templateCreated'))
+  toastStore.add({ message: t('editor.decisions.alerts.templateCreated'), type: 'success' })
 }
 
 const handleDeleteTemplate = (id) => {
-  // 使用alert替代confirm，因为confirm在某些环境中不被支持
-  alert(t('editor.decisions.alerts.templateDeleteConfirm'))
-  // 模拟删除模板
+  toastStore.add({ message: t('editor.decisions.alerts.templateDeleteConfirm'), type: 'warning' })
   decisionTemplates.value = decisionTemplates.value.filter(t => t.id !== id)
 }
 
 const handleRollback = (version) => {
-  // Permission Check
   if (!canEditDecision.value) return;
   if (user.value?.role === 'associate_editor' && selectedManuscript.value?.assignedTo !== 'ae_user') {
-    alert(t('editor.decisions.alerts.rollbackOwnOnly'));
+    toastStore.add({ message: t('editor.decisions.alerts.rollbackOwnOnly'), type: 'error' });
     return;
   }
 
   if (confirm(t('editor.decisions.alerts.rollbackConfirm', { version: version.version, id: selectedManuscriptId.value }))) {
-    // Mock Rollback Logic
-    decisionContent.value = version.content || `[Content restored from ${version.version}]`; // Use version content if available
-    alert(t('editor.decisions.alerts.rolledBack', { version: version.version }));
+    decisionContent.value = version.content || `[Content restored from ${version.version}]`;
+    toastStore.add({ message: t('editor.decisions.alerts.rolledBack', { version: version.version }), type: 'success' });
     
-    // Add new version record
     templateHistory.value.unshift({
       version: `v1.${templateHistory.value.length + 1}`,
       date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
@@ -379,7 +371,7 @@ const closeCompareView = () => {
 
 const handleExportComparison = () => {
   if (user.value?.role === 'editorial_assistant' || user.value?.role === 'advisory_editor') return; // EA/AE hidden logic
-  alert(t('editor.decisions.alerts.exportComparison', { filename: `${selectedManuscriptId.value}-${compareSourceVersion.value.version}-${compareTargetVersion.value.version}.pdf` }));
+  toastStore.add({ message: t('editor.decisions.alerts.exportComparison', { filename: `${selectedManuscriptId.value}-${compareSourceVersion.value.version}-${compareTargetVersion.value.version}.pdf` }), type: 'success' });
 }
 
 const showActionModal = ref(false)
@@ -461,19 +453,17 @@ const openActionModal = (action, item) => {
 const handleConfirmAction = () => {
   const proceed = () => {
     if (currentAction.value === 'resend') {
-      alert(t('editor.decisions.alerts.resending', { recipient: actionForms.value.resend.recipient }))
+      toastStore.add({ message: t('editor.decisions.alerts.resending', { recipient: actionForms.value.resend.recipient }), type: 'info' })
       currentLetter.value.openStatus = 'Unopened'
       currentLetter.value.date = new Date().toLocaleDateString()
     } else if (currentAction.value === 'forward') {
-      alert(t('editor.decisions.alerts.forwarding', { recipient: actionForms.value.forward.recipient }))
+      toastStore.add({ message: t('editor.decisions.alerts.forwarding', { recipient: actionForms.value.forward.recipient }), type: 'info' })
     } else if (currentAction.value === 'add_note') {
-      alert(t('editor.decisions.alerts.noteSaved'))
+      toastStore.add({ message: t('editor.decisions.alerts.noteSaved'), type: 'success' })
     } else if (currentAction.value === 'approve') {
-      alert(t('editor.decisions.alerts.decisionApproved'))
-      // Update queue
+      toastStore.add({ message: t('editor.decisions.alerts.decisionApproved'), type: 'success' })
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
-      // Add to sent
       sentLetters.value.unshift({
         id: Date.now(),
         recipient: currentLetter.value.author,
@@ -484,14 +474,14 @@ const handleConfirmAction = () => {
       })
     } else if (currentAction.value === 'reject') {
       if (actionForms.value.reject.reason === 'Others' && (!actionForms.value.reject.detail || actionForms.value.reject.detail.length < 20)) {
-        alert(t('editor.decisions.alerts.rejectionReason'))
+        toastStore.add({ message: t('editor.decisions.alerts.rejectionReason'), type: 'warning' })
         return
       }
-      alert(t('editor.decisions.alerts.decisionRejected'))
+      toastStore.add({ message: t('editor.decisions.alerts.decisionRejected'), type: 'warning' })
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
     } else if (currentAction.value === 'assign_ae') {
-      alert(t('editor.decisions.alerts.taskReassigned', { name: actionForms.value.assignAE.targetAE }))
+      toastStore.add({ message: t('editor.decisions.alerts.taskReassigned', { name: actionForms.value.assignAE.targetAE }), type: 'success' })
       const idx = approvalQueue.value.findIndex(q => q.id === currentLetter.value.id)
       if (idx !== -1) approvalQueue.value.splice(idx, 1)
     }
@@ -584,19 +574,19 @@ const handleOpenVersionHistory = () => {
 
 // Additional Approval Queue Methods
 const handleViewDraft = (item) => {
-  alert(t('editor.decisions.alerts.viewingDraft', { id: item.manuscriptId, title: item.manuscriptTitle }))
+  toastStore.add({ message: t('editor.decisions.alerts.viewingDraft', { id: item.manuscriptId, title: item.manuscriptTitle }), type: 'info' })
   // 模拟查看草稿
   selectedManuscriptId.value = item.manuscriptId
   activeTab.value = 'draft'
-  alert(t('editor.decisions.alerts.displayingDraft'))
+  toastStore.add({ message: t('editor.decisions.alerts.displayingDraft'), type: 'info' })
 }
 
 const handleViewDetails = (item) => {
-  alert(t('editor.decisions.alerts.viewingDetails', { id: item.manuscriptId, title: item.manuscriptTitle }))
+  toastStore.add({ message: t('editor.decisions.alerts.viewingDetails', { id: item.manuscriptId, title: item.manuscriptTitle }), type: 'info' })
   // 模拟查看详情
   selectedManuscriptId.value = item.manuscriptId
   activeTab.value = 'draft'
-  alert(t('editor.decisions.alerts.displayingDetails'))
+  toastStore.add({ message: t('editor.decisions.alerts.displayingDetails'), type: 'info' })
 }
 
 const handleAssignToAE = (item) => {

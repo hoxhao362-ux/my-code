@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   visible: Boolean,
@@ -131,17 +134,17 @@ const handleSaveDraft = () => {
     invitation: invitation
   }))
   emit('save-draft')
-  alert('Reviewer assignment saved as draft.')
+  toastStore.add({ message: 'Reviewer assignment saved as draft.', type: 'success' })
 }
 
 const validateAndSend = () => {
   if (selectedReviewers.value.length === 0) {
-    alert('Please select at least one reviewer.')
+    toastStore.add({ message: 'Please select at least one reviewer.', type: 'warning' })
     return
   }
   
   if (hideIdentity.value) {
-     alert("Reviewers assigned with blind review enabled - writer will not see reviewer identities.")
+     toastStore.add({ message: "Reviewers assigned with blind review enabled - author will not see reviewer identities.", type: 'info' })
   }
   
   showConfirmation.value = true
@@ -313,9 +316,9 @@ const requiredTypesMissing = computed(() => {
             <div v-show="!invitationCollapsed" class="blind-review-option">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="hideIdentity" disabled>
-                <span class="brand-red-text">Hide reviewer identity from writers</span>
+                <span class="brand-red-text">Hide reviewer identity from authors</span>
               </label>
-              <p class="helper-text">Reviewer names and affiliations will remain anonymous to writers.</p>
+              <p class="helper-text">Reviewer names and affiliations will remain anonymous to authors.</p>
             </div>
           </section>
         </div>

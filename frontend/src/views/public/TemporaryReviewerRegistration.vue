@@ -2,10 +2,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 const PLATFORM_NAME = computed(() => userStore.basicConfig.platformName || 'Journal Submission Platform')
 const BRAND_RED = '#C93737'
@@ -54,23 +56,22 @@ const handleFileUpload = (e) => {
   const file = e.target.files[0]
   if (file) {
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size exceeds 5MB limit.')
+      toastStore.add({ message: 'File size exceeds 5MB limit.', type: 'warning' })
       return
     }
     form.qualificationFile = file
   }
 }
 
-// Submit
 const handleSubmit = async () => {
   if (!form.agreed) return
   if (form.hasConflict && !form.conflictDetail) {
-    alert('Please provide details for the conflict of interest.')
+    toastStore.add({ message: 'Please provide details for the conflict of interest.', type: 'warning' })
     return
   }
   
   if (!form.qualificationFile) {
-    alert('Please upload proof of qualification.')
+    toastStore.add({ message: 'Please upload proof of qualification.', type: 'warning' })
     return
   }
 

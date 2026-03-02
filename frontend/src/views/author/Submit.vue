@@ -16,7 +16,7 @@ const route = useRoute()
 // 表单数据
 const formData = ref({
   title: '',
-  writer: userStore.user?.username || '',
+  author: userStore.user?.username || '',
   abstract: '',
   keywords: '',
   content: '',
@@ -453,7 +453,7 @@ const modules = computed(() => userStore.modules)
 const handleSubmit = async () => {
   // 表单验证 - 处理Delta对象和HTML标签
   const hasTitle = !!formData.value.title
-  const hasWriter = !!formData.value.writer
+  const hasAuthor = !!formData.value.author
   
   // 处理摘要 - 可能是Delta对象或HTML字符串
   let hasAbstract = false
@@ -474,7 +474,7 @@ const handleSubmit = async () => {
   // 检查是否有附件
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
-  if (!hasTitle || !hasWriter || !hasAbstract || (!hasContent && !hasAttachments)) {
+  if (!hasTitle || !hasAuthor || !hasAbstract || (!hasContent && !hasAttachments)) {
     error.value = t('submit.validation.required')
     return
   }
@@ -496,8 +496,7 @@ const handleSubmit = async () => {
     const newJournal = {
       id: Date.now().toString(),
       title: formData.value.title,
-      writer: formData.value.writer,
-      author: formData.value.writer,
+      author: formData.value.author,
       abstract: convertToHTML(formData.value.abstract),
       keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
       content: convertToHTML(formData.value.content),
@@ -526,14 +525,14 @@ const handleSubmit = async () => {
     setTimeout(() => {
       formData.value = {
         title: '',
-        writer: userStore.user?.username || '',
+        author: userStore.user?.username || '',
         abstract: '',
         keywords: '',
         content: '',
         modules: ['all']
       }
       success.value = ''
-      router.push('/admin/writer-dashboard')
+      router.push('/admin/author-dashboard')
     }, 2000)
   } catch (err) {
     error.value = t('submit.error')
@@ -543,7 +542,7 @@ const handleSubmit = async () => {
 }
 
 const goBack = () => {
-  router.push('/admin/writer-dashboard')
+  router.push('/admin/author-dashboard')
 }
 </script>
 
@@ -552,7 +551,7 @@ const goBack = () => {
     <!-- 导航栏 -->
     <Navigation 
       :user="userStore.user"
-      :current-page="'writer-submit'"
+      :current-page="'author-submit'"
       :toggle-directory="() => {}"
       :logout="userStore.logout"
     />
@@ -619,7 +618,7 @@ const goBack = () => {
             </div>
             
             <div class="rules-actions">
-              <button class="btn btn-primary" @click="router.push('/admin/writer-submit')">
+              <button class="btn btn-primary" @click="router.push('/admin/author-submit')">
                 {{ t('submit.actions.start') }}
               </button>
               <button class="btn btn-secondary" @click="goBack">
@@ -653,11 +652,11 @@ const goBack = () => {
               </div>
               
               <div class="form-group">
-                <label for="writer">{{ t('submit.author') }} <span class="required">*</span></label>
+                <label for="author">{{ t('submit.author') }} <span class="required">*</span></label>
                 <input 
                   type="text" 
-                  id="writer" 
-                  v-model="formData.writer" 
+                  id="author" 
+                  v-model="formData.author" 
                   :placeholder="t('submit.author')"
                   required
                   :disabled="submitting"

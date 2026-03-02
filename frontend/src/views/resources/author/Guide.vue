@@ -2,7 +2,7 @@
   <div class="page-container">
     <Navigation 
       :user="user" 
-      :current-page="'resources-writer-guide'"
+      :current-page="'resources-author-guide'"
       :logout="userStore.logout"
     />
     <div class="sidebar">
@@ -29,7 +29,7 @@
         <p>Before submitting your manuscript, please ensure you have read the following guidelines carefully. Adherence to these guidelines will ensure a smooth review process.</p>
         <div class="highlight-box">
           <h2>Ethics & Disclosure</h2>
-          <p>All writers must disclose any financial and personal relationships with other people or organizations that could inappropriately influence (bias) their work.</p>
+          <p>All authors must disclose any financial and personal relationships with other people or organizations that could inappropriately influence (bias) their work.</p>
         </div>
       </div>
 
@@ -49,9 +49,9 @@
       <div id="policies" class="section">
         <h1>Policies</h1>
         <h2>Open Access</h2>
-        <p>We offer writers the option to make their article open access. A publication fee applies.</p>
+        <p>We offer authors the option to make their article open access. A publication fee applies.</p>
         <h2>Copyright</h2>
-        <p>Writers retain copyright of their work under a Creative Commons Attribution License.</p>
+        <p>Authors retain copyright of their work under a Creative Commons Attribution License.</p>
       </div>
 
       <div id="faq" class="section">

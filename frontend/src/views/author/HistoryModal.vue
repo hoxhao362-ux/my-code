@@ -1,5 +1,8 @@
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
+import { useI18n } from '../../composables/useI18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean,
@@ -16,15 +19,15 @@ const historyLogs = computed(() => {
     {
       date: '2026-02-20 14:30:00',
       operator: 'System',
-      action: 'Status Update',
-      notes: `Status changed to ${props.manuscript.status}`,
+      action: t('history.action.statusUpdate') || 'Status Update',
+      notes: `${t('history.status.statusChangedTo') || 'Status changed to'} ${props.manuscript.status}`,
       type: 'info'
     },
     {
       date: '2026-02-18 09:15:00',
-      operator: props.manuscript.writer || 'Author',
-      action: 'Submission',
-      notes: 'Manuscript submitted successfully.',
+      operator: props.manuscript.author || 'Author',
+      action: t('history.status.submitted'),
+      notes: t('history.status.submissionSuccess') || 'Manuscript submitted successfully.',
       type: 'success'
     }
   ]
@@ -34,7 +37,7 @@ const historyLogs = computed(() => {
     logs.splice(1, 0, {
       date: '2026-02-19 10:00:00',
       operator: 'Editor',
-      action: 'Screening',
+      action: t('history.status.initial'),
       notes: 'Initial screening passed.',
       type: 'success'
     })
@@ -45,7 +48,7 @@ const historyLogs = computed(() => {
       date: '2026-02-21 11:20:00',
       operator: 'Editor',
       action: 'Decision',
-      notes: 'Revision required based on reviewer comments.',
+      notes: t('history.status.revisionRequested'),
       type: 'warning'
     })
   }
@@ -58,13 +61,13 @@ const historyLogs = computed(() => {
   <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-box">
       <div class="modal-header">
-        <h3>Submission History: {{ manuscript?.title }}</h3>
+        <h3>{{ t('history.title.submissionHistory') }}: {{ manuscript?.title }}</h3>
         <button class="close-btn" @click="$emit('close')">&times;</button>
       </div>
       
       <div class="modal-content">
         <div v-if="historyLogs.length === 0" class="no-data">
-          No operation history available.
+          {{ t('history.noRecords') }}
         </div>
         
         <ul v-else class="history-list">
@@ -76,7 +79,7 @@ const historyLogs = computed(() => {
                 <span class="log-date">{{ log.date }}</span>
               </div>
               <div class="log-meta">
-                Operator: {{ log.operator }}
+                {{ t('history.table.operator') }}: {{ log.operator }}
               </div>
               <div class="log-notes">
                 {{ log.notes }}
@@ -87,7 +90,7 @@ const historyLogs = computed(() => {
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-outline" @click="$emit('close')">Close</button>
+        <button class="btn btn-outline" @click="$emit('close')">{{ t('common.close') }}</button>
       </div>
     </div>
   </div>

@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useToastStore } from '../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
-// 看门狗功能：检查用户是否有权限访问管理员后台
 if (props.user?.role !== 'admin') {
-  alert('您没有权限访问管理员后台')
+  toastStore.add({ message: '您没有权限访问管理员后台', type: 'warning' })
   props.navigateTo('home')
 }
 

@@ -2,9 +2,11 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const route = useRoute()
 const user = computed(() => userStore.user)
@@ -272,7 +274,7 @@ const acceptInvitation = (item) => {
     submissionDate: item.date,
     status: 'under_peer_review',
     reviewStage: '初审',
-    writer: 'writer_unknown', // Mock
+    author: 'author_unknown', // Mock
     abstract: 'This is a mock abstract for the newly accepted invitation.',
     keywords: 'Mock, Keywords',
     attachments: [],
@@ -294,11 +296,11 @@ const acceptInvitation = (item) => {
 
 const submitDecline = () => {
   if (!declineOption.value) {
-    alert('Please select a reason.')
+    toastStore.add({ message: 'Please select a reason.', type: 'warning' })
     return
   }
   if (declineOption.value === 'Other' && !declineReason.value) {
-    alert('Please enter a reason.')
+    toastStore.add({ message: 'Please enter a reason.', type: 'warning' })
     return
   }
   
@@ -340,6 +342,10 @@ onMounted(() => {
   checkDrafts()
   // Re-check periodically in case draft was deleted or added
   setInterval(checkDrafts, 5000)
+  
+  setTimeout(() => {
+    isLoading.value = false
+  }, 1000)
 })
 
 const viewAssignment = (id) => {
@@ -387,7 +393,7 @@ const viewAssignment = (id) => {
           <input 
             v-model="searchQuery" 
             type="text" 
-            placeholder="Search by Manuscript ID, Title, Writer..."
+            placeholder="Search by Manuscript ID, Title, Author..."
             class="search-input"
           />
           <span v-if="searchQuery" class="clear-icon" @click="searchQuery = ''">×</span>

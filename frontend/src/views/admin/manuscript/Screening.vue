@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import InitialReviewModal from '../../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../../components/admin/manuscript/AssignReviewersModal.vue'
@@ -11,6 +12,7 @@ import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -30,16 +32,12 @@ const availableReviewers = computed(() => userStore.users.filter(u => u.role ===
 
 // Actions
 const openAssignModal = (journal) => {
-  // Permission Check
   if (!canAssignReviewers.value) {
-     alert("You do not have permission to assign reviewers, please contact the Editor or Associate Editor")
+     toastStore.add({ message: "You do not have permission to assign reviewers, please contact the Editor or Associate Editor", type: 'warning' })
      return
   }
   
-  // For Associate Editor, check if they are assigned to this journal's field (Mock check)
   if (user.value.role === 'associate_editor') {
-     // In a real app, we'd check journal.module === user.field
-     // For now, we assume they can only see what they can edit
   }
 
   assignJournal.value = journal
@@ -130,7 +128,7 @@ const handleInitialReviewSubmit = (data) => {
 
 const handleAssignSubmit = () => {
   if (selectedReviewers.value.length === 0) {
-    alert(t('screening.errors.selectReviewer'))
+    toastStore.add({ message: t('screening.errors.selectReviewer'), type: 'warning' })
     return
   }
   
@@ -150,7 +148,7 @@ const handleAssignSubmit = () => {
   userStore.updateJournal(journal)
   showAssignModal.value = false
   currentJournal.value = null
-  alert(t('screening.success.assigned'))
+  toastStore.add({ message: t('screening.success.assigned'), type: 'success' })
 }
 
 const handleReject = (journal) => {
@@ -177,7 +175,7 @@ const pendingJournals = computed(() => {
     const q = searchQuery.value.toLowerCase()
     journals = journals.filter(j => 
       j.title.toLowerCase().includes(q) || 
-      j.writer.toLowerCase().includes(q) ||
+      (j.author || j.writer || '').toLowerCase().includes(q) ||
       stripHtmlTags(j.abstract).toLowerCase().includes(q)
     )
   }
@@ -219,7 +217,7 @@ const viewJournalDetail = (id) => {
         <div v-for="journal in pendingJournals" :key="journal.id" class="journal-item">
           <div class="journal-info">
             <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
-            <p class="journal-meta">{{ journal.writer }} | {{ journal.date }} | {{ journal.module }}</p>
+            <p class="journal-meta">{{ journal.author || journal.writer }} | {{ journal.date }} | {{ journal.module }}</p>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract), 150) }}</p>
           </div>
           <div class="journal-actions">

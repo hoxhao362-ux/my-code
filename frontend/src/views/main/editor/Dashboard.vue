@@ -2,16 +2,17 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import { useI18n } from '../../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const { t } = useI18n()
 
 const user = computed(() => userStore.user)
 
-// Statistics for Main Site
 const totalUsers = computed(() => userStore.users.filter(u => u.role === 'user').length)
 const activeUsers = computed(() => userStore.users.filter(u => u.role === 'user' && u.status === 'active').length)
 const totalEditors = computed(() => userStore.users.filter(u => u.role === 'editor').length)
@@ -21,13 +22,11 @@ const goToUsers = () => {
 }
 
 const goToContent = () => {
-  // Placeholder for content management
-  alert('Content Management module is under construction')
+  toastStore.add({ message: 'Content Management module is under construction', type: 'info' })
 }
 
 const goToSettings = () => {
-  // Placeholder for site settings
-  alert('Site Settings module is under construction')
+  toastStore.add({ message: 'Site Settings module is under construction', type: 'info' })
 }
 </script>
 

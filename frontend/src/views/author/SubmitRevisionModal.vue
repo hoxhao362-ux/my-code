@@ -1,7 +1,8 @@
 <script setup>
 import { defineProps, defineEmits, ref, computed, reactive } from 'vue'
-import { useUserStore } from '../../../stores/user'
-import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
+import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
+import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const props = defineProps({
   visible: Boolean,
@@ -10,6 +11,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submitted'])
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // State
 const response = ref('')
@@ -48,7 +50,7 @@ const isDeadlineNear = computed(() => {
 
 const metadata = computed(() => ({
   id: props.manuscript?.id || '20262477',
-  author: props.manuscript?.writer || 'Dr. Jane Smith (University of Oxford)',
+  author: props.manuscript?.author || 'Dr. Jane Smith (University of Oxford)',
   type: props.manuscript?.module || 'Randomized Controlled Trial'
 }))
 
@@ -96,9 +98,8 @@ const handleFileUpload = (type, event) => {
       break
   }
 
-  // Validate Size
   if (file.size > maxSize) {
-    alert(`File size exceeds limit for ${type}.`)
+    toastStore.add({ message: `File size exceeds limit for ${type}.`, type: 'warning' })
     event.target.value = ''
     return
   }
@@ -162,7 +163,7 @@ const close = () => {
 }
 
 const downloadReceipt = () => {
-  alert('Downloading submission receipt...')
+  toastStore.add({ message: 'Downloading submission receipt...', type: 'info' })
 }
 
 </script>

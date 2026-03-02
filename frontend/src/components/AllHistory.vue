@@ -1,8 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../composables/useI18n'
 import Navigation from './Navigation.vue'
 import { stripHtmlTags, truncateText } from '../utils/helpers.js'
+import { exportToExcel } from '../utils/export'
+
+const { t } = useI18n()
 
 // 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
@@ -151,6 +155,32 @@ const viewJournalDetail = (id) => {
   props.navigateTo('journal', id)
 }
 
+// 导出数据
+const exportHistory = () => {
+  const dataToExport = allHistory.value.map(item => ({
+    ID: item.id,
+    [t('history.table.title')]: item.title,
+    [t('history.table.author')]: item.author,
+    [t('history.table.module')]: item.module,
+    [t('history.table.status')]: item.reviewResult || item.status,
+    [t('history.table.submitDate')]: item.date,
+    [t('history.table.reviewDate')]: item.reviewDate
+  }))
+  exportToExcel(dataToExport, `Review_History_${new Date().toISOString().split('T')[0]}`)
+}
+
+// 状态显示辅助函数
+const getStatusLabel = (status) => {
+  const map = {
+    '已通过': t('history.status.accepted'),
+    '未通过': t('history.status.rejected'),
+    '已发表': t('history.status.published'),
+    '复审': t('history.status.peer'),
+    '终审': t('history.status.final')
+  }
+  return map[status] || status
+}
+
 // 组件挂载时滚动到页面顶部
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -172,11 +202,13 @@ onMounted(() => {
     <main class="review-content">
       <div class="review-header">
         <div class="header-flex">
-          <button class="btn btn-back" @click="navigateTo('review')">返回审稿页面</button>
-          <h2 class="review-title">所有历史审稿记录</h2>
+          <button class="btn btn-back" @click="navigateTo('review')">{{ t('common.back') }}</button>
+          <h2 class="review-title">{{ t('history.title.reviewHistory') }}</h2>
         </div>
-        <div class="review-stats">
-          <span class="stat-item">历史记录总数：{{ allHistory.length }}</span>
+        <div class="review-actions">
+           <button class="btn btn-export" @click="exportHistory" :disabled="allHistory.length === 0">
+             {{ t('history.export') }}
+           </button>
         </div>
       </div>
 
@@ -185,60 +217,66 @@ onMounted(() => {
         <div class="history-filters">
           <!-- 搜索输入框 -->
           <div class="search-filter">
-            <label for="all-history-search-input" class="filter-label">搜索：</label>
+            <label for="all-history-search-input" class="filter-label">{{ t('history.filters.keyword') }}：</label>
             <input 
               type="text" 
               id="all-history-search-input" 
               v-model="searchQuery"
               class="search-input"
-              placeholder="搜索标题、作者、摘要或关键词..."
+              :placeholder="t('history.filters.searchPlaceholder')"
             >
           </div>
           
           <!-- 模块筛选 -->
-          <label for="history-module-filter">模块筛选：</label>
-          <select 
-            id="history-module-filter" 
-            v-model="selectedModule"
-            class="filter-select"
-          >
-            <option value="all">全部模块</option>
-            <option 
-              v-for="module in modules" 
-              :key="module"
-              :value="module"
+          <div class="filter-group">
+            <label for="history-module-filter">{{ t('history.filters.module') }}：</label>
+            <select 
+              id="history-module-filter" 
+              v-model="selectedModule"
+              class="filter-select"
             >
-              {{ module }}
-            </option>
-          </select>
+              <option value="all">{{ t('history.filters.allModules') }}</option>
+              <option 
+                v-for="module in modules" 
+                :key="module"
+                :value="module"
+              >
+                {{ module }}
+              </option>
+            </select>
+          </div>
           
           <!-- 稿件状态筛选 -->
-          <label for="status-filter" class="filter-label">稿件状态：</label>
-          <select 
-            id="status-filter" 
-            v-model="selectedStatus"
-            class="filter-select"
-          >
-            <option value="all">全部状态</option>
-            <option value="已通过">已通过</option>
-            <option value="未通过">未通过</option>
-            <option value="复审">复审</option>
-            <option value="终审">终审</option>
-          </select>
+          <div class="filter-group">
+            <label for="status-filter" class="filter-label">{{ t('history.filters.status') }}：</label>
+            <select 
+              id="status-filter" 
+              v-model="selectedStatus"
+              class="filter-select"
+            >
+              <option value="all">{{ t('history.filters.allStatus') }}</option>
+              <option value="已通过">{{ t('history.status.accepted') }}</option>
+              <option value="未通过">{{ t('history.status.rejected') }}</option>
+              <option value="复审">{{ t('history.status.peer') }}</option>
+              <option value="终审">{{ t('history.status.final') }}</option>
+            </select>
+          </div>
           
           <!-- 时间范围筛选 -->
-          <label for="time-range-filter" class="filter-label">时间范围：</label>
-          <select 
-            id="time-range-filter" 
-            v-model="timeRange"
-            class="filter-select"
-          >
-            <option value="all">总共</option>
-            <option value="today">今日</option>
-            <option value="week">本周</option>
-            <option value="month">本月</option>
-            <option value="year">本年</option>
-          </select>
+          <div class="filter-group">
+            <label for="time-range-filter" class="filter-label">{{ t('history.filters.timeRange') }}：</label>
+            <select 
+              id="time-range-filter" 
+              v-model="timeRange"
+              class="filter-select"
+            >
+              <option value="all">{{ t('history.filters.allTime') }}</option>
+              <option value="today">{{ t('history.filters.today') }}</option>
+              <option value="week">{{ t('history.filters.week') }}</option>
+              <option value="month">{{ t('history.filters.month') }}</option>
+              <option value="year">{{ t('history.filters.year') }}</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -252,29 +290,30 @@ onMounted(() => {
             <div class="journal-info">
               <h3 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h3>
               <p class="journal-meta">
-                作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 
-                审核日期：{{ journal.reviewDate }} | 
+                {{ t('history.table.author') }}：{{ journal.author }} | 
+                {{ t('history.table.submitDate') }}：{{ journal.date }} | 
+                {{ t('history.table.reviewDate') }}：{{ journal.reviewDate }} | 
                 <span class="review-result" :class="(journal.reviewResult || journal.status).toLowerCase()">
-                  {{ journal.reviewResult || journal.status }}
+                  {{ getStatusLabel(journal.reviewResult || journal.status) }}
                 </span>
               </p>
               <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               
               <!-- 显示审稿建议 -->
             <div class="history-comment-section">
-              <h4 class="comment-section-title">审稿建议：</h4>
+              <h4 class="comment-section-title">{{ t('history.reviewComment') }}：</h4>
               <div class="history-comment">
                 <div v-if="journal.reviewHistory && journal.reviewHistory.length > 0">
                   <div v-for="(record, index) in journal.reviewHistory" :key="index" class="stage-comment">
                     <div class="stage-header">
                       <span class="stage-name">{{ record.stage }}：</span>
-                      <span class="stage-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
+                      <span class="stage-status" :class="record.status.toLowerCase()">{{ getStatusLabel(record.status) }}</span>
                     </div>
                     <div class="stage-content">{{ record.comment }}</div>
                   </div>
                 </div>
                 <div v-else>
-                  无审稿建议
+                  {{ t('history.noComment') }}
                 </div>
               </div>
             </div>
@@ -283,14 +322,15 @@ onMounted(() => {
 
           <!-- 无历史记录提示 -->
           <div v-if="allHistory.length === 0" class="no-journals">
-            <p>当前没有匹配的审稿记录</p>
+            <p>{{ t('history.noRecords') }}</p>
           </div>
         </div>
 
         <!-- 分页控件 -->
         <div v-if="totalPages > 0" class="pagination">
           <div class="pagination-info">
-            共 {{ allHistory.length }} 条记录，第 {{ currentPage }} / {{ totalPages }} 页
+            {{ t('history.pagination.total', { total: allHistory.length }) }}，
+            {{ t('history.pagination.page', { current: currentPage, total: totalPages }) }}
           </div>
           <div class="pagination-controls">
             <button 
@@ -298,14 +338,14 @@ onMounted(() => {
               :disabled="currentPage === 1"
               @click="goToPrevPage"
             >
-              上一页
+              {{ t('history.pagination.prev') }}
             </button>
             <button 
               class="page-btn" 
               :disabled="currentPage === totalPages"
               @click="goToNextPage"
             >
-              下一页
+              {{ t('history.pagination.next') }}
             </button>
           </div>
         </div>
@@ -314,7 +354,7 @@ onMounted(() => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -327,8 +367,6 @@ onMounted(() => {
   flex-direction: column;
   background: #f5f7fa;
 }
-
-
 
 /* 审稿内容 */
 .review-content {
@@ -347,6 +385,7 @@ onMounted(() => {
 }
 
 .review-title {
+  font-family: 'Georgia', serif;
   font-size: 1.8rem;
   font-weight: bold;
   color: #2c3e50;
@@ -360,24 +399,10 @@ onMounted(() => {
   gap: 1rem;
 }
 
-.review-stats {
-  display: flex;
-  gap: 1rem;
-}
-
-.stat-item {
-  background: #3498db;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
 /* 历史记录筛选控件 */
 .filter-section {
   background: white;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
@@ -385,58 +410,69 @@ onMounted(() => {
 
 .history-filters {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-end;
+  gap: 1.5rem;
   flex-wrap: wrap;
   justify-content: flex-start;
 }
 
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
 .history-filters label {
-  font-weight: 500;
+  font-weight: 600;
   color: #555;
-  font-size: 0.85rem;
-  white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 .history-filters .filter-select,
-.history-filters input[type="date"] {
-  padding: 0.45rem 0.7rem;
+.history-filters input[type="text"] {
+  padding: 0.6rem 0.8rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   outline: none;
   transition: border-color 0.3s ease;
-  min-width: 100px;
+  min-width: 140px;
 }
 
 .history-filters .filter-select:focus,
-.history-filters input[type="date"]:focus {
+.history-filters input[type="text"]:focus {
   border-color: #3498db;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
-.filter-label {
-  font-weight: 500;
-  color: #555;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.btn-clear {
-  background: #95a5a6;
+.btn-export {
+  background: #3498db;
   color: white;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.btn-clear:hover {
-  background: #7f8c8d;
+.btn-export:hover:not(:disabled) {
+  background: #2980b9;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-export:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
 }
 
 /* 历史记录列表 */
@@ -447,15 +483,16 @@ onMounted(() => {
 }
 
 .history-item {
-  background: #f8f9fa;
+  background: white;
   padding: 1.5rem;
   border-radius: 8px;
   border-left: 4px solid #3498db;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .history-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
@@ -464,7 +501,8 @@ onMounted(() => {
 }
 
 .journal-title {
-  font-size: 1.3rem;
+  font-family: 'Georgia', serif;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #2c3e50;
   margin: 0 0 0.5rem 0;
@@ -479,29 +517,26 @@ onMounted(() => {
 
 .journal-meta {
   color: #7f8c8d;
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 1rem 0;
   font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .journal-abstract {
   color: #555;
   line-height: 1.6;
   margin: 0;
-  font-size: 0.85rem;
-  display: -webkit-box;
-  line-clamp: 3;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.95rem;
+  font-style: italic;
 }
 
 /* 审核结果状态 */
 .review-result {
   font-weight: 600;
   padding: 0.2rem 0.6rem;
-  border-radius: 10px;
+  border-radius: 4px;
   font-size: 0.85rem;
+  margin-left: 0.5rem;
 }
 
 .review-result.已通过 {
@@ -509,36 +544,32 @@ onMounted(() => {
   color: #155724;
 }
 
-.review-result.已拒绝 {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.review-result.未通过 {
+.review-result.已拒绝, .review-result.未通过 {
   background: #f8d7da;
   color: #721c24;
 }
 
 /* 历史记录中的审稿建议 */
 .history-comment-section {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #e8f4f8;
-  border-radius: 8px;
-  border-left: 4px solid #3498db;
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
 }
 
 .comment-section-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #2c3e50;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.8rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .history-comment {
   color: #555;
   line-height: 1.6;
-  white-space: pre-wrap; /* 保留换行和空格 */
 }
 
 /* 返回按钮样式 */
@@ -556,8 +587,6 @@ onMounted(() => {
 
 .btn-back:hover {
   background: #7f8c8d;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
 }
 
 /* 分页样式 */
@@ -610,9 +639,9 @@ onMounted(() => {
 /* 无历史记录提示 */
 .no-journals {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem;
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -640,5 +669,20 @@ onMounted(() => {
   margin: 0;
   font-size: 0.9rem;
   opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .review-content {
+    padding: 1rem;
+  }
+  
+  .history-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-filter {
+    min-width: 0;
+  }
 }
 </style>

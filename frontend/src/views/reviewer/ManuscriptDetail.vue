@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
@@ -9,6 +10,7 @@ import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 const journalId = route.params.id
@@ -94,7 +96,7 @@ const displayContent = computed(() => {
   let content = journal.value.content
   if (isBlindReview.value) {
     // Simple mock anonymization
-    content = content.replace(/Writer Name/g, '[Anonymized]')
+    content = content.replace(/Author Name/g, '[Anonymized]')
     content = content.replace(/University of X/g, '[Anonymized Institution]')
   }
   return content
@@ -215,9 +217,8 @@ const confirmSubmit = () => {
   router.push('/reviewer/assignments?filter=completed')
 }
 
-// COI Submission
 const submitCOI = () => {
-  alert('Conflict of Interest declaration submitted.')
+  toastStore.add({ message: 'Conflict of Interest declaration submitted.', type: 'success' })
 }
 
 const downloadFile = (file) => {
@@ -229,8 +230,8 @@ const downloadFile = (file) => {
   document.body.removeChild(link)
 }
 
-// Mock Writer Response for Revision
-const writerResponse = ref(`
+// Mock Author Response for Revision
+const authorResponse = ref(`
 Thank you for your valuable comments. We have revised the manuscript accordingly.
 1. Addressed the concern about sample size by adding 50 more participants.
 2. Clarified the methodology section as requested.
@@ -306,7 +307,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             </div>
 
             <div class="comments-block">
-              <h4>Comments to Writer</h4>
+              <h4>Comments to Author</h4>
               <div class="readonly-text">{{ review.comment || 'No comments provided.' }}</div>
             </div>
 
@@ -339,7 +340,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
             <h1>{{ journal.title }}</h1>
             <span class="manuscript-id">ID: {{ journal.id }}</span>
             <span v-if="isRevision" class="revision-badge">Revision (Re-review)</span>
-            <span v-if="isBlindReview" class="blind-badge">Blind Review - Writer Information Removed</span>
+            <span v-if="isBlindReview" class="blind-badge">Blind Review - Author Information Removed</span>
           </div>
         </div>
 
@@ -364,10 +365,10 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="info-section">
             <h3>Basic Information</h3>
             <div class="info-grid">
-              <!-- Writer Hidden for Blind Review -->
+              <!-- Author Hidden for Blind Review -->
               <div class="info-item" v-if="!isBlindReview">
-                <label>Writer:</label>
-                <span>{{ journal.writer }}</span>
+                <label>Author:</label>
+                <span>{{ journal.author }}</span>
               </div>
               <div class="info-item">
                 <label>Title:</label>
@@ -428,7 +429,7 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
           <section class="content-preview">
              <h3>Online Reading</h3>
              <div class="blind-notice" v-if="isBlindReview">
-               This is a blind review - writer information has been anonymized. Self-citations are marked as 'Writer et al.'
+               This is a blind review - author information has been anonymized. Self-citations are marked as 'Author et al.'
              </div>
              <div class="paper-content" v-if="displayContent" v-html="displayContent"></div>
              <div class="paper-content placeholder" v-else>
@@ -440,9 +441,9 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
         <!-- Revision Details (Only for Revision) -->
         <div v-if="activeTab === 'revision-details'" class="tab-pane">
           <section class="response-section">
-            <h3>Writer's Response to Previous Review</h3>
+            <h3>Author's Response to Previous Review</h3>
             <div class="response-box">
-              <pre>{{ writerResponse }}</pre>
+              <pre>{{ authorResponse }}</pre>
             </div>
           </section>
           

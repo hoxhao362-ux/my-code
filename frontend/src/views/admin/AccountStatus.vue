@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 const props = defineProps({
@@ -31,23 +33,18 @@ const encryptPhone = (phone) => {
   return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
 }
 
-// 重置密码
 const resetPassword = (id) => {
   if (confirm('确定要重置该用户的密码吗？')) {
-    // 这里可以添加重置密码的逻辑
-    alert('密码重置成功！新密码为：123456')
+    toastStore.add({ message: '密码重置成功！新密码为：123456', type: 'success' })
   }
 }
 
-// 切换账号状态
 const toggleUserStatus = (id) => {
   const user = userStore.users.find(u => u.id === id)
   if (user) {
-    // 计算新状态
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
-    // 使用userStore更新状态，确保持久化
     userStore.updateUserStatus(id, newStatus)
-    alert(`用户 ${user.username} 的状态已切换为 ${newStatus === 'active' ? '启用' : '禁用'}`)
+    toastStore.add({ message: `用户 ${user.username} 的状态已切换为 ${newStatus === 'active' ? '启用' : '禁用'}`, type: 'success' })
   }
 }
 </script>

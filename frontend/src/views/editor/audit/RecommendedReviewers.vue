@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import ConflictOfInterestCheck from '../../../components/audit/ConflictOfInterestCheck.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // 虚拟数据初始化
@@ -17,8 +19,8 @@ onMounted(() => {
         id: 1,
         manuscriptId: 20260001,
         manuscriptTitle: 'Novel Biomarkers for Early Detection of Pancreatic Cancer',
-        writerId: 1,
-        writerName: 'John Doe',
+        authorId: 1,
+        authorName: 'John Doe',
         reviewerName: 'Dr. Sarah Johnson',
         reviewerEmail: 'sarah.johnson@harvard.edu',
         reviewerAffiliation: 'Harvard Medical School',
@@ -38,8 +40,8 @@ onMounted(() => {
         id: 2,
         manuscriptId: 20260002,
         manuscriptTitle: 'AI-Powered Diagnostic Tools in Radiology',
-        writerId: 2,
-        writerName: 'Jane Smith',
+        authorId: 2,
+        authorName: 'Jane Smith',
         reviewerName: 'Dr. Michael Chen',
         reviewerEmail: 'mchen@stanford.edu',
         reviewerAffiliation: 'Stanford University',
@@ -59,8 +61,8 @@ onMounted(() => {
         id: 3,
         manuscriptId: 20260003,
         manuscriptTitle: 'Global Health Disparities in COVID-19 Outcomes',
-        writerId: 3,
-        writerName: 'David Kim',
+        authorId: 3,
+        authorName: 'David Kim',
         reviewerName: 'Dr. Maria Garcia',
         reviewerEmail: 'mgarcia@who.int',
         reviewerAffiliation: 'World Health Organization',
@@ -80,8 +82,8 @@ onMounted(() => {
         id: 4,
         manuscriptId: 20260004,
         manuscriptTitle: 'Novel Therapeutic Approaches for Alzheimer\'s Disease',
-        writerId: 4,
-        writerName: 'Emily Watson',
+        authorId: 4,
+        authorName: 'Emily Watson',
         reviewerName: 'Dr. Robert Brown',
         reviewerEmail: 'rbrown@mayo.edu',
         reviewerAffiliation: 'Mayo Clinic',
@@ -101,8 +103,8 @@ onMounted(() => {
         id: 5,
         manuscriptId: 20260005,
         manuscriptTitle: 'CRISPR-Cas9 Applications in Genetic Disease Treatment',
-        writerId: 5,
-        writerName: 'Alex Taylor',
+        authorId: 5,
+        authorName: 'Alex Taylor',
         reviewerName: 'Dr. Jennifer Doudna',
         reviewerEmail: 'jdoudna@berkeley.edu',
         reviewerAffiliation: 'University of California, Berkeley',
@@ -133,7 +135,7 @@ onMounted(() => {
       {
         id: 20260001,
         title: 'Novel Biomarkers for Early Detection of Pancreatic Cancer',
-        writer: 'John Doe',
+        author: 'John Doe',
         module: 'Clinical',
         status: 'Pending Screening',
         submissionDate: new Date().toISOString().split('T')[0],
@@ -296,21 +298,19 @@ const filteredReviewers = computed(() => {
   return result
 })
 const MAX_ACTIVE_REVIEWS = 3
-const MAX_WRITER_RECOMMENDED_PER_MANUSCRIPT = 2
+const MAX_AUTHOR_RECOMMENDED_PER_MANUSCRIPT = 2
 
-// History: Get all recommendations by current writer
-const currentWriterHistory = computed(() => {
+const currentAuthorHistory = computed(() => {
   if (!currentReviewer.value) return []
   return recommendedReviewers.value.filter(r => 
-    r.writerId === currentReviewer.value.writerId
+    r.authorId === currentReviewer.value.authorId
   ).sort((a, b) => new Date(b.recommendedAt) - new Date(a.recommendedAt))
 })
 
-// History: Count how many times this specific reviewer was recommended by this writer
 const currentReviewerFrequency = computed(() => {
   if (!currentReviewer.value) return 0
   return recommendedReviewers.value.filter(r => 
-    r.writerId === currentReviewer.value.writerId && 
+    r.authorId === currentReviewer.value.authorId && 
     r.reviewerEmail === currentReviewer.value.reviewerEmail
   ).length
 })
@@ -333,15 +333,14 @@ const checkReviewerLimit = (reviewer) => {
   }
 }
 
-// Helper: Check for Writer Recommendation Limit
-const checkWriterRecommendationLimit = (manuscriptId) => {
+const checkAuthorRecommendationLimit = (manuscriptId) => {
   const acceptedCount = recommendedReviewers.value.filter(r => 
     String(r.manuscriptId) === String(manuscriptId) && 
     ['accepted', 'invited', 'completed'].includes(r.status)
   ).length
   
   return {
-    isOverLimit: acceptedCount >= MAX_WRITER_RECOMMENDED_PER_MANUSCRIPT,
+    isOverLimit: acceptedCount >= MAX_AUTHOR_RECOMMENDED_PER_MANUSCRIPT,
     count: acceptedCount
   }
 }
@@ -350,15 +349,8 @@ const checkWriterRecommendationLimit = (manuscriptId) => {
 const checkConflictOfInterest = (reviewer) => {
   const conflicts = []
   
-  // 1. Affiliation Check (Mock: Check against writer's affiliation if available, or just warn if same as previous writers)
-  // In a real app, we would fetch the manuscript writer's affiliation.
-  // Here we check if the reviewer affiliation contains the writer name (just as a dummy heuristic) or if high risk.
-  if (reviewer.riskLevel === 'high') {
-    conflicts.push('High Risk Reviewer (Frequent recommendations or low quality)')
-  }
-  
   if (reviewer.submissionCount > 2) {
-    conflicts.push(`Frequent Recommended Reviewer (${reviewer.submissionCount} times by this writer)`)
+    conflicts.push(`Frequent Recommended Reviewer (${reviewer.submissionCount} times by this author)`)
   }
 
   // Integrity Check (Mock)
@@ -412,7 +404,7 @@ const toggleSelectAll = () => {
 
 const handleBulkAccept = () => {
   if (selectedReviewerIds.value.length === 0) {
-    alert('Please select at least one reviewer to accept.')
+    toastStore.add({ message: 'Please select at least one reviewer to accept.', type: 'warning' })
     return
   }
   
@@ -434,9 +426,9 @@ const handleBulkAccept = () => {
   })
   
   Object.keys(byManuscript).forEach(mid => {
-    const currentCount = checkWriterRecommendationLimit(mid).count
-    if (currentCount + byManuscript[mid] > MAX_WRITER_RECOMMENDED_PER_MANUSCRIPT) {
-      totalWarnings.push(`- Manuscript ID ${mid} will exceed the limit of ${MAX_WRITER_RECOMMENDED_PER_MANUSCRIPT} writer-recommended reviewers.`)
+    const currentCount = checkAuthorRecommendationLimit(mid).count
+    if (currentCount + byManuscript[mid] > MAX_AUTHOR_RECOMMENDED_PER_MANUSCRIPT) {
+      totalWarnings.push(`- Manuscript ID ${mid} will exceed the limit of ${MAX_AUTHOR_RECOMMENDED_PER_MANUSCRIPT} author-recommended reviewers.`)
     }
   })
 
@@ -457,16 +449,14 @@ const handleBulkAccept = () => {
     }
   })
 
-  // Notify Writers (Mock)
-  alert(`Notifications sent to ${selectedReviewerIds.value.length} writers about accepted reviewers.`)
-  
+  toastStore.add({ message: `Notifications sent to ${selectedReviewerIds.value.length} authors about accepted reviewers.`, type: 'success' })
   selectedReviewerIds.value = []
-  alert('Selected reviewers have been accepted and recorded in manuscript history.')
+  toastStore.add({ message: 'Selected reviewers have been accepted and recorded in manuscript history.', type: 'success' })
 }
 
 const handleBulkReject = () => {
   if (selectedReviewerIds.value.length === 0) {
-    alert('Please select at least one reviewer to reject.')
+    toastStore.add({ message: 'Please select at least one reviewer to reject.', type: 'warning' })
     return
   }
   
@@ -476,13 +466,12 @@ const handleBulkReject = () => {
       const updated = { ...reviewer, status: 'rejected', reviewedAt: new Date().toISOString(), reviewedBy: user.value?.username || 'admin' }
       userStore.updateRecommendedReviewer(updated)
       
-      // Add to history
       addToJournalHistory(reviewer.manuscriptId, 'rejected', reviewer.reviewerName, 'Bulk rejection')
     }
   })
   
   selectedReviewerIds.value = []
-  alert('Selected reviewers have been rejected and recorded in manuscript history.')
+  toastStore.add({ message: 'Selected reviewers have been rejected and recorded in manuscript history.', type: 'success' })
 }
 
 // 详情模态框
@@ -498,19 +487,17 @@ const openDetailModal = (reviewer) => {
 
 const handleAccept = () => {
   if (currentReviewer.value) {
-    // 1. Check Writer Recommendation Limit
-    const limitCheck = checkWriterRecommendationLimit(currentReviewer.value.manuscriptId)
+    const limitCheck = checkAuthorRecommendationLimit(currentReviewer.value.manuscriptId)
     if (limitCheck.isOverLimit) {
-      if (!confirm(`Warning: This manuscript already has ${limitCheck.count} writer-recommended reviewers accepted/invited. 
+      if (!confirm(`Warning: This manuscript already has ${limitCheck.count} author-recommended reviewers accepted/invited. 
       
-      Best practice is to limit writer recommendations to ${MAX_WRITER_RECOMMENDED_PER_MANUSCRIPT} per paper.
+      Best practice is to limit author recommendations to ${MAX_AUTHOR_RECOMMENDED_PER_MANUSCRIPT} per paper.
       
       Do you still want to proceed?`)) {
         return
       }
     }
 
-    // 2. Check Reviewer Workload Limit
     const workloadCheck = checkReviewerLimit(currentReviewer.value)
     if (workloadCheck.isOverLimit) {
       if (!confirm(`Warning: Reviewer ${currentReviewer.value.reviewerName} already has ${workloadCheck.count} active reviews.
@@ -520,7 +507,6 @@ const handleAccept = () => {
       }
     }
 
-    // 3. Conflict of Interest Check
     const conflicts = checkConflictOfInterest(currentReviewer.value)
     if (conflicts.length > 0) {
        const conflictMsg = conflicts.map(c => `- ${c}`).join('\n')
@@ -532,14 +518,12 @@ const handleAccept = () => {
     const updated = { ...currentReviewer.value, status: 'accepted', reviewedAt: new Date().toISOString(), reviewedBy: user.value?.username || 'admin' }
     userStore.updateRecommendedReviewer(updated)
     
-    // Add to history
     addToJournalHistory(currentReviewer.value.manuscriptId, 'accepted', currentReviewer.value.reviewerName, reviewComment.value)
 
-    // Notify Writer
-    alert(`Notification sent to writer (${currentReviewer.value.writerName}): Your recommended reviewer ${currentReviewer.value.reviewerName} has been accepted.`)
+    toastStore.add({ message: `Notification sent to author (${currentReviewer.value.authorName}): Your recommended reviewer ${currentReviewer.value.reviewerName} has been accepted.`, type: 'success' })
 
     showDetailModal.value = false
-    alert('Reviewer accepted successfully. Record added to manuscript history.')
+    toastStore.add({ message: 'Reviewer accepted successfully. Record added to manuscript history.', type: 'success' })
   }
 }
 
@@ -548,20 +532,13 @@ const handleReject = () => {
     const updated = { ...currentReviewer.value, status: 'rejected', reviewedAt: new Date().toISOString(), reviewedBy: user.value?.username || 'admin' }
     userStore.updateRecommendedReviewer(updated)
     
-    // Notify Writer
-    const reason = reviewComment.value || 'Editorial decision.'
-
-    // Add to history
-    addToJournalHistory(currentReviewer.value.manuscriptId, 'rejected', currentReviewer.value.reviewerName, reason)
-
-    alert(`Notification sent to writer (${currentReviewer.value.writerName}): Your recommended reviewer ${currentReviewer.value.reviewerName} was not selected. Reason: ${reason}`)
+    toastStore.add({ message: `Notification sent to author (${currentReviewer.value.authorName}): Your recommended reviewer ${currentReviewer.value.reviewerName} was not selected.`, type: 'info' })
 
     showDetailModal.value = false
-    alert('Reviewer rejected successfully. Record added to manuscript history.')
+    toastStore.add({ message: 'Reviewer rejected successfully. Record added to manuscript history.', type: 'success' })
   }
 }
 
-// Special Case Handlers
 const handleMarkDeclined = () => {
   if (currentReviewer.value) {
     if (!confirm('Are you sure you want to mark this reviewer as "Declined Invitation"? This will require selecting an alternative.')) return
@@ -572,7 +549,7 @@ const handleMarkDeclined = () => {
     addToJournalHistory(currentReviewer.value.manuscriptId, 'declined', currentReviewer.value.reviewerName, reviewComment.value || 'Reviewer declined invitation.')
     
     showDetailModal.value = false
-    alert('Marked as Declined. Please proceed to invite an alternative reviewer.')
+    toastStore.add({ message: 'Marked as Declined. Please proceed to invite an alternative reviewer.', type: 'warning' })
   }
 }
 
@@ -586,18 +563,16 @@ const handleMarkContactFailed = () => {
     addToJournalHistory(currentReviewer.value.manuscriptId, 'contact_failed', currentReviewer.value.reviewerName, reviewComment.value || 'Email bounced/Contact failed.')
     
     showDetailModal.value = false
-    alert('Marked as Contact Failed. You may request updated information from the writer.')
+    toastStore.add({ message: 'Marked as Contact Failed. You may request updated information from the author.', type: 'warning' })
   }
 }
 
 const handleInviteAlternative = (reviewer) => {
-  alert(`Redirecting to reviewer search to find alternative for: ${reviewer.manuscriptTitle}`)
-  // Logic to redirect to assign reviewer page or show search modal would go here
+  toastStore.add({ message: `Redirecting to reviewer search to find alternative for: ${reviewer.manuscriptTitle}`, type: 'info' })
 }
 
 const handleRequestInfoUpdate = (reviewer) => {
-  alert(`Notification sent to writer ${reviewer.writerName} to update contact info for ${reviewer.reviewerName}.`)
-  // Logic to send notification would go here
+  toastStore.add({ message: `Notification sent to author ${reviewer.authorName} to update contact info for ${reviewer.reviewerName}.`, type: 'success' })
 }
 
 // 邀请模态框
@@ -616,8 +591,7 @@ const openInviteModal = (reviewer) => {
   
   const link = `${window.location.origin}/reviewer-registration?email=${encodeURIComponent(reviewer.reviewerEmail)}&recommendationId=${reviewer.id}&token=${Date.now()}`
   
-  // Conditionally hide writer name
-  const writerReference = isDoubleBlind ? 'a writer' : `the writer ${reviewer.writerName}`
+  const authorReference = isDoubleBlind ? 'an author' : `the author ${reviewer.authorName}`
   
   const stageSuffix = reviewer.stage === 'revision' ? ' (Revision)' : ''
   const stageContext = reviewer.stage === 'revision' ? 'revised ' : ''
@@ -626,7 +600,7 @@ const openInviteModal = (reviewer) => {
     subject: `Invitation to Review${stageSuffix}: ${reviewer.manuscriptTitle}`,
     content: `Dear Dr. ${reviewer.reviewerName},
 
-We would like to invite you to review the ${stageContext}manuscript entitled "${reviewer.manuscriptTitle}" (ID: ${reviewer.manuscriptId}) submitted by ${writerReference} for our journal.
+We would like to invite you to review the ${stageContext}manuscript entitled "${reviewer.manuscriptTitle}" (ID: ${reviewer.manuscriptId}) submitted by ${authorReference} for our journal.
 
 Abstract:
 (Abstract of the manuscript would go here...)
@@ -645,15 +619,13 @@ ${userStore.basicConfig?.platformName || 'Journal Platform'}`
 
 const sendInvitation = () => {
   if (currentReviewer.value) {
-    // 1. Check Writer Recommendation Limit
-    const limitCheck = checkWriterRecommendationLimit(currentReviewer.value.manuscriptId)
+    const limitCheck = checkAuthorRecommendationLimit(currentReviewer.value.manuscriptId)
     if (limitCheck.isOverLimit) {
-      if (!confirm(`Warning: This manuscript already has ${limitCheck.count} writer-recommended reviewers accepted/invited. Proceed with invitation?`)) {
+      if (!confirm(`Warning: This manuscript already has ${limitCheck.count} author-recommended reviewers accepted/invited. Proceed with invitation?`)) {
         return
       }
     }
     
-    // 2. Conflict Check
     const conflicts = checkConflictOfInterest(currentReviewer.value)
     if (conflicts.length > 0) {
        const conflictMsg = conflicts.map(c => `- ${c}`).join('\n')
@@ -673,7 +645,7 @@ const sendInvitation = () => {
     addToJournalHistory(currentReviewer.value.manuscriptId, 'invited', currentReviewer.value.reviewerName, 'Invitation email sent.')
     
     showInviteModal.value = false
-    alert(`Invitation sent to ${currentReviewer.value.reviewerEmail} successfully.`)
+    toastStore.add({ message: `Invitation sent to ${currentReviewer.value.reviewerEmail} successfully.`, type: 'success' })
   }
 }
 
@@ -703,7 +675,7 @@ const openEvalModal = (reviewer) => {
 
 const submitEvaluation = () => {
   if (evalForm.value.comment.length < 10) {
-    alert('Please enter at least 10 characters for comment.')
+    toastStore.add({ message: 'Please enter at least 10 characters for comment.', type: 'warning' })
     return
   }
   
@@ -716,31 +688,27 @@ const submitEvaluation = () => {
     
     // Check for low score warning
     if (calculatedGrade.value === 'C') {
-       alert(`Warning: Reviewer graded C. System will flag this reviewer as High Risk for future recommendations.`)
+       toastStore.add({ message: `Warning: Reviewer graded C. System will flag this reviewer as High Risk for future recommendations.`, type: 'warning' })
        updated.riskLevel = 'high'
     }
     
-    // Check for Malicious Recommendation (System Logic)
-    // If the reviewer is flagged as High Risk AND the grade is C, we warn the writer.
     if (calculatedGrade.value === 'C') {
-       // Add a system log for "Malicious Recommendation Warning"
        userStore.addSystemLog({
           type: 'warning',
           user: user.value?.username || 'system',
           action: 'Malicious Recommendation Detected',
-          target: `Writer: ${currentReviewer.value.writerName} (Reviewer: ${currentReviewer.value.reviewerName})`,
+          target: `Author: ${currentReviewer.value.authorName} (Reviewer: ${currentReviewer.value.reviewerName})`,
           ip: '127.0.0.1'
        })
        
-       // In a real system, this would trigger an email. Here we simulate it.
-       alert(`SYSTEM ALERT: Malicious Recommendation Detected.\n\nA warning has been recorded for writer ${currentReviewer.value.writerName} regarding the recommendation of ${currentReviewer.value.reviewerName} (Grade: C).\n\nAction: Writer flagged for monitoring.`)
+       toastStore.add({ message: `SYSTEM ALERT: Malicious Recommendation Detected.\n\nA warning has been recorded for author ${currentReviewer.value.authorName} regarding the recommendation of ${currentReviewer.value.reviewerName} (Grade: C).\n\nAction: Author flagged for monitoring.`, type: 'error' })
     }
 
     userStore.updateRecommendedReviewer(updated)
   }
   
   showEvalModal.value = false
-  alert('Evaluation submitted successfully.')
+  toastStore.add({ message: 'Evaluation submitted successfully.', type: 'success' })
 }
 
 // 状态标签样式
@@ -789,7 +757,7 @@ const getRiskClass = (level) => {
       <!-- Header -->
       <div class="page-header">
         <h1 class="main-title">Recommended Reviewers Quality Assurance</h1>
-        <p class="warning-text">Review and manage reviewers recommended by writers for {{ PLATFORM_NAME }}. Monitor quality and prevent abuse.</p>
+        <p class="warning-text">Review and manage reviewers recommended by authors for {{ PLATFORM_NAME }}. Monitor quality and prevent abuse.</p>
         
         <div class="filter-bar">
           <select v-model="selectedStatus">
@@ -957,7 +925,7 @@ const getRiskClass = (level) => {
             <!-- COI Check Component -->
             <ConflictOfInterestCheck 
               v-if="currentReviewer"
-              :writerName="currentReviewer.writerName"
+              :authorName="currentReviewer.authorName"
               :reviewer="{
                 username: currentReviewer.reviewerName,
                 affiliation: currentReviewer.reviewerAffiliation
@@ -967,7 +935,7 @@ const getRiskClass = (level) => {
 
             <div class="risk-report">
                <p><strong>Risk Level:</strong> <span :class="'text-' + currentReviewer?.riskLevel">{{ currentReviewer?.riskLevel.toUpperCase() }}</span></p>
-               <p><strong>Submission Frequency:</strong> Recommended {{ currentReviewer?.submissionCount }} times by this writer.</p>
+               <p><strong>Submission Frequency:</strong> Recommended {{ currentReviewer?.submissionCount }} times by this author.</p>
                <p><strong>Historical Performance:</strong> Average Score {{ currentReviewer?.avgScore }} / 5.0</p>
                
                <!-- Integrity Status -->
@@ -983,7 +951,7 @@ const getRiskClass = (level) => {
           <div class="section">
             <h4>Manuscript Information</h4>
             <p><strong>Title:</strong> {{ currentReviewer?.manuscriptTitle }}</p>
-            <p><strong>Writer:</strong> {{ currentReviewer?.writerName }}</p>
+            <p><strong>Author:</strong> {{ currentReviewer?.authorName }}</p>
           </div>
           
           <div class="section">
@@ -1001,13 +969,12 @@ const getRiskClass = (level) => {
           </div>
           
           <div class="section">
-            <h4>Writer Recommendation History</h4>
+            <h4>Author Recommendation History</h4>
             
-            <!-- Frequency Alert -->
             <div v-if="isFrequentRecommendation" class="alert-box warning">
               <span class="icon">⚠️</span>
               <div style="margin-left: 10px;">
-                <strong>Frequent Recommendation:</strong> This writer has recommended {{ currentReviewer?.reviewerName }} 
+                <strong>Frequent Recommendation:</strong> This author has recommended {{ currentReviewer?.reviewerName }} 
                 {{ currentReviewerFrequency }} times.
               </div>
             </div>
@@ -1024,7 +991,7 @@ const getRiskClass = (level) => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rec in currentWriterHistory" :key="rec.id" :class="{'current-row': rec.id === currentReviewer?.id}">
+                  <tr v-for="rec in currentAuthorHistory" :key="rec.id" :class="{'current-row': rec.id === currentReviewer?.id}">
                     <td>{{ new Date(rec.recommendedAt).toLocaleDateString() }}</td>
                     <td>{{ rec.reviewerName }}</td>
                     <td class="truncate" :title="rec.manuscriptTitle">{{ rec.manuscriptTitle }}</td>

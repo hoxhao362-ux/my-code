@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import { exportLogsToExcel, checkExportPermission } from '../../utils/export'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 // 日志类型
@@ -87,11 +89,10 @@ const exportLogs = () => {
   exportLogsToExcel(filteredLogs.value)
 }
 
-// 清空日志
 const clearLogs = () => {
   if (confirm('确定要清空所有日志吗？此操作不可恢复！')) {
     logsData.value = []
-    alert('日志已清空！')
+    toastStore.add({ message: '日志已清空！', type: 'success' })
   }
 }
 

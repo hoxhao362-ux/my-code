@@ -87,9 +87,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 const navItems = [
@@ -116,7 +118,7 @@ const toggleSample = () => {
 }
 
 const handleDownload = () => {
-  alert('Template download started.')
+  toastStore.add({ message: 'Template download started.', type: 'success' })
 }
 
 // Intersection Observer

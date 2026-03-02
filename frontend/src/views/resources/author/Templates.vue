@@ -2,7 +2,7 @@
   <div class="templates-container">
     <Navigation 
       :user="user" 
-      :current-page="'resources-writer-templates'"
+      :current-page="'resources-author-templates'"
       :logout="userStore.logout"
     />
     <div class="filter-bar">

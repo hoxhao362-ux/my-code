@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { MANUSCRIPT_STATUS, STATUS_LABELS } from '../../../constants/manuscriptStatus'
+import { MANUSCRIPT_STATUS, STATUS_LABELS } from '../../constants/manuscriptStatus'
 
 const props = defineProps({
   manuscripts: {

@@ -17,10 +17,9 @@ const letters = computed(() => {
   
   const allLetters = []
   
-  // Filter journals where current user is writer
+  // Filter journals where current user is author
   const myJournals = userStore.journals.filter(j => 
-    j.writer === user.value.username || 
-    (j.author && j.author === user.value.username)
+    j.author === user.value.username
   )
   
   myJournals.forEach(journal => {
@@ -105,7 +104,7 @@ const viewLetter = (letter) => {
 
 const handleAccept = (letter) => {
   // Navigate to Publication Status page to perform action
-  router.push({ name: 'writer-publication-status', params: { id: letter.manuscriptId } })
+  router.push({ name: 'author-publication-status', params: { id: letter.manuscriptId } })
 }
 
 // Modal State
@@ -115,7 +114,7 @@ const selectedLetter = ref(null)
 </script>
 
 <template>
-  <div class="writer-letters-page">
+  <div class="author-letters-page">
     <SubmissionNavigation />
     <div class="letters-container">
       <header class="page-header">
@@ -210,7 +209,7 @@ const selectedLetter = ref(null)
 </template>
 
 <style scoped>
-.writer-letters-page {
+.author-letters-page {
   min-height: 100vh;
   background-color: #fff;
   font-family: Arial, sans-serif;

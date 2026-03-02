@@ -147,7 +147,7 @@ const getStatusClass = (status) => {
           <div class="stat-card action-card" @click="navigateTo('/editor/audit/recommended-reviewers')">
             <div class="stat-content">
               <h3 class="stat-number">{{ pendingRecommendations }}</h3>
-              <p class="stat-label">{{ t('dashboard.stats.writerRecommendations') }}</p>
+              <p class="stat-label">{{ t('dashboard.stats.authorRecommendations') }}</p>
               <span class="action-hint">{{ t('dashboard.stats.pendingApproval') }}</span>
             </div>
           </div>
@@ -175,7 +175,7 @@ const getStatusClass = (status) => {
           >
             <div class="journal-info">
               <h4 class="journal-title">{{ journal.title }}</h4>
-              <p class="journal-meta">{{ t('dashboard.recentJournals.writer') }}: {{ journal.writer || journal.author }} | {{ t('dashboard.recentJournals.date') }}: {{ journal.date || journal.submissionDate }}</p>
+              <p class="journal-meta">{{ t('dashboard.recentJournals.author') }}: {{ journal.author }} | {{ t('dashboard.recentJournals.date') }}: {{ journal.date || journal.submissionDate }}</p>
             </div>
             <div class="journal-status" :class="getStatusClass(journal.status)">
               {{ getStatusLabel(journal.status) }}

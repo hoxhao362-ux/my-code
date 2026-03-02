@@ -3,9 +3,11 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navigation from '../../components/Navigation.vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // --- Mock Data Enrichment ---
@@ -102,15 +104,15 @@ const openSubscriptionModal = (journal) => {
 
 const handleUnsubscribe = (id) => {
   if (confirm('Are you sure you want to unsubscribe?')) {
-     subscribedJournals.value = subscribedJournals.value.filter(s => s.id !== id)
-     saveSubscriptions()
-     alert('Successfully unsubscribed')
+    subscribedJournals.value = subscribedJournals.value.filter(s => s.id !== id)
+    saveSubscriptions()
+    toastStore.add({ message: 'Successfully unsubscribed', type: 'success' })
   }
 }
 
 const confirmSubscription = () => {
   if (!subscriptionForm.email || !subscriptionForm.email.includes('@')) {
-    alert('Please enter a valid email address.')
+    toastStore.add({ message: 'Please enter a valid email address.', type: 'warning' })
     return
   }
   
@@ -122,7 +124,7 @@ const confirmSubscription = () => {
   
   subscribedJournals.value.push(newSub)
   saveSubscriptions()
-  alert('Successfully subscribed to manuscript updates')
+  toastStore.add({ message: 'Successfully subscribed to manuscript updates', type: 'success' })
   subscriptionModal.visible = false
 }
 

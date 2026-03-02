@@ -2,11 +2,13 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import { useI18n } from '../../../composables/useI18n'
 import Navigation from '../../../components/Navigation.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -24,18 +26,17 @@ const getReviewerStatus = (reviewer) => {
 }
 
 const handleRemind = (journal, reviewer) => {
-  alert(t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }))
+  toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }), type: 'success' })
 }
 
 const handleReplace = (journal, reviewer) => {
   if (confirm(t('editor.audit.reviewMonitoring.alerts.replaceConfirm', { name: reviewer.name }))) {
-    alert(t('editor.audit.reviewMonitoring.alerts.redirecting'))
-    // In real app, this would open a selection modal similar to AssignReviewers
+    toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.redirecting'), type: 'info' })
   }
 }
 
 const handleExtend = (journal) => {
-  alert(t('editor.audit.reviewMonitoring.alerts.extensionGranted'))
+  toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.extensionGranted'), type: 'success' })
 }
 
 </script>
@@ -55,7 +56,7 @@ const handleExtend = (journal) => {
           <div class="journal-main">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-               <span><strong>{{ t('editor.audit.reviewMonitoring.meta.writer') }}:</strong> {{ journal.writer }}</span>
+               <span><strong>{{ t('editor.audit.reviewMonitoring.meta.author') }}:</strong> {{ journal.author }}</span>
                <span><strong>{{ t('editor.audit.reviewMonitoring.meta.sentToReview') }}:</strong> {{ journal.date }}</span> <!-- Mock date -->
             </div>
           </div>

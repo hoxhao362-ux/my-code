@@ -2,15 +2,17 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
-import FlowCheckPanel from './components/FlowCheckPanel.vue'
-import ViewSubmissionModal from './components/ViewSubmissionModal.vue'
-import HistoryModal from './components/HistoryModal.vue'
-import ReviewerStatusModal from './components/ReviewerStatusModal.vue'
-import SubmitRevisionModal from './components/SubmitRevisionModal.vue'
+import FlowCheckPanel from './FlowCheckPanel.vue'
+import ViewSubmissionModal from './ViewSubmissionModal.vue'
+import HistoryModal from './HistoryModal.vue'
+import ReviewerStatusModal from './ReviewerStatusModal.vue'
+import SubmitRevisionModal from './SubmitRevisionModal.vue'
 import { MANUSCRIPT_STATUS, AUTHOR_STATUS_MAP } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
+const toastStore = useToastStore()
 const flowCheckPanelRef = ref(null)
 
 const handleRunCheck = () => {
@@ -23,14 +25,14 @@ const user = computed(() => userStore.submissionUser)
 
 // Author submission data
 const userJournals = computed(() => {
-  // Use submissionUser if available (Writer Dashboard Context), fallback to user
+  // Use submissionUser if available (Author Dashboard Context), fallback to user
   const currentUser = userStore.submissionUser || userStore.user
   if (!currentUser) return []
   return userStore.journals.filter(j => {
-    // Robust matching for writer field (handle case sensitivity and potential format differences)
-    if (!j.writer) return false
-    return j.writer === currentUser.username || 
-           j.writer.toLowerCase() === currentUser.username.toLowerCase()
+    // Robust matching for author field (handle case sensitivity and potential format differences)
+    if (!j.author) return false
+    return j.author === currentUser.username || 
+           j.author.toLowerCase() === currentUser.username.toLowerCase()
   })
 })
 
@@ -121,7 +123,7 @@ const selectedItemKey = ref(null)
 // Handle item click
 const handleItemClick = (item) => {
   if (item.action === 'submit') {
-    router.push('/submission/writer/submit')
+    router.push('/submission/author/submit')
     return
   }
   
@@ -199,13 +201,12 @@ const handleHistory = (manuscript) => {
 }
 
 const handleViewPublicationStatus = (manuscript) => {
-  router.push({ name: 'writer-publication-status', params: { id: manuscript.id } })
+  router.push({ name: 'author-publication-status', params: { id: manuscript.id } })
 }
 
 const handleReviewers = (manuscript) => {
-  // Check if status is appropriate for checking reviewers (Under Review)
   if (!isUnderReview(manuscript.status) && !isDecisionMade(manuscript.status)) {
-    alert('Manuscript not yet in review process. Please wait for the initial screening to complete.')
+    toastStore.add({ message: 'Manuscript not yet in review process. Please wait for the initial screening to complete.', type: 'warning' })
     return
   }
   
@@ -228,15 +229,15 @@ const openReviewerModal = (manuscript) => {
 const handleWithdrawRecommendation = (reviewer) => {
   if (!confirm('Are you sure you want to withdraw this recommendation?')) return
   
-  const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'writer' }
+  const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'author' }
   userStore.updateRecommendedReviewer(updated)
-  alert('Recommendation withdrawn successfully.')
+  toastStore.add({ message: 'Recommendation withdrawn successfully.', type: 'success' })
 }
 
 </script>
 
 <template>
-  <div class="writer-dashboard-container">
+  <div class="author-dashboard-container">
     <!-- 替换为投稿专用导航 -->
     <SubmissionNavigation />
 
@@ -409,7 +410,7 @@ const handleWithdrawRecommendation = (reviewer) => {
 </template>
 
 <style scoped>
-.writer-dashboard-container {
+.author-dashboard-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;

@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   logs: {
     type: Array,
     default: () => [
-      // Mock data
       { id: 1, time: '2026-02-13 15:30:22', role: 'Editor (John Doe)', node: 'Initial Review', action: 'Submitted initial review decision: Passed', result: 'Status: Initial Review Passed' },
       { id: 2, time: '2026-02-12 10:15:00', role: 'Author', node: 'Submission', action: 'Submitted manuscript', result: 'Status: Pending Initial Review' }
     ]
@@ -32,9 +34,8 @@ const filteredLogs = computed(() => {
   })
 })
 
-// Export
 const exportLogs = () => {
-  alert('Logs exported to PDF (Mock)')
+  toastStore.add({ message: 'Logs exported to PDF', type: 'success' })
 }
 
 // Detail Modal

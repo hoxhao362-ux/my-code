@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import { exportLogsToExcel, checkExportPermission } from '../../../utils/export'
 
@@ -12,6 +13,7 @@ const props = defineProps({
 })
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 // Log Types
@@ -95,15 +97,12 @@ const openConfirmModal = () => {
   showConfirmModal.value = true
 }
 
-// Confirm Clear
 const confirmClearLogs = () => {
-  // Clear in store
   userStore.systemLogs = []
-  // Clear in local storage (manually or via store action if available, but direct manipulation for now is ok given the store structure)
   localStorage.removeItem('systemLogs')
   
   showConfirmModal.value = false
-  alert('Logs cleared successfully!')
+  toastStore.add({ message: 'Logs cleared successfully!', type: 'success' })
 }
 
 const cancelClearLogs = () => {

@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 import InitialReviewModal from '../../components/admin/manuscript/InitialReviewModal.vue'
 import AssignReviewersModal from '../../components/admin/manuscript/AssignReviewersModal.vue'
@@ -12,13 +13,18 @@ import FinalDecision from '../../views/admin/manuscript/FinalDecision.vue'
 import ReviewSummary from '../../components/admin/manuscript/ReviewSummary.vue'
 import AuditLog from '../../components/admin/manuscript/AuditLog.vue'
 import RevisionCheck from '../../components/admin/manuscript/RevisionCheck.vue'
+import SkeletonLoader from '../../components/common/SkeletonLoader.vue'
 import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const { t } = useI18n()
 const user = computed(() => userStore.submissionUser || userStore.user)
+
+// Loading State
+const isLoading = ref(true)
 
 // State for Modal
 const showInitialReviewModal = ref(false) // Deprecated, keeping for safety but not used
@@ -80,7 +86,7 @@ const manuscripts = ref([])
 const syncFromStore = () => {
   manuscripts.value = userStore.journals.map(j => ({
     ...j,
-    author: j.writer, // Alias
+    author: j.author || j.writer,
     submittedDate: j.date || j.submissionDate || '2026-01-01',
     field: j.module || 'General',
     assignedTo: j.assignedEditor || j.assignedTo
@@ -96,6 +102,11 @@ const updateManuscript = (journal) => {
 }
 
 onMounted(() => {
+    // Simulate loading delay
+    setTimeout(() => {
+      isLoading.value = false
+    }, 1000)
+    
     syncFromStore()
     // Load history
     const history = localStorage.getItem('manuscript_search_history')
@@ -116,7 +127,7 @@ const selectedStatus = ref('all')
 const selectedDateRange = ref('custom') // custom, today, this_week, this_month, this_year
 const dateRange = ref({ start: '', end: '' })
 const showAdvancedFilters = ref(false)
-const advancedFilters = ref({ writer: '', field: '' })
+const advancedFilters = ref({ author: '', field: '' })
 
 // Date range options
 const dateRangeOptions = computed(() => [
@@ -185,7 +196,7 @@ const resetFilters = () => {
   selectedStatus.value = 'all'
   selectedDateRange.value = 'custom'
   dateRange.value = { start: '', end: '' }
-  advancedFilters.value = { writer: '', field: '' }
+  advancedFilters.value = { author: '', field: '' }
   searchKeyword.value = ''
 }
 
@@ -198,7 +209,7 @@ const filteredManuscripts = computed(() => {
     list = list.filter(m => 
       m.id.toLowerCase().includes(keyword) ||
       m.title.toLowerCase().includes(keyword) ||
-      (m.writer || m.author).toLowerCase().includes(keyword) ||
+      (m.author || m.writer || '').toLowerCase().includes(keyword) ||
       m.field.toLowerCase().includes(keyword)
     )
   }
@@ -268,9 +279,9 @@ const filteredManuscripts = computed(() => {
   }
 
   // 6. Advanced Filters (New)
-  if (advancedFilters.value.writer) {
-    const writerKey = advancedFilters.value.writer.toLowerCase()
-    list = list.filter(m => (m.writer || m.author || '').toLowerCase().includes(writerKey))
+  if (advancedFilters.value.author) {
+    const authorKey = advancedFilters.value.author.toLowerCase()
+    list = list.filter(m => (m.author || m.writer || '').toLowerCase().includes(authorKey))
   }
   if (advancedFilters.value.field) {
     list = list.filter(m => m.field === advancedFilters.value.field)
@@ -307,23 +318,23 @@ const handleActionSubmit = ({ type, data }) => {
   const index = manuscripts.value.findIndex(m => m.id === actionJournal.value.id)
   if (index !== -1) {
     if (type === 'format_check') {
-       alert('Format Check Completed')
+       toastStore.add({ message: 'Format Check Completed', type: 'success' })
     } else if (type === 'desk_reject') {
        manuscripts.value[index].status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
-       alert('Desk Reject Confirmed')
+       toastStore.add({ message: 'Desk Reject Confirmed', type: 'warning' })
     } else if (type === 'withdraw') {
        manuscripts.value[index].status = MANUSCRIPT_STATUS.WITHDRAWN
-       alert('Manuscript Withdrawn')
+       toastStore.add({ message: 'Manuscript Withdrawn', type: 'info' })
     } else if (type === 'send_to_production') {
        manuscripts.value[index].status = MANUSCRIPT_STATUS.PENDING_PUBLICATION
-       alert('Sent to Production')
+       toastStore.add({ message: 'Sent to Production', type: 'success' })
     } else if (type === 'archive') {
        manuscripts.value[index].status = 'Archived'
-       alert('Manuscript Archived')
+       toastStore.add({ message: 'Manuscript Archived', type: 'info' })
     } else if (type === 'invite_reviewer') {
         manuscripts.value[index].status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
     } else {
-       alert(`${type.replace('_', ' ')} Action Completed`)
+       toastStore.add({ message: `${type.replace('_', ' ')} Action Completed`, type: 'success' })
     }
   }
 }
@@ -345,7 +356,7 @@ const handleInitialReview = (id) => {
   if (!journal) return
 
   if (!canInitialReview.value) {
-     alert("No permission for initial review")
+     toastStore.add({ message: "No permission for initial review", type: 'error' })
      return
   }
   
@@ -367,7 +378,7 @@ const handleChecklistSubmit = (data) => {
   }
   showChecklist.value = false
   reviewJournal.value = null
-  alert(`Initial Review Completed: ${data.decision.toUpperCase()}`)
+  toastStore.add({ message: `Initial Review Completed: ${data.decision.toUpperCase()}`, type: 'success' })
 }
 
 const handleChecklistSave = (data) => {
@@ -379,7 +390,7 @@ const handleAssignReviewer = (id) => {
   const journal = manuscripts.value.find(m => m.id === id)
   if (!journal) return
   if (!canAssignReviewer.value) {
-     alert("Permission denied")
+     toastStore.add({ message: "Permission denied", type: 'error' })
      return
   }
   assignJournal.value = journal
@@ -403,7 +414,7 @@ const handleReviewSummary = (id) => {
   if (!journal) return
   
   if (!canDraftDecision.value) {
-    alert("Permission denied")
+    toastStore.add({ message: "Permission denied", type: 'error' })
     return
   }
   
@@ -416,7 +427,7 @@ const handleReviewSummarySubmit = (data) => {
   const index = manuscripts.value.findIndex(m => m.id === summaryJournal.value.id)
   if (index !== -1) {
     manuscripts.value[index].status = MANUSCRIPT_STATUS.UNDER_FINAL_DECISION
-    alert('Review Summary Report Generated & Submitted to EiC')
+    toastStore.add({ message: 'Review Summary Report Generated & Submitted to EiC', type: 'success' })
   }
   showReviewSummary.value = false
   summaryJournal.value = null
@@ -428,7 +439,7 @@ const handleFinalDecision = (id) => {
   if (!journal) return
   
   if (!canDraftDecision.value && !canMakeDecision.value) {
-    alert("Permission denied")
+    toastStore.add({ message: "Permission denied", type: 'error' })
     return
   }
   
@@ -443,10 +454,10 @@ const handleFinalDecisionSubmit = (payload) => {
   if (index !== -1) {
     if (payload.role === 'editor') {
       manuscripts.value[index].status = MANUSCRIPT_STATUS.UNDER_FINAL_DECISION
-      alert("Materials submitted to Editor-in-Chief")
+      toastStore.add({ message: "Materials submitted to Editor-in-Chief", type: 'success' })
     } else {
       manuscripts.value[index].status = payload.nextStatus
-      alert(`Final Decision Submitted: ${payload.data.decision.toUpperCase()}`)
+      toastStore.add({ message: `Final Decision Submitted: ${payload.data.decision.toUpperCase()}`, type: 'success' })
     }
   }
   
@@ -460,7 +471,7 @@ const handleRevisionCheck = (id) => {
   if (!journal) return
   
   if (!canInitialReview.value) {
-    alert("Permission denied")
+    toastStore.add({ message: "Permission denied", type: 'error' })
     return
   }
   
@@ -476,13 +487,13 @@ const handleRevisionSubmit = (data) => {
     if (data.decision === 'pass') {
       // Logic depends on stage. Assuming initial review for now.
       manuscripts.value[index].status = MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED
-      alert("Revision Passed")
+      toastStore.add({ message: "Revision Passed", type: 'success' })
     } else if (data.decision === 'retry') {
       manuscripts.value[index].status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION
-      alert("Returned for Revision")
+      toastStore.add({ message: "Returned for Revision", type: 'warning' })
     } else if (data.decision === 'reject') {
       manuscripts.value[index].status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
-      alert("Revision Rejected")
+      toastStore.add({ message: "Revision Rejected", type: 'error' })
     }
   }
   
@@ -514,12 +525,13 @@ const handleStartPublication = (id) => {
   <div class="editor-page">
     
     <!-- Full Screen Overlay for Heavy Tasks -->
-    <div v-if="showChecklist || showFinalDecision || showReviewSummary || showAuditLog || showRevisionCheck" class="fullscreen-overlay">
+    <div v-if="showChecklist || showFinalDecision || showReviewSummary || showAuditLog || showRevisionCheck" class="fullscreen-overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
       <div class="overlay-header">
-        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false">← {{ t('editor.manuscripts.back') }}</button>
+        <button class="btn-back" @click="showChecklist = false; showFinalDecision = false; showReviewSummary = false; showAuditLog = false; showRevisionCheck = false" :aria-label="t('editor.manuscripts.back')">← {{ t('editor.manuscripts.back') }}</button>
       </div>
       
       <div v-if="showChecklist" class="overlay-content">
+        <h2 id="overlay-title" class="visually-hidden">Initial Review Checklist</h2>
         <InitialReviewChecklist 
           :manuscript="reviewJournal"
           :current-user="user"
@@ -530,6 +542,7 @@ const handleStartPublication = (id) => {
       </div>
 
       <div v-if="showFinalDecision" class="overlay-content">
+        <h2 id="overlay-title" class="visually-hidden">Final Decision</h2>
         <FinalDecision 
           :manuscript="decisionJournal"
           :current-user="user"
@@ -539,11 +552,12 @@ const handleStartPublication = (id) => {
           ]"
           @submit="handleFinalDecisionSubmit"
           @save-draft="() => {}"
-          @return-materials="() => { showFinalDecision = false; alert('Returned for materials'); }"
+          @return-materials="() => { showFinalDecision = false; toastStore.add({ message: 'Returned for materials', type: 'info' }); }"
         />
       </div>
 
       <div v-if="showReviewSummary" class="overlay-content">
+        <h2 id="overlay-title" class="visually-hidden">Review Summary</h2>
         <ReviewSummary 
           :manuscript="summaryJournal"
           @submit="handleReviewSummarySubmit"
@@ -552,6 +566,7 @@ const handleStartPublication = (id) => {
       </div>
 
       <div v-if="showRevisionCheck" class="overlay-content">
+        <h2 id="overlay-title" class="visually-hidden">Revision Check</h2>
         <RevisionCheck 
           :manuscript="revisionJournal"
           @submit="handleRevisionSubmit"
@@ -560,6 +575,7 @@ const handleStartPublication = (id) => {
       </div>
 
       <div v-if="showAuditLog" class="overlay-content">
+        <h2 id="overlay-title" class="visually-hidden">Audit Log</h2>
         <AuditLog 
           :manuscript="logJournal"
         />
@@ -570,60 +586,98 @@ const handleStartPublication = (id) => {
     <div v-else>
       <div class="page-header">
         <h2>{{ t('editor.manuscripts.title') }}</h2>
-        <div class="role-badge">{{ t('editor.manuscripts.currentRole') }}: {{ user?.role }}</div>
+        <div class="role-badge" role="status">{{ t('editor.manuscripts.currentRole') }}: {{ user?.role }}</div>
       </div>
 
       <div class="tabs">
-        <div class="tab-group">
-          <button class="tab-btn" :class="{ active: activeTab === 'all' }" @click="activeTab = 'all'">{{ t('editor.manuscripts.tabs.all') }}</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'assigned' }" @click="activeTab = 'assigned'">{{ t('editor.manuscripts.tabs.assigned') }}</button>
-          <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">{{ t('editor.manuscripts.tabs.pending') }}</button>
+        <div class="tab-group" role="tablist" aria-label="Manuscript Status Tabs">
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'all' }" 
+            @click="activeTab = 'all'"
+            role="tab"
+            :aria-selected="activeTab === 'all'"
+            aria-controls="manuscript-list-panel"
+            id="tab-all"
+          >
+            {{ t('editor.manuscripts.tabs.all') }}
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'assigned' }" 
+            @click="activeTab = 'assigned'"
+            role="tab"
+            :aria-selected="activeTab === 'assigned'"
+            aria-controls="manuscript-list-panel"
+            id="tab-assigned"
+          >
+            {{ t('editor.manuscripts.tabs.assigned') }}
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'pending' }" 
+            @click="activeTab = 'pending'"
+            role="tab"
+            :aria-selected="activeTab === 'pending'"
+            aria-controls="manuscript-list-panel"
+            id="tab-pending"
+          >
+            {{ t('editor.manuscripts.tabs.pending') }}
+          </button>
         </div>
         
         <div class="search-container">
           <div class="search-wrapper">
-            <input type="text" v-model="searchKeyword" :placeholder="t('editor.manuscripts.search.placeholder')" class="search-input" @focus="showSearchHistory = true" @blur="setTimeout(() => showSearchHistory = false, 200)" />
+            <input 
+              type="text" 
+              v-model="searchKeyword" 
+              :placeholder="t('editor.manuscripts.search.placeholder')" 
+              class="search-input" 
+              @focus="showSearchHistory = true" 
+              @blur="setTimeout(() => showSearchHistory = false, 200)"
+              :aria-label="t('editor.manuscripts.search.placeholder')"
+            />
           </div>
         </div>
       </div>
 
       <!-- Filters Bar (New) -->
-      <div class="filters-bar">
+      <div class="filters-bar" role="search" aria-label="Manuscript Filters">
         <!-- Row 1: Status, Date, Advanced Toggle, Reset -->
         <div class="filter-row">
            <div class="filter-group">
-              <label>{{ t('editor.manuscripts.filter.status') }}</label>
-              <select v-model="selectedStatus" class="filter-select">
+              <label for="status-filter">{{ t('editor.manuscripts.filter.status') }}</label>
+              <select id="status-filter" v-model="selectedStatus" class="filter-select" :aria-label="t('editor.manuscripts.filter.status')">
                 <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
            </div>
            <div class="filter-group">
-              <label>{{ t('editor.manuscripts.filter.dateRange') }}</label>
-              <select v-model="selectedDateRange" class="filter-select date-range-select">
+              <label for="date-filter">{{ t('editor.manuscripts.filter.dateRange') }}</label>
+              <select id="date-filter" v-model="selectedDateRange" class="filter-select date-range-select" :aria-label="t('editor.manuscripts.filter.dateRange')">
                 <option v-for="option in dateRangeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
            </div>
            <div class="filter-actions">
-              <button class="btn-text filter-toggle" @click="showAdvancedFilters = !showAdvancedFilters">
+              <button class="btn-text filter-toggle" @click="showAdvancedFilters = !showAdvancedFilters" :aria-expanded="showAdvancedFilters" aria-controls="advanced-filters-panel">
                 {{ showAdvancedFilters ? t('editor.manuscripts.filter.hideAdvanced') : t('editor.manuscripts.filter.advanced') }}
-                <span class="toggle-icon">{{ showAdvancedFilters ? '▲' : '▼' }}</span>
+                <span class="toggle-icon" aria-hidden="true">{{ showAdvancedFilters ? '▲' : '▼' }}</span>
               </button>
-              <button class="btn-text reset-btn" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
+              <button class="btn-text reset-btn" @click="resetFilters" :aria-label="t('editor.manuscripts.filter.reset')">{{ t('editor.manuscripts.filter.reset') }}</button>
            </div>
         </div>
         
         <!-- Row 2: Advanced Panel -->
         <transition name="slide-fade">
-          <div v-if="showAdvancedFilters" class="advanced-panel">
+          <div v-if="showAdvancedFilters" class="advanced-panel" id="advanced-filters-panel">
              <div class="filter-group">
-                <label>{{ t('editor.manuscripts.filter.writer') }}</label>
-                <input type="text" v-model="advancedFilters.writer" :placeholder="t('editor.manuscripts.filter.writer')" class="filter-input">
+                <label for="author-filter">{{ t('editor.manuscripts.filter.author') }}</label>
+                <input id="author-filter" type="text" v-model="advancedFilters.author" :placeholder="t('editor.manuscripts.filter.author')" class="filter-input">
              </div>
              <div class="filter-group">
-                <label>{{ t('editor.manuscripts.filter.field') }}</label>
-                <select v-model="advancedFilters.field" class="filter-select">
+                <label for="field-filter">{{ t('editor.manuscripts.filter.field') }}</label>
+                <select id="field-filter" v-model="advancedFilters.field" class="filter-select">
                    <option value="">{{ t('editor.manuscripts.filter.allFields') }}</option>
                    <option v-for="f in fieldOptions" :key="f" :value="f">{{ f }}</option>
                 </select>
@@ -632,108 +686,110 @@ const handleStartPublication = (id) => {
         </transition>
       </div>
 
-      <div class="manuscript-list">
-        <div v-if="filteredManuscripts.length === 0" class="empty-state">
-          <p>{{ t('editor.manuscripts.noManuscripts') }}</p>
-          <button class="btn-text" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
-        </div>
-        <div v-else v-for="ms in filteredManuscripts" :key="ms.id" class="manuscript-card">
-          <div class="ms-header">
-            <span class="ms-id">{{ ms.id }}</span>
-            <span class="ms-status-badge" :style="{ backgroundColor: getStatusColor(ms.status), color: 'white' }">{{ getStatusLabel(ms.status) }}</span>
+      <div class="manuscript-list" role="tabpanel" id="manuscript-list-panel" :aria-labelledby="`tab-${activeTab}`">
+        <SkeletonLoader :loading="isLoading" :count="3" height="180px" gap="15px">
+          <div v-if="filteredManuscripts.length === 0" class="empty-state">
+            <p>{{ t('editor.manuscripts.noManuscripts') }}</p>
+            <button class="btn-text" @click="resetFilters">{{ t('editor.manuscripts.filter.reset') }}</button>
           </div>
-          <h3 class="ms-title clickable-title" @click="router.push({ name: 'admin-journal-detail', params: { id: ms.id } })">
-            {{ ms.title }}
-          </h3>
-          <div class="ms-meta">
-            <span>{{ t('editor.manuscripts.columns.writer') }}: {{ ms.writer || ms.author }}</span>
-            <span>{{ t('editor.manuscripts.columns.field') }}: {{ ms.field }}</span>
-            <span>{{ t('editor.manuscripts.columns.date') }}: {{ ms.submittedDate }}</span>
-          </div>
-          
-          <div class="ms-actions" v-if="!isReadOnly">
-            
-            <!-- 1. Pending Initial Review -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || ms.status === MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW">
-              <div class="action-row left">
-                <button v-if="canInitialReview" class="action-btn red" @click="handleInitialReview(ms.id)">
-                  {{ ms.status === MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW ? 'Continue Initial Review' : 'Start Initial Review' }}
-                </button>
-              </div>
-            </template>
-
-            <!-- 2. Initial Review Passed -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED">
-              <div class="action-row left">
-                <button v-if="canAssignReviewer" class="action-btn red" @click="handleAssignReviewer(ms.id)">Assign Reviewers</button>
-              </div>
-              <div class="hint-text">Please assign reviewers to proceed to Peer Review.</div>
-            </template>
-
-            <!-- 3. Initial Review Revision (Now Re-Review) -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION">
-              <div class="action-row left">
-                 <button class="action-btn red" @click="handleRevisionCheck(ms.id)">Start Revision Check</button>
-                 <span class="hint-text">Author has submitted revision.</span>
-              </div>
-            </template>
-
-            <!-- 4. Under Peer Review -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.UNDER_PEER_REVIEW">
-               <div class="action-row left">
-                 <button class="action-btn gray">Check Review Status</button>
-                 <span class="hint-text">Review in progress...</span>
-               </div>
-            </template>
-
-            <!-- 5. Pending Final Decision (Review Summary -> Final Decision) -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION">
-               <div class="action-row left">
-                 <button v-if="canDraftDecision" class="action-btn red" @click="handleReviewSummary(ms.id)">Create Review Summary</button>
-                 <button v-if="canDraftDecision" class="action-btn gray" @click="handleFinalDecision(ms.id)">Direct Final Decision (Legacy)</button>
-               </div>
-            </template>
-
-            <!-- 6. Under Final Decision (EiC Reviewing) -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION">
-               <div class="action-row left">
-                 <button v-if="user.role === 'editor_in_chief' || user.role === 'associate_editor'" class="action-btn red" @click="handleFinalDecision(ms.id)">Make Final Decision</button>
-                 <button v-else class="action-btn gray">View Decision Progress</button>
-               </div>
-            </template>
-
-            <!-- 7. Final Decision Passed (Accepted) -->
-            <template v-if="ms.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED">
-               <div class="action-row left">
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">Start Publication Process</button>
-               </div>
-            </template>
-
-            <!-- 8. Publication Phase (New) -->
-            <template v-if="[
-                MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
-                MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
-                MANUSCRIPT_STATUS.PENDING_PROOF, 
-                MANUSCRIPT_STATUS.PENDING_PUBLICATION,
-                MANUSCRIPT_STATUS.PUBLISHED
-              ].includes(ms.status)">
-               <div class="action-row left">
-                 <button class="action-btn red" @click="handleStartPublication(ms.id)">
-                   {{ ms.status === MANUSCRIPT_STATUS.PUBLISHED ? 'View Publication Details' : 'Continue Publication Process' }}
-                 </button>
-                 <span class="hint-text">Current Stage: {{ getStatusLabel(ms.status) }}</span>
-               </div>
-            </template>
-
-            <!-- Common Utility Actions -->
-            <div class="action-row right">
-               <button class="action-btn gray-small" @click="handleAuditLog(ms.id)">Audit Log</button>
-               <button class="action-btn gray-small" @click="handleAddNote(ms.id)">Add Note</button>
-               <button class="action-btn gray-small" @click="handleViewHistory(ms.id)">View History</button>
+          <div v-else v-for="ms in filteredManuscripts" :key="ms.id" class="manuscript-card">
+            <div class="ms-header">
+              <span class="ms-id">{{ ms.id }}</span>
+              <span class="ms-status-badge" :style="{ backgroundColor: getStatusColor(ms.status), color: 'white' }">{{ getStatusLabel(ms.status) }}</span>
             </div>
+            <h3 class="ms-title clickable-title" @click="router.push({ name: 'admin-journal-detail', params: { id: ms.id } })" role="link" tabindex="0" @keydown.enter="router.push({ name: 'admin-journal-detail', params: { id: ms.id } })">
+              {{ ms.title }}
+            </h3>
+            <div class="ms-meta">
+              <span>{{ t('editor.manuscripts.columns.author') }}: {{ ms.author || ms.writer }}</span>
+              <span>{{ t('editor.manuscripts.columns.field') }}: {{ ms.field }}</span>
+              <span>{{ t('editor.manuscripts.columns.date') }}: {{ ms.submittedDate }}</span>
+            </div>
+            
+            <div class="ms-actions" v-if="!isReadOnly">
+              
+              <!-- 1. Pending Initial Review -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || ms.status === MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW">
+                <div class="action-row left">
+                  <button v-if="canInitialReview" class="action-btn red" @click="handleInitialReview(ms.id)" :aria-label="ms.status === MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW ? 'Continue Initial Review' : 'Start Initial Review'">
+                    {{ ms.status === MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW ? 'Continue Initial Review' : 'Start Initial Review' }}
+                  </button>
+                </div>
+              </template>
 
+              <!-- 2. Initial Review Passed -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED">
+                <div class="action-row left">
+                  <button v-if="canAssignReviewer" class="action-btn red" @click="handleAssignReviewer(ms.id)">Assign Reviewers</button>
+                </div>
+                <div class="hint-text">Please assign reviewers to proceed to Peer Review.</div>
+              </template>
+
+              <!-- 3. Initial Review Revision (Now Re-Review) -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION">
+                <div class="action-row left">
+                   <button class="action-btn red" @click="handleRevisionCheck(ms.id)">Start Revision Check</button>
+                   <span class="hint-text">Author has submitted revision.</span>
+                </div>
+              </template>
+
+              <!-- 4. Under Peer Review -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.UNDER_PEER_REVIEW">
+                 <div class="action-row left">
+                   <button class="action-btn gray">Check Review Status</button>
+                   <span class="hint-text">Review in progress...</span>
+                 </div>
+              </template>
+
+              <!-- 5. Pending Final Decision (Review Summary -> Final Decision) -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION">
+                 <div class="action-row left">
+                   <button v-if="canDraftDecision" class="action-btn red" @click="handleReviewSummary(ms.id)">Create Review Summary</button>
+                   <button v-if="canDraftDecision" class="action-btn gray" @click="handleFinalDecision(ms.id)">Direct Final Decision (Legacy)</button>
+                 </div>
+              </template>
+
+              <!-- 6. Under Final Decision (EiC Reviewing) -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION">
+                 <div class="action-row left">
+                   <button v-if="user.role === 'editor_in_chief' || user.role === 'associate_editor'" class="action-btn red" @click="handleFinalDecision(ms.id)">Make Final Decision</button>
+                   <button v-else class="action-btn gray">View Decision Progress</button>
+                 </div>
+              </template>
+
+              <!-- 7. Final Decision Passed (Accepted) -->
+              <template v-if="ms.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED">
+                 <div class="action-row left">
+                   <button class="action-btn red" @click="handleStartPublication(ms.id)">Start Publication Process</button>
+                 </div>
+              </template>
+
+              <!-- 8. Publication Phase (New) -->
+              <template v-if="[
+                  MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION, 
+                  MANUSCRIPT_STATUS.PENDING_COPYRIGHT, 
+                  MANUSCRIPT_STATUS.PENDING_PROOF, 
+                  MANUSCRIPT_STATUS.PENDING_PUBLICATION,
+                  MANUSCRIPT_STATUS.PUBLISHED
+                ].includes(ms.status)">
+                 <div class="action-row left">
+                   <button class="action-btn red" @click="handleStartPublication(ms.id)">
+                     {{ ms.status === MANUSCRIPT_STATUS.PUBLISHED ? 'View Publication Details' : 'Continue Publication Process' }}
+                   </button>
+                   <span class="hint-text">Current Stage: {{ getStatusLabel(ms.status) }}</span>
+                 </div>
+              </template>
+
+              <!-- Common Utility Actions -->
+              <div class="action-row right">
+                 <button class="action-btn gray-small" @click="handleAuditLog(ms.id)">Audit Log</button>
+                 <button class="action-btn gray-small" @click="handleAddNote(ms.id)">Add Note</button>
+                 <button class="action-btn gray-small" @click="handleViewHistory(ms.id)">View History</button>
+              </div>
+
+            </div>
           </div>
-        </div>
+        </SkeletonLoader>
       </div>
     </div>
 

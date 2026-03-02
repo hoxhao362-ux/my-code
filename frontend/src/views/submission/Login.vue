@@ -2,10 +2,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const { t } = useI18n()
 
 const username = ref('')
@@ -27,9 +29,9 @@ const handleLogin = async (role) => {
     })
     
     // 登录成功后根据角色跳转到对应仪表盘
-    if (role === 'writer') {
-      // Writer logs in to submit, go to submission process directly
-      router.push('/submission/writer/submit')
+    if (role === 'author') {
+      // Author logs in to submit, go to submission process directly
+      router.push('/submission/author/submit')
     } else if (role === 'reviewer') {
       router.push('/admin/audit-dashboard')
     } else if (role === 'editor' || role === 'admin') {
@@ -44,8 +46,7 @@ const handleLogin = async (role) => {
 }
 
 const handleOrcidLogin = () => {
-  // Mock ORCID login
-  alert('ORCID Login Simulation: Authenticated successfully.')
+  toastStore.add({ message: 'ORCID Login Simulation: Authenticated successfully.', type: 'success' })
 }
 </script>
 
@@ -67,8 +68,8 @@ const handleOrcidLogin = () => {
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
       <div class="role-buttons">
-        <button class="btn-role author" @click="handleLogin('writer')">
-          {{ t('submission.login.btn.writer') }}
+        <button class="btn-role author" @click="handleLogin('author')">
+          {{ t('submission.login.btn.author') }}
         </button>
         <button class="btn-role reviewer" @click="handleLogin('reviewer')">
           {{ t('submission.login.btn.reviewer') }}

@@ -5,10 +5,11 @@ import Navigation from './Navigation.vue'
 import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../constants/manuscriptStatus'
 import { useI18n } from '../composables/useI18n'
+import { useToastStore } from '../stores/toast'
 
 const { t } = useI18n()
+const toastStore = useToastStore()
 
-// 接收App.vue传递的上下文
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
 
 // 创建router实例
@@ -280,17 +281,15 @@ const handleReview = (id, action) => {
       // 清空终审评论
       delete journal.zhongShenComment
     } else {
-      alert(t('allPending.noPermission'))
+      toastStore.add({ message: t('allPending.noPermission'), type: 'warning' })
       return
     }
     
-    // 更新原始期刊数组
     const updatedJournals = [...props.journals]
     updatedJournals[journalIndex] = journal
     props.updateJournals(updatedJournals)
     
-    // 显示审核结果
-    alert(updateMessage)
+    toastStore.add({ message: updateMessage, type: 'success' })
   }
 }
 </script>

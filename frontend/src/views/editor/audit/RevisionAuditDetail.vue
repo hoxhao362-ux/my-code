@@ -5,6 +5,7 @@ import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 
 const props = defineProps({
   manuscript: {
@@ -17,8 +18,9 @@ const emit = defineEmits(['back', 'update'])
 
 const { t } = useI18n()
 const userStore = useUserStore()
-const activeTab = ref('preview') // 'preview' | 'response'
-const isPreviewed = ref(false) // Check if revision is previewed
+const toastStore = useToastStore()
+const activeTab = ref('preview')
+const isPreviewed = ref(false)
 
 // Mock Data Generators
 const generateMockReviewerComments = (msId) => {
@@ -49,7 +51,7 @@ const showApproveModal = ref(false)
 
 const handleApproveClick = () => {
   if (!isPreviewed.value) {
-    alert(t('editor.audit.revisionHandling.detail.modals.approve.reviewRequired'))
+    toastStore.add({ message: t('editor.audit.revisionHandling.detail.modals.approve.reviewRequired'), type: 'warning' })
     return
   }
   showApproveModal.value = true
@@ -81,7 +83,7 @@ const confirmApprove = () => {
     type: 'success',
     createdAt: new Date().toISOString(),
     isRead: false,
-    targetUser: props.manuscript.writer
+    targetUser: props.manuscript.author || props.manuscript.writer
   })
   localStorage.setItem('notifications', JSON.stringify(existingNotifications))
 
@@ -167,7 +169,7 @@ const confirmSendRequest = () => {
     type: 'warning',
     createdAt: new Date().toISOString(),
     isRead: false,
-    targetUser: props.manuscript.writer
+    targetUser: props.manuscript.author || props.manuscript.writer
   })
   localStorage.setItem('notifications', JSON.stringify(existingNotifications))
 
@@ -225,7 +227,7 @@ const confirmReject = () => {
     type: 'error',
     createdAt: new Date().toISOString(),
     isRead: false,
-    targetUser: props.manuscript.writer
+    targetUser: props.manuscript.author || props.manuscript.writer
   })
   localStorage.setItem('notifications', JSON.stringify(existingNotifications))
 

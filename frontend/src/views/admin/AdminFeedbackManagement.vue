@@ -2,10 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 
 const router = useRouter()
-
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // 反馈消息列表
 const feedbackMessages = computed(() => userStore.feedbackMessages)
@@ -77,10 +78,9 @@ const openDeleteModal = (messageId) => {
   showDeleteModal.value = true
 }
 
-// 打开删除确认模态框（批量删除）
 const openBatchDeleteModal = () => {
   if (selectedMessages.value.length === 0) {
-    alert('请先选择要删除的消息')
+    toastStore.add({ message: '请先选择要删除的消息', type: 'warning' })
     return
   }
   deleteType.value = 'batch'

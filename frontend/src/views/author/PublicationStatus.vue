@@ -2,11 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { MANUSCRIPT_STATUS, STATUS_LABELS, STATUS_COLORS } from '../../constants/manuscriptStatus'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // State
 const manuscript = ref(null)
@@ -62,7 +64,7 @@ const loadManuscript = () => {
   const found = userStore.journals.find(j => String(j.id) === String(id))
   if (found) {
     // Security check: Ensure author is the owner
-    if (found.writer !== currentUser.value.username && currentUser.value.role !== 'admin') {
+    if (found.author !== currentUser.value.username && currentUser.value.role !== 'admin') {
        errorMessage.value = 'Access Denied: You are not the author of this manuscript.'
        return
     }
@@ -105,7 +107,7 @@ const confirmAcceptance = () => {
     authorResponse: 'accepted',
     authorAcceptedAt: new Date().toISOString()
   })
-  alert('Acceptance Confirmed. Proceeding to Copyright Agreement.')
+  toastStore.add({ message: 'Acceptance Confirmed. Proceeding to Copyright Agreement.', type: 'success' })
 }
 
 const signCopyright = () => {
@@ -115,7 +117,7 @@ const signCopyright = () => {
     agreementSigned: true,
     copyrightSignedAt: new Date().toISOString()
   })
-  alert('Copyright Agreement Signed. Waiting for Proofs.')
+  toastStore.add({ message: 'Copyright Agreement Signed. Waiting for Proofs.', type: 'success' })
 }
 
 const confirmProof = () => {
@@ -125,11 +127,15 @@ const confirmProof = () => {
     proofConfirmed: true,
     proofConfirmedAt: new Date().toISOString()
   })
-  alert('Proofs Confirmed. Waiting for Final Publication.')
+  toastStore.add({ message: 'Proofs Confirmed. Waiting for Final Publication.', type: 'success' })
+}
+
+const requestCorrections = () => {
+  toastStore.add({ message: 'Please contact the editor via email for corrections.', type: 'info' })
 }
 
 const goBack = () => {
-  router.push({ name: 'admin-writer-dashboard' })
+  router.push({ name: 'admin-author-dashboard' })
 }
 
 onMounted(() => {
@@ -138,7 +144,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="writer-publication-page" v-if="manuscript">
+  <div class="author-publication-page" v-if="manuscript">
     <header class="page-header">
       <button class="btn-back" @click="goBack">← Back to Dashboard</button>
       <h2>Publication Status</h2>
@@ -215,7 +221,7 @@ onMounted(() => {
              <a href="#" class="link">Download Proof PDF</a>
           </div>
           <button class="btn btn-primary" @click="confirmProof">Confirm Proofs</button>
-          <button class="btn btn-outline" @click="alert('Please contact the editor via email for corrections.')">Request Corrections</button>
+          <button class="btn btn-outline" @click="requestCorrections">Request Corrections</button>
         </div>
       </div>
       
@@ -266,7 +272,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.writer-publication-page {
+.author-publication-page {
   max-width: 900px;
   margin: 40px auto;
   padding: 20px;

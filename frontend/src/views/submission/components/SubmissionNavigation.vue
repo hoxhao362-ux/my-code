@@ -25,7 +25,7 @@ const goSubmit = () => {
 }
 
 const goMainMenu = () => {
-  router.push('/admin/writer-dashboard')
+  router.push('/admin/author-dashboard')
 }
 
 const handleLogout = () => {
@@ -52,9 +52,9 @@ const handleLogout = () => {
       <div class="menu-container">
         <ul class="menu-list">
           <li class="menu-item"><a href="#" @click.prevent="goHome">{{ t('submission.nav.home') }}</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/admin/writer-dashboard' }"><a href="#" @click.prevent="goMainMenu">{{ t('submission.nav.mainMenu') }}</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/submission/writer/submit' }"><a href="#" @click.prevent="goSubmit">{{ t('submission.nav.submitManuscript') }}</a></li>
-          <li class="menu-item" :class="{ active: route.path === '/writer/letters' }"><a href="#" @click.prevent="router.push('/writer/letters')">{{ t('submission.nav.letters') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/admin/author-dashboard' }"><a href="#" @click.prevent="goMainMenu">{{ t('submission.nav.mainMenu') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/submission/author/submit' }"><a href="#" @click.prevent="goSubmit">{{ t('submission.nav.submitManuscript') }}</a></li>
+          <li class="menu-item" :class="{ active: route.path === '/author/letters' }"><a href="#" @click.prevent="router.push('/author/letters')">{{ t('submission.nav.letters') }}</a></li>
           
           <!-- About Dropdown -->
           <li class="menu-item dropdown" 

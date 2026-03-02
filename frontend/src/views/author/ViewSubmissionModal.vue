@@ -1,6 +1,7 @@
 <script setup>
 import { defineProps, defineEmits, ref } from 'vue'
 import AttachmentsModal from './AttachmentsModal.vue'
+import PdfPreviewModal from '../../components/PdfPreviewModal.vue'
 
 const props = defineProps({
   visible: Boolean,
@@ -12,6 +13,38 @@ const emit = defineEmits(['close'])
 const isGeneratingPdf = ref(false)
 const showSuccessMessage = ref(false)
 const showAttachmentsModal = ref(false)
+const showPdfPreview = ref(false)
+const pdfUrl = ref('')
+
+const generatePdfBlob = () => {
+  const content = `
+      Manuscript ID: ${props.manuscript.id}
+      Title: ${props.manuscript.title}
+      Author: ${props.manuscript.author}
+      Submission Date: ${props.manuscript.submittedDate}
+      
+      Abstract:
+      ${props.manuscript.abstract || 'No abstract'}
+      
+      [Main Content Placeholder]
+      This is a generated PDF simulation for the manuscript.
+      
+      (In a real application, this would be a real PDF file fetched from the server)
+    `
+  return new Blob([content], { type: 'text/plain' })
+}
+
+const handlePreview = () => {
+  if (!props.manuscript) return
+  isGeneratingPdf.value = true
+  
+  setTimeout(() => {
+    const blob = generatePdfBlob()
+    pdfUrl.value = window.URL.createObjectURL(blob)
+    showPdfPreview.value = true
+    isGeneratingPdf.value = false
+  }, 1000)
+}
 
 const handleDownload = () => {
   if (!props.manuscript) return
@@ -20,28 +53,13 @@ const handleDownload = () => {
   
   // Simulate PDF generation delay (1.5s)
   setTimeout(() => {
-    // Generate dummy PDF content
-    const content = `
-      Manuscript ID: ${props.manuscript.id}
-      Title: ${props.manuscript.title}
-      Author: ${props.manuscript.writer}
-      Submission Date: ${props.manuscript.submittedDate}
-      
-      Abstract:
-      ${props.manuscript.abstract || 'No abstract'}
-      
-      [Main Content Placeholder]
-      This is a generated PDF simulation for the manuscript.
-    `
-    
-    // Trigger download
-    const blob = new Blob([content], { type: 'text/plain' })
+    const blob = generatePdfBlob()
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     // Naming rule: Manuscript_[ManuscriptID]_[SubmissionDate].pdf
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
-    link.download = `Manuscript_${props.manuscript.id}_${dateStr}.pdf`
+    link.download = `Manuscript_${props.manuscript.id}_${dateStr}.txt` // Changed to txt for simulation accuracy
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -83,7 +101,7 @@ const ethicsStatement = "This study was conducted in accordance with the Declara
           </div>
           <div class="meta-item">
             <span class="label">Author:</span>
-            <span class="value">{{ manuscript?.writer }}</span>
+            <span class="value">{{ manuscript?.author }}</span>
           </div>
           <div class="meta-item">
             <span class="label">Submitted:</span>
@@ -138,8 +156,9 @@ const ethicsStatement = "This study was conducted in accordance with the Declara
           :disabled="isGeneratingPdf"
         >
           <span v-if="isGeneratingPdf" class="spinner">⏳</span>
-          {{ isGeneratingPdf ? 'Generating PDF...' : 'Download PDF' }}
+          {{ isGeneratingPdf ? 'Generating...' : 'Download PDF' }}
         </button>
+        <button class="btn btn-info" @click="handlePreview">Preview PDF</button>
         <button class="btn btn-secondary" @click="handleViewAttachments">View Attachments</button>
         <button class="btn btn-outline" @click="$emit('close')">Close</button>
       </div>
@@ -151,10 +170,27 @@ const ethicsStatement = "This study was conducted in accordance with the Declara
       :manuscript="manuscript"
       @close="showAttachmentsModal = false"
     />
+
+    <!-- PDF Preview Modal -->
+    <PdfPreviewModal
+      v-if="showPdfPreview"
+      :visible="showPdfPreview"
+      :file-url="pdfUrl"
+      :file-name="`Manuscript_${manuscript?.id}.pdf`"
+      @close="showPdfPreview = false"
+    />
   </div>
 </template>
 
 <style scoped>
+.btn-info {
+  background: #17a2b8;
+  color: white;
+}
+.btn-info:hover {
+  background: #138496;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;

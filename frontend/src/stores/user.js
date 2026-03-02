@@ -46,8 +46,8 @@ export const useUserStore = defineStore('user', {
         id: 1,
         manuscriptId: 101,
         manuscriptTitle: '基于深度学习的医学图像分析',
-        writerId: 1,
-        writerName: '张三',
+        authorId: 1,
+        authorName: '张三',
         reviewerName: '李四',
         reviewerEmail: 'lisi@example.com',
         reviewerAffiliation: '北京大学医学部',
@@ -66,8 +66,8 @@ export const useUserStore = defineStore('user', {
         id: 2,
         manuscriptId: 102,
         manuscriptTitle: '新型药物研发进展',
-        writerId: 2,
-        writerName: '王五',
+        authorId: 2,
+        authorName: '王五',
         reviewerName: '赵六',
         reviewerEmail: 'zhaoliu@example.com',
         reviewerAffiliation: '中国科学院药物研究所',
@@ -86,8 +86,8 @@ export const useUserStore = defineStore('user', {
         id: 3,
         manuscriptId: 103,
         manuscriptTitle: '临床研究方法学探讨',
-        writerId: 3,
-        writerName: '孙七',
+        authorId: 3,
+        authorName: '孙七',
         reviewerName: '周八',
         reviewerEmail: 'zhouba@example.com',
         reviewerAffiliation: '北京协和医院',
@@ -106,8 +106,8 @@ export const useUserStore = defineStore('user', {
         id: 5,
         manuscriptId: 105,
         manuscriptTitle: '生物信息学在医学研究中的应用',
-        writerId: 5,
-        writerName: '陈一',
+        authorId: 5,
+        authorName: '陈一',
         reviewerName: '林二',
         reviewerEmail: 'liner@example.com',
         reviewerAffiliation: '清华大学医学院',
@@ -130,8 +130,8 @@ export const useUserStore = defineStore('user', {
         id: 1,
         manuscriptId: 101,
         manuscriptTitle: '基于深度学习的医学图像分析',
-        writerId: 1,
-        writerName: '张三',
+        authorId: 1,
+        authorName: '张三',
         opposedReviewerName: '王某某',
         opposedReviewerAffiliation: '某大学附属医院',
         opposedReason: '学术观点存在严重分歧，且该专家曾公开批评过本课题组的研究方向，可能存在偏见。',
@@ -144,8 +144,8 @@ export const useUserStore = defineStore('user', {
         id: 2,
         manuscriptId: 102,
         manuscriptTitle: '新型药物研发进展',
-        writerId: 2,
-        writerName: '李四',
+        authorId: 2,
+        authorName: '李四',
         opposedReviewerName: '陈某某',
         opposedReviewerAffiliation: '竞争对手实验室',
         opposedReason: '目前正在进行类似药物的研发，存在直接的利益冲突。',
@@ -158,8 +158,8 @@ export const useUserStore = defineStore('user', {
         id: 3,
         manuscriptId: 104,
         manuscriptTitle: '公共卫生政策分析',
-        writerId: 4,
-        writerName: '赵六',
+        authorId: 4,
+        authorName: '赵六',
         opposedReviewerName: '刘某某',
         opposedReviewerAffiliation: '未知机构',
         opposedReason: '理由不充分，仅表示不希望该专家评审。',
@@ -182,7 +182,7 @@ export const useUserStore = defineStore('user', {
       { id: 13, type: 'operation', user: 'admin', action: 'Login', target: '/admin', time: '2026-01-11 09:30:25', ip: '127.0.0.1', status: 'success' },
       { id: 14, type: 'operation', user: 'admin', action: 'View User List', target: '/admin/users', time: '2026-01-11 09:32:18', ip: '127.0.0.1', status: 'success' },
       { id: 17, type: 'operation', user: 'reviewer1', action: 'Review Manuscript', target: 'Manuscript ID:20260111001', time: '2026-01-11 09:45:30', ip: '192.168.1.106', status: 'success' },
-      { id: 18, type: 'operation', user: 'writer1', action: 'Submit Manuscript', target: 'Manuscript ID:20260111002', time: '2026-01-11 09:50:22', ip: '192.168.1.107', status: 'success' },
+      { id: 18, type: 'operation', user: 'author1', action: 'Submit Manuscript', target: 'Manuscript ID:20260111002', time: '2026-01-11 09:50:22', ip: '192.168.1.107', status: 'success' },
       { id: 5, type: 'login', user: 'admin', action: 'Login Success', target: '', time: '2026-01-08 17:00:00', ip: '127.0.0.1', status: 'success' },
       { id: 9, type: 'error', user: 'user2', action: 'Access Denied', target: '/admin/dashboard', time: '2026-01-08 16:40:00', ip: '192.168.1.103', status: 'error' }
     ],
@@ -199,7 +199,7 @@ export const useUserStore = defineStore('user', {
     currentRole: (state) => state.user?.role || 'user',
     userJournals: (state) => {
       if (!state.user) return []
-      return state.journals.filter(journal => journal.writer === state.user.username)
+      return state.journals.filter(journal => journal.author === state.user.username)
     },
     pendingJournals: (state) => {
       // Localization Update: Support Journal Platform Standard Statuses
@@ -228,7 +228,7 @@ export const useUserStore = defineStore('user', {
       return state.reviewerApplication.status
     },
 
-    // Role Priority: admin > associate_editor > editor > editorial_assistant > advisory_editor > reviewer > writer > user
+    // Role Priority: admin > associate_editor > editor > editorial_assistant > advisory_editor > reviewer > author > user
     hasRolePermission: (state) => (requiredRole) => {
       const rolePriority = {
         admin: 7,
@@ -238,7 +238,7 @@ export const useUserStore = defineStore('user', {
         ea_ae: 4, // Legacy compatibility
         advisory_editor: 3,
         reviewer: 2,
-        writer: 1,
+        author: 1,
         user: 0
       }
       const userRole = state.user?.role || 'user'
@@ -281,7 +281,7 @@ export const useUserStore = defineStore('user', {
           'ea_ae': 'editorial_assistant123',
           'advisory_editor': 'advisory_editor123',
           'reviewer': 'reviewer123',
-          'writer': 'writer123'
+          'author': 'author123'
         }
         
         // Get user role first
@@ -336,7 +336,7 @@ export const useUserStore = defineStore('user', {
                    credentials.username === 'ea_ae' ? 'ea_ae' : 
                    credentials.username === 'advisory_editor' ? 'advisory_editor' :
                    credentials.username === 'reviewer' || credentials.username.startsWith('reviewer') ? 'reviewer' : 
-                   credentials.username === 'writer' || credentials.username.startsWith('writer') ? 'writer' : 
+                   credentials.username === 'author' || credentials.username.startsWith('author') ? 'author' : 
                    'user')
         
         const userData = {
@@ -398,7 +398,7 @@ export const useUserStore = defineStore('user', {
           'ea_ae': 'editorial_assistant123',
           'advisory_editor': 'advisory_editor123',
           'reviewer': 'reviewer123',
-          'writer': 'writer123'
+          'author': 'author123'
         }
         
         // Get user role first
@@ -448,7 +448,7 @@ export const useUserStore = defineStore('user', {
                      credentials.username === 'ea_ae' ? 'ea_ae' : 
                      credentials.username === 'advisory_editor' ? 'advisory_editor' :
                      credentials.username === 'reviewer' || credentials.username.startsWith('reviewer') ? 'reviewer' : 
-                     credentials.username === 'writer' || credentials.username.startsWith('writer') ? 'writer' : 
+                     credentials.username === 'author' || credentials.username.startsWith('author') ? 'author' : 
                      'user')
           
           userData = {

@@ -2,7 +2,7 @@
   <div class="status-container">
     <Navigation 
       :user="user" 
-      :current-page="'resources-writer-status'"
+      :current-page="'resources-author-status'"
       :logout="userStore.logout"
     />
     <div class="query-section">
@@ -20,11 +20,11 @@
           />
         </div>
         <div class="form-group">
-          <label>Corresponding Writer Email</label>
+          <label>Corresponding Author Email</label>
           <input 
             type="email" 
             v-model="email" 
-            placeholder="writer@example.com"
+            placeholder="author@example.com"
             :class="{ active: focusedField === 'email' }"
             @focus="focusedField = 'email'"
             @blur="focusedField = null"

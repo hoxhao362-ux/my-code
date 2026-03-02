@@ -2,10 +2,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 
 const router = useRouter()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const { t } = useI18n()
 const user = ref(userStore.user)
 
@@ -50,13 +52,12 @@ const isEditor = computed(() => ['editor', 'admin'].includes(user.value?.role))
 const handleFileUpload = (event) => {
   const files = Array.from(event.target.files)
   if (files.length > 3) {
-    alert(t('submission.feedback.alert.maxFiles'))
+    toastStore.add({ message: t('submission.feedback.alert.maxFiles'), type: 'warning' })
     return
   }
-  // Check size 5MB
   const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024)
   if (validFiles.length < files.length) {
-    alert(t('submission.feedback.alert.fileSize'))
+    toastStore.add({ message: t('submission.feedback.alert.fileSize'), type: 'warning' })
   }
   form.value.attachments = validFiles
 }

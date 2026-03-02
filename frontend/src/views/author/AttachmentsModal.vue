@@ -1,5 +1,8 @@
 <script setup>
 import { defineProps, defineEmits, computed } from 'vue'
+import { useToastStore } from '../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   visible: Boolean,
@@ -40,9 +43,9 @@ const attachments = computed(() => {
 
 const handlePreview = (file) => {
   if (file.type === 'Image') {
-    alert(`Previewing image: ${file.name} (Mock Image Viewer)`)
+    toastStore.add({ message: `Previewing image: ${file.name}`, type: 'info' })
   } else {
-    alert('Preview not supported, please download the file.')
+    toastStore.add({ message: 'Preview not supported, please download the file.', type: 'warning' })
   }
 }
 

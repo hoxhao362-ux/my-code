@@ -1,6 +1,9 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useToastStore } from '../../../stores/toast'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   manuscript: {
@@ -20,16 +23,16 @@ const checklistModules = reactive([
     desc: 'Verify that basic manuscript information is complete and accurate to avoid issues in subsequent processes.',
     items: [
       { id: '1-1', text: 'Manuscript title, abstract, and keywords are complete, standardized, without typos or ambiguity.', status: null, remark: '' },
-      { id: '1-2', text: 'Writer count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
-      { id: '1-3', text: 'Corresponding writer email and affiliation are valid and contactable.', status: null, remark: '' },
+      { id: '1-2', text: 'Author count and order match the submission declaration (check count only for blind review).', status: null, remark: '' },
+      { id: '1-3', text: 'Corresponding author email and affiliation are valid and contactable.', status: null, remark: '' },
       { id: '1-4', text: 'Submission type and research field are correctly selected and match manuscript content.', status: null, remark: '' },
-      { id: '1-5', text: 'Writer submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
+      { id: '1-5', text: 'Author submission declaration and conflict of interest statement have been submitted.', status: null, remark: '' }
     ]
   },
   {
     id: 2,
     title: 'Double-Blind Review Anonymity Compliance',
-    desc: 'Verify that the manuscript is fully anonymized with no writer identity leakage, strictly following double-blind review requirements.',
+    desc: 'Verify that the manuscript is fully anonymized with no author identity leakage, strictly following double-blind review requirements.',
     items: [
       { id: '2-1', text: 'Main text contains no author names, affiliations, emails, or ORCID identifiers.', status: null, remark: '' },
       { id: '2-2', text: 'Figures, figure legends, table notes, headers, and footers contain no identity information.', status: null, remark: '' },
@@ -146,7 +149,7 @@ const handleSave = () => {
     summary: summaryOpinion.value,
     decision: finalDecision.value
   })
-  alert('Progress Saved (Mock)')
+  toastStore.add({ message: 'Progress Saved', type: 'success' })
 }
 
 </script>
@@ -180,18 +183,22 @@ const handleSave = () => {
           <div v-for="item in module.items" :key="item.id" class="checklist-item">
             <div class="item-main">
               <!-- Status Radios -->
-              <div class="status-group">
+              <div class="status-group" role="group" :aria-label="'Compliance status for: ' + item.text">
                 <button 
                   class="status-btn yes" 
                   :class="{ active: item.status === 'Yes' }"
                   @click="handleStatusChange(item, 'Yes')"
                   title="Compliant"
+                  aria-label="Compliant"
+                  :aria-pressed="item.status === 'Yes'"
                 >✓</button>
                 <button 
                   class="status-btn no" 
                   :class="{ active: item.status === 'No' }"
                   @click="handleStatusChange(item, 'No')"
                   title="Non-Compliant"
+                  aria-label="Non-Compliant"
+                  :aria-pressed="item.status === 'No'"
                 >✕</button>
                 <button 
                   v-if="item.allowNA"
@@ -199,6 +206,8 @@ const handleSave = () => {
                   :class="{ active: item.status === 'NA' }"
                   @click="handleStatusChange(item, 'NA')"
                   title="Not Applicable"
+                  aria-label="Not Applicable"
+                  :aria-pressed="item.status === 'NA'"
                 >-</button>
               </div>
               
@@ -210,15 +219,17 @@ const handleSave = () => {
 
             <!-- Remark Input (Conditional) -->
             <div v-if="item.status === 'No'" class="remark-container">
-              <span class="remark-label">Specific Issue (Required):</span>
+              <label :for="'remark-' + item.id" class="remark-label">Specific Issue (Required):</label>
               <input 
+                :id="'remark-' + item.id"
                 v-model="item.remark" 
                 type="text" 
                 class="remark-input" 
                 placeholder="Enter details (max 200 chars)..." 
                 maxlength="200"
+                aria-required="true"
               >
-              <div v-if="!item.remark.trim()" class="error-text">Remark is required for non-compliant items</div>
+              <div v-if="!item.remark.trim()" class="error-text" role="alert">Remark is required for non-compliant items</div>
             </div>
           </div>
         </div>

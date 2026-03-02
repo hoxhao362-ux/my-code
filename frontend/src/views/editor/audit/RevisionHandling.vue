@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../../../composables/useI18n'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import { truncateText } from '../../../utils/helpers'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -10,6 +11,7 @@ import RevisionAuditDetail from './RevisionAuditDetail.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -42,7 +44,7 @@ const getPendingRevisions = async () => {
     // Align fields with actual code as per requirement
     ms_id: journal.id,
     title: journal.title,
-    writer: journal.writer,
+    author: journal.author,
     submit_time: journal.lastUpdated || journal.date, // Use update time as revision time
     revision_note: journal.revisionNote || 'No response provided.',
     revision_type: journal.revisionType || 'Minor Revision', // Mock revision type
@@ -187,20 +189,18 @@ const openFormatCheck = (item) => {
 const confirmFormatCheck = () => {
   const allChecked = formatChecklist.value.every(i => i.checked)
   if (!allChecked) {
-    alert(t('editor.audit.revisionHandling.alerts.allChecksRequired'))
+    toastStore.add({ message: t('editor.audit.revisionHandling.alerts.allChecksRequired'), type: 'warning' })
     return
   }
   
-  // Update local item status
   if (selectedItem.value) {
     selectedItem.value.format_checked = true
-    // In real app, save this state to backend
     const journal = selectedItem.value.raw_data
     journal.format_checked = true
     userStore.updateJournal(journal)
   }
   showFormatCheckModal.value = false
-  alert(t('editor.audit.revisionHandling.alerts.formatPassed'))
+  toastStore.add({ message: t('editor.audit.revisionHandling.alerts.formatPassed'), type: 'success' })
 }
 
 // Journal Platform: Re-review Coordination
@@ -332,7 +332,7 @@ const auditRevision = async () => {
     type: actionType.value === 'approve' ? 'success' : actionType.value === 'reject' ? 'error' : 'info',
     createdAt: new Date().toISOString(),
     isRead: false,
-    targetUser: selectedItem.value.writer // Target user
+    targetUser: selectedItem.value.author // Target user
   })
 
   // If sent back to reviewers, notify them (Mock)
@@ -354,15 +354,14 @@ const auditRevision = async () => {
   showDoubleConfirm.value = false
   showConfirmModal.value = false
   
-  // Refresh List
   await loadRevisions()
   
-  alert(t('editor.audit.revisionHandling.alerts.auditSuccess', { 
+  toastStore.add({ message: t('editor.audit.revisionHandling.alerts.auditSuccess', { 
     id: selectedItem.value.ms_id, 
     action: actionType.value === 'approve' ? t('editor.audit.revisionHandling.actions.approve').toLowerCase() : 
             actionType.value === 'reject' ? t('editor.audit.revisionHandling.actions.returnForRevision').toLowerCase() : 
             actionType.value 
-  }))
+  }), type: 'success' })
 }
 </script>
 

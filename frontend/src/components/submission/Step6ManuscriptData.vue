@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
+import { useToastStore } from '../../stores/toast'
 import StepNavigation from './StepNavigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -13,6 +14,7 @@ import { validateORCID, validateDOI, searchInstitutions } from '../../utils/vali
 const store = useSubmissionStore()
 const router = useRouter()
 const { t } = useI18n()
+const toastStore = useToastStore()
 const submitting = ref(false)
 const showPublishingModal = ref(false)
 const showSuccessToast = ref(false) // Journal Platform Standard Toast State
@@ -37,7 +39,7 @@ const handleInstSearch = async (query, index) => {
 }
 
 const selectInstitution = (index, inst) => {
-  store.formData.writers[index].institution = inst
+  store.formData.authors[index].institution = inst
   showInstSuggestions.value = null
 }
 
@@ -93,9 +95,9 @@ const quillOptions = {
   theme: 'snow'
 }
 
-// Writer Management
-const addWriter = () => {
-  store.formData.writers.push({
+// Author Management
+const addAuthor = () => {
+  store.formData.authors.push({
     id: Date.now(),
     name: '',
     institution: '',
@@ -105,39 +107,36 @@ const addWriter = () => {
   })
 }
 
-const removeWriter = (index) => {
-  store.formData.writers.splice(index, 1)
+const removeAuthor = (index) => {
+  store.formData.authors.splice(index, 1)
 }
 
-const updateWriterRole = (index, role) => {
+const updateAuthorRole = (index, role) => {
   if (role === 'corresponding') {
-    // If checking (turning on), uncheck all others
-    // If unchecking (turning off), just allow it
-    const willBeChecked = !store.formData.writers[index].isCorresponding
+    const willBeChecked = !store.formData.authors[index].isCorresponding
     
     if (willBeChecked) {
-      store.formData.writers.forEach((w, i) => w.isCorresponding = i === index)
+      store.formData.authors.forEach((w, i) => w.isCorresponding = i === index)
     } else {
-      store.formData.writers[index].isCorresponding = false
+      store.formData.authors[index].isCorresponding = false
     }
   } else if (role === 'first') {
-    const willBeChecked = !store.formData.writers[index].isFirst
+    const willBeChecked = !store.formData.authors[index].isFirst
     
     if (willBeChecked) {
-      store.formData.writers.forEach((w, i) => w.isFirst = i === index)
+      store.formData.authors.forEach((w, i) => w.isFirst = i === index)
     } else {
-      store.formData.writers[index].isFirst = false
+      store.formData.authors[index].isFirst = false
     }
   }
 }
 
-// Drag Sort Writers
 const dragStartIdx = ref(null)
 const onDragStart = (idx) => { dragStartIdx.value = idx }
 const onDropItem = (dropIdx) => {
   if (dragStartIdx.value !== null && dragStartIdx.value !== dropIdx) {
-    const item = store.formData.writers.splice(dragStartIdx.value, 1)[0]
-    store.formData.writers.splice(dropIdx, 0, item)
+    const item = store.formData.authors.splice(dragStartIdx.value, 1)[0]
+    store.formData.authors.splice(dropIdx, 0, item)
   }
   dragStartIdx.value = null
 }
@@ -157,9 +156,9 @@ const generatePDF = () => {
       <h1>${store.formData.title.replace(/<[^>]*>/g, '')}</h1>
       <h3>${t('manuscriptData.pdf.abstract')}</h3>
       <div>${store.formData.abstract}</div>
-      <h3>${t('manuscriptData.pdf.writers')}</h3>
+      <h3>${t('manuscriptData.pdf.authors')}</h3>
       <ul>
-        ${store.formData.writers.map(w => `<li>${w.name} (${w.institution})</li>`).join('')}
+        ${store.formData.authors.map(w => `<li>${w.name} (${w.institution})</li>`).join('')}
       </ul>
       <h3>${t('manuscriptData.pdf.funding')}</h3>
       ${store.formData.noFunding ? t('manuscriptData.pdf.none') : `<ul>${store.formData.funding.map(f => `<li>${f.body} - ${f.number}</li>`).join('')}</ul>`}
@@ -212,14 +211,14 @@ const handlePreSubmit = () => {
          }
       }
       
-      alert(msg)
+      toastStore.add({ message: msg, type: 'warning' })
     }
   }
 }
 
 const confirmSubmit = async () => {
   if (!store.formData.publishingOption) {
-    alert('Please select a publishing option')
+    toastStore.add({ message: 'Please select a publishing option', type: 'warning' })
     return
   }
   
@@ -238,12 +237,12 @@ const confirmSubmit = async () => {
     
     setTimeout(() => {
       showSuccessToast.value = false
-      router.push({ name: 'admin-writer-dashboard' })
+      router.push({ name: 'admin-author-dashboard' })
     }, 3000)
     
   } catch (e) {
     console.error(e)
-    alert('Submission failed. Please try again.') 
+    toastStore.add({ message: 'Submission failed. Please try again.', type: 'error' })
   } finally {
     submitting.value = false
   }
@@ -288,38 +287,37 @@ const confirmSubmit = async () => {
       </div>
     </div>
 
-    <!-- Writers -->
-    <div class="section writer-section">
+    <div class="section author-section">
       <div class="section-header">
-        <h3>{{ t('manuscriptData.writers.title') }}</h3>
-        <button class="btn-add" @click="addWriter">+ {{ t('manuscriptData.writers.add') }}</button>
+        <h3>{{ t('manuscriptData.authors.title') }}</h3>
+        <button class="btn-add" @click="addAuthor">+ {{ t('manuscriptData.authors.add') }}</button>
       </div>
       
-      <div class="writer-list">
+      <div class="author-list">
         <div 
-          v-for="(writer, index) in store.formData.writers" 
-          :key="writer.id"
-          class="writer-card"
-          :class="{ 'error-border': store.steps[5].status === 'error' && (!writer.name || !writer.institution || !writer.email) }"
+          v-for="(author, index) in store.formData.authors" 
+          :key="author.id"
+          class="author-card"
+          :class="{ 'error-border': store.steps[5].status === 'error' && (!author.name || !author.institution || !author.email) }"
           draggable="true"
           @dragstart="onDragStart(index)"
           @dragover.prevent
           @drop="onDropItem(index)"
         >
           <div class="card-header">
-            <span class="drag-handle">☰ {{ t('manuscriptData.writers.title') }} {{ index + 1 }}</span>
-            <button class="btn-delete" @click="removeWriter(index)">×</button>
+            <span class="drag-handle">☰ {{ t('manuscriptData.authors.title') }} {{ index + 1 }}</span>
+            <button class="btn-delete" @click="removeAuthor(index)">×</button>
           </div>
           
           <div class="card-body">
             <div class="form-row">
-              <input v-model="writer.name" :placeholder="t('manuscriptData.writers.name')" class="form-input">
+              <input v-model="author.name" :placeholder="t('manuscriptData.authors.name')" class="form-input">
               
               <div class="inst-search-wrapper" style="position: relative; width: 100%;">
                 <input 
-                  v-model="writer.institution" 
+                  v-model="author.institution" 
                   @input="e => handleInstSearch(e.target.value, index)"
-                  :placeholder="t('manuscriptData.writers.institution')" 
+                  :placeholder="t('manuscriptData.authors.institution')" 
                   class="form-input"
                 >
                 <ul v-if="showInstSuggestions === index && instSuggestions.length > 0" class="inst-suggestions">
@@ -328,11 +326,11 @@ const confirmSubmit = async () => {
               </div>
             </div>
             <div class="form-row">
-              <input v-model="writer.email" :placeholder="t('manuscriptData.writers.email')" class="form-input">
+              <input v-model="author.email" :placeholder="t('manuscriptData.authors.email')" class="form-input">
               <div class="orcid-wrapper" style="width: 100%;">
                 <input 
-                   v-model="writer.orcid" 
-                   @blur="checkORCID(index, writer.orcid)"
+                   v-model="author.orcid" 
+                   @blur="checkORCID(index, author.orcid)"
                    placeholder="ORCID (e.g. 0000-0000-0000-0000)" 
                    class="form-input"
                    :class="{'valid': orcidStatus[index]?.valid, 'invalid': orcidStatus[index]?.valid === false}"
@@ -347,28 +345,28 @@ const confirmSubmit = async () => {
                 <input 
                   type="checkbox" 
                   class="role-checkbox"
-                  :checked="writer.isCorresponding"
-                  @change="updateWriterRole(index, 'corresponding')"
+                  :checked="author.isCorresponding"
+                  @change="updateAuthorRole(index, 'corresponding')"
                 > 
-                {{ t('manuscriptData.writers.corresponding') }}
+                {{ t('manuscriptData.authors.corresponding') }}
               </label>
               <label class="radio-label">
                 <input 
                   type="checkbox" 
                   class="role-checkbox"
-                  :checked="writer.isFirst"
-                  @change="updateWriterRole(index, 'first')"
+                  :checked="author.isFirst"
+                  @change="updateAuthorRole(index, 'first')"
                 > 
-                {{ t('manuscriptData.writers.first') }}
+                {{ t('manuscriptData.authors.first') }}
               </label>
             </div>
           </div>
         </div>
       </div>
       <div v-if="store.steps[5].status === 'error'" class="error-msg">
-        <div v-if="store.formData.writers.length === 0">{{ t('manuscriptData.errors.noWriter') }}</div>
-        <div v-if="!store.formData.writers.some(w => w.isCorresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
-        <div v-if="!store.formData.writers.some(w => w.isFirst)">{{ t('manuscriptData.errors.noFirst') }}</div>
+        <div v-if="store.formData.authors.length === 0">{{ t('manuscriptData.errors.noAuthor') }}</div>
+        <div v-if="!store.formData.authors.some(w => w.isCorresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
+        <div v-if="!store.formData.authors.some(w => w.isFirst)">{{ t('manuscriptData.errors.noFirst') }}</div>
       </div>
     </div>
 
@@ -589,7 +587,7 @@ const confirmSubmit = async () => {
   border-radius: 4px;
 }
 
-/* Writer Cards */
+/* Author Cards */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -606,12 +604,12 @@ const confirmSubmit = async () => {
   cursor: pointer;
 }
 
-.writer-list {
+.author-list {
   display: grid;
   gap: 1rem;
 }
 
-.writer-card {
+.author-card {
   border: 1px solid #eee;
   border-radius: 6px;
   padding: 1rem;
@@ -619,7 +617,7 @@ const confirmSubmit = async () => {
   cursor: move;
 }
 
-.writer-card.error-border {
+.author-card.error-border {
   border-color: #dc3545;
   background: #fff5f5;
 }

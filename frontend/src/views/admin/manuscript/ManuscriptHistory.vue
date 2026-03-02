@@ -1,8 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from '../../../composables/useI18n'
 import { useUserStore } from '../../../stores/user'
+import { exportToExcel } from '../../../utils/export'
 
+const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -11,6 +14,10 @@ const selectedStatus = ref('all')
 const selectedModule = ref('all')
 const searchKeyword = ref('')
 const selectedTimePeriod = ref('all') // 'all', 'day', 'week', 'month', 'year'
+
+// Pagination
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // Options
 const statusOptions = ['all', 'Pending', 'Under Review', 'Accepted', 'Rejected', 'Revision Requested']
@@ -21,18 +28,18 @@ const moduleOptions = computed(() => {
 
 // Time Period Options
 const timePeriodOptions = [
-  { value: 'all', label: 'All Time' },
-  { value: 'day', label: 'Last 24 Hours' },
-  { value: 'week', label: 'Last Week' },
-  { value: 'month', label: 'Last Month' },
-  { value: 'year', label: 'Last Year' }
+  { value: 'all', label: 'history.filters.allTime' },
+  { value: 'day', label: 'history.filters.today' },
+  { value: 'week', label: 'history.filters.week' },
+  { value: 'month', label: 'history.filters.month' },
+  { value: 'year', label: 'history.filters.year' }
 ]
 
 // 稿件数据 - 这里可以根据状态筛选已归档的稿件
-const archivedManuscripts = computed(() => {
+const filteredManuscripts = computed(() => {
   return userStore.journals.filter(journal => {
     // 只显示当前用户的稿件
-    if (journal.writer !== userStore.user?.username) {
+    if ((journal.author || journal.writer) !== userStore.user?.username) {
       return false
     }
     
@@ -50,7 +57,7 @@ const archivedManuscripts = computed(() => {
     if (searchKeyword.value) {
       const keyword = searchKeyword.value.toLowerCase()
       if (!journal.title.toLowerCase().includes(keyword) && 
-          !journal.writer.toLowerCase().includes(keyword) && 
+          !(journal.author || journal.writer || '').toLowerCase().includes(keyword) && 
           !journal.keywords.toLowerCase().includes(keyword)) {
         return false
       }
@@ -86,28 +93,69 @@ const archivedManuscripts = computed(() => {
   })
 })
 
+const paginatedManuscripts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredManuscripts.value.slice(start, end)
+})
+
+const total = computed(() => filteredManuscripts.value.length)
+const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
+
 // 查看稿件详情
 const viewManuscript = (id) => {
   router.push(`/admin/journal/${id}`)
+}
+
+// 导出数据
+const exportHistory = () => {
+  const dataToExport = filteredManuscripts.value.map(item => ({
+    ID: item.id,
+    [t('history.table.title')]: item.title,
+    [t('history.table.module')]: item.module,
+    [t('history.table.status')]: item.status,
+    [t('history.table.submitDate')]: item.date || item.submitDate
+  }))
+  exportToExcel(dataToExport, `Manuscript_History_${new Date().toISOString().split('T')[0]}`)
+}
+
+// 状态显示辅助函数
+const getStatusLabel = (status) => {
+  if (!status) return ''
+  const map = {
+    'Accepted': t('history.status.accepted'),
+    'Rejected': t('history.status.rejected'),
+    'Pending': t('history.status.pending'),
+    'Under Review': t('history.status.underReview'),
+    'Revision Requested': t('history.status.revisionRequested')
+  }
+  return map[status] || status
 }
 </script>
 
 <template>
   <div class="manuscript-history-container">
     <div class="page-header">
-      <button class="btn btn-secondary" @click="router.back()">Back</button>
-      <h1>Manuscript History</h1>
+      <div class="header-left">
+        <button class="btn btn-secondary" @click="router.back()">{{ t('common.back') }}</button>
+        <h1>{{ t('history.title.manuscriptHistory') }}</h1>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-primary" @click="exportHistory" :disabled="total === 0">
+          {{ t('history.export') }}
+        </button>
+      </div>
     </div>
     
     <div class="filters-section">
       <div class="filter-row">
-        <div class="filter-group">
-          <label for="search-input">Keyword Search:</label>
+        <div class="filter-group search-group">
+          <label for="search-input">{{ t('history.filters.keyword') }}:</label>
           <input 
             type="text" 
             id="search-input" 
             v-model="searchKeyword" 
-            placeholder="Search Title, Writer or Keywords" 
+            :placeholder="t('history.filters.searchPlaceholder')" 
             class="filter-control search-input"
           >
         </div>
@@ -115,28 +163,28 @@ const viewManuscript = (id) => {
       
       <div class="filter-row">
         <div class="filter-group">
-          <label for="status-filter">Status Filter:</label>
+          <label for="status-filter">{{ t('history.filters.status') }}:</label>
           <select id="status-filter" v-model="selectedStatus" class="filter-control">
             <option v-for="status in statusOptions" :key="status" :value="status">
-              {{ status === 'all' ? 'All Status' : status }}
+              {{ status === 'all' ? t('history.filters.allStatus') : getStatusLabel(status) }}
             </option>
           </select>
         </div>
         
         <div class="filter-group">
-          <label for="module-filter">Module Filter:</label>
+          <label for="module-filter">{{ t('history.filters.module') }}:</label>
           <select id="module-filter" v-model="selectedModule" class="filter-control">
             <option v-for="module in moduleOptions" :key="module" :value="module">
-              {{ module === 'all' ? 'All Modules' : module }}
+              {{ module === 'all' ? t('history.filters.allModules') : module }}
             </option>
           </select>
         </div>
         
         <div class="filter-group">
-          <label for="time-period-filter">Time Period:</label>
+          <label for="time-period-filter">{{ t('history.filters.timeRange') }}:</label>
           <select id="time-period-filter" v-model="selectedTimePeriod" class="filter-control">
             <option v-for="option in timePeriodOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
+              {{ t(option.label) }}
             </option>
           </select>
         </div>
@@ -147,26 +195,26 @@ const viewManuscript = (id) => {
       <table class="manuscripts-table">
         <thead>
           <tr>
-            <th>Title</th>
-            <th>Module</th>
-            <th>Status</th>
-            <th>Submitted Date</th>
-            <th>Actions</th>
+            <th>{{ t('history.table.title') }}</th>
+            <th>{{ t('history.table.module') }}</th>
+            <th>{{ t('history.table.status') }}</th>
+            <th>{{ t('history.table.submitDate') }}</th>
+            <th>{{ t('history.table.actions') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="manuscript in archivedManuscripts" :key="manuscript.id">
-            <td class="title-cell">{{ manuscript.title }}</td>
+          <tr v-for="manuscript in paginatedManuscripts" :key="manuscript.id">
+            <td class="title-cell" :title="manuscript.title">{{ manuscript.title }}</td>
             <td>{{ manuscript.module }}</td>
             <td>
               <span class="status-badge" :class="manuscript.status.toLowerCase().replace(/\s/g, '-')">
-                {{ manuscript.status }}
+                {{ getStatusLabel(manuscript.status) }}
               </span>
             </td>
             <td>{{ manuscript.date || manuscript.submitDate }}</td>
             <td>
               <button class="btn btn-primary btn-sm" @click="viewManuscript(manuscript.id)">
-                View Details
+                {{ t('history.table.viewDetail') }}
               </button>
             </td>
           </tr>
@@ -174,8 +222,34 @@ const viewManuscript = (id) => {
       </table>
       
       <!-- Empty State -->
-      <div v-if="archivedManuscripts.length === 0" class="empty-state">
-        <p>No history found</p>
+      <div v-if="filteredManuscripts.length === 0" class="empty-state">
+        <p>{{ t('history.noRecords') }}</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" v-if="total > 0">
+      <div class="pagination-info">
+        {{ t('history.pagination.total', { total: total }) }}
+      </div>
+      <div class="pagination-controls">
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          {{ t('history.pagination.prev') }}
+        </button>
+        <span class="page-current">
+          {{ t('history.pagination.page', { current: currentPage, total: totalPages }) }}
+        </span>
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          {{ t('history.pagination.next') }}
+        </button>
       </div>
     </div>
   </div>
@@ -193,11 +267,21 @@ const viewManuscript = (id) => {
 .page-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 1rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .page-header h1 {
+  font-family: 'Georgia', serif;
   font-size: 1.8rem;
   color: #2c3e50;
   margin: 0;
@@ -225,33 +309,16 @@ const viewManuscript = (id) => {
 
 .filter-group {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.filter-group.date-range {
-  align-items: center;
-}
-
-.date-inputs {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
-.date-separator {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0 0.25rem;
-}
-
-.date-input {
-  min-width: 140px;
+.search-group {
+  flex: 1;
 }
 
 .search-input {
-  min-width: 250px;
+  width: 100%;
 }
 
 .filter-control {
@@ -270,9 +337,9 @@ const viewManuscript = (id) => {
 }
 
 .filter-group label {
-  font-weight: 500;
+  font-weight: 600;
   color: #555;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .manuscripts-table-wrapper {
@@ -280,6 +347,7 @@ const viewManuscript = (id) => {
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  margin-bottom: 1.5rem;
 }
 
 .manuscripts-table {
@@ -312,6 +380,9 @@ const viewManuscript = (id) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: 'Georgia', serif;
+  font-weight: 500;
+  color: #2c3e50;
 }
 
 .status-badge {
@@ -319,18 +390,33 @@ const viewManuscript = (id) => {
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
-.status-badge.已录用 {
+.status-badge.accepted, .status-badge.published {
   background-color: #e8f5e8;
   color: #388e3c;
 }
 
-.status-badge.已拒稿 {
+.status-badge.rejected {
   background-color: #ffebee;
   color: #d32f2f;
+}
+
+.status-badge.pending {
+  background-color: #fff8e1;
+  color: #fbc02d;
+}
+
+.status-badge.under-review {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.revision-requested {
+  background-color: #fff3e0;
+  color: #f57c00;
 }
 
 .empty-state {
@@ -358,10 +444,15 @@ const viewManuscript = (id) => {
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: #2980b9;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-primary:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -378,6 +469,46 @@ const viewManuscript = (id) => {
   font-size: 0.85rem;
 }
 
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.page-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-current {
+  font-size: 0.9rem;
+  color: #495057;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .manuscript-history-container {
@@ -386,7 +517,11 @@ const viewManuscript = (id) => {
   
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+  
+  .header-left {
+    justify-content: space-between;
   }
   
   .manuscripts-table {
@@ -405,6 +540,11 @@ const viewManuscript = (id) => {
   .btn-sm {
     padding: 0.4rem 0.7rem;
     font-size: 0.75rem;
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 1rem;
   }
 }
 </style>

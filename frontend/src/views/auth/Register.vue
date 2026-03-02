@@ -72,7 +72,7 @@ const handleRegister = () => {
   if (!email.value) {
     emailError.value = t('auth.register.emailPlaceholder')
     hasError = true
-  } else if (!email.value.includes('@')) {
+  } else if (!emailRegex.test(email.value)) {
     emailError.value = 'Invalid email format'
     hasError = true
   }

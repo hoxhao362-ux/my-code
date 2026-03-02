@@ -67,31 +67,31 @@ const toasts = computed(() => store.toasts)
 }
 
 .toast-success {
-  border-left-color: #4CAF50;
+  border-left-color: var(--color-success);
 }
 .toast-success .toast-icon {
-  color: #4CAF50;
+  color: var(--color-success);
 }
 
 .toast-error {
-  border-left-color: #F44336;
+  border-left-color: var(--color-primary); /* Lancet Red for errors */
 }
 .toast-error .toast-icon {
-  color: #F44336;
+  color: var(--color-primary);
 }
 
 .toast-warning {
-  border-left-color: #FF9800;
+  border-left-color: #FF9800; /* Keep orange for warning distinct from error */
 }
 .toast-warning .toast-icon {
   color: #FF9800;
 }
 
 .toast-info {
-  border-left-color: #2196F3;
+  border-left-color: var(--color-info);
 }
 .toast-info .toast-icon {
-  color: #2196F3;
+  color: var(--color-info);
 }
 
 .toast-close {

@@ -3,10 +3,12 @@ import { stripHtmlTags } from '../utils/helpers'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { useToastStore } from '../stores/toast'
 import Navigation from '../components/Navigation.vue'
 import { MANUSCRIPT_STATUS, STATUS_LABELS } from '../constants/manuscriptStatus'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -43,7 +45,7 @@ const reviewRecords = computed(() => {
       reviewResult: record.status,
       reviewComments: record.comment,
       reviewDate: record.date,
-      journalWriter: journal.value.writer,
+      journalAuthor: journal.value.author || journal.value.writer,
       type: record.type
     }))
 })
@@ -62,7 +64,7 @@ const canViewFullRecords = () => {
 
 // 是否可以查看半公开记录（投稿人）
 const canViewPartialRecords = () => {
-  return journal.value?.writer === currentUsername.value
+  return (journal.value?.author || journal.value?.writer) === currentUsername.value
 }
 
 // 添加新的审稿记录
@@ -74,7 +76,7 @@ const newRecord = ref({
   reviewResult: '',
   reviewComments: '',
   reviewDate: new Date().toISOString(),
-  journalWriter: ''
+  journalAuthor: ''
 })
 
 // 稿件编辑功能
@@ -122,8 +124,8 @@ const revisionOpposed = ref([])
 
 const addRevisionRecommended = () => {
   if (revisionRecommended.value.length >= 3) {
-      alert("Maximum 3 recommended reviewers allowed.")
-      return
+    toastStore.add({ message: 'Maximum 3 recommended reviewers allowed.', type: 'warning' })
+    return
   }
   revisionRecommended.value.push({
       name: '',
@@ -163,16 +165,15 @@ const isRevisionFieldInvalid = (value, type, minLength = 0) => {
 const handleWithdrawRecommendation = (recordId) => {
   if (!confirm('Are you sure you want to withdraw this recommendation? This action cannot be undone.')) return
   
-  // Find and update in store
   const recIndex = userStore.recommendedReviewers.findIndex(r => String(r.id) === String(recordId))
   if (recIndex !== -1) {
     const rec = userStore.recommendedReviewers[recIndex]
     if (rec.status === 'pending') {
       rec.status = 'withdrawn'
       userStore.updateRecommendedReviewer(rec)
-      alert('Recommendation withdrawn successfully.')
+      toastStore.add({ message: 'Recommendation withdrawn successfully.', type: 'success' })
     } else {
-      alert('Cannot withdraw: Reviewer status is no longer pending.')
+      toastStore.add({ message: 'Cannot withdraw: Reviewer status is no longer pending.', type: 'warning' })
     }
   }
 }
@@ -182,30 +183,25 @@ const triggerFileUpload = () => {
   document.getElementById('attachment-upload').click()
 }
 
-// 附件上传处理
 const handleFileUpload = (event) => {
-  // 阻止事件冒泡和默认行为，防止表单提交
   event.stopPropagation()
   event.preventDefault()
   
   const file = event.target.files[0]
   if (file) {
-    // 检查文件大小（限制10MB）
     const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      alert('文件大小不能超过10MB')
+      toastStore.add({ message: '文件大小不能超过10MB', type: 'warning' })
       return
     }
     
-    // 检查文件类型
     const allowedTypes = ['.doc', '.docx', '.pdf', '.txt']
     const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
     if (!allowedTypes.includes(fileExtension)) {
-      alert('只支持上传.doc, .docx, .pdf, .txt文件')
+      toastStore.add({ message: '只支持上传.doc, .docx, .pdf, .txt文件', type: 'warning' })
       return
     }
     
-    // 添加到附件列表
     const attachment = {
       id: Date.now().toString(),
       name: file.name,
@@ -524,8 +520,8 @@ const saveModifications = () => {
               id: Date.now() + index,
               manuscriptId: journal.value.id,
               manuscriptTitle: editedJournal.value.title,
-              writerId: userStore.user?.id || 999,
-              writerName: userStore.user?.username || 'Unknown',
+              authorId: userStore.user?.id || 999,
+              authorName: userStore.user?.username || 'Unknown',
               reviewerName: reviewer.name,
               reviewerEmail: reviewer.email,
               reviewerAffiliation: reviewer.affiliation || 'N/A',
@@ -548,8 +544,8 @@ const saveModifications = () => {
               id: Date.now() + index + 100,
               manuscriptId: journal.value.id,
               manuscriptTitle: editedJournal.value.title,
-              writerId: userStore.user?.id || 999,
-              writerName: userStore.user?.username || 'Unknown',
+              authorId: userStore.user?.id || 999,
+              authorName: userStore.user?.username || 'Unknown',
               opposedReviewerName: reviewer.name,
               opposedReviewerAffiliation: reviewer.affiliation || 'N/A',
               opposedReason: reviewer.reason,
@@ -568,21 +564,17 @@ const saveModifications = () => {
     reviewHistory: [...(journal.value.reviewHistory || []), modificationRecord]
   }
   
-  // 保存到store并获取结果
   const success = userStore.updateJournal(updatedJournal)
   
   if (success) {
-    // 退出编辑模式
     isEditing.value = false
     originalJournal.value = null
     editedJournal.value = null
     modificationDescription.value = ''
     
-    // 显示成功提示
-    alert(`修改已成功发送，稿件将重新提交到${rejectedStage}环节进行审稿`)
+    toastStore.add({ message: `修改已成功发送，稿件将重新提交到${rejectedStage}环节进行审稿`, type: 'success' })
   } else {
-    // 显示失败提示
-    alert('发送修改失败，请稍后重试')
+    toastStore.add({ message: '发送修改失败，请稍后重试', type: 'error' })
   }
 }
 
@@ -597,7 +589,7 @@ const cancelEdit = () => {
 // 检查是否可以修改稿件
 const canModify = computed(() => {
   // 只有稿件作者可以修改
-  if (journal.value?.writer !== currentUsername.value) return false
+  if ((journal.value?.author || journal.value?.writer) !== currentUsername.value) return false
   
   // 只有未通过或修改再审状态的稿件可以修改
   return ['已拒稿', '未通过', '修改再审'].includes(journal.value?.status || '')
@@ -608,7 +600,7 @@ const saveReviewRecord = () => {
   if (!journal.value) return
   
   // 设置期刊作者
-  newRecord.value.journalWriter = journal.value.writer
+  newRecord.value.journalAuthor = journal.value.author || journal.value.writer
   
   // 生成唯一ID
   newRecord.value.id = Date.now().toString()
@@ -643,7 +635,7 @@ const saveReviewRecord = () => {
     reviewResult: '',
     reviewComments: '',
     reviewDate: new Date().toISOString(),
-    journalWriter: ''
+    journalAuthor: ''
   }
 }
 
@@ -741,7 +733,7 @@ const goBack = () => {
             </div>
 
             <div class="meta-item">
-              <strong>Writer:</strong>{{ journal.writer }}
+              <strong>Author:</strong>{{ journal.author || journal.writer }}
             </div>
             <div class="meta-item">
               <strong>模块：</strong>

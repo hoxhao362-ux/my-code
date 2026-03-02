@@ -2,9 +2,9 @@
 import { ref, computed } from 'vue'
 import SubmissionNavigation from './components/SubmissionNavigation.vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 
-// Import all steps from components/submission directory
 import Step1ArticleType from '../../components/submission/Step1ArticleType.vue'
 import Step2AttachFiles from '../../components/submission/Step2AttachFiles.vue'
 import Step3GeneralInfo from '../../components/submission/Step3GeneralInfo.vue'
@@ -15,6 +15,7 @@ import ProgressBar from '../../components/submission/ProgressBar.vue'
 import { useSubmissionStore } from '../../stores/submission'
 
 const submissionStore = useSubmissionStore()
+const toastStore = useToastStore()
 const { t } = useI18n()
 
 // Steps configuration
@@ -34,12 +35,10 @@ const nextStep = () => submissionStore.nextStep()
 const prevStep = () => submissionStore.prevStep()
 const goToStep = (step) => submissionStore.goToStep(step)
 
-// Mock save for later
 const saveForLater = () => {
-  alert('Progress saved!')
+  toastStore.add({ message: 'Progress saved!', type: 'success' })
 }
 
-// Journal Platform Standard Status Label
 const statusText = computed(() => {
   const steps1to5 = submissionStore.steps.slice(0, 5)
   const ready = steps1to5.every(s => s.status === 'completed') && submissionStore.currentStep === 6

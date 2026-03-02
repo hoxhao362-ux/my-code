@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useToastStore } from '../stores/toast'
 
-// 接收App.vue传递的上下文
+const toastStore = useToastStore()
+
 const props = defineProps(['user', 'login', 'navigateTo', 'adminCode', 'reviewerCode'])
 
 const username = ref('')
@@ -31,10 +33,8 @@ const sendVerificationCode = () => {
     return
   }
   
-  // 模拟发送验证码
-  alert('验证码已发送到您的邮箱：' + email.value)
+  toastStore.add({ message: '验证码已发送到您的邮箱：' + email.value, type: 'success' })
   
-  // 开始倒计时
   isCounting.value = true
   countdown.value = 60
   

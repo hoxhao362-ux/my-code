@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../utils/helpers.js'
+import { useToastStore } from '../stores/toast'
 
-// 接收App.vue传递的上下文
+const toastStore = useToastStore()
+
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
 
 // 创建router实例
@@ -161,16 +163,14 @@ const handleReview = (id, action) => {
     // 更新审核信息
     journal.reviewDate = new Date().toISOString().split('T')[0]
     
-    // 更新原始期刊数组
     const updatedJournals = [...props.journals]
     updatedJournals[journalIndex] = journal
     props.updateJournals(updatedJournals)
     
-    // 显示审核结果
     if (journal.status === 'Accepted' || journal.status === 'Rejected') {
-      alert(`Manuscript ${journal.status}: ${journal.title}`)
+      toastStore.add({ message: `Manuscript ${journal.status}: ${journal.title}`, type: journal.status === 'Accepted' ? 'success' : 'error' })
     } else {
-      alert(`Manuscript advanced to ${journal.reviewStage}: ${journal.title}`)
+      toastStore.add({ message: `Manuscript advanced to ${journal.reviewStage}: ${journal.title}`, type: 'success' })
     }
   }
 }

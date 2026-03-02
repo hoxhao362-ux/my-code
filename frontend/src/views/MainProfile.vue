@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
+import { useToastStore } from '../stores/toast'
 import { validateEmail, validatePhone, encryptPassword } from '../utils/encryption'
 
 // Email encryption: Keep first 2 and last 4 chars (domain), mask middle with *
@@ -23,6 +24,7 @@ const encryptPhone = (phone) => {
 
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const route = useRoute()
 const user = computed(() => userStore.user)
@@ -45,8 +47,7 @@ onMounted(() => {
     if (['admin', 'reviewer', 'author'].includes(userRole)) {
       router.push('/admin/profile-security')
     } else {
-      // Normal user
-      alert('You do not have permission to access the security page. Please log in to the backend account first.')
+      toastStore.add({ message: 'You do not have permission to access the security page. Please log in to the backend account first.', type: 'warning' })
       router.push('/profile')
     }
   }
@@ -104,33 +105,27 @@ const triggerFileSelect = () => {
   fileInput.value?.click()
 }
 
-// Handle avatar upload
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // Check file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      toastStore.add({ message: 'Please select an image file', type: 'warning' })
       return
     }
     
-    // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size cannot exceed 5MB')
+      toastStore.add({ message: 'Image size cannot exceed 5MB', type: 'warning' })
       return
     }
     
-    // Read file and show preview
     const reader = new FileReader()
     reader.onload = (e) => {
       const imageUrl = e.target.result
-      // Update user avatar
       userStore.updateUser({ avatar: imageUrl })
-      alert('Avatar updated successfully')
+      toastStore.add({ message: 'Avatar updated successfully', type: 'success' })
     }
     reader.readAsDataURL(file)
     
-    // Clear file input to allow selecting the same file again
     event.target.value = ''
   }
 }
