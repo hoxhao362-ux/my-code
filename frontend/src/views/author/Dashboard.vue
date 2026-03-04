@@ -2,40 +2,86 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
+import FlowCheckPanel from './FlowCheckPanel.vue'
+import ViewSubmissionModal from './ViewSubmissionModal.vue'
+import HistoryModal from './HistoryModal.vue'
+import ReviewerStatusModal from './ReviewerStatusModal.vue'
+import SubmitRevisionModal from './SubmitRevisionModal.vue'
 import { MANUSCRIPT_STATUS, AUTHOR_STATUS_MAP } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
+const toastStore = useToastStore()
+const flowCheckPanelRef = ref(null)
+
+const handleRunCheck = () => {
+  if (flowCheckPanelRef.value) {
+    flowCheckPanelRef.value.runCheck(userJournals.value)
+  }
+}
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser)
 
 // Author submission data
-const userJournals = computed(() => userStore.userJournals)
+const userJournals = computed(() => {
+  // Use submissionUser if available (Author Dashboard Context), fallback to user
+  const currentUser = userStore.submissionUser || userStore.user
+  if (!currentUser) return []
+  return userStore.journals.filter(j => {
+    // Robust matching for author field (handle case sensitivity and potential format differences)
+    if (!j.author) return false
+    return j.author === currentUser.username || 
+           j.author.toLowerCase() === currentUser.username.toLowerCase()
+  })
+})
 
 // Helper to check status groups
 const isProcessing = (status) => [
   MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
   MANUSCRIPT_STATUS.UNDER_INITIAL_REVIEW,
   MANUSCRIPT_STATUS.INITIAL_REVIEW_PASSED,
-  MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
   MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
   MANUSCRIPT_STATUS.UNDER_FINAL_DECISION
 ].includes(status)
 
-const isRevision = (status) => [
-  MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION,
-  MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
+const isUnderReview = (status) => [
+  MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
+  MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
+  MANUSCRIPT_STATUS.REVIEW_COMPLETED
 ].includes(status)
 
-const isDecisionMade = (status) => [
-  MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED,
-  MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED,
-  MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED,
+const isWaitingApproval = (status) => [
   MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION,
+  MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
+].includes(status)
+
+const isNeedingRevision = (status) => [
+  MANUSCRIPT_STATUS.INITIAL_REVIEW_REVISION,
+  MANUSCRIPT_STATUS.FINAL_DECISION_REVISION,
+  MANUSCRIPT_STATUS.REVISION_REQUIRED
+].includes(status)
+
+const isRevisionProcessing = (status) => [
+  MANUSCRIPT_STATUS.REVISION_SUBMITTED
+].includes(status)
+
+const isDecisionMade = (status) => {
+  if (!status) return false
+  return [
+    MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED,
+    MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+  ].includes(status)
+}
+
+const isInProduction = (status) => [
   MANUSCRIPT_STATUS.PENDING_COPYRIGHT,
   MANUSCRIPT_STATUS.PENDING_PROOF,
   MANUSCRIPT_STATUS.PENDING_PUBLICATION,
-  MANUSCRIPT_STATUS.PUBLISHED,
+  MANUSCRIPT_STATUS.PUBLISHED
+].includes(status)
+
+const isWithdrawn = (status) => [
   MANUSCRIPT_STATUS.WITHDRAWN
 ].includes(status)
 
@@ -49,20 +95,23 @@ const menuGroups = computed(() => {
       items: [
         { label: 'Submit New Manuscript', count: null, action: 'submit' },
         { label: 'Submissions Being Processed', count: count(j => isProcessing(j.status)), key: 'processing' },
-        { label: 'Submissions Waiting for Author\'s Approval', count: count(j => j.status === 'Waiting Approval'), key: 'waiting_approval' } // Legacy/Mock
+        { label: 'Submissions Waiting for Author\'s Approval', count: count(j => isWaitingApproval(j.status)), key: 'waiting_approval' },
+        { label: 'Under Review', count: count(j => isUnderReview(j.status)), key: 'under_review' }
       ]
     },
     {
       title: 'Revisions',
       items: [
-        { label: 'Submissions Needing Revision', count: count(j => isRevision(j.status)), key: 'needing_revision' },
-        { label: 'Revisions Being Processed', count: 0, key: 'revision_processing' } // Mock placeholder
+        { label: 'Submissions Needing Revision', count: count(j => isNeedingRevision(j.status)), key: 'needing_revision' },
+        { label: 'Revisions Being Processed', count: count(j => isRevisionProcessing(j.status)), key: 'revision_processing' }
       ]
     },
     {
       title: 'Completed',
       items: [
-        { label: 'Submissions with a Decision', count: count(j => isDecisionMade(j.status)), key: 'decision_made' }
+        { label: 'Submissions with a Decision', count: count(j => isDecisionMade(j.status)), key: 'decision_made' },
+        { label: 'In Production', count: count(j => isInProduction(j.status)), key: 'in_production' },
+        { label: 'Withdrawn', count: count(j => isWithdrawn(j.status)), key: 'withdrawn' }
       ]
     }
   ]
@@ -78,6 +127,15 @@ const handleItemClick = (item) => {
     return
   }
   
+  // Allow clicking even if count is 0, or strictly following "no correspond status, count 0, do not hide"
+  // User says "Prioritize reuse existing...". Existing had `if (item.count > 0)`.
+  // But user implies we should be able to see empty lists? "No correspond status... count 0, do not hide".
+  // Existing logic prevents clicking if count is 0.
+  // I will update this to allow clicking if the user wants to see "Empty" list, 
+  // but usually dashboard items with 0 are not clickable if there is nothing to show.
+  // However, for "Submissions Being Processed" with 0, clicking shows empty list.
+  // The user didn't explicitly say "allow clicking 0 items", just "display 0".
+  // I will stick to existing behavior for now (clickable if count > 0) to avoid breaking UX unless necessary.
   if (item.count > 0) {
     selectedItemKey.value = item.key
   }
@@ -89,8 +147,13 @@ const selectedManuscripts = computed(() => {
   
   switch (selectedItemKey.value) {
     case 'processing': return userJournals.value.filter(j => isProcessing(j.status))
-    case 'needing_revision': return userJournals.value.filter(j => isRevision(j.status))
+    case 'waiting_approval': return userJournals.value.filter(j => isWaitingApproval(j.status))
+    case 'under_review': return userJournals.value.filter(j => isUnderReview(j.status))
+    case 'needing_revision': return userJournals.value.filter(j => isNeedingRevision(j.status))
+    case 'revision_processing': return userJournals.value.filter(j => isRevisionProcessing(j.status))
     case 'decision_made': return userJournals.value.filter(j => isDecisionMade(j.status))
+    case 'in_production': return userJournals.value.filter(j => isInProduction(j.status))
+    case 'withdrawn': return userJournals.value.filter(j => isWithdrawn(j.status))
     default: return []
   }
 })
@@ -104,13 +167,53 @@ const selectedItemLabel = computed(() => {
   return ''
 })
 
-const getAuthorStatusLabel = (status) => {
-  return AUTHOR_STATUS_MAP[status] || status
+const getAuthorStatusLabel = (manuscript) => {
+  // Journal Platform Standard: Submitted status includes ID
+  if (manuscript.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW) {
+    return `Submitted (Manuscript ID: ${manuscript.id})`
+  }
+  return AUTHOR_STATUS_MAP[manuscript.status] || manuscript.status
 }
 
 // Reviewer Management Logic
 const recommendedReviewers = computed(() => userStore.recommendedReviewers)
 const showReviewerModal = ref(false)
+const showViewSubmissionModal = ref(false)
+const showHistoryModal = ref(false)
+const showReviewerStatusModal = ref(false)
+const showSubmitRevisionModal = ref(false)
+const selectedManuscriptForModal = ref(null)
+
+// Action Handlers
+const handleSubmitRevision = (manuscript) => {
+  selectedManuscriptForModal.value = manuscript
+  showSubmitRevisionModal.value = true
+}
+
+const handleViewSubmission = (manuscript) => {
+  selectedManuscriptForModal.value = manuscript
+  showViewSubmissionModal.value = true
+}
+
+const handleHistory = (manuscript) => {
+  selectedManuscriptForModal.value = manuscript
+  showHistoryModal.value = true
+}
+
+const handleViewPublicationStatus = (manuscript) => {
+  router.push({ name: 'author-publication-status', params: { id: manuscript.id } })
+}
+
+const handleReviewers = (manuscript) => {
+  if (!isUnderReview(manuscript.status) && !isDecisionMade(manuscript.status)) {
+    toastStore.add({ message: 'Manuscript not yet in review process. Please wait for the initial screening to complete.', type: 'warning' })
+    return
+  }
+  
+  selectedManuscriptForModal.value = manuscript
+  showReviewerStatusModal.value = true
+}
+
 const selectedManuscriptForReviewers = ref(null)
 
 const currentManuscriptReviewers = computed(() => {
@@ -128,7 +231,7 @@ const handleWithdrawRecommendation = (reviewer) => {
   
   const updated = { ...reviewer, status: 'withdrawn', reviewedAt: new Date().toISOString(), reviewedBy: 'author' }
   userStore.updateRecommendedReviewer(updated)
-  alert('Recommendation withdrawn successfully.')
+  toastStore.add({ message: 'Recommendation withdrawn successfully.', type: 'success' })
 }
 
 </script>
@@ -140,6 +243,11 @@ const handleWithdrawRecommendation = (reviewer) => {
 
     <!-- 作者后台内容 -->
     <main class="dashboard-content">
+      <div class="dashboard-header-actions">
+        <h2 class="dashboard-title">My Manuscripts</h2>
+        <button class="btn-flow-check" @click="handleRunCheck">Run Flow Check</button>
+      </div>
+
       <!-- 主内容区域 -->
       <div class="main-lists">
           <div v-for="group in menuGroups" :key="group.title" class="menu-group">
@@ -185,7 +293,7 @@ const handleWithdrawRecommendation = (reviewer) => {
                 <div v-for="manuscript in selectedManuscripts" :key="manuscript.id" class="manuscript-card">
                    <div class="card-header">
                      <span class="ms-id">#{{ manuscript.id }}</span>
-                     <span class="ms-status-badge">{{ getAuthorStatusLabel(manuscript.status) }}</span>
+                     <span class="ms-status-badge">{{ getAuthorStatusLabel(manuscript) }}</span>
                    </div>
                    <h4 class="ms-title">{{ manuscript.title }}</h4>
                    <div class="ms-meta">
@@ -193,9 +301,34 @@ const handleWithdrawRecommendation = (reviewer) => {
                      <span>Field: {{ manuscript.field }}</span>
                    </div>
                    <div class="card-actions">
-                     <button class="action-btn">View Submission</button>
-                     <button class="action-btn">History</button>
-                     <button class="action-btn" @click="openReviewerModal(manuscript)">Reviewers</button>
+                     <button class="action-btn" @click="handleViewSubmission(manuscript)">View Submission</button>
+                     <button class="action-btn" @click="handleHistory(manuscript)">History</button>
+                     
+                     <!-- New Publication Status Button -->
+                     <button 
+                       v-if="isInProduction(manuscript.status)"
+                       class="action-btn btn-primary"
+                       @click="handleViewPublicationStatus(manuscript)"
+                     >
+                       Check Publication Status
+                     </button>
+
+                     <button 
+                       class="action-btn" 
+                       :class="{ 'disabled': !isUnderReview(manuscript.status) && !isDecisionMade(manuscript.status) }"
+                       @click="handleReviewers(manuscript)"
+                     >
+                       Reviewers
+                     </button>
+                     <button 
+                       v-if="isNeedingRevision(manuscript.status)"
+                       class="action-btn btn-primary" 
+                       @click="handleSubmitRevision(manuscript)"
+                     >
+                       Submit Revision
+                     </button>
+                     <!-- Legacy Recommend Reviewers (if needed, otherwise hide or rename) -->
+                     <!-- <button class="action-btn" @click="openReviewerModal(manuscript)">Recommend Reviewers</button> -->
                    </div>
                 </div>
               </div>
@@ -204,7 +337,35 @@ const handleWithdrawRecommendation = (reviewer) => {
       </div>
     </main>
 
-    <!-- Reviewer Management Modal -->
+    <FlowCheckPanel ref="flowCheckPanelRef" :manuscripts="userJournals" />
+
+    <!-- Action Modals -->
+    <ViewSubmissionModal 
+      :visible="showViewSubmissionModal" 
+      :manuscript="selectedManuscriptForModal" 
+      @close="showViewSubmissionModal = false" 
+    />
+    
+    <HistoryModal 
+      :visible="showHistoryModal" 
+      :manuscript="selectedManuscriptForModal" 
+      @close="showHistoryModal = false" 
+    />
+    
+    <ReviewerStatusModal 
+      :visible="showReviewerStatusModal" 
+      :manuscript="selectedManuscriptForModal" 
+      @close="showReviewerStatusModal = false" 
+    />
+
+    <SubmitRevisionModal 
+      :visible="showSubmitRevisionModal" 
+      :manuscript="selectedManuscriptForModal" 
+      @close="showSubmitRevisionModal = false" 
+      @submitted="showSubmitRevisionModal = false"
+    />
+
+    <!-- Reviewer Management Modal (Legacy/Recommend) -->
     <div v-if="showReviewerModal" class="modal-overlay">
       <div class="modal-box">
         <h3>Recommended Reviewers</h3>
@@ -263,6 +424,37 @@ const handleWithdrawRecommendation = (reviewer) => {
   max-width: 1400px; /* Wider layout */
   margin: 0 auto;
   padding: 2rem 1rem;
+}
+
+.dashboard-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+.btn-flow-check {
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.btn-flow-check:hover {
+  background-color: #004494;
 }
 
 .main-lists {
@@ -402,7 +594,24 @@ const handleWithdrawRecommendation = (reviewer) => {
   cursor: pointer;
 }
 
-.action-btn:hover {
+.action-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  color: #999;
+}
+
+.action-btn.btn-primary {
+  background: #3498db;
+  color: white;
+  border: 1px solid #2980b9;
+}
+
+.action-btn.btn-primary:hover {
+  background: #2980b9;
+}
+
+.action-btn:hover:not(.disabled) {
   background: #ddd;
 }
 

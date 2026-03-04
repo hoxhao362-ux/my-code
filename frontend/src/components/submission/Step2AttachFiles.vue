@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
+import { useToastStore } from '../../stores/toast'
 import StepNavigation from './StepNavigation.vue'
 import { useErrorScroll } from '../../composables/useErrorScroll'
 
 const store = useSubmissionStore()
 const { t } = useI18n()
+const toastStore = useToastStore()
 const { scrollToError } = useErrorScroll()
 
 const uploadError = ref('')
@@ -138,13 +140,13 @@ const processFiles = async (fileList) => {
       newFile.uploadStatus = 'uploading'
       await simulateUpload(newFile)
       newFile.uploadStatus = 'success'
-      // alert('Manuscript uploaded successfully') // Optional: too many alerts if multiple files
+      toastStore.add({ message: `File uploaded: ${newFile.name}`, type: 'success' })
     } catch (e) {
       newFile.uploadStatus = 'error'
       uploadError.value = e.message
       // Remove failed file or keep it with error state?
       // For now, let's keep it but mark as error
-      alert(`Upload failed: ${e.message}`)
+      toastStore.add({ message: `Upload failed: ${e.message}`, type: 'error' })
     }
   }
 }
@@ -243,7 +245,7 @@ const checkSelfCitations = () => {
       id: 'ref-1',
       text: 'Smith, A. B., et al. (2023). Study on X. Journal of Y, 10(1), 1–10.',
       highlight: 'Smith, A. B.',
-      reason: 'Contains writer name(s) from your manuscript',
+      reason: 'Contains author name(s) from your manuscript',
       status: 'pending' // pending, anonymized
     },
     {
@@ -275,7 +277,7 @@ const markAsAnonymized = (id) => {
 }
 
 const downloadTemplate = () => {
-  alert('Downloading Anonymization Template...')
+  toastStore.add({ message: 'Downloading Anonymization Template...', type: 'info' })
 }
 
 const allAnonymized = computed(() => {
@@ -294,7 +296,7 @@ const handleAnonFileChange = (e) => {
     // Validate PDF/Word
     const ext = file.name.split('.').pop().toLowerCase()
     if (!['pdf', 'doc', 'docx'].includes(ext)) {
-      alert('Invalid file format. Only PDF, DOC, DOCX are supported.')
+      toastStore.add({ message: 'Invalid file format. Only PDF, DOC, DOCX are supported.', type: 'error' })
       e.target.value = ''
       return
     }

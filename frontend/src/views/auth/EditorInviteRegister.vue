@@ -1,9 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToastStore } from '../../stores/toast'
 
 const route = useRoute()
 const router = useRouter()
+const toastStore = useToastStore()
 
 // State
 const inviteToken = ref('')
@@ -38,14 +40,12 @@ onMounted(() => {
   }
 })
 
-// Submit
 const handleSubmit = () => {
   if (!form.value.conflictInterest || !form.value.confidentiality || !form.value.signature) {
-    alert('Please agree to all terms and sign the confidentiality agreement.')
+    toastStore.add({ message: 'Please agree to all terms and sign the confidentiality agreement.', type: 'warning' })
     return
   }
   
-  // Mock API call
   console.log('Submitting registration:', form.value)
   isSubmitted.value = true
 }

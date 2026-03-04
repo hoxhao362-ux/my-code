@@ -2,12 +2,14 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import { useI18n } from '../../../composables/useI18n'
 import Navigation from '../../../components/Navigation.vue'
 import IntelligentReviewerRecommendation from '../../../components/audit/IntelligentReviewerRecommendation.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -34,9 +36,8 @@ const filterMethod = ref('all') // 'field', 'method'
 const searchQuery = ref('')
 const activeTab = ref('recommended') // 'manual', 'smart', 'recommended'
 
-const writerRecommendedReviewers = computed(() => {
+const authorRecommendedReviewers = computed(() => {
   if (!currentJournal.value) return []
-  // Get all recommendations for this manuscript (Removed 'accepted' filter per requirements)
   return userStore.recommendedReviewers.filter(r => 
     String(r.manuscriptId) === String(currentJournal.value.id)
   )
@@ -55,7 +56,6 @@ const openAssignModal = (journal) => {
   currentJournal.value = journal
   selectedReviewerIds.value = []
   
-  // Check if there are writer recommendations
   const hasRecommendations = userStore.recommendedReviewers.some(r => 
     String(r.manuscriptId) === String(journal.id) && 
     r.status === 'accepted'
@@ -87,7 +87,7 @@ const handleSelectRecommended = (reviewer) => {
 
 const confirmAssignment = () => {
   if (selectedReviewerIds.value.length < 1) {
-    alert(t('editor.audit.assignReviewers.alerts.selectAtLeastOne'))
+    toastStore.add({ message: t('editor.audit.assignReviewers.alerts.selectAtLeastOne'), type: 'warning' })
     return
   }
   
@@ -126,11 +126,11 @@ const confirmAssignment = () => {
   
   userStore.updateJournal(journal)
   showModal.value = false
-  alert(t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: newReviewers.length }))
+  toastStore.add({ message: t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: newReviewers.length }), type: 'success' })
 }
 
 const handleReinvite = (journal) => {
-  alert(t('editor.audit.assignReviewers.alerts.reinviteHint'))
+  toastStore.add({ message: t('editor.audit.assignReviewers.alerts.reinviteHint'), type: 'info' })
 }
 
 </script>
@@ -150,7 +150,7 @@ const handleReinvite = (journal) => {
           <div class="journal-info">
             <h3 class="journal-title">{{ journal.title }}</h3>
             <div class="journal-meta">
-              <span><strong>{{ t('editor.audit.assignReviewers.meta.writer') }}:</strong> {{ journal.writer }}</span>
+              <span><strong>{{ t('editor.audit.assignReviewers.meta.author') }}:</strong> {{ journal.author || journal.writer }}</span>
               <span><strong>{{ t('editor.audit.assignReviewers.meta.module') }}:</strong> {{ journal.module }}</span>
             </div>
             <div class="tags">
@@ -180,8 +180,8 @@ const handleReinvite = (journal) => {
             :class="{ active: activeTab === 'recommended' }"
             @click="activeTab = 'recommended'"
           >
-            👤 {{ t('editor.audit.assignReviewers.tabs.writerRecommended') }}
-            <span v-if="writerRecommendedReviewers.length" class="badge-count">{{ writerRecommendedReviewers.length }}</span>
+            👤 {{ t('editor.audit.assignReviewers.tabs.authorRecommended') }}
+            <span v-if="authorRecommendedReviewers.length" class="badge-count">{{ authorRecommendedReviewers.length }}</span>
           </button>
           <button 
             class="tab-btn" 
@@ -199,14 +199,13 @@ const handleReinvite = (journal) => {
           </button>
         </div>
 
-        <!-- Writer Recommended Tab -->
         <div v-if="activeTab === 'recommended'" class="tab-content">
-          <div v-if="writerRecommendedReviewers.length === 0" class="no-data-tab">
-            {{ t('editor.audit.assignReviewers.noWriterRecommendations') }}
-            <p class="hint">{{ t('editor.audit.assignReviewers.writerRecommendationHint') }}</p>
+          <div v-if="authorRecommendedReviewers.length === 0" class="no-data-tab">
+            {{ t('editor.audit.assignReviewers.noAuthorRecommendations') }}
+            <p class="hint">{{ t('editor.audit.assignReviewers.authorRecommendationHint') }}</p>
           </div>
           <div v-else class="reviewer-list">
-             <div v-for="reviewer in writerRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
+             <div v-for="reviewer in authorRecommendedReviewers" :key="reviewer.id" class="reviewer-item recommended-item">
                <label>
                  <div class="reviewer-info">
                    <span class="r-name">{{ reviewer.reviewerName }}</span>

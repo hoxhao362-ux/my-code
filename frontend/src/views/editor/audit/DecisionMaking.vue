@@ -2,12 +2,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
+import RichTextEditor from '../../../components/RichTextEditor.vue'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
 import { useI18n } from '../../../composables/useI18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -87,7 +90,7 @@ const meetingAgenda = ref({
 const openDecisionModal = (journal) => {
   // Permission check: only editor or admin can handle pending final decision manuscripts
   if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION && !['editor', 'admin'].includes(user.value?.role)) {
-    alert(t('editor.audit.decisionMaking.alerts.onlyEditors'))
+    toastStore.add({ message: t('editor.audit.decisionMaking.alerts.onlyEditors'), type: 'error' })
     return
   }
   
@@ -115,7 +118,7 @@ const autoConsolidateReviews = (journal) => {
 
 const submitDecision = () => {
   if (!decisionComments.value) {
-    alert(t('editor.audit.decisionMaking.alerts.enterComments'))
+    toastStore.add({ message: t('editor.audit.decisionMaking.alerts.enterComments'), type: 'warning' })
     return
   }
   
@@ -152,7 +155,7 @@ const submitDecision = () => {
     journal.decisionStage = 'consensus_meeting'
     userStore.updateJournal(journal)
     showModal.value = false
-    alert(t('editor.audit.decisionMaking.alerts.movedToConsensus'))
+    toastStore.add({ message: t('editor.audit.decisionMaking.alerts.movedToConsensus'), type: 'success' })
     return
   }
   
@@ -175,7 +178,7 @@ const submitDecision = () => {
     content: decisionComments.value,
     templateType: decisionType.value,
     status: 'Draft',
-    author: journal.writer || journal.author,
+    author: journal.author,
     rationale: decisionRationale.value // Save structured rationale
   }
   userStore.saveDecisionDraft(draft)
@@ -184,15 +187,21 @@ const submitDecision = () => {
   
   // Show different messages based on status transition
   if (newStatus === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION) {
-    alert(t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.sentToEIC'))
+    toastStore.add({ 
+      message: t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.sentToEIC'), 
+      type: 'success' 
+    })
   } else {
-    alert(t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.letterGenerated'))
+    toastStore.add({ 
+      message: t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.letterGenerated'), 
+      type: 'success' 
+    })
   }
 }
 
 // --- Meeting Functions ---
 const scheduleMeeting = (journal) => {
-  alert(t('editor.audit.decisionMaking.alerts.meetingScheduled', { title: journal.title }))
+  toastStore.add({ message: t('editor.audit.decisionMaking.alerts.meetingScheduled', { title: journal.title }), type: 'info' })
 }
 
 const finalizeMeetingDecision = (journal) => {
@@ -201,7 +210,7 @@ const finalizeMeetingDecision = (journal) => {
 
 // --- Appeal Functions ---
 const assignIndependentReviewer = (journal) => {
-  alert(t('editor.audit.decisionMaking.alerts.independentAssigned', { title: journal.title }))
+  toastStore.add({ message: t('editor.audit.decisionMaking.alerts.independentAssigned', { title: journal.title }), type: 'success' })
   // Logic to change status or assign reviewer
 }
 
@@ -381,7 +390,10 @@ const assignIndependentReviewer = (journal) => {
             <!-- Section 3: Decision Letter -->
             <div class="form-section">
               <h3>{{ t('editor.audit.decisionMaking.modals.decision.sections.letter') }}</h3>
-              <textarea v-model="decisionComments" rows="6" class="form-control" :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.letter')"></textarea>
+              <RichTextEditor 
+                v-model="decisionComments" 
+                :placeholder="t('editor.audit.decisionMaking.modals.decision.placeholders.letter')"
+              />
             </div>
           </div>
         </div>

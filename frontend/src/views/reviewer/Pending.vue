@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
@@ -10,6 +11,7 @@ import { useI18n } from '../../composables/useI18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -135,11 +137,9 @@ const processReview = (journal, action, comment) => {
       }
     }
 
-    // Update Store
     userStore.updateJournal(journal)
-    alert(updateMessage)
+    toastStore.add({ message: updateMessage, type: 'success' })
 
-    // Auto-promote author if accepted
     if (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
        const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
        if (authorIndex !== -1) {
@@ -315,12 +315,12 @@ const handleReview = (id, action) => {
     const isReviewer = user.value?.role === 'reviewer';
     
     if (isAdmin && (journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审')) {
-      alert('Admin cannot process Peer Review stage manuscripts!');
+      toastStore.add({ message: 'Admin cannot process Peer Review stage manuscripts!', type: 'warning' })
       return;
     }
     
     if (isReviewer && journal.reviewStage !== 'Peer Review' && journal.reviewStage !== '复审') {
-      alert('Reviewer can only process Peer Review stage manuscripts!');
+      toastStore.add({ message: 'Reviewer can only process Peer Review stage manuscripts!', type: 'warning' })
       return;
     }
     
@@ -453,36 +453,28 @@ const handleReview = (id, action) => {
       }
     }
     
-    // 更新期刊
     userStore.updateJournal(journal)
     
-    // 显示审核结果
-    alert(updateMessage)
+    toastStore.add({ message: updateMessage, type: 'success' })
     
-    // 自动升级作者角色：稿件被接受后自动升级
     if (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
-      // 查找作者在用户列表中的记录
       const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
       if (authorIndex !== -1) {
         const authorUser = userStore.users[authorIndex];
         if (authorUser.role === 'user') {
-          // 升级作者角色为作者
           const updatedAuthorUser = {
             ...authorUser,
             role: 'author'
           };
           
-          // 更新用户列表
           userStore.users[authorIndex] = updatedAuthorUser;
           localStorage.setItem('users', JSON.stringify(userStore.users));
           
-          // 如果当前登录用户就是该作者，同时更新当前登录用户信息
           if (userStore.user && userStore.user.username === journal.author) {
             userStore.updateUser({ role: 'author' });
           }
           
-          // 提示审核员升级成功
-          alert(`Author ${journal.author} has been automatically upgraded to author role!`);
+          toastStore.add({ message: `Author ${journal.author} has been automatically upgraded to author role!`, type: 'success' })
         }
       }
     }

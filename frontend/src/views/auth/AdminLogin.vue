@@ -21,7 +21,7 @@ const rememberMe = ref(false)
 // Determine Context and Title
 const contextTitle = computed(() => {
   const role = route.query.role
-  if (role === 'writer') return t('auth.adminLogin.title.writer')
+  if (role === 'author') return t('auth.adminLogin.title.author')
   if (role === 'reviewer') return t('auth.adminLogin.title.reviewer')
   if (role === 'admin') return t('auth.adminLogin.title.admin')
   return t('auth.adminLogin.title.default')
@@ -30,7 +30,7 @@ const contextTitle = computed(() => {
 // Auto-select role based on query
 onMounted(() => {
   if (route.query.role === 'author') {
-    selectedRole.value = 'writer'
+    selectedRole.value = 'author'
   } else if (route.query.role) {
     selectedRole.value = route.query.role
   }
@@ -56,7 +56,7 @@ const handleLogin = async () => {
     // Role Logic: 1. URL Query 2. Dropdown 3. Fallback
     let role = selectedRole.value || (username.value === 'admin' ? 'admin' : 
                username.value === 'reviewer' ? 'reviewer' : 
-               username.value === 'writer' || username.value.startsWith('writer') ? 'writer' : 
+               username.value === 'author' || username.value.startsWith('author') ? 'author' : 
                'user')
     
     // Check if user is trying to login to wrong portal
@@ -89,8 +89,8 @@ const handleLogin = async () => {
       redirectPath = '/editor/dashboard'
     } else if (userStore.currentRole === 'reviewer') {
       redirectPath = '/reviewer/dashboard'
-    } else if (userStore.currentRole === 'writer') {
-      redirectPath = '/admin/writer-dashboard'
+    } else if (userStore.currentRole === 'author') {
+      redirectPath = '/admin/author-dashboard'
     } else if (userStore.currentRole === 'editor' || userStore.currentRole === 'associate_editor') {
       redirectPath = '/editor/dashboard'
     }
@@ -159,7 +159,7 @@ const goToRegister = () => {
             <option value="admin">{{ t('auth.adminLogin.roles.admin') }}</option>
             <option value="editor">{{ t('auth.adminLogin.roles.editor') }}</option>
             <option value="reviewer">{{ t('auth.adminLogin.roles.reviewer') }}</option>
-            <option value="writer">{{ t('auth.adminLogin.roles.writer') }}</option>
+            <option value="author">{{ t('auth.adminLogin.roles.author') }}</option>
           </select>
         </div>
         

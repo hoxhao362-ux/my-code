@@ -112,7 +112,7 @@ const handleRegister = async () => {
   const userData = {
     username: username.value,
     password: password.value, // Pass plaintext password to loginSubmission
-    role: 'writer', // 默认角色为撰稿人
+    role: 'author', // 默认角色为作者
     email: email.value,
     firstName: firstName.value,
     lastName: lastName.value,
@@ -156,8 +156,8 @@ const goToLogin = () => {
 const emit = defineEmits(['go-to-login'])
 
 const useORCID = () => {
-  // 模拟ORCID集成
-  alert('ORCID集成功能将在未来版本中实现')
+  // Mock ORCID sync
+  toastStore.add({ message: 'ORCID integration will be available in future versions', type: 'info' })
 }
 
 const selectPersonalClassifications = () => {

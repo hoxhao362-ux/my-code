@@ -17,7 +17,7 @@ const props = defineProps({
     ]
   },
   // Author's response (Mock)
-  writerResponse: {
+  authorResponse: {
     type: Object,
     default: () => ({
       version: 'R1',
@@ -92,8 +92,8 @@ const handleSubmit = () => {
       
       <div class="meta-info">
         <span>Revision: {{ revisionCount }}/2</span>
-        <span>Version: {{ writerResponse.version }}</span>
-        <span>Submitted: {{ writerResponse.submitTime }}</span>
+        <span>Version: {{ authorResponse.version }}</span>
+        <span>Submitted: {{ authorResponse.submitTime }}</span>
       </div>
     </header>
     
@@ -116,10 +116,10 @@ const handleSubmit = () => {
           <div class="resp-content">
             <p class="resp-text">
               <strong>Response:</strong> 
-              {{ writerResponse.items.find(i => i.reqId === req.id)?.response || 'No response provided.' }}
+              {{ authorResponse.items.find(i => i.reqId === req.id)?.response || 'No response provided.' }}
             </p>
             <p class="resp-loc">
-              Location: {{ writerResponse.items.find(i => i.reqId === req.id)?.location || 'N/A' }}
+              Location: {{ authorResponse.items.find(i => i.reqId === req.id)?.location || 'N/A' }}
             </p>
           </div>
           

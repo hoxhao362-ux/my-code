@@ -2,12 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
+import { useToastStore } from '../../stores/toast'
 import StepNavigation from './StepNavigation.vue'
 import { useErrorScroll } from '../../composables/useErrorScroll'
 import { searchInstitutions } from '../../utils/validators'
 
 const store = useSubmissionStore()
 const { t } = useI18n()
+const toastStore = useToastStore()
 const { scrollToError } = useErrorScroll()
 
 // Helper: Institution Search for Reviewers
@@ -87,8 +89,7 @@ const confirmAnonymization = () => {
 }
 
 const triggerReupload = () => {
-  alert('Redirecting to File Upload step... (Mock)')
-  // In real app, might emit event to parent to switch step
+  toastStore.add({ message: 'Redirecting to File Upload step...', type: 'info' })
 }
 
 // --- 2. Reference Anonymization Logic ---
@@ -174,10 +175,9 @@ const detectSelfCitations = () => {
 }
 
 const confirmSelfCitations = () => {
-  // Check if all potential are verified
   const allVerified = potentialCitations.value.every(c => c.userChoice)
   if (!allVerified) {
-    alert('Please verify all potential self-citations first.')
+    toastStore.add({ message: 'Please verify all potential self-citations first.', type: 'warning' })
     return
   }
   selfCiteStatus.value = 'confirmed'
@@ -223,7 +223,7 @@ const getCharCount = (text) => text ? text.length : 0
 // Reviewer Logic
 const addRecommendedReviewer = () => {
   if (store.formData.additionalInfo.recommendedReviewers.length >= 3) {
-      alert("Maximum 3 recommended reviewers allowed.")
+      toastStore.add({ message: 'Maximum 3 recommended reviewers allowed.', type: 'warning' })
       return
   }
   
@@ -301,7 +301,7 @@ const getFieldError = (value, type, minLength = 0) => {
 
 const handleConfirmAnonymization = () => {
   // Simulate scanning
-  const confirmText = "You confirm that all writer identifying information has been removed from the manuscript."
+  const confirmText = "You confirm that all author identifying information has been removed from the manuscript."
   if (confirm(confirmText)) {
     store.formData.additionalInfo.blindReview.confirmed = true
   }
@@ -319,7 +319,7 @@ const handleConfirmAnonymization = () => {
     <!-- Manuscript Anonymization Check (Required) -->
     <div class="blind-review-section">
       <h3 class="section-title">Manuscript Anonymization Check <span class="required">(Required for Double-Blind Review)</span></h3>
-      <p class="section-helper">The system will automatically scan your full manuscript for writer identifying information. <span class="text-red">All identifiers must be completely removed</span> to comply with double-blind review standards.</p>
+      <p class="section-helper">The system will automatically scan your full manuscript for author identifying information. <span class="text-red">All identifiers must be completely removed</span> to comply with double-blind review standards.</p>
       
       <div class="scan-status-container">
         <span class="status-label">Scan Status:</span>
@@ -345,8 +345,8 @@ const handleConfirmAnonymization = () => {
 
       <!-- Scan Results -->
       <div v-if="scanStatus === 'completed'" class="scan-result success">
-        <h4 class="result-title">No Writer Identifying Information Detected</h4>
-        <p class="result-desc">The system has finished scanning your manuscript. No writer identifiers were found in the text, figures, tables, headers, footers or acknowledgments. You may proceed with submission.</p>
+        <h4 class="result-title">No Author Identifying Information Detected</h4>
+        <p class="result-desc">The system has finished scanning your manuscript. No author identifiers were found in the text, figures, tables, headers, footers or acknowledgments. You may proceed with submission.</p>
         <button class="btn-confirm-green" @click="confirmAnonymization" v-if="!store.formData.additionalInfo.blindReview.confirmed">
           Confirm & Proceed
         </button>
@@ -360,7 +360,7 @@ const handleConfirmAnonymization = () => {
             <span class="risk-dot">●</span> {{ risk }}
           </li>
         </ul>
-        <p class="revision-hint">Please delete all detected writer identifiers, re-upload your revised manuscript, and click Rescan Manuscript to verify again.</p>
+        <p class="revision-hint">Please delete all detected author identifiers, re-upload your revised manuscript, and click Rescan Manuscript to verify again.</p>
         <button class="btn-secondary" @click="triggerReupload">Re-upload Revised Manuscript</button>
       </div>
     </div>
@@ -406,7 +406,7 @@ const handleConfirmAnonymization = () => {
       </div>
 
       <div v-if="refStatus === 'completed'" class="ref-confirm-actions">
-        <p class="ref-hint">Please carefully compare the original and anonymized references to ensure no writer information remains.</p>
+        <p class="ref-hint">Please carefully compare the original and anonymized references to ensure no author information remains.</p>
         <button class="btn-confirm-green" @click="confirmReferences">Confirm Anonymized References</button>
       </div>
       
@@ -685,7 +685,7 @@ const handleConfirmAnonymization = () => {
           <input type="checkbox" :checked="store.formData.additionalInfo.blindReview.enabled" disabled>
           <span class="checkbox-text">Submit manuscript for blind peer review</span>
         </label>
-        <p class="blind-hint">All writer identifying information will be removed from the manuscript for reviewers</p>
+        <p class="blind-hint">All author identifying information will be removed from the manuscript for reviewers</p>
       </div>
 
       <div class="blind-actions">
@@ -696,7 +696,7 @@ const handleConfirmAnonymization = () => {
         >
           {{ store.formData.additionalInfo.blindReview.confirmed ? 'Anonymization Confirmed ✓' : 'Confirm Anonymization' }}
         </button>
-        <p class="self-check-hint">Please ensure no writer names, affiliations, or personal identifiers (including in figures/tables/filenames) are present in the manuscript.</p>
+        <p class="self-check-hint">Please ensure no author names, affiliations, or personal identifiers (including in figures/tables/filenames) are present in the manuscript.</p>
       </div>
       
       <div v-if="store.steps[3].status === 'error' && !store.formData.additionalInfo.blindReview.confirmed" class="error-text">

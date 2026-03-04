@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   manuscriptId: {
@@ -101,11 +104,10 @@ const requestScanRevision = () => {
   }
 }
 
-// 2. Reference Actions
 const approveRef = () => {
   if (confirm('Confirm that the reference anonymization is compliant?')) {
     addLog('Approved reference anonymization.')
-    alert('Reference anonymization approved.')
+    toastStore.add({ message: 'Reference anonymization approved.', type: 'success' })
   }
 }
 
@@ -116,11 +118,10 @@ const requestRefRevision = () => {
   }
 }
 
-// 3. Self-Cite Actions
 const approveSelfCite = () => {
   if (confirm('Confirm that self-citation handling is compliant?')) {
     addLog('Approved self-citation detection results.')
-    alert('Self-citation audit approved.')
+    toastStore.add({ message: 'Self-citation audit approved.', type: 'success' })
   }
 }
 
@@ -134,7 +135,7 @@ const requestSelfCiteReverify = () => {
 const reDetectSelfCite = () => {
   if (confirm('Re-run self-citation detection? This will reset author confirmations.')) {
     addLog('Triggered re-detection of self-citations.')
-    alert('Detection re-run successfully.')
+    toastStore.add({ message: 'Detection re-run successfully.', type: 'success' })
   }
 }
 

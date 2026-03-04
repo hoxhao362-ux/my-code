@@ -138,14 +138,14 @@ export default {
     abstract: '摘要',
     keywords: '关键词',
     keywordsPlaceholder: '请输入关键词，多个关键词用分号分隔',
-    writers: {
-      title: '撰稿人',
-      add: '添加撰稿人',
+    authors: {
+      title: '作者',
+      add: '添加作者',
       name: '姓名',
       institution: '机构',
       email: '邮箱',
-      corresponding: '通讯撰稿人',
-      first: '第一撰稿人',
+      corresponding: '通讯作者',
+      first: '第一作者',
     },
     funding: {
       title: '资助信息',
@@ -164,9 +164,9 @@ export default {
     },
     errors: {
       incomplete: '请完成所有必填项',
-      noWriter: '请至少添加一位撰稿人',
-      noCorresponding: '请选择通讯撰稿人',
-      noFirst: '请选择第一撰稿人',
+      noAuthor: '请至少添加一位作者',
+      noCorresponding: '请选择通讯作者',
+      noFirst: '请选择第一作者',
       noFunding: '请添加资助信息或选择"无资助信息"',
     },
     successMessage: '投稿已成功提交。请等待期刊初审',
@@ -176,8 +176,8 @@ export default {
     intro: '提交前请仔细阅读以下指南...',
     format: '格式',
     formatDesc: 'PDF, Word, 或 LaTeX。',
-    writers: '撰稿人',
-    writersDesc: '确保列出所有撰稿人并经其批准。',
+    authors: '作者',
+    authorsDesc: '确保列出所有作者并经其批准。',
     originality: '原创性',
     originalityDesc: '内容必须是原创的。',
     start: '开始投稿'
@@ -215,7 +215,7 @@ export default {
       associate_editor: '副编辑工作台',
       ea_ae: '助理/顾问编辑工作台',
       reviewer: '审核员工作台',
-      writer: '投稿人工作台'
+      author: '投稿人工作台'
     },
     tasks: '审核任务',
     history: '审核记录',
@@ -242,8 +242,8 @@ export default {
     submissionGuide: '投稿指南',
     onlineConsultation: '在线咨询',
     permissionDenied: '权限不足，无法登录后台',
-    writerResources: '投稿人资源',
-    guideForWriters: '投稿指南',
+    authorResources: '投稿人资源',
+    guideForAuthors: '投稿指南',
     templates: '模板',
     checkStatus: '状态查询',
     letters: '信件中心',
@@ -257,7 +257,7 @@ export default {
       username: '用户名',
       password: '密码',
       btn: {
-        writer: '撰稿人登录',
+        author: '作者登录',
         reviewer: '审稿人登录',
         editor: '总编辑登录'
       },
@@ -350,7 +350,7 @@ export default {
       },
       recentJournals: {
         title: '近期投稿',
-        writer: '撰稿人',
+        author: '作者',
         date: '日期',
         status: '状态'
       }
@@ -378,7 +378,7 @@ export default {
       title: {
         admin: '主编/编辑后台登录',
         reviewer: '审稿人工作台登录',
-        writer: '撰稿人工作台登录',
+        author: '作者工作台登录',
         default: '系统后台登录'
       },
       username: '用户名',
@@ -390,7 +390,7 @@ export default {
         admin: '系统管理员',
         editor: '总编辑/编辑',
         reviewer: '审稿人',
-        writer: '撰稿人'
+        author: '作者'
       },
       loginBtn: '立即登录',
       noAccount: "没有账号？",
@@ -436,14 +436,14 @@ export default {
       pendingJournals: '待审核稿件',
       totalUsers: '总用户数',
       recentSubmissions: '近期投稿',
-      writerRecommendations: '作者推荐审稿人',
+      authorRecommendations: '作者推荐审稿人',
       pendingApproval: '待审批',
       avoidanceRequests: '回避请求',
       pendingReview: '待审核'
     },
     recentJournals: {
       title: '近期投稿',
-      writer: '撰稿人',
+      author: '作者',
       date: '日期'
     }
   },
@@ -491,6 +491,73 @@ export default {
     confirmation: {
       title: '确认提交',
       message: '您确定要提交此审稿吗？此操作无法撤销，审稿内容将立即对编辑团队可见。'
+    }
+  },
+  history: {
+    title: {
+      allHistory: '所有历史记录',
+      manuscriptHistory: '稿件历史',
+      operationHistory: '操作历史',
+      submissionHistory: '投稿历史',
+      reviewHistory: '审稿记录'
+    },
+    noRecords: '暂无记录',
+    filters: {
+      module: '模块筛选',
+      status: '状态筛选',
+      timeRange: '时间范围',
+      keyword: '关键词搜索',
+      searchPlaceholder: '搜索标题、作者或关键词...',
+      allModules: '全部模块',
+      allStatus: '全部状态',
+      allTime: '全部时间',
+      today: '今日',
+      week: '本周',
+      month: '本月',
+      year: '本年'
+    },
+    table: {
+      title: '标题',
+      author: '作者',
+      module: '模块',
+      status: '状态',
+      submitDate: '投稿日期',
+      reviewDate: '审核日期',
+      date: '日期',
+      actions: '操作',
+      viewDetail: '查看详情',
+      operator: '操作人',
+      action: '动作',
+      notes: '备注'
+    },
+    status: {
+      accepted: '已通过',
+      rejected: '未通过',
+      pending: '待审核',
+      underReview: '审稿中',
+      revisionRequested: '需修改',
+      published: '已发表',
+      submitted: '已投稿',
+      initial: '初审',
+      peer: '复审',
+      final: '终审',
+      statusChangedTo: '状态变更为',
+      submissionSuccess: '稿件提交成功。'
+    },
+    action: {
+      statusUpdate: '状态更新'
+    },
+    reviewComment: '审稿建议',
+    noComment: '无审稿建议',
+    expandAll: '展开全部',
+    collapse: '收起',
+    export: '导出数据',
+    reset: '重置筛选',
+    pagination: {
+      total: '共 {total} 条记录',
+      page: '第 {current} / {total} 页',
+      prev: '上一页',
+      next: '下一页'
     }
   }
 }

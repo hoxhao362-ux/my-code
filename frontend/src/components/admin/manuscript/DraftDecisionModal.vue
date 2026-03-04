@@ -1,5 +1,8 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   visible: Boolean,
@@ -88,7 +91,7 @@ const initData = () => {
 const handleSaveDraft = () => {
   localStorage.setItem(`decision_draft_${props.manuscript?.id}`, JSON.stringify(form))
   emit('save-draft', { ...form })
-  alert('Decision content saved as draft, continue editing')
+  toastStore.add({ message: 'Decision content saved as draft, continue editing', type: 'success' })
 }
 
 const validateForm = () => {

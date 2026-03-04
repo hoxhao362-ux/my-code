@@ -19,7 +19,7 @@ export default {
     status: 'Status',
     date: 'Date',
     title: 'Title',
-    writer: 'Writer',
+    author: 'Author',
     module: 'Module',
     id: 'ID',
     abstract: 'Abstract',
@@ -81,7 +81,7 @@ export default {
     actions: 'Actions',
     types: {
       manuscript: 'Manuscript',
-      contribution: 'Writer Contribution',
+      contribution: 'Author Contribution',
       conflict: 'Conflict of Interest',
       figure: 'Figure',
       table: 'Table',
@@ -100,11 +100,11 @@ export default {
       description: 'The following files are mandatory for submission. Please ensure each type has at least one file uploaded.',
       descriptions: {
         manuscript: 'Contains title, abstract, main text, references, and tables. This is the core document of your submission.',
-        contribution: 'Specifies each writer\'s individual contributions following ICMJE guidelines. Essential for academic integrity.',
+        contribution: 'Specifies each author\'s individual contributions following ICMJE guidelines. Essential for academic integrity.',
         conflict: 'Discloses all potential competing interests to ensure research objectivity.'
       },
       missingWarning: 'Missing required files: ',
-      missingError: 'Please upload all required files: Manuscript, Writer Contribution, and Conflict of Interest.',
+      missingError: 'Please upload all required files: Manuscript, Author Contribution, and Conflict of Interest.',
       allUploaded: 'All required files have been uploaded.'
     }
   },
@@ -127,14 +127,14 @@ export default {
     title: 'Additional Information',
     questions: {
       q1: 'Confirm data access and responsibility for submission',
-      q2: 'Have all writers reviewed and agreed to the submission?',
-      q3: 'Was a medical writer/editor involved, and provide funding details',
-      q4: 'Which writers accessed and verified study data, who is responsible for the submission decision?',
+      q2: 'Have all authors reviewed and agreed to the submission?',
+      q3: 'Was a medical author/editor involved, and provide funding details',
+      q4: 'Which authors accessed and verified study data, who is responsible for the submission decision?',
       q5: 'Was generative AI used, please explain the specific use',
       q6: 'Provide manuscript word count, reference count, and figure/table count',
     },
     ssrn: 'Agree to publish research article on SSRN preprint platform',
-    socialMedia: "Corresponding writer's social media handles",
+    socialMedia: "Corresponding author's social media handles",
     conference: 'Simultaneous submission to future conferences confirmation',
     errors: {
       incomplete: 'Please complete all additional information questions',
@@ -155,14 +155,14 @@ export default {
     abstract: 'Abstract',
     keywords: 'Keywords',
     keywordsPlaceholder: 'Enter keywords, separated by semicolons',
-    writers: {
-      title: 'Writers',
-      add: 'Add Writer',
+    authors: {
+      title: 'Authors',
+      add: 'Add Author',
       name: 'Name',
       institution: 'Institution',
       email: 'Email',
-      corresponding: 'Corresponding Writer',
-      first: 'First Writer',
+      corresponding: 'Corresponding Author',
+      first: 'First Author',
     },
     funding: {
       title: 'Funding Information',
@@ -181,9 +181,9 @@ export default {
     },
     errors: {
       incomplete: 'Please complete all required fields',
-      noWriter: 'Please add at least one writer',
-      noCorresponding: 'Please select a corresponding writer',
-      noFirst: 'Please select a first writer',
+      noAuthor: 'Please add at least one author',
+      noCorresponding: 'Please select a corresponding author',
+      noFirst: 'Please select a first author',
       noFunding: 'Please add funding information or select "No funding information"',
     },
     successMessage: 'Submission has been successfully submitted. Please wait for initial review',
@@ -193,8 +193,8 @@ export default {
     intro: 'Please read the following guidelines carefully before submitting...',
     format: 'Format',
     formatDesc: 'PDF, Word, or LaTeX.',
-    writers: 'Writers',
-    writersDesc: 'Ensure all writers are listed and have approved the submission.',
+    authors: 'Authors',
+    authorsDesc: 'Ensure all authors are listed and have approved the submission.',
     originality: 'Originality',
     originalityDesc: 'Content must be original.',
     start: 'Start Submission'
@@ -209,14 +209,14 @@ export default {
         pending: 'Pending Action'
       },
       search: {
-        placeholder: 'Search by ID, title, writer or field...',
+        placeholder: 'Search by ID, title, author or field...',
         history: 'Search History',
         clear: 'Clear History'
       },
       filter: {
         status: 'Status',
         dateRange: 'Date Range',
-        writer: 'Writer Name',
+        author: 'Author Name',
         field: 'Field',
         reset: 'Reset Filters',
         advanced: 'Advanced Filters'
@@ -231,7 +231,7 @@ export default {
       columns: {
         id: 'ID',
         title: 'Title',
-        writer: 'Writer',
+        author: 'Author',
         date: 'Submitted Date',
         status: 'Status',
         actions: 'Actions'
@@ -285,7 +285,7 @@ export default {
         title: 'New Submissions',
         subtitle: 'Screening & Initial Check',
         columns: {
-          writer: 'Writer',
+          author: 'Author',
           date: 'Date',
           module: 'Module',
           actions: 'Actions'
@@ -321,7 +321,7 @@ export default {
             reasonPlaceholder: 'Enter reason for transfer suggestion (required)',
             journalLabel: 'Journal Selection',
             previewLabel: 'Transfer Letter Preview',
-            letterTemplate: 'Dear {writer},\n\nWe have reviewed your manuscript "{title}". While it is of high quality, we believe it would be better suited for our sister journal, {targetJournal}.\n\nBest regards,\nThe {journalName} Editorial Team',
+            letterTemplate: 'Dear {author},\n\nWe have reviewed your manuscript "{title}". While it is of high quality, we believe it would be better suited for our sister journal, {targetJournal}.\n\nBest regards,\nThe {journalName} Editorial Team',
             sendBtn: 'Send Transfer Suggestion'
           },
           reject: {
@@ -340,8 +340,8 @@ export default {
               poorPresentation: 'Poor presentation or language quality'
             },
             otherLabel: 'Other Reason (Please specify)',
-            commentsLabel: 'Editor Comments (Sent to Writer)',
-            commentsPlaceholder: 'Provide detailed feedback for the writer...',
+            commentsLabel: 'Editor Comments (Sent to Author)',
+            commentsPlaceholder: 'Provide detailed feedback for the author...',
             templateLabel: 'Letter Template',
             templates: {
               standard: 'Standard Template',
@@ -386,7 +386,7 @@ export default {
             mockData: {
               irb: 'This study was approved by the Institutional Review Board of [Hospital Name] (Approval No. IRB-2023-001) on January 15, 2023.',
               consent: 'Written informed consent was obtained from all participants prior to their inclusion in the study.',
-              data: 'De-identified participant data will be made available upon reasonable request to the corresponding writer.'
+              data: 'De-identified participant data will be made available upon reasonable request to the corresponding author.'
             }
           },
           validation: {
@@ -411,9 +411,9 @@ export default {
           },
           response: {
             originalComments: 'Original Reviewer Comments (Anonymized)',
-            authorResponse: "Writer's Response",
+            authorResponse: "Author's Response",
             responseTo: 'Response to {reviewer}',
-            authorLabel: 'Writer:',
+            authorLabel: 'Author:',
             thankYou: 'Thank you for your comment. We have addressed this by...',
             updatedFigure: 'As requested, we have updated Figure 2 and clarified the methodology section (lines 145-150).'
           },
@@ -439,7 +439,7 @@ export default {
                 major: 'Major Revision'
               },
               requirementsLabel: 'Revision Requirements / Editor Comments:',
-              requirementsTip: 'Please summarize your editorial decision and provide clear guidance to the writer on how to address the reviewer comments.',
+              requirementsTip: 'Please summarize your editorial decision and provide clear guidance to the author on how to address the reviewer comments.',
               declaration: {
                 title: 'Editorial Declaration',
                 reviewedComments: 'I have reviewed all reviewer comments and ensured they are accurately reflected in this request.',
@@ -452,15 +452,15 @@ export default {
               },
               doubleConfirm: {
                 title: 'Confirm Send Request',
-                msg: 'Are you sure you want to send this revision request to the writer?',
-                note: "The manuscript status will be updated to 'Revision Required' and the writer will be notified."
+                msg: 'Are you sure you want to send this revision request to the author?',
+                note: "The manuscript status will be updated to 'Revision Required' and the author will be notified."
               }
             },
             reject: {
               title: 'Confirm Action: REJECT',
               areYouSure: 'Are you sure you want to Reject the revision for Manuscript ID: {id}?',
               reasonLabel: 'Rejection Reason:',
-              reasonTip: 'Please provide a clear reason for rejecting this revision. This will be sent to the writer.',
+              reasonTip: 'Please provide a clear reason for rejecting this revision. This will be sent to the author.',
               reasonRequiredTooltip: 'Please provide a clear reason for rejecting this revision.',
               doubleConfirm: {
                 title: 'High Risk Action',
@@ -473,12 +473,12 @@ export default {
         alerts: {
           previewUnavailable: 'Preview Unavailable\n\nThis file type is not supported for preview. Please download to view.',
           downloadStarted: 'Download started for all attachments.',
-          revisionSent: 'Revision request sent to writer.',
+          revisionSent: 'Revision request sent to author.',
           downloading: 'Downloading {name}...',
           assignmentFailed: 'Assignment failed. Please try again.',
           screenConfirmed: 'Screening confirmed. Manuscript moved to next stage.',
           transferReasonRequired: 'Please enter a reason for transfer.',
-          transferSent: 'Transfer suggestion sent to writer.',
+          transferSent: 'Transfer suggestion sent to author.',
           fieldsRequired: 'Please fill in all required fields.',
           specifyOther: 'Please specify the other reason.',
           rejectConfirmed: 'Rejection confirmed. Manuscript marked as Desk Rejected.'
@@ -488,12 +488,12 @@ export default {
         title: 'Assign Reviewers',
         subtitle: 'Select and Invite Peer Reviewers',
         tabs: {
-          writerRecommended: 'Writer Recommended',
+          authorRecommended: 'Author Recommended',
           smartRecommendation: 'Smart Recommendation',
           manualSearch: 'Manual Search'
         },
-        noWriterRecommendations: 'No writer recommendations found for this manuscript.',
-        writerRecommendationHint: 'Please ensure the writer has submitted suggestions, or use Smart Recommendation / Manual Search.',
+        noAuthorRecommendations: 'No author recommendations found for this manuscript.',
+        authorRecommendationHint: 'Please ensure the author has submitted suggestions, or use Smart Recommendation / Manual Search.',
         reason: 'Reason',
         searchPlaceholder: 'Search reviewers...',
         filters: {
@@ -504,7 +504,7 @@ export default {
         noManuscripts: 'No manuscripts waiting for reviewer assignment.',
         modalTitle: 'Select Reviewers',
         meta: {
-          writer: 'Writer',
+          author: 'Author',
           module: 'Module'
         },
         actions: {
@@ -522,7 +522,7 @@ export default {
         title: 'Review Monitoring',
         subtitle: 'Track Progress & Manage Delays',
         meta: {
-          writer: 'Writer',
+          author: 'Author',
           sentToReview: 'Sent to Review'
         },
         reviewerStatus: 'Reviewers Status',
@@ -595,18 +595,18 @@ export default {
             sections: {
               decision: '1. Decision',
               rationale: '2. Evidence-Based Rationale',
-              letter: '3. Decision Letter to Writer'
+              letter: '3. Decision Letter to Author'
             },
             types: {
               accept: 'Accept (Publish without further changes)',
-              minor: 'Minor Revision (Back to Writer - Editor Check Only)',
-              major: 'Major Revision (Back to Writer - Re-review Required)',
+              minor: 'Minor Revision (Back to Author - Editor Check Only)',
+              major: 'Major Revision (Back to Author - Re-review Required)',
               return: 'Return to Reviewer (Special Case: Direct Re-review)',
               reject: 'Reject (Decline Submission)',
               transfer: 'Transfer (Recommend Other Journals)',
               consensus: 'Escalate to Consensus Meeting'
             },
-            returnWarning: 'This option bypasses the writer and sends the manuscript directly back to reviewers. Use only for arbitration or internal re-evaluation.',
+            returnWarning: 'This option bypasses the author and sends the manuscript directly back to reviewers. Use only for arbitration or internal re-evaluation.',
             rationaleLabels: {
               rigor: 'Scientific Rigor',
               novelty: 'Novelty & Innovation',
@@ -689,7 +689,7 @@ export default {
           editorCommentsOptional: 'Editor Comments (Optional):',
           approveRationale: 'Please document the rationale for approving this manuscript.',
           rejectRationale: 'Please provide a clear and constructive reason for returning this manuscript for revision.',
-          commentPlaceholder: 'Enter comments for the writer...',
+          commentPlaceholder: 'Enter comments for the author...',
           confirmBtn: 'Confirm {action}',
           doubleConfirm: {
             approveTitle: 'Confirm Approval',
@@ -750,7 +750,7 @@ export default {
       associate_editor: 'Associate Editor Workspace',
       ea_ae: 'EA/AE Workspace',
       reviewer: 'Reviewer Workspace',
-      writer: 'Writer Workspace'
+      author: 'Author Workspace'
     },
     tasks: 'Audit Tasks',
     history: 'Audit History',
@@ -777,8 +777,8 @@ export default {
     submissionGuide: 'Guide',
     onlineConsultation: 'Consultation',
     permissionDenied: 'Permission Denied',
-    writerResources: 'Writer Resources',
-    guideForWriters: 'Guide for Writers',
+    authorResources: 'Author Resources',
+    guideForAuthors: 'Guide for Authors',
     templates: 'Templates',
     checkStatus: 'Check Status',
     letters: 'Letters',
@@ -810,7 +810,7 @@ export default {
     more: 'More',
     editorialBoard: 'Editorial Board',
     journalInfo: 'Journal Info',
-    searchPlaceholder: 'Search articles, writers, DOI...',
+    searchPlaceholder: 'Search articles, authors, DOI...',
     settings: 'Settings',
     auditNewSubmissions: 'New Submissions',
     auditAssignReviewers: 'Assign Reviewers',
@@ -959,7 +959,7 @@ export default {
       logout: 'Logout'
     },
     sidebar: {
-      instruction: 'Instruction for Writers',
+      instruction: 'Instruction for Authors',
       about: 'About the Journal',
       checklist: 'Pre-submission checklist',
       reviewers: 'Peer Reviewers'
@@ -977,7 +977,7 @@ export default {
         password: 'Password'
       },
       btn: {
-        writer: 'Writer Login',
+        author: 'Author Login',
         reviewer: 'Reviewer Login',
         editor: 'Editor / Admin Login'
       },
@@ -1058,7 +1058,7 @@ export default {
         manualLabel: 'Or type in your details and continue to register without using ORCID:',
         warning: {
           title: 'WARNING',
-          msg1: 'If you think you already have an existing registration of any type (Writer, Reviewer, or Editor) in this system, please DO NOT register again. This will cause delays or prevent the processing of any manuscript you submit.',
+          msg1: 'If you think you already have an existing registration of any type (Author, Reviewer, or Editor) in this system, please DO NOT register again. This will cause delays or prevent the processing of any manuscript you submit.',
           msg2: 'If you are unsure if you are already registered, click the "Forgot Your Login Details?" button.'
         }
       },
@@ -1150,7 +1150,7 @@ export default {
       title: {
         admin: 'Editor Portal Login',
         reviewer: 'Reviewer Dashboard Login',
-        writer: 'Writer Dashboard Login',
+        author: 'Author Dashboard Login',
         default: 'Admin Portal Login'
       },
       username: 'Username',
@@ -1162,7 +1162,7 @@ export default {
         admin: 'Administrator',
         editor: 'Editor',
         reviewer: 'Reviewer',
-        writer: 'Writer'
+        author: 'Author'
       },
       loginBtn: 'Login',
       noAccount: "Don't have an account?",
@@ -1208,14 +1208,14 @@ export default {
       pendingJournals: 'Pending Journals',
       totalUsers: 'Total Users',
       recentSubmissions: 'Recent Submissions',
-      writerRecommendations: 'Writer Recommendations',
+      authorRecommendations: 'Author Recommendations',
       pendingApproval: 'Pending Approval',
       avoidanceRequests: 'Avoidance Requests',
       pendingReview: 'Pending Review'
     },
     recentJournals: {
       title: 'Recent Journals',
-      writer: 'Writer',
+      author: 'Author',
       date: 'Date'
     }
   },
@@ -1263,6 +1263,73 @@ export default {
     confirmation: {
       title: 'Confirm Submission',
       message: 'Are you sure you want to submit this review? This action cannot be undone, and the review will be immediately available to the editorial team.'
+    }
+  },
+  history: {
+    title: {
+      allHistory: 'All History',
+      manuscriptHistory: 'Manuscript History',
+      operationHistory: 'Operation History',
+      submissionHistory: 'Submission History',
+      reviewHistory: 'Review History'
+    },
+    noRecords: 'No records found',
+    filters: {
+      module: 'Module',
+      status: 'Status',
+      timeRange: 'Time Range',
+      keyword: 'Keyword Search',
+      searchPlaceholder: 'Search title, author or keywords...',
+      allModules: 'All Modules',
+      allStatus: 'All Status',
+      allTime: 'All Time',
+      today: 'Today',
+      week: 'This Week',
+      month: 'This Month',
+      year: 'This Year'
+    },
+    table: {
+      title: 'Title',
+      author: 'Author',
+      module: 'Module',
+      status: 'Status',
+      submitDate: 'Submission Date',
+      reviewDate: 'Review Date',
+      date: 'Date',
+      actions: 'Actions',
+      viewDetail: 'View Details',
+      operator: 'Operator',
+      action: 'Action',
+      notes: 'Notes'
+    },
+    status: {
+      accepted: 'Accepted',
+      rejected: 'Rejected',
+      pending: 'Pending',
+      underReview: 'Under Review',
+      revisionRequested: 'Revision Requested',
+      published: 'Published',
+      submitted: 'Submitted',
+      initial: 'Initial Review',
+      peer: 'Peer Review',
+      final: 'Final Review',
+      statusChangedTo: 'Status changed to',
+      submissionSuccess: 'Manuscript submitted successfully.'
+    },
+    action: {
+      statusUpdate: 'Status Update'
+    },
+    reviewComment: 'Review Comments',
+    noComment: 'No comments',
+    expandAll: 'Expand All',
+    collapse: 'Collapse',
+    export: 'Export Data',
+    reset: 'Reset Filters',
+    pagination: {
+      total: 'Total {total} records',
+      page: 'Page {current} / {total}',
+      prev: 'Previous',
+      next: 'Next'
     }
   }
 }

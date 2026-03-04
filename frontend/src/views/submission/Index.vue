@@ -20,8 +20,8 @@ const showRegister = ref(false)
 const checkLoginAndRedirect = () => {
   if (submissionUser.value) {
     const role = submissionUser.value.role
-    if (role === 'writer') {
-      router.push('/submission/writer/submit')
+    if (role === 'author') {
+      router.push('/submission/author/submit')
     } else if (role === 'reviewer') {
       router.push('/reviewer/dashboard')
     } else if (['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(role)) {

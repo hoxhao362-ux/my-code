@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useToastStore } from '../../../stores/toast'
 import { PLATFORM_NAME, BRAND_RED } from '../../../constants/emailTemplates'
 import ActionModal from '../../../components/admin/manuscript/actions/ActionModal.vue'
 
@@ -9,6 +10,8 @@ const props = defineProps({
     required: true
   }
 })
+
+const toastStore = useToastStore()
 
 // --- Mock Data ---
 
@@ -145,7 +148,7 @@ const rejectRecommendation = (reviewer) => {
   const reason = prompt('Please enter the reason for rejection (e.g., conflict of interest, irrelevant expertise):')
   if (reason) {
     if (reason.trim().length === 0) {
-      alert('Reason cannot be empty.')
+      toastStore.add({ message: 'Reason cannot be empty.', type: 'warning' })
       return
     }
     reviewer.status = 'Rejected'
@@ -168,25 +171,25 @@ const handleInviteSubmit = (payload) => {
     currentTarget.value.status = 'Invitation Sent'
     currentTarget.value.invitationTime = new Date().toLocaleString()
     addLog(`Sent invitation to recommended reviewer ${currentTarget.value.name}`, 'recommended')
-    alert('Invitation sent successfully!')
+    toastStore.add({ message: 'Invitation sent successfully!', type: 'success' })
   }
 }
 
-const openNotifyWriterModal = () => {
-  currentActionType.value = 'notify_writer_recommendation'
+const openNotifyAuthorModal = () => {
+  currentActionType.value = 'notify_author_recommendation'
   showActionModal.value = true
 }
 
-const handleNotifyWriterSubmit = (payload) => {
-  addLog('Notified writer about reviewer recommendation results', 'recommended')
-  alert('Notification sent successfully!')
+const handleNotifyAuthorSubmit = (payload) => {
+  addLog('Notified author about reviewer recommendation results', 'recommended')
+  toastStore.add({ message: 'Notification sent successfully!', type: 'success' })
 }
 
 const handleActionSubmit = (payload) => {
   if (payload.type === 'invite_reviewer') {
     handleInviteSubmit(payload)
-  } else if (payload.type === 'notify_writer_recommendation') {
-    handleNotifyWriterSubmit(payload)
+  } else if (payload.type === 'notify_author_recommendation') {
+    handleNotifyAuthorSubmit(payload)
   }
 }
 
@@ -198,11 +201,11 @@ const cancelInvite = (reviewer) => {
 }
 
 const viewRejectionReason = (reason) => {
-  alert(`Rejection Reason:\n${reason}`)
+  toastStore.add({ message: `Rejection Reason:\n${reason}`, type: 'info' })
 }
 
 const viewReasonPopup = (reason) => {
-  alert(`Full Reason:\n${reason}`)
+  toastStore.add({ message: `Full Reason:\n${reason}`, type: 'info' })
 }
 
 // --- Methods: Avoidance Requests ---
@@ -230,7 +233,7 @@ const rejectAvoidance = (request) => {
   const reason = prompt('Please enter the reason for rejecting the avoidance request (e.g., no valid conflict of interest):')
   if (reason) {
     if (reason.trim().length === 0) {
-      alert('Reason cannot be empty.')
+      toastStore.add({ message: 'Reason cannot be empty.', type: 'warning' })
       return
     }
     request.status = 'Rejected'
@@ -240,7 +243,7 @@ const rejectAvoidance = (request) => {
 }
 
 const viewAvoidanceDetails = (request) => {
-  alert(`Avoidance Request Details:\nReviewer: ${request.name}\nReason: ${request.reason}\nStatus: ${request.status}`)
+  toastStore.add({ message: `Avoidance Request - Reviewer: ${request.name}, Reason: ${request.reason}, Status: ${request.status}`, type: 'info' })
 }
 
 const reReviewAvoidance = (request) => {
@@ -251,18 +254,15 @@ const reReviewAvoidance = (request) => {
   }
 }
 
-// --- Methods: Conflict Check ---
-
 const markConflict = (item, isConflict) => {
   item.isConflict = isConflict
   addLog(`Marked ${item.name} as ${isConflict ? 'Conflict' : 'Safe'}`, 'conflict')
 }
 
 const reCheckSingle = (item) => {
-  // Mock re-check
-  alert(`Re-checking conflict status for ${item.name}...`)
+  toastStore.add({ message: `Re-checking conflict status for ${item.name}...`, type: 'info' })
   setTimeout(() => {
-    alert('Check completed. No changes found.')
+    toastStore.add({ message: 'Check completed. No changes found.', type: 'success' })
   }, 1000)
 }
 
@@ -275,7 +275,7 @@ const reCheckAll = () => {
 }
 
 const downloadReport = () => {
-  alert('Report downloaded successfully')
+  toastStore.add({ message: 'Report downloaded successfully', type: 'success' })
   addLog('Downloaded conflict check report', 'conflict')
 }
 
@@ -294,7 +294,7 @@ const addLog = (content, type = 'general') => {
 
 const copyToClipboard = (text) => {
   navigator.clipboard.writeText(text).then(() => {
-    alert('Copied to clipboard')
+    toastStore.add({ message: 'Copied to clipboard', type: 'success' })
   })
 }
 
@@ -306,20 +306,20 @@ const copyToClipboard = (text) => {
     <!-- 1. Author Recommended Reviewers -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Writer Recommended Reviewers</h2>
+        <h2 class="module-title">Author Recommended Reviewers</h2>
         <div class="header-actions">
            <button 
              v-if="isAllRecommendedProcessed" 
              class="btn-action btn-primary" 
-             @click="openNotifyWriterModal"
-             title="Notify Writer of Results"
+             @click="openNotifyAuthorModal"
+             title="Notify Author of Results"
            >
-             Notify Writer of Results
+             Notify Author of Results
            </button>
         </div>
       </div>
       <div class="module-stats">{{ recommendedStats }}</div>
-      <p class="module-desc">Review and manage reviewers recommended by the writers. Approved reviewers can be invited to participate in the peer review process.</p>
+      <p class="module-desc">Review and manage reviewers recommended by the authors. Approved reviewers can be invited to participate in the peer review process.</p>
       
       <div class="table-container">
         <table class="jp-table">
@@ -399,10 +399,10 @@ const copyToClipboard = (text) => {
     <!-- 2. Author Avoidance Requests -->
     <section class="module-section">
       <div class="module-header">
-        <h2 class="module-title">Writer Avoidance Requests</h2>
+        <h2 class="module-title">Author Avoidance Requests</h2>
         <div class="module-stats">{{ avoidanceStats }}</div>
       </div>
-      <p class="module-desc">Review and evaluate requests from writers to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
+      <p class="module-desc">Review and evaluate requests from authors to avoid specific reviewers. Approved requests will exclude reviewers from the assignment process.</p>
       
       <div class="table-container">
         <table class="jp-table">
@@ -481,13 +481,13 @@ const copyToClipboard = (text) => {
           <button class="btn-action btn-gray btn-sm" @click="reCheckAll" style="margin-left: 10px;">One-click Re-check</button>
         </div>
       </div>
-      <p class="module-desc">Automatically check for potential conflicts of interest between writers and reviewers. Editors can manually confirm and mark conflict status.</p>
+      <p class="module-desc">Automatically check for potential conflicts of interest between authors and reviewers. Editors can manually confirm and mark conflict status.</p>
       
       <div class="coi-container">
         
         <!-- Sub 1: Recommended -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Writer vs Recommended Reviewers</h3>
+          <h3 class="coi-subtitle">Author vs Recommended Reviewers</h3>
           <div v-for="item in conflictResults.recommended" :key="item.reviewerId" class="coi-card">
             <div class="coi-card-header">
               Reviewer: {{ item.name }} ({{ item.affiliation }})
@@ -519,7 +519,7 @@ const copyToClipboard = (text) => {
 
         <!-- Sub 2: Excluded -->
         <div class="coi-block">
-          <h3 class="coi-subtitle">Writer vs Excluded Reviewers</h3>
+          <h3 class="coi-subtitle">Author vs Excluded Reviewers</h3>
           <div v-for="item in conflictResults.excluded" :key="item.requestId" class="coi-card">
              <div class="coi-card-header">
               Excluded Reviewer: {{ item.name }} ({{ item.affiliation }})
@@ -791,10 +791,6 @@ const copyToClipboard = (text) => {
   flex-direction: column;
   gap: 16px;
   margin-bottom: 1rem;
-}
-
-.coi-block {
-  /* background: #f9f9f9; padding: 1rem; border-radius: 8px; */
 }
 
 .coi-subtitle {

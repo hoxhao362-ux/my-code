@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
@@ -16,7 +18,7 @@ const myTasks = computed(() => {
     // 1. Tasks assigned specifically to me
     (j.status === 'assigned_to_editor' && j.assignedEditor === user.value.username) ||
     // 2. Tasks in my workflow stages (Legacy/Simple logic)
-    ((j.writer === user.value.username || j.author === user.value.username) && ['Submitted', 'Revision Submitted'].includes(j.status)) ||
+    ((j.author === user.value.username || j.writer === user.value.username) && ['Submitted', 'Revision Submitted'].includes(j.status)) ||
     // 3. Reviewer tasks (if I am a reviewer)
     (user.value.role === 'reviewer' && j.status === 'under_peer_review' && j.reviewers?.some(r => r.name === user.value.username)) ||
     // 4. Legacy fallback
@@ -32,11 +34,11 @@ const historyTasks = computed(() => {
 })
 
 const handleExport = () => {
-  alert('Exporting data to CSV...')
+  toastStore.add({ message: 'Exporting data to CSV...', type: 'info' })
 }
 
 const openDiscussion = (journal) => {
-  alert('Opening internal discussion board for: ' + journal.title)
+  toastStore.add({ message: 'Opening internal discussion board for: ' + journal.title, type: 'info' })
 }
 
 </script>

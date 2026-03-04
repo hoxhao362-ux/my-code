@@ -4,10 +4,21 @@ import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
+import SkeletonLoader from '../../components/common/SkeletonLoader.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
+
+const isLoading = ref(true)
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  applicationStatus.value = localStorage.getItem('reviewer_application_status') || ''
+  setTimeout(() => {
+    isLoading.value = false
+  }, 1000)
+})
 
 // 筛选相关状态
 const timeRange = ref('all') // 'all', 'today', 'week', 'month', 'year'
@@ -257,6 +268,7 @@ const viewJournalDetail = (id) => {
 
       <!-- 审核历史列表 -->
       <section class="journals-section">
+        <SkeletonLoader :loading="isLoading" :count="3" height="150px">
         <div class="journals-list">
           <div 
             v-for="journal in paginatedHistory" 
@@ -300,6 +312,7 @@ const viewJournalDetail = (id) => {
             <p>当前没有审核历史记录</p>
           </div>
         </div>
+        </SkeletonLoader>
       </section>
 
       <!-- 分页控件 -->

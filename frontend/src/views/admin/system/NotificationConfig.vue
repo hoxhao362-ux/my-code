@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 // 通知配置数据
@@ -28,7 +30,7 @@ const notificationConfig = ref({
     },
     recommendationResult: {
       subject: 'Update on Recommended Reviewer for {{title}}',
-      content: 'Dear {{writerName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
+      content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
     }
   },
   
@@ -72,7 +74,7 @@ const isEditing = ref(false)
 // 添加公告
 const addAnnouncement = () => {
   if (!newAnnouncement.value.title || !newAnnouncement.value.content) {
-    alert('请填写完整的公告信息')
+    toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
     return
   }
   
@@ -97,7 +99,7 @@ const addAnnouncement = () => {
   // 保存到userStore，以便在主页显示
   userStore.setAnnouncements(announcements.value)
   
-  alert('公告添加成功！')
+  toastStore.add({ message: '公告添加成功！', type: 'success' })
 }
 
 // 编辑公告
@@ -109,7 +111,7 @@ const editAnnouncement = (announcement) => {
 // 保存编辑的公告
 const saveEditAnnouncement = () => {
   if (!editingAnnouncement.value.title || !editingAnnouncement.value.content) {
-    alert('请填写完整的公告信息')
+    toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
     return
   }
   
@@ -120,7 +122,7 @@ const saveEditAnnouncement = () => {
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
-    alert('公告编辑成功！')
+    toastStore.add({ message: '公告编辑成功！', type: 'success' })
     cancelEditAnnouncement()
   }
 }
@@ -139,14 +141,14 @@ const deleteAnnouncement = (id) => {
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
-    alert('公告删除成功！')
+    toastStore.add({ message: '公告删除成功！', type: 'success' })
   }
 }
 
 // 保存配置
 const saveConfig = () => {
   // 这里应该保存配置到服务器，目前模拟保存
-  alert('通知配置已保存！')
+  toastStore.add({ message: '通知配置已保存！', type: 'success' })
 }
 
 // 重置配置
@@ -191,7 +193,12 @@ const resetConfig = () => {
       reviewInterval: 7 // 天
     }
   }
-  alert('配置已重置为默认值！')
+  toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
+}
+
+// 发送测试通知
+const sendTestNotification = () => {
+  toastStore.add({ message: 'Test notification sent!', type: 'success' })
 }
 </script>
 
@@ -423,7 +430,7 @@ const resetConfig = () => {
                     placeholder="请输入邮件内容"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{writerName}}（撰稿人姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
+                    <p>可用变量：{{authorName}}（作者姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
                   </div>
                 </div>
               </div>

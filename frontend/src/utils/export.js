@@ -70,10 +70,8 @@ import html2canvas from 'html2canvas';
 
 // 导出期刊内容为PDF（支持富文本）
 export async function exportJournalToPDF(journal) {
-  // 确保journal对象有效
   if (!journal) {
-    alert('期刊数据无效，无法导出PDF');
-    return;
+    return { success: false, error: '期刊数据无效，无法导出PDF' };
   }
   
   try {
@@ -156,17 +154,16 @@ export async function exportJournalToPDF(journal) {
     // 保存PDF
     pdf.save(`${journal.title || 'journal'}.pdf`);
     
-    // 清理临时元素
     setTimeout(() => {
       document.body.removeChild(tempContainer);
     }, 500);
     
+    return { success: true };
   } catch (error) {
     console.error('PDF导出错误:', error);
-    alert('PDF导出失败: ' + error.message);
-    // 确保清理临时元素
     const tempElements = document.querySelectorAll('div[style*="z-index: -1"]');
     tempElements.forEach(el => el.remove());
+    return { success: false, error: 'PDF导出失败: ' + error.message };
   }
 }
 

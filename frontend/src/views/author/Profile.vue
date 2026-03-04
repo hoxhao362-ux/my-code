@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import { validateEmail, validatePhone, encryptPassword } from '../../utils/encryption'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // Edit State
 const isEditing = ref(false)
@@ -50,13 +52,12 @@ const saveEdit = () => {
     return
   }
   
-  // Update Store (Mock update)
   userStore.updateUser({
     email: editForm.email,
     phone: editForm.phone
   })
   
-  alert('Profile updated successfully')
+  toastStore.add({ message: 'Profile updated successfully', type: 'success' })
   isEditing.value = false
 }
 
@@ -142,53 +143,44 @@ const triggerFileSelect = () => {
   fileInput.value?.click()
 }
 
-// 处理头像上传
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // 检查文件类型
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      toastStore.add({ message: 'Please select an image file', type: 'warning' })
       return
     }
     
-    // 检查文件大小（限制为5MB）
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size cannot exceed 5MB')
+      toastStore.add({ message: 'Image size cannot exceed 5MB', type: 'warning' })
       return
     }
     
-    // 读取文件并显示预览
     const reader = new FileReader()
     reader.onload = (e) => {
       const imageUrl = e.target.result
-      // 更新用户头像
       formData.value.avatar = imageUrl
       userStore.updateUser({ avatar: imageUrl })
-      alert('Avatar updated successfully')
+      toastStore.add({ message: 'Avatar updated successfully', type: 'success' })
     }
     reader.readAsDataURL(file)
     
-    // 清空文件输入，允许再次选择同一个文件
     event.target.value = ''
   }
 }
 
-// 验证当前密码
 const verifyPassword = () => {
   if (!verificationData.value.verifyPassword) {
-    alert('Please enter current password')
+    toastStore.add({ message: 'Please enter current password', type: 'warning' })
     return
   }
   
-  // 加密输入的密码进行验证
   const encryptedPassword = encryptPassword(verificationData.value.verifyPassword)
   
-  // 验证密码是否正确
   if (encryptedPassword === userStore.user?.password) {
     verificationData.value.isVerified = true
   } else {
-    alert('Current password incorrect')
+    toastStore.add({ message: 'Current password incorrect', type: 'error' })
     verificationData.value.isVerified = false
   }
 }

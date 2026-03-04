@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useI18n } from '../composables/useI18n'
 import { useUserStore } from '../stores/user'
+import { useToastStore } from '../stores/toast'
 
 const props = defineProps({
   journal: Object,
@@ -22,6 +23,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'cancel'])
 const { t } = useI18n()
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // Manuscript Info
@@ -137,9 +139,8 @@ const errors = reactive({
 const handleFileUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // Mock validation
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB limit.')
+      toastStore.add({ message: 'File size exceeds 10MB limit.', type: 'warning' })
       return
     }
     uploadedFile.value = file
@@ -168,10 +169,12 @@ const validate = () => {
   }
 
   // Check comments
-  if (!comments.value.trim()) {
+  // Strip HTML tags to check if empty
+  const plainTextComments = comments.value.replace(/<[^>]*>/g, '').trim()
+  if (!plainTextComments) {
     errors.comments = true
     isValid = false
-    if (!firstErrorElement) firstErrorElement = document.querySelector('.comments-section textarea')
+    if (!firstErrorElement) firstErrorElement = document.querySelector('.comments-section')
   } else {
     errors.comments = false
   }
@@ -240,7 +243,7 @@ const confirmSubmit = () => {
         <li><strong>Scoring:</strong> Please rate each dimension from Excellent to Poor.</li>
         <li>Efficiency: Please complete your review within the due date.</li>
         <li>Priority: 'Originality' is the most critical dimension.</li>
-        <li>Response: Provide constructive feedback for the writers.</li>
+        <li>Response: Provide constructive feedback for the authors.</li>
       </ul>
     </div>
 
@@ -266,7 +269,7 @@ const confirmSubmit = () => {
       </div>
       <div class="rules-grid" v-else>
         <div class="rule-item">
-          <strong>Focus:</strong> Evaluate if the writer has addressed previous comments.
+          <strong>Focus:</strong> Evaluate if the author has addressed previous comments.
         </div>
         <div class="rule-item">
           <strong>Changes:</strong> Check the diff view for specific modifications.
@@ -305,22 +308,20 @@ const confirmSubmit = () => {
       <!-- Comments -->
       <div class="comments-section">
         <label><span class="required">*</span> Review Comments (To Author)</label>
-        <textarea 
+        <RichTextEditor 
           v-model="comments" 
-          rows="6" 
           placeholder="Enter your review comments here..."
           :class="{ 'error': errors.comments }"
           :disabled="readonly"
-        ></textarea>
+        />
         <p v-if="errors.comments && !readonly" class="error-text">Please provide review comments for the author (Review Comments (To Author)).</p>
 
         <label>Confidential Comments (To Editor)</label>
-        <textarea 
+        <RichTextEditor 
           v-model="confidentialComments" 
-          rows="3" 
           placeholder="Enter confidential comments for the editor..."
           :disabled="readonly"
-        ></textarea>
+        />
       </div>
 
       <!-- File Upload -->

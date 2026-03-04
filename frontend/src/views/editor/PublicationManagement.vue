@@ -47,7 +47,7 @@ const goToPublicationProcess = (manuscriptId) => {
           </div>
           <h4 class="manuscript-title">{{ manuscript.title }}</h4>
           <div class="manuscript-meta">
-            <p>Author: {{ manuscript.writer }}</p>
+            <p>Author: {{ manuscript.author || manuscript.writer }}</p>
             <p>Module: {{ manuscript.module }}</p>
             <p>Submitted: {{ manuscript.submissionDate }}</p>
           </div>

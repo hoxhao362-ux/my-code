@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
+import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 
 const props = defineProps({
@@ -19,6 +20,7 @@ const emit = defineEmits(['submit'])
 
 const store = useSubmissionStore()
 const router = useRouter()
+const toastStore = useToastStore()
 const { t } = useI18n()
 
 const handleNext = () => {
@@ -35,8 +37,7 @@ const handleBack = () => {
 
 const handleSave = () => {
   if (store.saveDraft()) {
-    alert(t('common.draftSaved'))
-    // Stay on current page
+    toastStore.add({ message: t('common.draftSaved'), type: 'success' })
   }
 }
 

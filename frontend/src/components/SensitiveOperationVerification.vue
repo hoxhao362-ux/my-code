@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onUnmounted, watch } from 'vue'
 import { useUserStore } from '../stores/user'
+import { useToastStore } from '../stores/toast'
 
 const props = defineProps({
   visible: {
@@ -20,6 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'verify-success'])
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const platformName = computed(() => userStore.basicConfig?.platformName || 'Journal Platform')
 
 // State
@@ -55,14 +57,11 @@ const startCountdown = () => {
 
 const sendCode = () => {
   isLoading.value = true
-  // Mock sending code
   setTimeout(() => {
     isLoading.value = false
     step.value = 2
     startCountdown()
-    // In a real app, this would be a backend call.
-    // Here we just mock it for the user.
-    alert(`[Mock] Verification code for ${platformName.value}: 123456`)
+    toastStore.add({ message: `Verification code sent for ${platformName.value}: 123456`, type: 'info' })
   }, 1000)
 }
 

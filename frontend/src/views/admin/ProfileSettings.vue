@@ -1,11 +1,14 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import { encryptPassword } from '../../utils/encryption'
 import { useRoute } from 'vue-router'
+import { validateORCID } from '../../utils/validators'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const route = useRoute()
 const user = computed(() => userStore.user)
 
@@ -55,6 +58,22 @@ const profileForm = ref({
 
 const isEditingProfile = ref(false)
 const orcidVerified = ref(false)
+const orcidError = ref('')
+
+// Real-time ORCID validation
+watch(() => profileForm.value.orcid, async (val) => {
+  if (!val) {
+    orcidError.value = ''
+    return
+  }
+  const result = await validateORCID(val)
+  if (!result.valid) {
+    orcidError.value = result.message
+    orcidVerified.value = false
+  } else {
+    orcidError.value = ''
+  }
+})
 
 const initProfile = () => {
   if (user.value) {
@@ -70,17 +89,22 @@ const initProfile = () => {
   }
 }
 
-const verifyOrcid = () => {
-  // Mock API call
-  setTimeout(() => {
+const verifyOrcid = async () => {
+  if (!profileForm.value.orcid) return
+  
+  const result = await validateORCID(profileForm.value.orcid)
+  if (result.valid) {
     orcidVerified.value = true
-    alert('ORCID Verified Successfully')
-  }, 1000)
+    toastStore.add({ message: result.message, type: 'success' })
+  } else {
+    orcidVerified.value = false
+    toastStore.add({ message: result.message, type: 'error' })
+  }
 }
 
 const verifyEmail = () => {
    // Mock API call
-   alert('Verification email sent to ' + profileForm.value.email)
+   toastStore.add({ message: 'Verification email sent to ' + profileForm.value.email, type: 'success' })
 }
 
 const saveProfile = async () => {
@@ -96,14 +120,14 @@ const saveProfile = async () => {
     biography: profileForm.value.biography
   })
   isEditingProfile.value = false
-  alert('Profile saved successfully')
+  toastStore.add({ message: 'Profile saved successfully', type: 'success' })
 }
 
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
     if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be ≤ 2MB')
+      toastStore.add({ message: 'File size must be ≤ 2MB', type: 'warning' })
       return
     }
     // Mock upload
@@ -128,26 +152,23 @@ const logs = ref([
 ])
 
 const changePassword = () => {
-  // Regex: Uppercase + Lowercase + Number + Special + >=8 chars
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
   if (!regex.test(passwordForm.value.new)) {
-    alert('Password must contain uppercase, lowercase, number, special char and be at least 8 chars.')
+    toastStore.add({ message: 'Password must contain uppercase, lowercase, number, special char and be at least 8 chars.', type: 'warning' })
     return
   }
   if (passwordForm.value.new !== passwordForm.value.confirm) {
-    alert('Passwords do not match.')
+    toastStore.add({ message: 'Passwords do not match.', type: 'warning' })
     return
   }
-  // Mock save
-  alert('Password changed. Please re-login.')
+  toastStore.add({ message: 'Password changed. Please re-login.', type: 'success' })
   userStore.logout()
 }
 
 const toggle2FA = () => {
   twoFactor.value.enabled = !twoFactor.value.enabled
-  // Mock backup codes
   if (twoFactor.value.enabled) {
-    alert('2FA Enabled. Backup codes generated.')
+    toastStore.add({ message: '2FA Enabled. Backup codes generated.', type: 'success' })
   }
 }
 
@@ -181,7 +202,7 @@ const toggleGlobalNotifications = () => {
 }
 
 const sendTestNotification = () => {
-  alert('Test notification sent!')
+  toastStore.add({ message: 'Test notification sent!', type: 'success' })
 }
 
 // --- Tab 4: Editor Preferences ---
@@ -217,7 +238,7 @@ const generateApiKey = () => {
 
 const copyKey = (key) => {
   navigator.clipboard.writeText(key)
-  alert('Copied to Clipboard')
+  toastStore.add({ message: 'Copied to Clipboard', type: 'success' })
 }
 
 const revokeKey = (id) => {
@@ -314,10 +335,17 @@ onMounted(() => {
               <div class="form-group">
                 <label>ORCID ID</label>
                 <div class="input-group">
-                  <input v-model="profileForm.orcid" :disabled="!canEditProfessionalInfo || !isEditingProfile" class="form-control" />
+                  <input 
+                    v-model="profileForm.orcid" 
+                    :disabled="!canEditProfessionalInfo || !isEditingProfile" 
+                    class="form-control" 
+                    :class="{ 'error': orcidError }"
+                    placeholder="0000-0000-0000-0000"
+                  />
                   <button v-if="canEditProfessionalInfo && isEditingProfile" @click="verifyOrcid" class="btn btn-sm">Verify API</button>
                 </div>
-                <span v-if="orcidVerified" class="text-success">Verified</span>
+                <span v-if="orcidError" class="error-msg">{{ orcidError }}</span>
+                <span v-if="orcidVerified && !orcidError" class="text-success">Verified</span>
               </div>
               <div class="form-group full-width">
                 <label>Personal Biography</label>
@@ -953,5 +981,23 @@ label {
   display: inline-block;
   width: auto;
   margin-right: 1rem;
+}
+
+.error-msg {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  display: block;
+}
+
+.form-control.error {
+  border-color: #ef4444;
+}
+
+.text-success {
+  color: #52c41a;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  display: block;
 }
 </style>

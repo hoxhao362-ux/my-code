@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 const props = defineProps({
@@ -84,7 +86,7 @@ const roleOptions = [
   { value: 'editorial_assistant', label: 'Editorial Assistant' },
   { value: 'advisory_editor', label: 'Advisory Editor' },
   { value: 'reviewer', label: 'Reviewer' },
-  { value: 'writer', label: 'Writer' },
+  { value: 'author', label: 'Author' },
   { value: 'user', label: 'User' }
 ]
 
@@ -198,7 +200,7 @@ const confirmOperation = () => {
     confirmAction.value()
     showConfirmModal.value = false
   } else {
-    alert('Invalid admin password!')
+    toastStore.add({ message: 'Invalid admin password!', type: 'error' })
   }
 }
 
@@ -223,18 +225,15 @@ const executeEdit = () => {
 
   const action = () => {
     if (editForm.value.resetPassword) {
-      // 重置密码逻辑
-      alert(`Password reset for user ${currentUser.value.username} to: 123456`)
+      toastStore.add({ message: `Password reset for user ${currentUser.value.username} to: 123456`, type: 'success' })
     }
     if (editForm.value.role !== currentUser.value.role) {
-      // 角色变更逻辑 - 使用userStore更新角色，确保持久化
       userStore.updateUserRole(currentUser.value.id, editForm.value.role)
-      // 更新当前用户对象，确保模态框显示正确
       currentUser.value.role = editForm.value.role
       const roleName = editForm.value.role === 'editor' ? 'Editor' : 
                        editForm.value.role === 'reviewer' ? 'Reviewer' : 
-                       editForm.value.role === 'writer' ? 'Writer' : 'User'
-      alert(`User ${currentUser.value.username} role updated to ${roleName}`)
+                       editForm.value.role === 'author' ? 'Author' : 'User'
+      toastStore.add({ message: `User ${currentUser.value.username} role updated to ${roleName}`, type: 'success' })
     }
     showEditModal.value = false
   }
@@ -251,35 +250,28 @@ const executeEdit = () => {
   }
 }
 
-// 执行禁用操作
 const executeDisable = () => {
   const action = () => {
-    // 禁用用户逻辑 - 使用userStore更新状态，确保持久化
     userStore.updateUserStatus(currentUser.value.id, 'inactive')
-    // 更新当前用户对象，确保模态框显示正确
     currentUser.value.status = 'inactive'
     const durationText = disableForm.value.duration === 0 ? 'Permanent' : `${disableForm.value.duration} days`
-    alert(`User ${currentUser.value.username} disabled for: ${durationText}`)
+    toastStore.add({ message: `User ${currentUser.value.username} disabled for: ${durationText}`, type: 'warning' })
     showDisableModal.value = false
   }
 
-  // 禁用用户也是敏感操作
   verificationAction.value = 'Disable User Account'
   verificationTarget.value = currentUser.value.username
   pendingCallback.value = action
   showVerification.value = true
 }
 
-// 执行删除操作
 const executeDelete = () => {
   const action = () => {
-    // 删除用户逻辑 - 使用userStore删除用户，确保持久化
     userStore.deleteUser(currentUser.value.id)
-    alert(`User ${currentUser.value.username} deleted`)
+    toastStore.add({ message: `User ${currentUser.value.username} deleted`, type: 'error' })
     showDeleteModal.value = false
   }
   
-  // 删除也是敏感操作
   verificationAction.value = 'Delete User'
   verificationTarget.value = currentUser.value.username
   pendingCallback.value = action
@@ -293,7 +285,7 @@ const enableUser = (user) => {
     userStore.updateUserStatus(user.id, 'active')
     // 更新当前用户对象，确保界面显示正确
     user.status = 'active'
-    alert(`User ${user.username} enabled`)
+    toastStore.add({ message: `User ${user.username} enabled`, type: 'success' })
   }, 'Are you sure you want to enable this user?')
 }
 </script>
@@ -386,8 +378,8 @@ const enableUser = (user) => {
             <div class="stat-label">Reviewers</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'writer').length }}</div>
-            <div class="stat-label">Writers</div>
+            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
+              <div class="stat-label">Authors</div>
           </div>
         </div>
       </section>
@@ -419,7 +411,7 @@ const enableUser = (user) => {
                        user.role === 'editorial_assistant' ? 'Editorial Assistant' :
                        user.role === 'advisory_editor' ? 'Advisory Editor' :
                        user.role === 'reviewer' ? 'Reviewer' : 
-                       user.role === 'writer' ? 'Writer' : 'User' }}
+                       user.role === 'author' ? 'Author' : 'User' }}
                   </span>
                 </td>
                 <td class="user-email">{{ encryptEmail(user.email) }}</td>
@@ -475,7 +467,7 @@ const enableUser = (user) => {
               </div>
               <div class="info-item">
                 <span class="info-label">Role:</span>
-                <span class="info-value">{{ currentUser?.role === 'admin' ? 'Editor' : currentUser?.role === 'reviewer' ? 'Reviewer' : currentUser?.role === 'writer' ? 'Writer' : 'User' }}</span>
+                <span class="info-value">{{ currentUser?.role === 'admin' ? 'Editor' : currentUser?.role === 'reviewer' ? 'Reviewer' : currentUser?.role === 'author' ? 'Author' : 'User' }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Email:</span>
@@ -493,7 +485,7 @@ const enableUser = (user) => {
           </div>
           
           <!-- 投稿记录 -->
-          <div class="records-section" v-if="(currentUser?.role === 'user' || currentUser?.role === 'writer') && getUserSubmissions(currentUser?.id).length > 0">
+          <div class="records-section" v-if="(currentUser?.role === 'user' || currentUser?.role === 'author') && getUserSubmissions(currentUser?.id).length > 0">
             <h3>Submission History</h3>
             <div class="records-table-container">
               <table class="records-table">
@@ -566,7 +558,7 @@ const enableUser = (user) => {
                 <option value="editorial_assistant">Editorial Assistant</option>
                 <option value="advisory_editor">Advisory Editor</option>
                 <option value="reviewer">Reviewer</option>
-                <option value="writer">Writer</option>
+                <option value="author">Author</option>
                 <option value="user">User</option>
               </select>
             </div>
@@ -964,7 +956,7 @@ const enableUser = (user) => {
   color: white;
 }
 
-.role-badge.writer {
+.role-badge.author {
   background-color: #45b7d1;
   color: white;
 }

@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // Tabs
@@ -72,8 +74,7 @@ const sendInvitation = () => {
   invitations.value.unshift(newInvite)
   showInviteModal.value = false
   
-  // Show the link to the user (Mocking email sending)
-  alert(`Invitation Generated!\n\nRole: ${formatRole(inviteForm.value.role)}\nLink: ${inviteLink}\n\n(In production, this would be emailed to ${inviteForm.value.email})`)
+  toastStore.add({ message: `Invitation Generated! Role: ${formatRole(inviteForm.value.role)}. Link: ${inviteLink}`, type: 'success' })
 }
 
 const formatRole = (role) => {
@@ -84,6 +85,12 @@ const formatRole = (role) => {
     'advisory': 'Advisory Editor'
   }
   return map[role] || role
+}
+
+const copyInviteLink = (link) => {
+  navigator.clipboard.writeText(link).then(() => {
+    toastStore.add({ message: 'Link copied to clipboard!', type: 'success' })
+  })
 }
 
 const revokeInvite = (invite) => {
@@ -228,7 +235,7 @@ const removeMember = (member) => {
               </td>
               <td class="actions">
                 <button class="btn-text" v-if="inv.status === 'Pending'" @click="revokeInvite(inv)">Revoke</button>
-                <button class="btn-text" v-if="inv.status === 'Pending'" @click="alert('Link copied: ' + inv.link)">Copy Link</button>
+                <button class="btn-text" v-if="inv.status === 'Pending'" @click="copyInviteLink(inv.link)">Copy Link</button>
                 <span v-else class="disabled-text">-</span>
               </td>
             </tr>

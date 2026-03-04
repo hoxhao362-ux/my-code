@@ -32,9 +32,11 @@
 <script setup>
 import { computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 const events = [
@@ -75,9 +77,9 @@ const events = [
 
 const handleAction = (event) => {
   if (event.type === 'upcoming') {
-    alert(`Registration for "${event.title}" opened.`)
+    toastStore.add({ message: `Registration for "${event.title}" opened.`, type: 'success' })
   } else {
-    alert(`Opening replay for "${event.title}"...`)
+    toastStore.add({ message: `Opening replay for "${event.title}"...`, type: 'info' })
   }
 }
 

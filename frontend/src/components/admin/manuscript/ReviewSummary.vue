@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   manuscript: {
@@ -9,7 +12,6 @@ const props = defineProps({
   reviews: {
     type: Array,
     default: () => [
-      // Mock data for demo
       { id: 1, reviewerName: 'Reviewer 1', conclusion: 'Accept', content: 'The study is well-designed and the results are significant. I recommend publication.' },
       { id: 2, reviewerName: 'Reviewer 2', conclusion: 'Revise', content: 'The methodology needs clarification in section 2.3. Also, figure 4 is unclear.' },
       { id: 3, reviewerName: 'Reviewer 3', conclusion: 'Reject', content: 'The sample size is too small to draw robust conclusions. The novelty is limited.' }
@@ -49,10 +51,9 @@ const toggleReview = (id) => {
   expandedReviews.value[id] = !expandedReviews.value[id]
 }
 
-// Actions
 const generateReport = () => {
   if (!isFormValid.value) return
-  alert('Report Generated (Mock). Ready to Submit.')
+  toastStore.add({ message: 'Report Generated. Ready to Submit.', type: 'success' })
 }
 
 const handleSubmit = () => {

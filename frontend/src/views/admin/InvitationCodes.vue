@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // Form
@@ -24,14 +26,12 @@ const codes = ref([
   { code: 'JP-2026-Q5W6', created_at: '2026-02-12 11:00', expires_at: '2026-03-14', discipline: 'Clinical', role: 'senior', status: 'invalidated', used_by: '-' }
 ])
 
-// Actions
 const generateCodes = () => {
   if (generateForm.value.quantity < 1 || generateForm.value.quantity > 100) {
-    alert('Quantity must be between 1 and 100.')
+    toastStore.add({ message: 'Quantity must be between 1 and 100.', type: 'warning' })
     return
   }
   
-  // Mock Generation
   const newCodes = []
   for (let i = 0; i < generateForm.value.quantity; i++) {
     const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase()
@@ -47,7 +47,7 @@ const generateCodes = () => {
   }
   
   codes.value = [...newCodes, ...codes.value]
-  alert(`${generateForm.value.quantity} invitation codes generated successfully.`)
+  toastStore.add({ message: `${generateForm.value.quantity} invitation codes generated successfully.`, type: 'success' })
 }
 
 const invalidateCode = (item) => {
@@ -58,7 +58,7 @@ const invalidateCode = (item) => {
 
 const copyCode = (code) => {
   navigator.clipboard.writeText(code).then(() => {
-    alert('Code copied to clipboard!')
+    toastStore.add({ message: 'Code copied to clipboard!', type: 'success' })
   })
 }
 

@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // Filters
@@ -50,24 +52,22 @@ const openEvaluation = (reviewer) => {
 
 const submitEvaluation = () => {
   if (evalForm.value.comment.length < 30) {
-    alert('Evaluation comment must be at least 30 characters.')
+    toastStore.add({ message: 'Evaluation comment must be at least 30 characters.', type: 'warning' })
     return
   }
   
-  // Update local state (Mock)
   currentReviewer.value.status = 'evaluated'
   currentReviewer.value.grade = calculatedGrade.value
   
-  // Auto-downgrade logic (Mock)
   if (calculatedGrade.value === 'C') {
-    alert(`Warning: Reviewer ${currentReviewer.value.anon_id} graded C. System will restrict future invitations.`)
+    toastStore.add({ message: `Warning: Reviewer ${currentReviewer.value.anon_id} graded C. System will restrict future invitations.`, type: 'warning' })
   }
   
   showEvalModal.value = false
 }
 
 const viewEvaluation = (reviewer) => {
-  alert(`Viewing evaluation history for ${reviewer.anon_id}...`)
+  toastStore.add({ message: `Viewing evaluation history for ${reviewer.anon_id}...`, type: 'info' })
 }
 
 </script>

@@ -1,10 +1,25 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
+import SkeletonLoader from '../../components/common/SkeletonLoader.vue'
+import { Bar, Doughnut, Line } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement, PointElement, LineElement } from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement, PointElement, LineElement)
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
+
+const isLoading = ref(true)
+
+onMounted(() => {
+  setTimeout(() => {
+    isLoading.value = false
+  }, 1000)
+})
 
 // Filters
 const timeRange = ref('week')
@@ -53,15 +68,68 @@ const reports = ref([
 const handleQuery = () => {
   // Mock query simulation
   console.log('Querying data...', { time: timeRange.value, col: selectedColumn.value, status: selectedStatus.value })
-  // In real app, fetch data here
+  toastStore.add({ message: 'Data refreshed successfully', type: 'success' })
 }
 
 const handleExportReport = () => {
-  alert('Generating report... (Mock)')
+  toastStore.add({ message: 'Generating report... (Mock)', type: 'info' })
 }
 
 const handleDownloadReport = (report) => {
-  alert(`Downloading ${report.name}...`)
+  toastStore.add({ message: `Downloading ${report.name}...`, type: 'success' })
+}
+
+// --- Chart Data Configuration ---
+const submissionChartData = {
+  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+  datasets: [
+    {
+      label: 'Submissions',
+      backgroundColor: '#3498db',
+      data: [40, 35, 50, 45, 60, 70]
+    },
+    {
+      label: 'Accepted',
+      backgroundColor: '#2ecc71',
+      data: [10, 12, 15, 18, 20, 25]
+    }
+  ]
+}
+
+const submissionChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false
+}
+
+const statusChartData = {
+  labels: ['Pending', 'Under Review', 'Accepted', 'Rejected'],
+  datasets: [
+    {
+      backgroundColor: ['#f1c40f', '#3498db', '#2ecc71', '#e74c3c'],
+      data: [15, 42, 24, 35]
+    }
+  ]
+}
+
+const statusChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false
+}
+
+const reviewerChartData = {
+  labels: ['Reviewer A', 'Reviewer B', 'Reviewer C', 'Reviewer D', 'Reviewer E'],
+  datasets: [
+    {
+      label: 'Tasks Completed',
+      backgroundColor: '#9b59b6',
+      data: [12, 19, 3, 5, 10]
+    }
+  ]
+}
+
+const reviewerChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false
 }
 
 const handleArchiveReport = (report) => {
@@ -134,40 +202,47 @@ const handleArchiveReport = (report) => {
             <h2>Manuscript Statistics</h2>
           </div>
           <div class="card-body">
-            <div class="stat-grid">
-              <div class="stat-item">
-                <span class="label">Total Submissions</span>
-                <span class="value">{{ manuscriptStats.total }}</span>
+            <SkeletonLoader :loading="isLoading" :count="1" height="200px">
+              <div class="chart-wrapper">
+                <Bar :data="submissionChartData" :options="submissionChartOptions" />
               </div>
-              <div class="stat-item">
-                <span class="label">Pending Initial</span>
-                <span class="value">{{ manuscriptStats.pending_initial }}</span>
+            </SkeletonLoader>
+            <SkeletonLoader :loading="isLoading" :count="3" height="40px" class="mt-4">
+              <div class="stat-grid mt-4">
+                <div class="stat-item">
+                  <span class="label">Total Submissions</span>
+                  <span class="value">{{ manuscriptStats.total }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Pending Initial</span>
+                  <span class="value">{{ manuscriptStats.pending_initial }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Under Review</span>
+                  <span class="value">{{ manuscriptStats.under_review }}</span>
+                </div>
+                <div class="stat-item highlight-red">
+                  <span class="label">Accepted</span>
+                  <span class="value">{{ manuscriptStats.accepted }}</span>
+                </div>
+                 <div class="stat-item highlight-red">
+                  <span class="label">Published</span>
+                  <span class="value">{{ manuscriptStats.published }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Rejected</span>
+                  <span class="value">{{ manuscriptStats.rejected }}</span>
+                </div>
+                <div class="stat-item full-width">
+                  <span class="label">Avg Initial Review</span>
+                  <span class="value">{{ manuscriptStats.avg_initial_days }} days</span>
+                </div>
+                 <div class="stat-item full-width">
+                  <span class="label">Avg Peer Review</span>
+                  <span class="value">{{ manuscriptStats.avg_review_days }} days</span>
+                </div>
               </div>
-              <div class="stat-item">
-                <span class="label">Under Review</span>
-                <span class="value">{{ manuscriptStats.under_review }}</span>
-              </div>
-              <div class="stat-item highlight-red">
-                <span class="label">Accepted</span>
-                <span class="value">{{ manuscriptStats.accepted }}</span>
-              </div>
-               <div class="stat-item highlight-red">
-                <span class="label">Published</span>
-                <span class="value">{{ manuscriptStats.published }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="label">Rejected</span>
-                <span class="value">{{ manuscriptStats.rejected }}</span>
-              </div>
-              <div class="stat-item full-width">
-                <span class="label">Avg Initial Review</span>
-                <span class="value">{{ manuscriptStats.avg_initial_days }} days</span>
-              </div>
-               <div class="stat-item full-width">
-                <span class="label">Avg Peer Review</span>
-                <span class="value">{{ manuscriptStats.avg_review_days }} days</span>
-              </div>
-            </div>
+            </SkeletonLoader>
           </div>
         </section>
 
@@ -177,32 +252,39 @@ const handleArchiveReport = (report) => {
             <h2>Review Statistics</h2>
           </div>
           <div class="card-body">
-            <div class="stat-grid">
-              <div class="stat-item">
-                <span class="label">Active Reviewers</span>
-                <span class="value">{{ reviewStats.active_reviewers }}</span>
+            <SkeletonLoader :loading="isLoading" :count="1" height="200px">
+              <div class="chart-wrapper">
+                <Bar :data="reviewerChartData" :options="reviewerChartOptions" />
               </div>
-              <div class="stat-item">
-                <span class="label">Total Tasks</span>
-                <span class="value">{{ reviewStats.total_tasks }}</span>
+            </SkeletonLoader>
+            <SkeletonLoader :loading="isLoading" :count="3" height="40px" class="mt-4">
+              <div class="stat-grid mt-4">
+                <div class="stat-item">
+                  <span class="label">Active Reviewers</span>
+                  <span class="value">{{ reviewStats.active_reviewers }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Total Tasks</span>
+                  <span class="value">{{ reviewStats.total_tasks }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Completion Rate</span>
+                  <span class="value">{{ reviewStats.completion_rate }}</span>
+                </div>
+                 <div class="stat-item">
+                  <span class="label">Avg Time</span>
+                  <span class="value">{{ reviewStats.avg_time }}</span>
+                </div>
+                <div class="stat-item highlight-orange">
+                  <span class="label">Overdue</span>
+                  <span class="value">{{ reviewStats.overdue }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label">Quality Pass</span>
+                  <span class="value">{{ reviewStats.quality_pass_rate }}</span>
+                </div>
               </div>
-              <div class="stat-item">
-                <span class="label">Completion Rate</span>
-                <span class="value">{{ reviewStats.completion_rate }}</span>
-              </div>
-               <div class="stat-item">
-                <span class="label">Avg Time</span>
-                <span class="value">{{ reviewStats.avg_time }}</span>
-              </div>
-              <div class="stat-item highlight-orange">
-                <span class="label">Overdue</span>
-                <span class="value">{{ reviewStats.overdue }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="label">Quality Pass</span>
-                <span class="value">{{ reviewStats.quality_pass_rate }}</span>
-              </div>
-            </div>
+            </SkeletonLoader>
           </div>
         </section>
 
@@ -212,20 +294,22 @@ const handleArchiveReport = (report) => {
             <h2>Publication & Column</h2>
           </div>
           <div class="card-body">
-            <div class="stat-grid">
-              <div class="stat-item full-width">
-                <span class="label">Annual Publications</span>
-                <span class="value">{{ pubStats.annual_count }}</span>
+            <SkeletonLoader :loading="isLoading" :count="3" height="60px">
+              <div class="stat-grid">
+                <div class="stat-item full-width">
+                  <span class="label">Annual Publications</span>
+                  <span class="value">{{ pubStats.annual_count }}</span>
+                </div>
+                <div class="stat-item full-width">
+                  <span class="label">OA Rate</span>
+                  <span class="value">{{ pubStats.oa_rate }}</span>
+                </div>
+                <div class="stat-item full-width">
+                  <span class="label">Issue Completion</span>
+                  <span class="value">{{ pubStats.issue_completion }}</span>
+                </div>
               </div>
-              <div class="stat-item full-width">
-                <span class="label">OA Rate</span>
-                <span class="value">{{ pubStats.oa_rate }}</span>
-              </div>
-              <div class="stat-item full-width">
-                <span class="label">Issue Completion</span>
-                <span class="value">{{ pubStats.issue_completion }}</span>
-              </div>
-            </div>
+            </SkeletonLoader>
           </div>
         </section>
       </div>
@@ -234,34 +318,36 @@ const handleArchiveReport = (report) => {
       <div class="reports-section">
         <h2 class="section-title">Report Management</h2>
         <div class="table-wrapper">
-          <table class="jp-table">
-            <thead>
-              <tr>
-                <th>Report Name</th>
-                <th>Period</th>
-                <th>Created At</th>
-                <th>Creator</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="report in reports" :key="report.id">
-                <td class="col-name">{{ report.name }}</td>
-                <td>{{ report.period }}</td>
-                <td>{{ report.created_at }}</td>
-                <td>{{ report.creator }}</td>
-                <td>
-                  <span class="status-badge" :class="report.status">{{ report.status }}</span>
-                </td>
-                <td class="actions">
-                  <button class="btn-text" @click="handleDownloadReport(report)">View</button>
-                  <button class="btn-text text-danger" @click="handleDownloadReport(report)">Export</button>
-                  <button class="btn-text" @click="handleArchiveReport(report)" :disabled="report.status === 'archived'">Archive</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <SkeletonLoader :loading="isLoading" :count="5" height="40px" gap="5px">
+            <table class="jp-table">
+              <thead>
+                <tr>
+                  <th>Report Name</th>
+                  <th>Period</th>
+                  <th>Created At</th>
+                  <th>Creator</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="report in reports" :key="report.id">
+                  <td class="col-name">{{ report.name }}</td>
+                  <td>{{ report.period }}</td>
+                  <td>{{ report.created_at }}</td>
+                  <td>{{ report.creator }}</td>
+                  <td>
+                    <span class="status-badge" :class="report.status">{{ report.status }}</span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-text" @click="handleDownloadReport(report)">View</button>
+                    <button class="btn-text text-danger" @click="handleDownloadReport(report)">Export</button>
+                    <button class="btn-text" @click="handleArchiveReport(report)" :disabled="report.status === 'archived'">Archive</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </SkeletonLoader>
         </div>
       </div>
 
@@ -409,6 +495,23 @@ const handleArchiveReport = (report) => {
 
 .stat-item.full-width {
   grid-column: span 2;
+}
+
+.mt-4 {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.chart-wrapper {
+  height: 200px;
+  position: relative;
+}
+
+.doughnut-wrapper {
+  height: 200px;
+  display: flex;
+  justify-content: center;
 }
 
 .stat-item .label {

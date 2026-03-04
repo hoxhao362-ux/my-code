@@ -40,9 +40,9 @@ function getRandomStatus() {
 }
 
 // 生成随机作者
-const writers = ['张三', '李四', '王五', '赵六', '孙七', '周八', '吴九', '郑十'];
+const authors = ['张三', '李四', '王五', '赵六', '孙七', '周八', '吴九', '郑十'];
 function getRandomAuthor() {
-  return writers[Math.floor(Math.random() * writers.length)];
+  return authors[Math.floor(Math.random() * authors.length)];
 }
 
 // 生成随机关键词

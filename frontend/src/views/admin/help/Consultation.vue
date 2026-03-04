@@ -67,8 +67,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { useToastStore } from '../../../stores/toast'
 
 const router = useRouter()
+const toastStore = useToastStore()
 const form = ref({
   subject: '',
   content: '',
@@ -80,8 +82,7 @@ const goBack = () => {
 }
 
 const submitConsultation = () => {
-  // 这里可以添加提交逻辑，例如调用API
-  alert('咨询已提交，我们将尽快回复您！')
+  toastStore.add({ message: '咨询已提交，我们将尽快回复您！', type: 'success' })
   form.value = {
     subject: '',
     content: '',

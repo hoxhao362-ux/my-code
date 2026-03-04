@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
 import { truncateText, wrapText } from '../../../utils/helpers.js'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 // 筛选条件
@@ -97,7 +99,7 @@ const toggleSelectAll = () => {
 
 const handleBulkAccept = () => {
   if (selectedIds.value.length === 0) {
-    alert('Please select at least one request to accept.')
+    toastStore.add({ message: 'Please select at least one request to accept.', type: 'warning' })
     return
   }
   
@@ -107,18 +109,17 @@ const handleBulkAccept = () => {
       const updated = { ...item, status: 'accepted', handledAt: new Date().toISOString(), handledBy: user.value?.username || 'admin' }
       userStore.updateOpposedReviewer(updated)
       
-      // Add to history
       addToJournalHistory(item.manuscriptId, 'accepted', item.opposedReviewerName, 'Bulk acceptance')
     }
   })
   
   selectedIds.value = []
-  alert('Selected requests have been accepted (Reviewers excluded) and recorded in manuscript history.')
+  toastStore.add({ message: 'Selected requests have been accepted (Reviewers excluded) and recorded in manuscript history.', type: 'success' })
 }
 
 const handleBulkReject = () => {
   if (selectedIds.value.length === 0) {
-    alert('Please select at least one request to reject.')
+    toastStore.add({ message: 'Please select at least one request to reject.', type: 'warning' })
     return
   }
   
@@ -128,13 +129,12 @@ const handleBulkReject = () => {
       const updated = { ...item, status: 'rejected', handledAt: new Date().toISOString(), handledBy: user.value?.username || 'admin' }
       userStore.updateOpposedReviewer(updated)
       
-      // Add to history
       addToJournalHistory(item.manuscriptId, 'rejected', item.opposedReviewerName, 'Bulk rejection')
     }
   })
   
   selectedIds.value = []
-  alert('Selected requests have been rejected (Reviewers allowed) and recorded in manuscript history.')
+  toastStore.add({ message: 'Selected requests have been rejected (Reviewers allowed) and recorded in manuscript history.', type: 'success' })
 }
 
 // 详情模态框
@@ -164,9 +164,8 @@ const openDetailModal = (item) => {
 }
 
 const handleAccept = () => {
-  // Validate Checks
   if (!reasonChecks.value.isProfessional || !reasonChecks.value.hasConflict) {
-    alert("You must verify that the reason is Professional and states a Clear Conflict before accepting.")
+    toastStore.add({ message: 'You must verify that the reason is Professional and states a Clear Conflict before accepting.', type: 'warning' })
     return
   }
 
@@ -174,11 +173,10 @@ const handleAccept = () => {
     const updated = { ...currentItem.value, status: 'accepted', handledAt: new Date().toISOString(), handledBy: user.value?.username || 'admin' }
     userStore.updateOpposedReviewer(updated)
     
-    // Add to history
     addToJournalHistory(currentItem.value.manuscriptId, 'accepted', currentItem.value.opposedReviewerName, handleComment.value)
 
     showDetailModal.value = false
-    alert('Request accepted. The reviewer has been excluded and recorded in manuscript history.')
+    toastStore.add({ message: 'Request accepted. The reviewer has been excluded and recorded in manuscript history.', type: 'success' })
   }
 }
 
@@ -187,11 +185,10 @@ const handleReject = () => {
     const updated = { ...currentItem.value, status: 'rejected', handledAt: new Date().toISOString(), handledBy: user.value?.username || 'admin' }
     userStore.updateOpposedReviewer(updated)
     
-    // Add to history
     addToJournalHistory(currentItem.value.manuscriptId, 'rejected', currentItem.value.opposedReviewerName, handleComment.value)
 
     showDetailModal.value = false
-    alert('Request rejected. The reviewer is allowed to review and recorded in manuscript history.')
+    toastStore.add({ message: 'Request rejected. The reviewer is allowed to review and recorded in manuscript history.', type: 'success' })
   }
 }
 
@@ -230,7 +227,7 @@ const getStatusText = (status) => {
       <!-- Header -->
       <div class="page-header">
         <h1 class="main-title">Opposed Reviewers Management</h1>
-        <p class="warning-text">Review and manage reviewers opposed by writers for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
+        <p class="warning-text">Review and manage reviewers opposed by authors for {{ PLATFORM_NAME }}. Evaluate the reasons carefully.</p>
         
         <div class="filter-bar">
           <select v-model="selectedStatus">
@@ -341,7 +338,7 @@ const getStatusText = (status) => {
           <div class="section">
             <h4>Manuscript Information</h4>
             <p><strong>Title:</strong> {{ currentItem?.manuscriptTitle }}</p>
-            <p><strong>Writer:</strong> {{ currentItem?.writerName }}</p>
+            <p><strong>Author:</strong> {{ currentItem?.authorName }}</p>
           </div>
           
           <div class="section">

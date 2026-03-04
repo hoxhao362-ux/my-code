@@ -1,5 +1,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useToastStore } from '../../../stores/toast'
+
+const toastStore = useToastStore()
 
 const props = defineProps({
   visible: Boolean,
@@ -100,9 +103,8 @@ const toggleAttachments = () => {
 
 const handleSaveDraft = () => {
   localStorage.setItem(`initial_review_draft_${props.manuscript?.id}`, JSON.stringify(form))
-  // Also emit event for parent to handle backend save if needed
   emit('save-draft', { ...form })
-  alert('Initial review content saved as draft, continue editing')
+  toastStore.add({ message: 'Initial review content saved as draft, continue editing', type: 'success' })
 }
 
 const validateForm = () => {
@@ -194,18 +196,14 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// Helper for Writers
-const displayWriters = computed(() => {
-  if (!props.manuscript?.writer) return ''
-  // Assuming writer is a string, split by comma if needed, or just use as is if simple string
-  // The prompt says "Writers (first 3 + et al)"
-  // If writer is just a name string like "John Doe", we can't really split. 
-  // But usually it's "A, B, C". Let's try to split by comma.
-  const writers = props.manuscript.writer.split(',').map(s => s.trim())
-  if (writers.length > 3) {
-    return `${writers.slice(0, 3).join(', ')} et al`
+// Helper for Authors
+const displayAuthors = computed(() => {
+  if (!props.manuscript?.author && !props.manuscript?.writer) return ''
+  const authors = (props.manuscript.author || props.manuscript.writer || '').split(',').map(s => s.trim())
+  if (authors.length > 3) {
+    return `${authors.slice(0, 3).join(', ')} et al`
   }
-  return props.manuscript.writer
+  return props.manuscript.author || props.manuscript.writer
 })
 
 </script>
@@ -249,8 +247,8 @@ const displayWriters = computed(() => {
               <span class="value">{{ manuscript.title }}</span>
             </div>
             <div class="info-item">
-              <span class="label">Writers:</span>
-              <span class="value">{{ displayWriters }}</span>
+              <span class="label">Authors:</span>
+              <span class="value">{{ displayAuthors }}</span>
             </div>
             <div class="info-item">
               <span class="label">Submission Date:</span>

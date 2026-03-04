@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useDirectoryStore } from '../stores/directory'
+import { useToastStore } from '../stores/toast'
 import Navigation from '../components/Navigation.vue'
 import { stripHtmlTags } from '../utils/helpers'
 import { useI18n } from '../composables/useI18n'
@@ -10,14 +11,13 @@ import { useI18n } from '../composables/useI18n'
 const { t } = useI18n()
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
+const toastStore = useToastStore()
 const route = useRoute()
 const router = useRouter()
 const journalId = computed(() => route.params.id)
 
-// 返回上一页
 const goBack = () => {
   router.back()
-  // 使用setTimeout确保路由切换完成后再打开目录
   setTimeout(() => {
     directoryStore.openDirectory()
   }, 100)
@@ -42,8 +42,7 @@ const journal = computed(() => {
     // 基础信息
     id: found.id,
     title: found.title || 'Untitled Manuscript',
-    author: found.author || found.writer || 'Unknown Author',
-    writer: found.writer || found.author || 'Unknown Author',
+    author: found.author || 'Unknown Author',
     date: found.date || found.submissionDate || new Date().toISOString().split('T')[0],
     status: found.status || 'pending_initial_review',
     module: found.module || 'Others',
@@ -454,19 +453,17 @@ const handleDownloadPDF = () => {
       if (pdf) {
           handleDownloadAttachment(pdf)
       } else {
-          // Fallback to first attachment
            handleDownloadAttachment(journal.value.attachments[0])
       }
   } else {
-      alert('PDF not available for this demo article.')
+      toastStore.add({ message: 'PDF not available for this demo article.', type: 'warning' })
   }
 }
 
 const handleCite = () => {
-    alert(`Citation: ${journal.value.author}. "${journal.value.title}". ${journal.value.date}.`)
+    toastStore.add({ message: `Citation: ${journal.value.author}. "${journal.value.title}". ${journal.value.date}.`, type: 'info' })
 }
 
-// 组件挂载时滚动到页面顶部
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 })

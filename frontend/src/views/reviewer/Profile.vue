@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
 const activeTab = ref('personal')
@@ -41,24 +43,23 @@ const security = ref({
 })
 
 const savePersonal = () => {
-  // Mock API call
-  alert('Personal info saved successfully.')
+  toastStore.add({ message: 'Personal info saved successfully.', type: 'success' })
 }
 
 const saveResearch = () => {
-  alert('Research areas updated.')
+  toastStore.add({ message: 'Research areas updated.', type: 'success' })
 }
 
 const saveNotifications = () => {
-  alert('Notification settings updated.')
+  toastStore.add({ message: 'Notification settings updated.', type: 'success' })
 }
 
 const changePassword = () => {
   if (security.value.newPassword !== security.value.confirmPassword) {
-    alert('Passwords do not match.')
+    toastStore.add({ message: 'Passwords do not match.', type: 'warning' })
     return
   }
-  alert('Password changed successfully.')
+  toastStore.add({ message: 'Password changed successfully.', type: 'success' })
   security.value.currentPassword = ''
   security.value.newPassword = ''
   security.value.confirmPassword = ''
