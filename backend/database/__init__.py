@@ -6,7 +6,7 @@
 - 数据库服务 (database.service)
 """
 from database.config.database_config import DatabaseConfig, DatabaseInfo, db_config
-from database.service.database_service import DatabaseService, DatabaseManager, db_manager
+from database.service.database_service import DatabaseManager, db_manager
 
 __all__ = [
     # 配置
@@ -15,7 +15,6 @@ __all__ = [
     'db_config',
     
     # 服务
-    'DatabaseService',
     'DatabaseManager',
     'db_manager'
 ]

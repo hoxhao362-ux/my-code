@@ -7,7 +7,11 @@ from typing import Any
 ROOT = Path(__file__).parent.parent
 
 from fastapi import FastAPI
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import SQLAlchemyError
 from utils.file import load_toml
 from utils.log import global_logger
 
@@ -370,3 +374,21 @@ def setup_core(app: FastAPI):
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.exception_handler(IntegrityError)
+    async def _integrity_exception_handler(request: Request, exc: IntegrityError):
+        global_logger.exception("database", f"数据完整性异常: {exc}")
+        return JSONResponse(status_code=409, content={"detail": "数据冲突或重复提交"})
+
+    @app.exception_handler(SQLAlchemyError)
+    async def _sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+        """
+        数据库异常统一处理。
+
+        目标：
+        - 统一记录可定位的错误日志；
+        - 对外返回稳定、非敏感的信息，避免泄露内部细节（SQL、连接信息等）。
+        """
+
+        global_logger.exception("database", f"数据库异常: {exc}")
+        return JSONResponse(status_code=500, content={"detail": "数据库服务异常，请稍后重试"})

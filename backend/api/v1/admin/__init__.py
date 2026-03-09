@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, Request
-from database import db_manager
-from utils.admin_log import record_admin_log
-from core import dependencies as deps
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api import dependencies as deps
+from database.dependencies import get_db_session
+from database.repositories.journal_repo import JournalRepository
+from database.repositories.review_repo import ReviewRepository
+from database.repositories.user_repo import UserRepository
+from service.admin_log_service import admin_log_service
 
 from .users import router as users_router
 from .journals import router as journals_router
 from .invitations import router as invitations_router
-
-user_db = db_manager.get_service('user_account')
-journal_db = db_manager.get_service('journal_submit')
 
 admin_router = APIRouter(
     prefix="/admin",
@@ -27,43 +29,36 @@ admin_router.include_router(invitations_router)
 @admin_router.get("/statistics", summary="获取系统统计信息")
 async def get_system_statistics(
     request: Request,
-    current_user: dict = Depends(deps.get_admin_user)
+    current_user: dict = Depends(deps.get_admin_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
     """获取系统统计信息，仅限管理员访问"""
-    # 统计用户总数
-    total_users = await user_db.fetchval("SELECT COUNT(*) FROM users")
-    
-    # 按角色统计用户
-    user_roles = await user_db.fetchall(
-        "SELECT role, COUNT(*) as count FROM users GROUP BY role"
-    )
-    
-    # 统计文献总数
-    total_journals = await journal_db.fetchval("SELECT COUNT(*) FROM journals")
-    
-    # 按状态统计文献
-    journal_status = await journal_db.fetchall(
-        "SELECT status, COUNT(*) as count FROM journals GROUP BY status"
-    )
-    
-    # 统计审核记录总数
-    total_reviews = await journal_db.fetchval("SELECT COUNT(*) FROM review_records")
+    user_repo = UserRepository(session)
+    journal_repo = JournalRepository(session)
+    review_repo = ReviewRepository(session)
+
+    total_users = await user_repo.count()
+    user_roles = await user_repo.role_breakdown()
+    total_journals = await journal_repo.count_all()
+    journal_status = await journal_repo.status_breakdown()
+    total_reviews = await review_repo.count_all_records()
     
     # 记录管理员操作日志
-    await record_admin_log(
+    await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
         admin_username=current_user["username"],
         operation_type="查看系统统计",
         operation_object="系统统计信息",
         operation_details="查询了系统统计信息",
         ip_address=request.client.host if request.client else None,
-        user_agent=request.headers.get("user-agent")
+        user_agent=request.headers.get("user-agent"),
+        session=session,
     )
     
     return {
         "total_users": total_users,
-        "user_roles": [dict(role) for role in user_roles],
+        "user_roles": user_roles,
         "total_journals": total_journals,
-        "journal_status": [dict(status) for status in journal_status],
-        "total_reviews": total_reviews
+        "journal_status": journal_status,
+        "total_reviews": total_reviews,
     }

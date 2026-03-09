@@ -1,14 +1,12 @@
+aiohttp
+alipay-sdk-python
+elasticsearch
 fastapi
-uvicorn
+jose
+kafka
+numba
+passlib
 pydantic
-python-multipart
-python-jose[cryptography]
-passlib[bcrypt]
-
-# 数据库核心（Postgres）
-psycopg2-binary
-sqlalchemy
-
-# 异步数据库
-asyncpg
-databases[postgresql]
+redis
+SQLAlchemy
+wechatpayv3
