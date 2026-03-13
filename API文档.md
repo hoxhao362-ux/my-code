@@ -1,724 +1,793 @@
-# 期刊平台API文档
-
-## 文档说明
-本文档描述了期刊平台的所有API接口，包括用户管理、文献管理、审稿管理和管理员功能。所有接口都遵循RESTful设计风格。
-
-## API基础信息
-- **基础URL**: `/api/v1`
-- **认证方式**: JWT Token（除登录、注册接口外，其他接口需在请求中携带token参数）
-- **响应格式**: JSON
-- **错误处理**: 使用HTTP状态码和详细错误信息
-
-## 模块分类
-
-### 1. 用户相关接口 (`/user`)
-
-#### 1.1 用户注册
-- **URL**: `/user/register`
-- **方法**: `POST`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | username | string | 是 | 用户名 |
-  | password | string | 是 | 密码（8-20位，含大小写字母+数字，禁止|\/和中文） |
-  | email | string | 是 | 注册邮箱 |
-  | is_remember | boolean | 否 | 是否记住登录状态（默认：false） |
-
-- **响应示例**:
-  ```json
-  {
-    "register_time": "2025-12-24T10:00:00",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 400 | 用户名已存在 / 邮箱已被注册 / 密码格式错误 |
-  | 429 | 注册请求过于频繁 |
-
-#### 1.2 用户登录
-- **URL**: `/user/login`
-- **方法**: `POST`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | username | string | 是 | 用户名 |
-  | password | string | 是 | 密码 |
-  | is_remember | boolean | 否 | 是否记住登录状态（默认：false） |
-
-- **响应示例**:
-  ```json
-  {
-    "login_time": "2025-12-24T10:00:00",
-    "is_remember": true,
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 用户名或密码错误 |
-  | 429 | 登录请求过于频繁 |
-
-#### 1.3 获取当前用户信息
-- **URL**: `/user/me`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-
-- **响应示例**:
-  ```json
-  {
-    "uid": 1,
-    "username": "testuser",
-    "email": "test@example.com",
-    "role": "user",
-    "create_time": "2025-12-24T10:00:00",
-    "last_login_time": "2025-12-24T10:30:00",
-    "avatar_hash": null,
-    "is_online": true
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 404 | 用户不存在 |
-
-#### 1.4 用户登出
-- **URL**: `/user/logout`
-- **方法**: `POST`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "登出成功"
-  }
-  ```
-
-### 2. 文献相关接口 (`/journal`)
-
-#### 2.1 上传文献
-- **URL**: `/journal/upload`
-- **方法**: `POST`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | title | string | 是 | 文献标题 |
-  | authors | string | 是 | 文献作者（多个作者用逗号分隔） |
-  | abstract | string | 否 | 文献摘要 |
-  | file | file | 是 | 文献文件（支持PDF和Word文档） |
-
-- **响应示例**:
-  ```json
-  {
-    "jid": 1,
-    "title": "测试文献",
-    "status": "pending",
-    "upload_time": "2025-12-24T10:00:00"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 400 | 不支持的文件类型 |
-
-#### 2.2 获取我的文献列表
-- **URL**: `/journal/my`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 5,
-    "journals": [
-      {
-        "jid": 1,
-        "title": "测试文献",
-        "authors": "张三,李四",
-        "abstract": "这是一篇测试文献",
-        "status": "pending",
-        "file_name": "test.pdf",
-        "file_size": 1024000,
-        "upload_time": "2025-12-24T10:00:00",
-        "update_time": "2025-12-24T10:00:00"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-
-#### 2.3 获取文献详情
-- **URL**: `/journal/detail/{jid}`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | jid | integer | 是 | 文献ID |
-
-- **响应示例**:
-  ```json
-  {
-    "jid": 1,
-    "title": "测试文献",
-    "authors": "张三,李四",
-    "abstract": "这是一篇测试文献",
-    "status": "pending",
-    "file_name": "test.pdf",
-    "file_size": 1024000,
-    "upload_time": "2025-12-24T10:00:00",
-    "update_time": "2025-12-24T10:00:00"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此文献 |
-  | 404 | 文献不存在 |
-
-#### 2.4 删除文献
-- **URL**: `/journal/{jid}`
-- **方法**: `DELETE`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | jid | integer | 是 | 文献ID |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "文献删除成功"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权删除此文献 |
-  | 404 | 文献不存在 |
-
-#### 2.5 获取公开文献列表
-- **URL**: `/journal/public`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 10,
-    "journals": [
-      {
-        "jid": 1,
-        "title": "测试文献",
-        "authors": "张三,李四",
-        "abstract": "这是一篇测试文献",
-        "status": "approved",
-        "file_name": "test.pdf",
-        "file_size": 1024000,
-        "upload_time": "2025-12-24T10:00:00",
-        "update_time": "2025-12-24T11:00:00"
-      }
-    ]
-  }
-  ```
-
-### 3. 审稿相关接口 (`/review`)
-
-#### 3.1 获取待审核文献列表
-- **URL**: `/review/pending`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 5,
-    "journals": [
-      {
-        "jid": 1,
-        "title": "测试文献",
-        "authors": "张三,李四",
-        "abstract": "这是一篇测试文献",
-        "status": "pending",
-        "file_name": "test.pdf",
-        "file_size": 1024000,
-        "upload_time": "2025-12-24T10:00:00",
-        "update_time": "2025-12-24T10:00:00"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 3.2 审核文献
-- **URL**: `/review/review/{jid}`
-- **方法**: `POST`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | jid | integer | 是 | 文献ID |
-  | result | string | 是 | 审核结果（approved/rejected） |
-  | comment | string | 否 | 审核意见 |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "审核成功",
-    "result": "approved",
-    "comment": "文章质量良好，建议发表"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-  | 400 | 审核结果无效 / 该文献已被审核 |
-  | 404 | 文献不存在 |
-
-#### 3.3 获取审核历史记录
-- **URL**: `/review/history`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 20,
-    "records": [
-      {
-        "id": 1,
-        "jid": 1,
-        "reviewer_uid": 2,
-        "review_time": "2025-12-24T11:00:00",
-        "result": "approved",
-        "comment": "文章质量良好",
-        "title": "测试文献",
-        "authors": "张三,李四",
-        "status": "approved"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 3.4 获取审核统计信息
-- **URL**: `/review/statistics`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 20,
-    "approved": 15,
-    "rejected": 5,
-    "approval_rate": 0.75
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 3.5 获取被拒绝的文献列表
-- **URL**: `/review/rejected`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 5,
-    "journals": [
-      {
-        "jid": 2,
-        "title": "不合格文献",
-        "authors": "王五",
-        "abstract": "这是一篇不合格的文献",
-        "status": "rejected",
-        "file_name": "bad.pdf",
-        "file_size": 512000,
-        "upload_time": "2025-12-23T15:00:00",
-        "update_time": "2025-12-23T16:00:00",
-        "comment": "内容不符合要求",
-        "review_time": "2025-12-23T16:00:00"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-### 4. 管理员相关接口 (`/admin`)
-
-#### 4.1 获取用户列表
-- **URL**: `/admin/users`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-  | role | string | 否 | 用户角色（user/reviewer/admin） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 100,
-    "users": [
-      {
-        "uid": 1,
-        "username": "admin",
-        "email": "admin@example.com",
-        "role": "admin",
-        "is_verified": true,
-        "create_time": "2025-12-20T09:00:00",
-        "last_login_time": "2025-12-24T10:00:00"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 4.2 修改用户角色
-- **URL**: `/admin/users/{uid}/role`
-- **方法**: `PUT`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | uid | integer | 是 | 用户ID |
-  | role | string | 是 | 新角色（user/reviewer/admin） |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "用户角色更新成功",
-    "uid": 2,
-    "new_role": "reviewer"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-  | 400 | 角色无效 |
-  | 404 | 用户不存在 |
-
-#### 4.3 删除用户
-- **URL**: `/admin/users/{uid}`
-- **方法**: `DELETE`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | uid | integer | 是 | 用户ID |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "用户删除成功",
-    "uid": 3
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-  | 404 | 用户不存在 |
-
-#### 4.4 获取所有文献列表
-- **URL**: `/admin/journals/all`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-  | status | string | 否 | 文献状态（pending/approved/rejected） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 50,
-    "journals": [
-      {
-        "jid": 1,
-        "title": "测试文献",
-        "authors": "张三,李四",
-        "abstract": "这是一篇测试文献",
-        "status": "approved",
-        "file_name": "test.pdf",
-        "file_size": 1024000,
-        "create_time": "2025-12-24T10:00:00",
-        "update_time": "2025-12-24T11:00:00",
-        "uploader": "zhangsan"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 4.5 删除文献
-- **URL**: `/admin/journals/{jid}`
-- **方法**: `DELETE`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | jid | integer | 是 | 文献ID |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "文献删除成功"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-  | 404 | 文献不存在 |
-
-#### 4.6 获取所有审核记录
-- **URL**: `/admin/review-records`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 100,
-    "records": [
-      {
-        "id": 1,
-        "jid": 1,
-        "reviewer_uid": 2,
-        "review_time": "2025-12-24T11:00:00",
-        "result": "approved",
-        "comment": "文章质量良好",
-        "title": "测试文献",
-        "reviewer_name": "reviewer1"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 4.7 获取系统统计信息
-- **URL**: `/admin/statistics`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-
-- **响应示例**:
-  ```json
-  {
-    "total_users": 100,
-    "user_roles": [
-      {"role": "user", "count": 80},
-      {"role": "reviewer", "count": 15},
-      {"role": "admin", "count": 5}
-    ],
-    "total_journals": 50,
-    "journal_status": [
-      {"status": "pending", "count": 20},
-      {"status": "approved", "count": 25},
-      {"status": "rejected", "count": 5}
-    ],
-    "total_reviews": 30
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 4.8 获取已删除文献列表
-- **URL**: `/admin/journals/deleted`
-- **方法**: `GET`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | page | integer | 否 | 页码（默认：1） |
-  | page_size | integer | 否 | 每页条数（默认：10） |
-
-- **响应示例**:
-  ```json
-  {
-    "total": 5,
-    "journals": [
-      {
-        "jid": 1,
-        "title": "已删除文献",
-        "authors": "张三,李四",
-        "abstract": "这是一篇已删除的文献",
-        "status": "deleted",
-        "file_name": "deleted.pdf",
-        "file_size": 1024000,
-        "create_time": "2025-12-20T10:00:00",
-        "update_time": "2025-12-21T15:30:00",
-        "uploader": "zhangsan"
-      }
-    ]
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-
-#### 4.9 彻底删除文献
-- **URL**: `/admin/journals/deleted/{jid}`
-- **方法**: `DELETE`
-- **请求参数**:
-  | 参数名 | 类型 | 必填 | 描述 |
-  |--------|------|------|------|
-  | token | string | 是 | 登录凭证 |
-  | jid | integer | 是 | 文献ID |
-
-- **响应示例**:
-  ```json
-  {
-    "message": "文献彻底删除成功"
-  }
-  ```
-
-- **错误码**:
-  | 状态码 | 描述 |
-  |--------|------|
-  | 401 | 无效的token |
-  | 403 | 无权访问此接口 |
-  | 404 | 已删除文献不存在 |
-
-## 通用错误码
-
-| 状态码 | 描述 |
-|--------|------|
-| 400 | 请求参数错误 |
-| 401 | 未授权（无效的token） |
-| 403 | 禁止访问（权限不足） |
-| 404 | 资源不存在 |
-| 500 | 服务器内部错误 |
-| 429 | 请求频率过高 |
-
-## 文献状态说明
-
-| 状态值 | 描述 |
-|--------|------|
-| pending | 待审核 |
-| approved | 审核通过 |
-| rejected | 审核拒绝 |
-| deleted | 已删除（软删除） |
-
-## 用户角色说明
-
-| 角色值 | 描述 |
-|--------|------|
-| user | 普通用户 |
+# 期刊投稿平台 API 需求文档（完整整合版）
+
+下方为“前端提供的完整接口清单及原始说明（附录）”，保留以便查阅。
+
+Editor（正式编辑）：核心功能是终审判定、全流程统筹、团队权限分配，拥有最高权限，负责稿件全流程最终决策。
+Associate Editor（副编辑）：核心功能是稿件初筛、推荐审稿人、审核评审意见，无最终决策权，仅提供专业领域参考建议。
+Editorial Assistant & Advisory Editor（EA&AE，编辑助理/顾问编辑统称）：核心功能兼具两部分，一是流程文书处理、进度跟进、作者基础沟通等辅助操作；二是学术质量把控、争议稿件专业咨询，整体以辅助操作为主，无评审与决策权限，仅提供专业建议，不参与日常流程执行。
+所有角色均不可自由注册获得，必须走：申请 / 提名 → 审核 → 任命 → 激活。
+编辑委员会（Editorial Board，简称 “编委会”）所有编辑角色、权限、流程均由编委会统一管理。
+编委会成员 = Editor（正式编辑）
+一个编委账号 = 一个 Editor 角色
+非 Editor 一律不能进入编委会模块
+Self-Citation Check Results；
+Self-Citation Detection & Processing需要后端对接
+letter需要后端对接存储管理
+
+
+### 稿件状态字段 status
+当前问题 ：后端返回的状态值混用中文和英文，前端需要同时兼容两种值
+
+中文值 建议英文值 影响文件数 已通过 Accepted 8个文件 未通过 Rejected 6个文件 已发表 Published 3个文件 审稿中 Under Review 5个文件 已审核 Review Completed 2个文件
+
+建议后端修改 ：统一使用英文状态值
+
+```
+已通过 → accepted
+未通过 → rejected  
+已发表 → published
+审稿中 → under_review
+已审核 → review_completed
+```
+### 二、审稿阶段字段 reviewStage
+当前问题 ：后端返回的阶段值混用中文和英文
+
+中文值 当前英文值 建议统一值 初审 Initial Review initial_review 复审 Peer Review / Re-review peer_review 终审 Final Decision final_decision
+
+影响文件 ：10个文件需要同时判断中英文
+
+### 三、审稿记录阶段字段 record.stage
+当前问题 ：审稿记录中的阶段字段也混用中英文
+
+中文值 当前英文值 复审 Re-review
+
+影响文件 ：5个文件
+
+### 四、完整修改建议 后端API返回数据格式建议
+```
+{
+  "id": 1,
+  "title": "稿件标题",
+  "status": "accepted",
+  "reviewStage": "peer_review",
+  "reviewResult": "accepted",
+  "reviewHistory": [
+    {
+      "stage": "initial_review",
+      "status": "passed",
+      "comment": "审核意见"
+    }
+  ]
+}
+``` 状态值映射表（后端需实现）
+```
+status 字段:
+- pending          → 待提交
+- submitted        → 已提交
+- under_review     → 审稿中
+- accepted         → 已通过
+- rejected         → 未通过
+- published        → 已发表
+- revision_required → 需修改
+- review_completed → 已审核
+
+reviewStage 字段:
+- initial_review   → 初审
+- peer_review      → 复审
+- final_decision   → 终审
+
+reviewResult 字段:
+- accepted         → 已通过
+- rejected         → 未通过
+```
+
+## 一、认证与用户模块
+
+### 1.1 认证接口
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/auth/login` | POST | 用户登录，返回token和用户信息 |
+| `/api/auth/register` | POST | 新用户注册 |
+| `/api/auth/logout` | POST | 用户登出 |
+| `/api/auth/refresh-token` | POST | 刷新token |
+| `/api/auth/forgot-password` | POST | 忘记密码，发送重置邮件 |
+| `/api/auth/reset-password` | POST | 重置密码 |
+| `/api/admin/auth/login` | POST | 管理员登录 |
+| `/api/admin/auth/register` | POST | 管理员注册（需邀请码） |
+| `/api/invitations/register` | POST | 编辑邀请注册 |
+
+### 1.2 用户信息接口
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/user/me` | GET | 获取当前用户信息 |
+| `/api/user/profile` | GET | 获取用户详细资料 |
+| `/api/user/profile` | PUT | 更新用户资料 |
+| `/api/user/password` | PUT | 修改密码 |
+| `/api/user/avatar` | POST | 上传头像 |
+
+---
+
+## 二、作者模块
+
+### 2.1 作者仪表盘
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/author/stats` | GET | 获取投稿统计数据 |
+| `/api/author/manuscripts/recent` | GET | 获取最近投稿列表 |
+| `/api/author/tasks` | GET | 获取待处理任务 |
+
+### 2.2 投稿管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/author/manuscripts` | GET | 获取投稿历史列表（支持分页、筛选） |
+| `/api/author/manuscripts/{id}` | GET | 获取稿件详情 |
+| `/api/manuscripts/draft` | POST | 保存投稿草稿 |
+| `/api/manuscripts/draft/{id}` | GET | 获取草稿内容 |
+| `/api/manuscripts/submit` | POST | 正式提交稿件 |
+| `/api/manuscripts/{id}` | DELETE | 撤回稿件 |
+| `/api/manuscripts/{id}/revision-request` | GET | 获取修订要求 |
+| `/api/manuscripts/{id}/revision` | POST | 提交修订稿 |
+
+### 2.3 文件上传
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/files/upload` | POST | 上传稿件文件 |
+| `/api/manuscripts/files/{id}` | DELETE | 删除文件 |
+| `/api/files/{id}` | GET | 下载文件 |
+| `/api/files/{id}/preview` | GET | 预览文件 |
+
+---
+
+## 三、审稿人模块
+
+### 3.1 审稿人仪表盘
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/reviewer/stats` | GET | 获取审稿统计数据 |
+| `/api/reviewer/pending-count` | GET | 获取待审稿件数量 |
+
+### 3.2 审稿任务管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/reviewer/assignments` | GET | 获取分配的审稿任务 |
+| `/api/reviewer/assignments/{id}/accept` | PUT | 接受审稿邀请 |
+| `/api/reviewer/assignments/{id}/decline` | PUT | 拒绝审稿邀请 |
+| `/api/reviewer/manuscripts/pending` | GET | 获取待审稿件列表 |
+| `/api/reviewer/reviews/{id}/start` | PUT | 开始审稿 |
+
+### 3.3 审稿操作
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/{id}` | GET | 获取稿件详情（审稿人视角） |
+| `/api/reviewer/reviews` | POST | 提交审稿意见 |
+| `/api/reviewer/reviews/draft` | POST | 保存审稿草稿 |
+| `/api/reviewer/reviews/history` | GET | 获取审稿历史 |
+| `/api/reviewer/profile` | GET/PUT | 审稿人资料管理 |
+
+---
+
+## 四、编辑系统模块
+
+### 4.1 编辑门户
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/overview` | GET | 获取编辑工作概览统计 |
+
+### 4.2 新投稿审核
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/manuscripts/new` | GET | 获取待初审稿件列表 |
+| `/api/editor/manuscripts/{id}/screen` | PUT | 初审通过 |
+| `/api/editor/manuscripts/{id}/reject` | PUT | 初审拒稿 |
+| `/api/editor/manuscripts/{id}/transfer` | POST | 建议转投其他期刊 |
+| `/api/manuscripts/{id}/ethics/verify` | PUT | 验证伦理声明 |
+| `/api/manuscripts/{id}/assign-editor` | PUT | 分配处理编辑 |
+| `/api/editors/available` | GET | 获取可用编辑列表 |
+
+### 4.3 分配审稿人
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/manuscripts/pending-assignment` | GET | 获取待分配审稿人的稿件 |
+| `/api/reviewers/available` | GET | 获取可用审稿人列表 |
+| `/api/manuscripts/{id}/assign-reviewers` | POST | 分配审稿人 |
+| `/api/manuscripts/{id}/recommended-reviewers` | GET | 获取作者推荐审稿人 |
+| `/api/reviewers/smart-recommend/{manuscriptId}` | GET | 智能推荐审稿人 |
+| `/api/reviewers/{id}/reinvite` | POST | 重新邀请审稿人 |
+
+### 4.4 审稿监控
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/manuscripts/under-review` | GET | 获取审稿中的稿件 |
+| `/api/reviewers/{id}/remind` | POST | 提醒审稿人 |
+| `/api/manuscripts/{id}/replace-reviewer` | PUT | 更换审稿人 |
+| `/api/manuscripts/{id}/extend-deadline` | PUT | 延长审稿期限 |
+
+### 4.5 决策制定
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/manuscripts/pending-decision` | GET | 获取待决策稿件 |
+| `/api/manuscripts/{id}/reviews-summary` | GET | 获取审稿意见汇总 |
+| `/api/manuscripts/{id}/decision` | POST | 提交编辑决策 |
+| `/api/editor/decisions/draft` | POST | 保存决策草稿 |
+| `/api/manuscripts/{id}/consensus-meeting` | POST | 安排共识会议 |
+| `/api/editor/manuscripts/appeals` | GET | 获取申诉稿件列表 |
+| `/api/manuscripts/{id}/independent-reviewer` | POST | 分配独立审稿人 |
+
+### 4.6 修订稿处理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/revisions/pending` | GET | 获取待处理修订稿 |
+| `/api/revisions/{id}/format-check` | POST | 提交格式检查结果 |
+| `/api/revisions/{id}/approve` | PUT | 批准修订稿 |
+| `/api/revisions/{id}/return` | PUT | 退回继续修改 |
+| `/api/revisions/{id}/re-review` | POST | 送回重审 |
+| `/api/manuscripts/{id}/reviewer-comments` | GET | 获取审稿人意见 |
+
+### 4.7 推荐与回避审稿人审核
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/recommended-reviewers` | GET | 获取推荐审稿人列表 |
+| `/api/recommended-reviewers/{id}/review` | PUT | 审核推荐审稿人 |
+| `/api/editor/opposed-reviewers` | GET | 获取回避审稿人列表 |
+| `/api/opposed-reviewers/{id}/review` | PUT | 审核回避请求 |
+
+### 4.8 编辑统计与历史
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editor/tasks/history` | GET | 获取编辑任务历史 |
+| `/api/editor/stats/reviewers` | GET | 获取审稿人统计数据 |
+
+### 4.9 编委管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/editorial-board` | GET | 获取编委会成员列表 |
+| `/api/editorial-board` | POST | 添加编委成员 |
+| `/api/editorial-board/{id}` | PUT | 更新编委信息 |
+| `/api/editorial-board/{id}` | DELETE | 移除编委成员 |
+
+---
+
+## 五、管理员后台模块
+
+### 5.1 管理员仪表盘
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/stats` | GET | 获取系统整体统计 |
+| `/api/admin/recent-activities` | GET | 获取近期系统活动 |
+
+### 5.2 用户管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/users` | GET | 获取用户列表（支持分页、筛选） |
+| `/api/admin/users/{id}` | GET | 获取用户详情 |
+| `/api/admin/users/{id}` | DELETE | 删除用户 |
+| `/api/admin/users/{id}/role` | PUT | 修改用户角色 |
+| `/api/admin/users/{id}/status` | PUT | 启用/禁用用户 |
+| `/api/admin/users/{id}/reset-password` | POST | 重置用户密码 |
+| `/api/admin/users/{id}/submissions` | GET | 获取用户投稿记录 |
+| `/api/admin/users/{id}/reviews` | GET | 获取用户审稿记录 |
+
+### 5.3 审稿人管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/reviewers` | GET | 获取审稿人列表 |
+| `/api/admin/reviewers` | POST | 添加审稿人 |
+| `/api/admin/reviewers/{id}` | PUT | 更新审稿人信息 |
+| `/api/admin/reviewers/{id}` | DELETE | 删除审稿人 |
+
+### 5.4 稿件管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/manuscripts` | GET | 获取所有稿件列表 |
+| `/api/admin/manuscripts/{id}` | GET | 获取稿件详情 |
+| `/api/admin/manuscripts/{id}/status` | PUT | 更新稿件状态 |
+| `/api/admin/manuscripts/pending-screening` | GET | 获取待筛选稿件 |
+| `/api/admin/manuscripts/{id}/initial-review` | POST | 提交初审结果 |
+| `/api/admin/manuscripts/pending-final` | GET | 获取待终审稿件 |
+| `/api/manuscripts/{id}/final-decision` | POST | 提交最终决策 |
+| `/api/admin/manuscripts/progress` | GET | 获取稿件进度列表 |
+| `/api/admin/manuscripts/history` | GET | 获取稿件历史记录 |
+| `/api/admin/manuscripts/blind-reviews` | GET | 获取盲审审核记录 |
+| `/api/admin/manuscripts/pending-publication` | GET | 获取待出版稿件 |
+| `/api/manuscripts/{id}/publication-status` | PUT | 更新出版状态 |
+| `/api/admin/my-manuscripts` | GET | 获取管理员负责的稿件 |
+
+### 5.5 邀请码管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/invitation-codes` | GET | 获取邀请码列表 |
+| `/api/admin/invitation-codes` | POST | 生成邀请码 |
+| `/api/admin/invitation-codes/{id}/disable` | PUT | 禁用邀请码 |
+
+### 5.6 模块与栏目管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/modules` | GET | 获取学科模块列表 |
+| `/api/admin/modules` | POST | 添加模块 |
+| `/api/admin/modules/{id}` | PUT | 更新模块 |
+| `/api/admin/modules/{id}` | DELETE | 删除模块 |
+| `/api/admin/columns` | GET | 获取期刊栏目列表 |
+| `/api/admin/columns` | POST | 添加栏目 |
+| `/api/admin/columns/{id}` | PUT | 更新栏目 |
+| `/api/admin/columns/{id}/toggle` | PUT | 启用/禁用栏目 |
+
+### 5.7 期刊期次管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/issues` | GET | 获取期刊期次列表 |
+| `/api/admin/issues` | POST | 创建新期次 |
+| `/api/admin/issues/{id}` | PUT | 更新期次信息 |
+| `/api/admin/issues/{id}/publish` | PUT | 发布期刊 |
+| `/api/admin/issues/{id}/assign` | POST | 分配稿件到期次 |
+
+### 5.8 反馈管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/feedbacks` | GET | 获取用户反馈列表 |
+| `/api/admin/feedbacks/{id}` | GET | 获取反馈详情 |
+| `/api/admin/feedbacks/{id}/handle` | PUT | 处理用户反馈 |
+
+### 5.9 系统配置
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/system/config` | GET | 获取系统配置 |
+| `/api/admin/system/config` | PUT | 更新系统配置 |
+| `/api/admin/system/logs` | GET | 获取系统日志 |
+| `/api/admin/system/logs/export` | GET | 导出日志 |
+| `/api/admin/system/logs` | DELETE | 清除日志 |
+| `/api/admin/system/notification-config` | GET | 获取通知模板配置 |
+| `/api/admin/system/notification-config` | PUT | 更新通知配置 |
+
+### 5.10 管理员个人设置
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/admin/profile` | GET | 获取管理员个人设置 |
+| `/api/admin/profile` | PUT | 更新个人设置 |
+| `/api/admin/profile/security` | PUT | 更新安全设置 |
+| `/api/admin/profile/manuscript-preferences` | PUT | 更新稿件状态偏好 |
+| `/api/admin/profile/logs` | GET | 获取个人操作日志 |
+
+---
+
+## 六、站内通信模块
+
+### 6.1 消息管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/messages` | GET | 获取消息列表（支持分页、类型筛选） |
+| `/api/messages/unread` | GET | 获取未读消息列表 |
+| `/api/messages/{id}` | GET | 获取消息详情 |
+| `/api/messages` | POST | 发送消息 |
+| `/api/messages/{id}/read` | PUT | 标记单条消息已读 |
+| `/api/messages/read-all` | PUT | 标记全部已读 |
+| `/api/messages/{id}` | DELETE | 删除消息 |
+| `/api/messages/unread-count` | GET | 获取未读消息数量 |
+
+### 6.2 会话管理
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/messages/conversations` | GET | 获取会话列表 |
+| `/api/messages/conversations/{uid}` | GET | 获取与某用户的聊天记录 |
+| `/api/messages/conversations/{uid}/send` | POST | 发送私信 |
+
+### 6.3 实时通信
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/ws/messages` | WS | WebSocket实时消息推送连接 |
+
+---
+
+## 七、公共页面模块
+
+### 7.1 首页与公开内容
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/articles/latest` | GET | 获取最新发表文章 |
+| `/api/public/articles/popular` | GET | 获取热门文章 |
+| `/api/public/announcements` | GET | 获取系统公告 |
+| `/api/public/manuscripts/{id}` | GET | 获取稿件公开信息 |
+| `/api/public/search` | GET | 搜索公开稿件 |
+
+### 7.2 期刊信息
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/editorial-board` | GET | 获取编委会信息 |
+| `/api/public/journal-info` | GET | 获取期刊介绍 |
+| `/api/public/history` | GET | 获取期刊历史 |
+| `/api/public/contact` | GET | 获取联系方式 |
+
+### 7.3 帮助与反馈
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/help` | GET | 获取帮助文档 |
+| `/api/public/faq` | GET | 获取常见问题 |
+| `/api/public/feedback` | POST | 提交用户反馈 |
+
+---
+
+## 八、资源页面模块
+
+### 8.1 作者资源
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/author-guide` | GET | 获取投稿指南 |
+| `/api/public/status-guide` | GET | 获取稿件状态说明 |
+| `/api/public/templates` | GET | 获取投稿模板 |
+
+### 8.2 审稿人资源
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/reviewer-guidelines` | GET | 获取审稿指南 |
+| `/api/public/reviewer-training` | GET | 获取审稿人培训资料 |
+| `/api/reviewer-application` | POST | 申请成为审稿人 |
+| `/api/reviewer-application/status` | GET | 查询申请状态 |
+
+### 8.3 新闻与活动
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/public/call-for-papers` | GET | 获取征稿启事 |
+| `/api/public/events` | GET | 获取学术活动信息 |
+| `/api/public/latest-articles` | GET | 获取最新发表文章列表 |
+
+---
+
+## 九、数据导出模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/export/manuscripts` | POST | 导出稿件列表 |
+| `/api/export/users` | POST | 导出用户列表 |
+| `/api/export/reviews` | POST | 导出审稿记录 |
+| `/api/export/statistics` | POST | 导出统计数据 |
+| `/api/export/audit-logs` | POST | 导出审计日志 |
+| `/api/export/reviewers` | POST | 导出审稿人列表 |
+
+---
+
+## 十、数据统计模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/statistics/overview` | GET | 总览数据 |
+| `/api/statistics/submission-trend` | GET | 投稿趋势 |
+| `/api/statistics/review-timeline` | GET | 审稿时间线 |
+| `/api/statistics/reviewer-workload` | GET | 审稿人工作量 |
+| `/api/statistics/acceptance-rate` | GET | 录用率统计 |
+| `/api/statistics/field-distribution` | GET | 领域分布 |
+| `/api/statistics/monthly-comparison` | GET | 月度对比 |
+| `/api/statistics/geographic-distribution` | GET | 地理分布 |
+
+---
+
+## 十一、高级搜索模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/search/global` | GET | 全局搜索 |
+| `/api/search/manuscripts` | GET | 稿件搜索 |
+| `/api/search/users` | GET | 用户搜索 |
+| `/api/search/reviewers` | GET | 审稿人搜索 |
+| `/api/search/advanced` | POST | 高级搜索（多条件） |
+| `/api/search/suggestions` | GET | 搜索建议/自动补全 |
+| `/api/search/history` | GET | 获取搜索历史 |
+| `/api/search/history` | DELETE | 清除搜索历史 |
+
+---
+
+## 十二、批量操作模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/batch-assign` | POST | 批量分配审稿人 |
+| `/api/manuscripts/batch-status` | POST | 批量修改状态 |
+| `/api/manuscripts/batch-delete` | POST | 批量删除稿件 |
+| `/api/manuscripts/batch-export` | POST | 批量导出稿件 |
+| `/api/users/batch-update` | POST | 批量更新用户 |
+| `/api/users/batch-delete` | POST | 批量删除用户 |
+| `/api/reviewers/batch-invite` | POST | 批量邀请审稿 |
+| `/api/notifications/batch-send` | POST | 批量发送通知 |
+
+---
+
+## 十三、数据导入模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/import/users` | POST | 导入用户 |
+| `/api/import/reviewers` | POST | 导入审稿人 |
+| `/api/import/manuscripts` | POST | 导入稿件数据 |
+| `/api/import/templates` | GET | 下载导入模板 |
+| `/api/import/validate` | POST | 验证导入数据 |
+| `/api/import/progress` | GET | 获取导入进度 |
+
+---
+
+## 十四、版本对比模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/{id}/versions` | GET | 获取版本列表 |
+| `/api/manuscripts/{id}/versions/{versionId}` | GET | 获取特定版本 |
+| `/api/manuscripts/compare` | POST | 版本对比 |
+| `/api/manuscripts/{id}/diff` | GET | 获取差异内容 |
+| `/api/manuscripts/{id}/changelog` | GET | 变更日志 |
+
+---
+
+## 十五、评论/批注模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/{id}/comments` | GET | 获取评论列表 |
+| `/api/manuscripts/{id}/comments` | POST | 添加评论 |
+| `/api/comments/{commentId}` | PUT | 更新评论 |
+| `/api/comments/{commentId}` | DELETE | 删除评论 |
+| `/api/comments/{commentId}/reply` | POST | 回复评论 |
+| `/api/comments/thread` | GET | 获取评论线程 |
+
+---
+
+## 十六、标签/分类模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/tags` | GET | 获取标签列表 |
+| `/api/tags` | POST | 创建标签 |
+| `/api/tags/{tagId}` | PUT | 更新标签 |
+| `/api/tags/{tagId}` | DELETE | 删除标签 |
+| `/api/manuscripts/{id}/tags` | POST | 为稿件添加标签 |
+| `/api/manuscripts/{id}/tags/{tagId}` | DELETE | 移除稿件标签 |
+| `/api/tags/{tagId}/manuscripts` | GET | 获取标签下的稿件 |
+
+---
+
+## 十七、收藏/关注模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/manuscripts/{id}/bookmark` | POST | 收藏稿件 |
+| `/api/manuscripts/{id}/bookmark` | DELETE | 取消收藏 |
+| `/api/users/bookmarks` | GET | 获取用户收藏列表 |
+| `/api/manuscripts/{id}/follow` | POST | 关注稿件动态 |
+| `/api/manuscripts/{id}/follow` | DELETE | 取消关注 |
+| `/api/users/following` | GET | 获取关注列表 |
+
+---
+
+## 十八、审计日志模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/audit-logs` | GET | 获取审计日志列表 |
+| `/api/audit-logs/{id}` | GET | 获取日志详情 |
+| `/api/audit-logs/manuscript/{id}` | GET | 获取稿件操作日志 |
+| `/api/audit-logs/user/{userId}` | GET | 获取用户操作日志 |
+| `/api/audit-logs/export` | POST | 导出审计日志 |
+| `/api/audit-logs/statistics` | GET | 日志统计 |
+
+---
+
+## 十九、权限管理模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/roles` | GET | 获取角色列表 |
+| `/api/roles` | POST | 创建角色 |
+| `/api/roles/{roleId}` | PUT | 更新角色 |
+| `/api/roles/{roleId}` | DELETE | 删除角色 |
+| `/api/permissions` | GET | 获取权限列表 |
+| `/api/roles/{roleId}/permissions` | POST | 分配权限 |
+| `/api/users/{userId}/permissions` | GET | 获取用户权限 |
+| `/api/users/{userId}/roles` | POST | 分配角色 |
+
+---
+
+## 二十、配置管理模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/configurations` | GET | 获取所有配置 |
+| `/api/configurations/{key}` | GET | 获取特定配置 |
+| `/api/configurations/{key}` | PUT | 更新配置 |
+| `/api/configurations` | POST | 创建配置 |
+| `/api/configurations/{key}` | DELETE | 删除配置 |
+| `/api/configurations/group/{group}` | GET | 获取配置组 |
+| `/api/configurations/batch` | PUT | 批量更新配置 |
+
+---
+
+## 二十一、通知模板模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/notification-templates` | GET | 获取通知模板列表 |
+| `/api/notification-templates/{id}` | GET | 获取模板详情 |
+| `/api/notification-templates` | POST | 创建模板 |
+| `/api/notification-templates/{id}` | PUT | 更新模板 |
+| `/api/notification-templates/{id}` | DELETE | 删除模板 |
+| `/api/notification-templates/preview` | POST | 预览模板 |
+| `/api/notification-templates/types` | GET | 获取模板类型 |
+
+---
+
+## 二十二、邮件发送模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/emails/send` | POST | 发送邮件 |
+| `/api/emails/send-batch` | POST | 批量发送邮件 |
+| `/api/emails/history` | GET | 邮件发送历史 |
+| `/api/emails/{id}/status` | GET | 获取邮件状态 |
+| `/api/emails/resend/{id}` | POST | 重发邮件 |
+| `/api/emails/templates` | GET | 获取邮件模板 |
+| `/api/emails/preview` | POST | 预览邮件内容 |
+
+---
+
+## 二十三、短信发送模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/sms/send` | POST | 发送短信 |
+| `/api/sms/send-batch` | POST | 批量发送短信 |
+| `/api/sms/history` | GET | 短信发送历史 |
+| `/api/sms/{id}/status` | GET | 获取短信状态 |
+| `/api/sms/templates` | GET | 获取短信模板 |
+| `/api/sms/templates` | POST | 创建短信模板 |
+
+---
+
+## 二十四、验证码模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/captcha/image` | POST | 获取图形验证码 |
+| `/api/captcha/sms` | POST | 发送短信验证码 |
+| `/api/captcha/email` | POST | 发送邮箱验证码 |
+| `/api/captcha/verify` | POST | 验证验证码 |
+| `/api/captcha/refresh` | POST | 刷新验证码 |
+
+---
+
+## 二十五、AI智能推荐模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/ai/reviewer-recommendation` | POST | AI审稿人推荐 |
+| `/api/ai/similarity-check` | POST | 相似度检测 |
+| `/api/ai/keyword-extraction` | POST | 关键词提取 |
+| `/api/ai/abstract-analysis` | POST | 摘要分析 |
+
+---
+
+## 二十六、出版流程模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/publication/acceptance` | POST | 发送录用通知 |
+| `/api/publication/copyright` | POST | 版权协议签署 |
+| `/api/publication/proof` | POST | 校样确认 |
+| `/api/publication/publish` | POST | 发布出版 |
+| `/api/publication/{id}/status` | GET | 获取出版状态 |
+| `/api/publication/doi` | POST | DOI分配 |
+
+---
+
+## 二十七、在线咨询模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/consultations` | GET | 获取咨询列表 |
+| `/api/consultations/{id}` | GET | 获取咨询详情 |
+| `/api/consultations` | POST | 提交咨询 |
+| `/api/consultations/{id}/reply` | POST | 回复咨询 |
+
+---
+
+## 二十八、编委管理模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/board-members` | GET | 获取编委列表 |
+| `/api/board-members` | POST | 添加编委 |
+| `/api/board-members/{id}` | PUT | 更新编委 |
+| `/api/board-members/{id}` | DELETE | 移除编委 |
+| `/api/board-invitations` | GET | 获取编委邀请列表 |
+| `/api/board-invitations` | POST | 发送编委邀请 |
+| `/api/board-invitations/{id}/revoke` | POST | 撤销邀请 |
+
+---
+
+## 二十九、通用接口模块
+
+| 接口 | 方法 | 用途 |
+|------|------|------|
+| `/api/dictionaries/classifications` | GET | 获取学科分类字典 |
+| `/api/dictionaries/countries` | GET | 获取国家地区列表 |
+| `/api/dictionaries/institutions` | GET | 获取机构列表 |
+| `/api/classifications` | GET | 获取学科分类列表 |
+| `/api/submission/init` | POST | 初始化投稿会话 |
+| `/api/submission/validate` | POST | 验证稿件必填信息 |
+
+---
+
+## 三十、稿件状态流转说明
+
+```
+投稿提交 → pending_initial_review (待初审)
+    ↓
+初审阶段:
+├── initial_review_passed (初审通过)
+├── initial_review_revision (初审退回修改)
+└── initial_review_rejected (初审拒稿)
+    ↓
+同行评审阶段:
+├── pending_peer_review (待同行评审)
+├── under_peer_review (同行评审中)
+├── review_completed (评审完成)
+└── revision_required (需要修稿)
+    ↓
+终审阶段:
+├── pending_final_decision (待终审)
+├── under_final_decision (终审中)
+├── final_decision_accepted (终审通过)
+├── final_decision_revision (终审修改后录用)
+└── final_decision_rejected (终审拒稿)
+    ↓
+出版阶段:
+├── pending_acceptance_confirmation (待录用确认)
+├── pending_copyright (待版权协议签署)
+├── pending_proof (待校样确认)
+├── pending_publication (待出版)
+└── published (已出版)
+```
+
+---
+
+## 三十一、用户角色说明
+
+| 角色 | 描述 |
+|------|------|
+| user | 普通用户/作者 |
 | reviewer | 审稿人 |
+| editor | 编辑 |
 | admin | 管理员 |
+
+---
+
+## 三十二、API统计总表
+
+| 序号 | 模块 | 接口数量 |
+|------|------|---------|
+| 1 | 认证与用户模块 | 14 |
+| 2 | 作者模块 | 14 |
+| 3 | 审稿人模块 | 12 |
+| 4 | 编辑系统模块 | 36 |
+| 5 | 管理员后台模块 | 42 |
+| 6 | 站内通信模块 | 12 |
+| 7 | 公共页面模块 | 10 |
+| 8 | 资源页面模块 | 10 |
+| 9 | 数据导出模块 | 6 |
+| 10 | 数据统计模块 | 8 |
+| 11 | 高级搜索模块 | 8 |
+| 12 | 批量操作模块 | 8 |
+| 13 | 数据导入模块 | 6 |
+| 14 | 版本对比模块 | 5 |
+| 15 | 评论/批注模块 | 6 |
+| 16 | 标签/分类模块 | 7 |
+| 17 | 收藏/关注模块 | 6 |
+| 18 | 审计日志模块 | 6 |
+| 19 | 权限管理模块 | 8 |
+| 20 | 配置管理模块 | 7 |
+| 21 | 通知模板模块 | 7 |
+| 22 | 邮件发送模块 | 7 |
+| 23 | 短信发送模块 | 6 |
+| 24 | 验证码模块 | 5 |
+| 25 | AI智能推荐模块 | 4 |
+| 26 | 出版流程模块 | 6 |
+| 27 | 在线咨询模块 | 4 |
+| 28 | 编委管理模块 | 7 |
+| 29 | 通用接口模块 | 6 |
+| **总计** | | **约 252 个** |
+
+---
