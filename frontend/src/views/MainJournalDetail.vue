@@ -48,12 +48,12 @@ const journal = computed(() => {
     module: found.module || 'Others',
     
     // 期刊元数据（新稿件可能没有）
-    volume: found.volume || 'X',
-    issue: found.issue || 'X',
-    pages: found.pages || 'X-X',
+    volume: found.volume || 'NONE',
+    issue: found.issue || 'NONE',
+    pages: found.pages || 'NONE',
     articleType: found.articleType || 'Original Article',
-    doi: found.doi || '10.1234/jsp.2026.xxxx',
-    doiUrl: found.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx',
+    doi: found.doi || 'NONE',
+    doiUrl: found.doiUrl || '',
     onlineDate: found.onlineDate || found.publicationDate || found.date || 'Pending',
     
     // 作者信息
@@ -128,6 +128,7 @@ const isBlindReview = ref(true)
 
 // 预览附件
 const previewAttachment = (attachment) => {
+  if (!attachment || !attachment.name) return
   const fileExtension = `.${attachment.name.split('.').pop().toLowerCase()}`
   const previewableExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.doc', '.docx']
   
@@ -449,7 +450,7 @@ const handleDownloadPDF = () => {
   console.log('Downloading PDF...')
   if (hasAttachments.value) {
       // Find a PDF attachment if possible
-      const pdf = journal.value.attachments.find(a => a.name.toLowerCase().endsWith('.pdf'))
+      const pdf = journal.value.attachments.find(a => a.name && a.name.toLowerCase().endsWith('.pdf'))
       if (pdf) {
           handleDownloadAttachment(pdf)
       } else {
@@ -495,7 +496,8 @@ onMounted(() => {
           </div>
           <div class="online-date">
             {{ t('journalDetail.header.publishedOnline') }}: {{ journal.onlineDate || 'Month Day, Year' }} | 
-            <a :href="journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx'" target="_blank">{{ journal.doiUrl || 'https://doi.org/10.1234/jsp.2026.xxxx' }}</a>
+            <a v-if="journal.doiUrl" :href="journal.doiUrl" target="_blank">{{ journal.doiUrl }}</a>
+            <span v-else>NONE</span>
           </div>
         </div>
       </header>
@@ -663,8 +665,8 @@ onMounted(() => {
             class="review-history-item"
           >
             <div class="review-history-header">
-              <span class="review-stage">{{ record.stage }}:</span>
-              <span class="review-status" :class="record.status.toLowerCase()">{{ record.status }}</span>
+              <span class="review-stage">{{ record.stage || 'Review' }}:</span>
+              <span class="review-status" :class="(record.status || 'unknown').toLowerCase()">{{ record.status || 'Pending' }}</span>
               <span class="review-date">{{ record.date }}</span>
               <span class="reviewer" v-if="isBlindReview">
                 ({{ t('journalDetail.reviewHistory.reviewer') }} {{ index + 1 }} - [{{ t('journalDetail.reviewHistory.anonymized') }}])

@@ -46,6 +46,7 @@ import SystemStatus from '../submission/SystemStatus.vue'
 // Publication components
 import PublicationProcess from '../admin/manuscript/PublicationProcess.vue'
 import PublicationManagement from './PublicationManagement.vue'
+import MessageCenter from '../communication/MessageCenter.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -112,6 +113,8 @@ onMounted(() => {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (path === '/submission/system-status') {
     currentViewKey.value = 'submission-system-status'
+  } else if (path === '/editor/messages') {
+    currentViewKey.value = 'editor-messages'
   }
   // Handle Publication route
   else if (path.startsWith('/editor/publication/')) {
@@ -179,6 +182,8 @@ watch(() => route.path, (newPath) => {
     currentViewKey.value = 'admin-profile-manuscript-status'
   } else if (newPath === '/submission/system-status') {
     currentViewKey.value = 'submission-system-status'
+  } else if (newPath === '/editor/messages') {
+    currentViewKey.value = 'editor-messages'
   }
   // Handle Publication route
   else if (newPath.startsWith('/editor/publication/')) {
@@ -221,7 +226,8 @@ const componentMap = {
   'submission-profile-security': ProfileSecurity,
   'submission-notifications': Notifications,
   'submission-help': Help,
-  'submission-help-feedback': Feedback
+  'submission-help-feedback': Feedback,
+  'editor-messages': MessageCenter
 }
 
 const currentComponent = computed(() => componentMap[currentViewKey.value] || Dashboard)
