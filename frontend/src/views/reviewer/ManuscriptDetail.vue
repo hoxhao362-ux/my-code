@@ -10,6 +10,7 @@ import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const messageStore = useMessageStore()
 const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
@@ -133,19 +134,48 @@ const coiState = ref({
 
 // Messages State
 const newMessage = ref('')
-const messages = ref([
-  { id: 1, sender: 'Editor', content: 'Invitation to review this manuscript.', date: '2023-10-01' }
-])
 
-const sendMessage = () => {
+// Find or create a thread for this manuscript
+const currentThread = computed(() => {
+  // Find a thread where manuscriptId matches
+  // In a real app, we might need a more robust way to find the "Editor-Reviewer" thread for this specific manuscript
+  return messageStore.myThreads.find(t => String(t.manuscriptId) === String(journalId))
+})
+
+const messages = computed(() => {
+  if (!currentThread.value) return []
+  return messageStore.messages.filter(m => m.threadId === currentThread.value.id).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+})
+
+const sendMessage = async () => {
   if (!newMessage.value.trim()) return
-  messages.value.push({
-    id: messages.value.length + 1,
-    sender: 'Me',
-    content: newMessage.value,
-    date: new Date().toISOString().split('T')[0]
-  })
-  newMessage.value = ''
+  
+  try {
+    if (currentThread.value) {
+      await messageStore.sendMessage({
+        threadId: currentThread.value.id,
+        recipientId: currentThread.value.participants[0] === user.value.username ? null : 'editor_001', // Simplification
+        recipientName: 'Editor', // Default to Editor
+        recipientRole: 'editor',
+        content: newMessage.value
+      })
+    } else {
+      // Start new thread
+      await messageStore.sendMessage({
+        recipientId: 'editor_001', // Mock Editor ID
+        recipientName: 'Editor',
+        recipientRole: 'editor',
+        subject: `Question regarding Manuscript #${journalId}`,
+        content: newMessage.value,
+        manuscriptId: journalId,
+        manuscriptTitle: journal.value?.title || 'Unknown Manuscript'
+      })
+    }
+    newMessage.value = ''
+  } catch (e) {
+    console.error('Failed to send message', e)
+    toastStore.add({ message: 'Failed to send message', type: 'error' })
+  }
 }
 
 const showSubmitModal = ref(false)
@@ -504,18 +534,21 @@ Thank you for your valuable comments. We have revised the manuscript accordingly
                 v-for="msg in messages" 
                 :key="msg.id" 
                 class="message-bubble"
-                :class="{ 'sent': msg.sender === 'Me', 'received': msg.sender !== 'Me' }"
+                :class="{ 'sent': msg.senderName === user.username, 'received': msg.senderName !== user.username }"
               >
                 <div class="msg-header">
-                  <span class="sender">{{ msg.sender }}</span>
-                  <span class="date">{{ msg.date }}</span>
+                  <span class="sender">{{ msg.senderName }}</span>
+                  <span class="date">{{ new Date(msg.createdAt).toLocaleString() }}</span>
                 </div>
-                <div class="msg-body">{{ msg.content }}</div>
+                <div class="msg-body" v-html="msg.content"></div>
               </div>
             </div>
             <div class="message-input">
               <textarea v-model="newMessage" placeholder="Type a message to the editor..."></textarea>
               <button class="btn-primary" @click="sendMessage">Send</button>
+            </div>
+            <div v-if="messages.length === 0" class="no-messages">
+              No messages yet. Start a conversation with the editor.
             </div>
           </div>
         </div>

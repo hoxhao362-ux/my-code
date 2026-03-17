@@ -3,11 +3,14 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useToastStore } from '../stores/toast'
+import { useMessageStore } from '../stores/messages'
+import NotificationBadge from './NotificationBadge.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { t, currentLang, setLang } = useI18n()
 const toastStore = useToastStore()
+const messageStore = useMessageStore()
 
 const props = defineProps({
   user: Object,
@@ -426,6 +429,16 @@ const goToLogin = () => {
   })
 }
 
+const goToMessages = () => {
+  if (props.user?.role === 'author') {
+    router.push('/author/messages')
+  } else if (props.user?.role === 'reviewer') {
+    router.push('/reviewer/messages')
+  } else {
+    router.push('/editor/messages')
+  }
+}
+
 const handleLogout = () => {
   showLogoutModal.value = false
   
@@ -660,6 +673,14 @@ const handleLogout = () => {
                  <input type="text" v-model="searchQuery" @keyup.enter="handleSearch" :placeholder="t('nav.searchPlaceholder')" :aria-label="t('nav.searchPlaceholder')" />
               </div>
             </div>
+          </li>
+
+          <!-- 7.5 Messages Icon -->
+          <li v-if="user" class="nav-item" role="none">
+            <a href="#" class="nav-link icon-link" @click.prevent="goToMessages" title="Messages">
+              <span class="icon">✉️</span>
+              <NotificationBadge :count="messageStore.unreadCount" />
+            </a>
           </li>
 
           <!-- 8. Login / User Dropdown -->
@@ -1605,6 +1626,15 @@ const handleLogout = () => {
 /* Ensure no shadows on hover */
 .nav-link:hover, .nav-link.active {
   box-shadow: none;
+}
+
+.nav-link.icon-link {
+  position: relative;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-link.logout {

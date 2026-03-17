@@ -1,6 +1,9 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { EMAIL_TEMPLATES } from '../../../../constants/emailTemplates.js'
+import { useMessageStore } from '../../../../stores/messages'
+import { useToastStore } from '../../../../stores/toast'
+import { emailApi } from '../../../../utils/emailApi.js'
 
 const props = defineProps({
   visible: Boolean,
@@ -12,6 +15,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submit'])
+const messageStore = useMessageStore()
 
 // State
 const isLoading = ref(true)
@@ -227,6 +231,11 @@ const isFormValid = computed(() => {
   }
 })
 
+// Helper to get author email
+const getAuthorEmail = (manuscript) => {
+  return manuscript?.authorEmail || 'author@example.com'
+}
+
 // Methods
 const initData = () => {
   isLoading.value = true
@@ -370,6 +379,41 @@ const handleSubmit = async () => {
   // Simulate API
   await new Promise(resolve => setTimeout(resolve, 1000))
   
+  // Handle System Message Sending
+  if (props.actionType === 'notify_author_recommendation') {
+    // 1. Send System Message
+    if (forms.notifyAuthorRecommendation.channels.includes('system_message')) {
+      try {
+        await messageStore.sendMessage({
+          recipientId: props.manuscript?.authorId || 'user_001', // Fallback ID if missing
+          recipientName: props.manuscript?.author || 'Author',
+          recipientRole: 'author',
+          subject: forms.notifyAuthorRecommendation.subject,
+          content: forms.notifyAuthorRecommendation.content,
+          manuscriptId: props.manuscript?.id,
+          manuscriptTitle: props.manuscript?.title
+        })
+      } catch (error) {
+        console.error('Failed to send system message', error)
+      }
+    }
+
+    // 2. Send Email
+    if (forms.notifyAuthorRecommendation.channels.includes('email')) {
+      try {
+        await emailApi.sendEmail({
+          to: getAuthorEmail(props.manuscript),
+          subject: forms.notifyAuthorRecommendation.subject,
+          content: forms.notifyAuthorRecommendation.content,
+          manuscriptId: props.manuscript?.id
+        })
+        console.log('Email sent successfully')
+      } catch (error) {
+        console.error('Failed to send email', error)
+      }
+    }
+  }
+
   emit('submit', {
     type: props.actionType,
     data: forms[props.actionType.replace(/_([a-z])/g, (g) => g[1].toUpperCase())] // convert snake_case to camelCase key

@@ -177,7 +177,8 @@ const adminRoutes = [
   { path: '/editor/settings', name: 'editor-settings', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
   { path: '/admin/profile-security', redirect: '/editor/settings?tab=security' },
   { path: '/admin/profile-logs', redirect: '/editor/settings?tab=security' },
-  { path: '/admin/notifications', redirect: '/editor/settings?tab=notifications' },
+  { path: '/admin/notifications', redirect: '/editor/messages' },
+  { path: '/submission/notifications', redirect: '/author/messages' },
   { path: '/admin/profile-manuscript-status', name: 'admin-profile-manuscript-status', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor'] } },
   { path: '/editor/feedback-management', redirect: '/editor/dashboard' },
   { path: '/admin/feedback-management', redirect: '/editor/dashboard' },
@@ -190,6 +191,26 @@ const adminRoutes = [
   { path: '/admin/help/consultation', name: 'admin-help-consultation', component: () => import('../views/admin/help/Consultation.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
   { path: '/admin/help/feedback', name: 'admin-help-feedback', component: () => import('../views/admin/help/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
   
+  // 消息中心路由
+  { 
+    path: '/editor/messages', 
+    name: 'editor-messages', 
+    component: () => import('../views/editor/EditorPortal.vue'), 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+  },
+  { 
+    path: '/author/messages', 
+    name: 'author-messages', 
+    component: () => import('../views/communication/MessageCenter.vue'), 
+    meta: { requiresAuth: true, roles: ['author'] } 
+  },
+  { 
+    path: '/reviewer/messages', 
+    name: 'reviewer-messages', 
+    component: () => import('../views/communication/MessageCenter.vue'), 
+    meta: { requiresAuth: true, roles: ['reviewer'] } 
+  },
+
   // 公共后台路由
   { path: '/admin/review-records/:id', name: 'admin-review-records', component: () => import('../views/ReviewRecords.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor'] } },
   // 后台稿件详情路由
