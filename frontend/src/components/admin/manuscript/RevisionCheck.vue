@@ -87,7 +87,7 @@ const handleSubmit = () => {
   <div class="revision-check-container">
     <!-- Header -->
     <header class="header">
-      <h2 class="title">Revision Re-Review (Journal Platform Standard)</h2>
+      <h2 class="title">Revision Re-Review (Peerex Peer Standard)</h2>
       <p class="subtitle">Max 2 revisions allowed. Must verify item by item against original requirements.</p>
       
       <div class="meta-info">

@@ -227,7 +227,7 @@ const handleRemoveModule = (moduleName) => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
-          <h1>期刊投稿平台</h1>
+          <h1>Peerex Peer</h1>
         </div>
         <ul class="navbar-menu">
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="goBack">首页</a></li>
@@ -507,7 +507,7 @@ const handleRemoveModule = (moduleName) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
       </div>
     </footer>
   </div>

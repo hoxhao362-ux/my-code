@@ -283,7 +283,7 @@ const handleAvatarUpload = (event) => {
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
       </div>
     </footer>
   </div>

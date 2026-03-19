@@ -74,7 +74,7 @@ const toasts = computed(() => store.toasts)
 }
 
 .toast-error {
-  border-left-color: var(--color-primary); /* Lancet Red for errors */
+  border-left-color: var(--color-primary); /* Peerex Peer Red for errors */
 }
 .toast-error .toast-icon {
   color: var(--color-primary);

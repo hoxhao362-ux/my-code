@@ -7,24 +7,24 @@
     />
     <div class="filter-bar">
       <div class="filter-group">
-        <label>Subject:</label>
+        <label>{{ $t('templates.filters.subject') }}</label>
         <select v-model="selectedSubject">
-          <option value="all">All Subjects</option>
-          <option value="medicine">Medicine</option>
-          <option value="biology">Biology</option>
-          <option value="public_health">Public Health</option>
+          <option value="all">{{ $t('templates.filters.allSubjects') }}</option>
+          <option value="medicine">{{ $t('templates.filters.medicine') }}</option>
+          <option value="biology">{{ $t('templates.filters.biology') }}</option>
+          <option value="public_health">{{ $t('templates.filters.publicHealth') }}</option>
         </select>
       </div>
       <div class="filter-group checkbox-group">
-        <label>Type:</label>
+        <label>{{ $t('templates.filters.type') }}</label>
         <label class="checkbox-label">
-          <input type="checkbox" value="original" v-model="selectedTypes"> Original Research
+          <input type="checkbox" value="original" v-model="selectedTypes"> {{ $t('templates.filters.original') }}
         </label>
         <label class="checkbox-label">
-          <input type="checkbox" value="review" v-model="selectedTypes"> Review
+          <input type="checkbox" value="review" v-model="selectedTypes"> {{ $t('templates.filters.review') }}
         </label>
         <label class="checkbox-label">
-          <input type="checkbox" value="case_report" v-model="selectedTypes"> Case Report
+          <input type="checkbox" value="case_report" v-model="selectedTypes"> {{ $t('templates.filters.caseReport') }}
         </label>
       </div>
     </div>
@@ -33,19 +33,19 @@
       <div v-for="template in filteredTemplates" :key="template.id" class="template-card">
         <div class="card-preview">
           <div class="preview-overlay">
-            <span>Preview</span>
+            <span>{{ $t('templates.preview') }}</span>
           </div>
         </div>
         <div class="card-body">
           <h3>{{ template.name }}</h3>
           <p class="format-info">{{ template.format }}</p>
-          <a href="#" class="download-link" @click.prevent="downloadTemplate(template)">Download</a>
+          <a href="#" class="download-link" @click.prevent="downloadTemplate(template)">{{ $t('templates.download') }}</a>
         </div>
       </div>
     </div>
 
     <div v-if="showToast" class="toast">
-      Template saved to local drive.
+      {{ $t('templates.toast') }}
     </div>
   </div>
 </template>
@@ -54,7 +54,9 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
@@ -62,14 +64,14 @@ const selectedSubject = ref('all')
 const selectedTypes = ref(['original', 'review', 'case_report'])
 const showToast = ref(false)
 
-const templates = [
-  { id: 1, name: 'Original Research Template', type: 'original', subject: 'medicine', format: 'Word .docx | 55KB' },
-  { id: 2, name: 'Systematic Review Template', type: 'review', subject: 'medicine', format: 'Word .docx | 48KB' },
-  { id: 3, name: 'Case Report Template', type: 'case_report', subject: 'medicine', format: 'Word .docx | 42KB' },
-  { id: 4, name: 'Biology Research Template', type: 'original', subject: 'biology', format: 'LaTeX .tex | 120KB' },
-  { id: 5, name: 'Public Health Survey', type: 'original', subject: 'public_health', format: 'Word .docx | 60KB' },
-  { id: 6, name: 'Clinical Trial Protocol', type: 'original', subject: 'medicine', format: 'Word .docx | 75KB' }
-]
+const templates = computed(() => [
+  { id: 1, name: t('templates.list.originalResearch'), type: 'original', subject: 'medicine', format: 'Word .docx | 55KB' },
+  { id: 2, name: t('templates.list.systematicReview'), type: 'review', subject: 'medicine', format: 'Word .docx | 48KB' },
+  { id: 3, name: t('templates.list.caseReport'), type: 'case_report', subject: 'medicine', format: 'Word .docx | 42KB' },
+  { id: 4, name: t('templates.list.biologyResearch'), type: 'original', subject: 'biology', format: 'LaTeX .tex | 120KB' },
+  { id: 5, name: t('templates.list.publicHealth'), type: 'original', subject: 'public_health', format: 'Word .docx | 60KB' },
+  { id: 6, name: t('templates.list.clinicalTrial'), type: 'original', subject: 'medicine', format: 'Word .docx | 75KB' }
+])
 
 const filteredTemplates = computed(() => {
   return templates.filter(t => {
@@ -80,10 +82,28 @@ const filteredTemplates = computed(() => {
 })
 
 const downloadTemplate = (template) => {
-  showToast.value = true
-  setTimeout(() => {
-    showToast.value = false
-  }, 3000)
+  const templatePaths = {
+    1: '/templates/original-research.docx',
+    2: '/templates/systematic-review.docx',
+    3: '/templates/case-report.docx',
+    4: '/templates/cover-letter.docx',
+    5: '/templates/conflict-of-interest.docx',
+    6: '/templates/author-contribution.docx'
+  }
+  
+  if (templatePaths[template.id]) {
+    window.open(templatePaths[template.id])
+    showToast.value = true
+    setTimeout(() => {
+      showToast.value = false
+    }, 3000)
+  } else {
+    // 兼容原有的下载逻辑
+    showToast.value = true
+    setTimeout(() => {
+      showToast.value = false
+    }, 3000)
+  }
 }
 </script>
 

@@ -2,8 +2,11 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+import { useI18n } from 'vue-i18n'
 import Navigation from '../../../components/Navigation.vue'
 import { exportLogsToExcel, checkExportPermission } from '../../../utils/export'
+
+const { t } = useI18n()
 
 const props = defineProps({
   embedded: {
@@ -17,12 +20,12 @@ const toastStore = useToastStore()
 const user = ref(userStore.user)
 
 // Log Types
-const logTypes = [
-  { value: 'all', label: 'All Logs' },
-  { value: 'operation', label: 'Operation Logs' },
-  { value: 'login', label: 'Login Logs' },
-  { value: 'error', label: 'Error Logs' }
-]
+const logTypes = computed(() => [
+  { value: 'all', label: t('logs.types.all') },
+  { value: 'operation', label: t('logs.types.operation') },
+  { value: 'login', label: t('logs.types.login') },
+  { value: 'error', label: t('logs.types.error') }
+])
 
 // Log Data - Computed from Store
 const logsData = computed(() => userStore.systemLogs)
@@ -126,9 +129,9 @@ const resetFilters = () => {
 
 const getLogTypeName = (type) => {
   const typeMap = {
-    'operation': 'Operation',
-    'login': 'Login',
-    'error': 'Error'
+    'operation': t('logs.types.operation'),
+    'login': t('logs.types.login'),
+    'error': t('logs.types.error')
   }
   return typeMap[type] || type
 }
@@ -156,8 +159,8 @@ const getStatusClass = (status) => {
 
     <main class="content">
       <div class="header">
-        <h1>System Settings - Logs Management</h1>
-        <p class="subtitle">Manage platform operation logs, login logs, and error logs.</p>
+        <h1>{{ $t('logs.title') }}</h1>
+        <p class="subtitle">{{ $t('logs.subtitle') }}</p>
       </div>
 
       <section class="logs-section">
@@ -181,7 +184,7 @@ const getStatusClass = (status) => {
               <input 
                 type="text" 
                 v-model="logFilters.keyword" 
-                placeholder="Search logs..."
+                :placeholder="$t('logs.filters.searchPlaceholder')"
                 class="search-input"
               >
             </div>
@@ -191,18 +194,18 @@ const getStatusClass = (status) => {
                 type="date" 
                 v-model="logFilters.startDate" 
                 class="date-input"
-                placeholder="Start Date"
+                :placeholder="$t('logs.filters.startDate')"
               >
-              <span class="date-separator">to</span>
+              <span class="date-separator">{{ $t('logs.filters.to') }}</span>
               <input 
                 type="date" 
                 v-model="logFilters.endDate" 
                 class="date-input"
-                placeholder="End Date"
+                :placeholder="$t('logs.filters.endDate')"
               >
             </div>
             
-            <button class="btn btn-reset" @click="resetFilters">Reset</button>
+            <button class="btn btn-reset" @click="resetFilters">{{ $t('logs.filters.reset') }}</button>
           </div>
           
           <div class="log-actions">
@@ -211,9 +214,9 @@ const getStatusClass = (status) => {
               class="btn btn-export" 
               @click="exportLogs"
             >
-              Export
+              {{ $t('logs.actions.export') }}
             </button>
-            <button class="btn btn-danger" @click="openConfirmModal">Clear Logs</button>
+            <button class="btn btn-danger" @click="openConfirmModal">{{ $t('logs.actions.clear') }}</button>
           </div>
         </div>
         
@@ -222,14 +225,14 @@ const getStatusClass = (status) => {
           <table class="logs-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Type</th>
-                <th>User</th>
-                <th>Action</th>
-                <th>Target</th>
-                <th>IP Address</th>
-                <th>Time</th>
-                <th>Status</th>
+                <th>{{ $t('logs.table.id') }}</th>
+                <th>{{ $t('logs.table.type') }}</th>
+                <th>{{ $t('logs.table.user') }}</th>
+                <th>{{ $t('logs.table.action') }}</th>
+                <th>{{ $t('logs.table.target') }}</th>
+                <th>{{ $t('logs.table.ip') }}</th>
+                <th>{{ $t('logs.table.time') }}</th>
+                <th>{{ $t('logs.table.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -259,7 +262,7 @@ const getStatusClass = (status) => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm5.5 3a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-3-8a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3.5a1 1 0 0 1-1-1zm8 7a1 1 0 1 0 0-2h-1a1 1 0 1 0 0 2h1z"/>
                     </svg>
-                    <p>No matching logs found</p>
+                    <p>{{ $t('logs.table.empty') }}</p>
                   </div>
                 </td>
               </tr>
@@ -296,22 +299,22 @@ const getStatusClass = (status) => {
     <div class="modal-overlay" v-if="showConfirmModal">
       <div class="modal">
         <div class="modal-header">
-          <h2>Confirm Clear Logs</h2>
+          <h2>{{ $t('logs.actions.confirmClearTitle') }}</h2>
           <button class="close-btn" @click="cancelClearLogs">&times;</button>
         </div>
         <div class="modal-content">
-          <p>Are you sure you want to clear all logs? This action cannot be undone!</p>
+          <p>{{ $t('logs.actions.confirmClearMessage') }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-cancel" @click="cancelClearLogs">Cancel</button>
-          <button class="btn btn-danger" @click="confirmClearLogs">Clear All</button>
+          <button class="btn btn-cancel" @click="cancelClearLogs">{{ $t('logs.actions.cancel') }}</button>
+          <button class="btn btn-danger" @click="confirmClearLogs">{{ $t('logs.actions.confirm') }}</button>
         </div>
       </div>
     </div>
 
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
+        <p>&copy; 2026 {{ $t('common.platformName') }}. All rights reserved.</p>
       </div>
     </footer>
   </div>

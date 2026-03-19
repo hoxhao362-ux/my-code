@@ -5,7 +5,7 @@
       :current-page="'resources-news-events'"
       :logout="userStore.logout"
     />
-    <h1>Upcoming Events</h1>
+    <h1>{{ $t('news.events.title') }}</h1>
     
     <div class="timeline">
       <div v-for="event in events" :key="event.id" class="event-item">
@@ -20,8 +20,8 @@
             <span class="time">🕒 {{ event.time }}</span>
           </div>
           <div class="event-actions">
-            <button class="btn-primary" @click="handleAction(event)">{{ event.type === 'upcoming' ? 'Register' : 'Watch Replay' }}</button>
-            <a href="#" class="add-calendar" @click.prevent="addToCalendar(event)">Add to Calendar</a>
+            <button class="btn-primary" @click="handleAction(event)">{{ event.type === 'upcoming' ? $t('news.events.register') : $t('news.events.watchReplay') }}</button>
+            <a href="#" class="add-calendar" @click.prevent="addToCalendar(event)">{{ $t('news.events.addToCalendar') }}</a>
           </div>
         </div>
       </div>
@@ -34,12 +34,15 @@ import { computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
 import Navigation from '../../../components/Navigation.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
-const events = [
+// TODO: In a real app, fetch these from an API (/api/events)
+const events = computed(() => [
   {
     id: 1,
     title: "The Future of Global Health: Annual Conference",
@@ -73,13 +76,13 @@ const events = [
     type: "past",
     description: "Looking back at the major medical breakthroughs of 2025."
   }
-]
+])
 
 const handleAction = (event) => {
   if (event.type === 'upcoming') {
-    toastStore.add({ message: `Registration for "${event.title}" opened.`, type: 'success' })
+    toastStore.add({ message: t('news.events.toastRegister', { title: event.title }), type: 'success' })
   } else {
-    toastStore.add({ message: `Opening replay for "${event.title}"...`, type: 'info' })
+    toastStore.add({ message: t('news.events.toastReplay', { title: event.title }), type: 'info' })
   }
 }
 
@@ -87,9 +90,9 @@ const addToCalendar = (event) => {
   // Simple ICS generation
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Journal Platform//Events//EN
+PRODID:-//Peerex Peer//Events//EN
 BEGIN:VEVENT
-UID:${event.id}@journalplatform.com
+UID:${event.id}@peerexpeer.com
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
 DTSTART:${event.year}03${event.day}T090000Z
 SUMMARY:${event.title}

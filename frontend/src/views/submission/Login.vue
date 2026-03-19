@@ -46,7 +46,41 @@ const handleLogin = async (role) => {
 }
 
 const handleOrcidLogin = () => {
-  toastStore.add({ message: 'ORCID Login Simulation: Authenticated successfully.', type: 'success' })
+  // 模拟 ORCID 登录流程
+  const orcidWindow = window.open('', 'ORCID Login', 'width=600,height=600')
+  
+  if (orcidWindow) {
+    orcidWindow.document.write(`
+      <html>
+        <head><title>ORCID Login Simulation</title></head>
+        <body style="font-family: Arial; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5;">
+          <h2 style="color: #a6ce39;">ORCID</h2>
+          <p>Connecting to ORCID Registry...</p>
+          <div style="margin-top: 20px; font-weight: bold;">Simulating Authentication...</div>
+        </body>
+      </html>
+    `)
+    
+    setTimeout(() => {
+      if (!orcidWindow.closed) {
+        orcidWindow.close()
+        
+        // 模拟获取到用户信息
+        username.value = 'jane_smith' // 假设这是关联的账号
+        password.value = 'password'   // 自动填充密码
+        
+        toastStore.add({ 
+          message: 'ORCID Authenticated! Welcome, Dr. Jane Smith (0000-0002-1825-0097)', 
+          type: 'success' 
+        })
+        
+        // 自动登录
+        handleLogin('reviewer')
+      }
+    }, 2000)
+  } else {
+    toastStore.add({ message: 'Popup blocked. Please allow popups for ORCID login.', type: 'error' })
+  }
 }
 </script>
 

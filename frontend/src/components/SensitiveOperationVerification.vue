@@ -22,7 +22,7 @@ const emit = defineEmits(['close', 'verify-success'])
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
-const platformName = computed(() => userStore.basicConfig?.platformName || 'Journal Platform')
+const platformName = computed(() => userStore.basicConfig?.platformName || 'Peerex Peer')
 
 // State
 const step = ref(1) // 1: Send Code, 2: Verify

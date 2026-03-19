@@ -183,7 +183,7 @@ export default {
     start: '开始投稿'
   },
   nav: {
-    logo: '期刊投稿平台',
+    logo: 'Peerex Peer',
     home: '首页',
     directory: '目录',
     submissionCenter: '投稿中心',
@@ -558,6 +558,312 @@ export default {
       page: '第 {current} / {total} 页',
       prev: '上一页',
       next: '下一页'
+    }
+  },
+  notification: {
+    title: '系统设置 - 通知设置',
+    subtitle: '管理平台的通知模板和提醒规则',
+    reminderRules: {
+      title: '提醒规则',
+      enableEmail: '启用邮件通知',
+      enableEmailDesc: '是否通过邮件发送通知',
+      enableSMS: '启用短信通知',
+      enableSMSDesc: '是否通过短信发送通知',
+      submissionReminder: '投稿后通知时间（小时）',
+      reviewReminder: '审核后通知时间（小时）',
+      statusUpdateReminder: '状态更新后通知时间（小时）',
+      reviewInterval: '审核周期提醒（天）',
+      placeholder: '请输入通知时间'
+    },
+    emailTemplates: {
+      title: '邮件模板',
+      submissionSuccess: '投稿成功通知',
+      reviewResult: '审核结果通知',
+      statusUpdate: '状态更新通知',
+      reviewerInvitation: '评审邀请通知',
+      recommendationResult: '作者推荐结果通知',
+      subject: '邮件主题',
+      content: '邮件内容',
+      placeholderSubject: '请输入邮件主题',
+      placeholderContent: '请输入邮件内容',
+      tips: '可用变量：'
+    },
+    smsTemplates: {
+      title: '短信模板',
+      submissionSuccess: '投稿成功通知',
+      reviewResult: '审核结果通知',
+      statusUpdate: '状态更新通知',
+      content: '短信内容',
+      placeholder: '请输入短信内容'
+    },
+    announcement: {
+      title: '公告设置',
+      desc: '管理平台的公告信息，发布的公告将在主页展示',
+      addTitle: '新增公告',
+      editTitle: '编辑公告',
+      listTitle: '公告列表',
+      form: {
+        title: '公告标题',
+        content: '公告内容',
+        titlePlaceholder: '请输入公告标题',
+        contentPlaceholder: '请输入公告内容'
+      },
+      actions: {
+        add: '添加公告',
+        saveEdit: '保存编辑',
+        cancel: '取消',
+        edit: '编辑',
+        delete: '删除',
+        confirmDelete: '确定要删除这条公告吗？'
+      },
+      empty: '暂无公告，请添加第一条公告'
+    },
+    actions: {
+      reset: '重置',
+      save: '保存配置',
+      saveSuccess: '通知配置已保存！',
+      resetSuccess: '配置已重置为默认值！',
+      addSuccess: '公告添加成功！',
+      editSuccess: '公告编辑成功！',
+      deleteSuccess: '公告删除成功！',
+      incomplete: '请填写完整的公告信息'
+    },
+    basicConfig: {
+      title: '系统设置 - 基础配置',
+      subtitle: '管理平台的基础信息和规则',
+      platformInfo: {
+        title: '平台基本信息',
+        name: '平台名称',
+        logo: '平台Logo',
+        placeholderName: '请输入平台名称',
+        placeholderLogo: '点击上传Logo'
+      },
+      contact: {
+        title: '联系方式',
+        email: '联系邮箱',
+        phone: '联系电话',
+        placeholderEmail: '请输入联系邮箱',
+        placeholderPhone: '请输入联系电话'
+      },
+      rules: {
+        title: '投稿规则',
+        label: '投稿规则',
+        placeholder: '请输入投稿规则'
+      },
+      copyright: {
+        title: '版权信息',
+        label: '版权信息',
+        placeholder: '请输入版权信息'
+      },
+      actions: {
+        reset: '重置',
+        save: '保存配置',
+        saveSuccess: '基础配置已保存！',
+        resetSuccess: '配置已重置为默认值！'
+      }
+    }
+  },
+  reviewer: {
+    dashboard: '审核员后台',
+    stats: {
+      totalJournals: '总投稿数',
+      pendingJournals: '待审核稿件',
+      stage1Journals: '初审稿件',
+      stage2Journals: '复审稿件'
+    },
+    pendingList: {
+      title: '待审核稿件',
+      empty: '暂无待审核稿件',
+      author: '作者',
+      date: '投稿日期',
+      module: '模块'
+    },
+    status: {
+      pending: '待审核',
+      reviewing: '审稿中',
+      stage1: '初审',
+      stage2: '复审',
+      stage3: '终审',
+      accepted: '已通过',
+      rejected: '已拒绝'
+    },
+    permissionDenied: '您没有权限访问审核员后台'
+  },
+  author: {
+    dashboard: '作者后台',
+    stats: {
+      totalJournals: '总投稿数',
+      pendingJournals: '待审核稿件',
+      passedJournals: '已通过稿件',
+      rejectedJournals: '已拒绝稿件',
+      transferJournals: '建议转投'
+    },
+    quickActions: {
+      newSubmission: '+ 新投稿'
+    },
+    mySubmissions: {
+      title: '我的投稿',
+      empty: '您还没有投稿记录',
+      date: '投稿日期',
+      module: '模块',
+      transferAction: '查看转投建议'
+    },
+    transferDetails: {
+      title: '转投建议详情',
+      suggestedJournal: '推荐期刊',
+      reason: '编辑留言',
+      acceptBtn: '接受转投',
+      declineBtn: '拒绝转投',
+      acceptConfirm: '确定要将此稿件转投到推荐期刊吗？',
+      declineConfirm: '如果拒绝，您的稿件将从当前期刊撤稿。是否继续？',
+      successAccept: '稿件已成功转投。',
+      successDecline: '已拒绝转投，稿件已撤回。'
+    },
+    permissionDenied: '您没有权限访问作者后台'
+  },
+  logs: {
+    title: '系统设置 - 日志管理',
+    subtitle: '管理平台的操作日志、登录日志和错误日志。',
+    types: {
+      all: '所有日志',
+      operation: '操作日志',
+      login: '登录日志',
+      error: '错误日志'
+    },
+    filters: {
+      searchPlaceholder: '搜索日志...',
+      startDate: '开始日期',
+      endDate: '结束日期',
+      reset: '重置',
+      to: '至'
+    },
+    actions: {
+      export: '导出',
+      clear: '清空日志',
+      confirmClearTitle: '确认清空日志',
+      confirmClearMessage: '确定要清空所有日志吗？此操作无法撤销！',
+      cancel: '取消',
+      confirm: '确认清空'
+    },
+    table: {
+      id: 'ID',
+      type: '类型',
+      user: '用户',
+      action: '操作',
+      target: '目标',
+      ip: 'IP地址',
+      time: '时间',
+      status: '状态',
+      empty: '未找到匹配的日志'
+    }
+  },
+  clinicalTerminology: {
+    irbApproval: '机构审查委员会 (IRB) 批准',
+    informedConsent: '知情同意声明',
+    dataAvailability: '数据可用性声明',
+    conflictOfInterest: '利益冲突声明',
+    fundingStatement: '资金声明',
+    authorshipContribution: '作者贡献 (ICMJE)',
+    orcidRequirement: '所有作者均需提供 ORCID iD',
+    patientConsent: '需要患者同意书',
+    clinicalTrialRegistration: '临床试验注册号'
+  },
+  guide: {
+    downloadPdf: '下载完整指南 PDF',
+    preparation: {
+      title: '准备工作',
+      desc: '在提交稿件之前，请确保您仔细阅读了以下指南。遵守这些指南将确保评审过程的顺利进行。',
+      ethicsTitle: '伦理与披露',
+      ethicsDesc: '所有作者必须披露任何可能不当影响（偏见）其工作的、与其他个人或组织的财务和个人关系。'
+    },
+    formatting: {
+      title: '格式要求',
+      textTitle: '文本格式',
+      textDesc: '稿件应以 Word 格式提交。使用标准字体（如 Times New Roman、Arial），大小为 12 磅。整个稿件应使用双倍行距。',
+      figuresTitle: '图表要求',
+      figuresDesc: '图片应为高分辨率（最低 300 dpi）。表格应为可编辑文本，而非图片。'
+    },
+    process: {
+      title: '评审过程',
+      desc: '本期刊采用双盲同行评审过程。所有稿件首先由编辑进行初筛。符合期刊标准的稿件将被发送给至少两名独立审稿人。'
+    },
+    policies: {
+      title: '期刊政策',
+      openAccessTitle: '开放获取',
+      openAccessDesc: '我们为作者提供将其文章设为开放获取的选项。需缴纳出版费。',
+      copyrightTitle: '版权',
+      copyrightDesc: '作者在知识共享署名许可下保留其作品的版权。'
+    },
+    faq: {
+      title: '常见问题',
+      searchPlaceholder: '搜索常见问题...'
+    },
+    toast: 'PDF 下载已开始...',
+    articleTypes: {
+      original: {
+        title: '原创研究 (Original Research)',
+        structure: '稿件应包括：引言、方法、结果、讨论和结论。',
+        abstract: '需要结构化摘要，包含四个部分：背景、方法、结果和解释。',
+        figures: '最多 5 个图表。',
+        ethics: '必须包含 IRB 批准、患者同意和数据共享声明。'
+      },
+      review: {
+        title: '综述文章 (Review Article)',
+        structure: '综合性综述，需有清晰的标题和逻辑流程。',
+        abstract: '总结主要观点的非结构化摘要。',
+        figures: '最多 8 个图表。',
+        ethics: '需要利益冲突声明。'
+      },
+      caseReport: {
+        title: '病例报告 (Case Report)',
+        structure: '应包括：引言、病例介绍、讨论和结论。',
+        abstract: '总结病例的非结构化摘要。',
+        figures: '最多 3 个图表。',
+        ethics: '必须获得并声明患者发表同意书。'
+      }
+    }
+  },
+  templates: {
+    filters: {
+      subject: '学科领域:',
+      type: '文章类型:',
+      allSubjects: '所有学科',
+      medicine: '医学',
+      biology: '生物学',
+      publicHealth: '公共卫生',
+      original: '原创研究',
+      review: '综述文章',
+      caseReport: '病例报告'
+    },
+    preview: '预览',
+    download: '下载',
+    toast: '模板已开始下载。',
+    list: {
+      originalResearch: '原创研究模板',
+      systematicReview: '系统综述模板',
+      caseReport: '病例报告模板',
+      biologyResearch: '生物学研究模板',
+      publicHealth: '公共卫生调查',
+      clinicalTrial: '临床试验方案'
+    }
+  },
+  news: {
+    events: {
+      title: '即将举行的活动',
+      register: '注册',
+      watchReplay: '观看回放',
+      addToCalendar: '添加到日历',
+      toastRegister: '“{title}” 注册已开放。',
+      toastReplay: '正在打开 “{title}” 的回放...'
+    },
+    calls: {
+      title: '征稿启事',
+      intro: '将您的稿件提交至我们即将出版的特刊。',
+      deadline: '截止日期：',
+      guestEditor: '客座编辑：',
+      submitNow: '立即提交',
+      pastIssues: '往期特刊',
+      ended: '已结束 {date}'
     }
   }
 }

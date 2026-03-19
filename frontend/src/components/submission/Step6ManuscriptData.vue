@@ -266,7 +266,41 @@ const confirmSubmit = async () => {
         />
       </div>
       
-      <div class="form-group">
+      <div class="form-group" v-if="store.formData.articleType === 'original'">
+        <label class="form-label">Structured Abstract <span class="required">*</span></label>
+        <div class="structured-abstract">
+          <div class="abstract-section">
+            <label>Background</label>
+            <textarea v-model="store.formData.structuredAbstract.background" 
+              placeholder="Describe the context and purpose of the study..."
+              maxlength="100" class="form-input"></textarea>
+            <span class="char-count">{{ store.formData.structuredAbstract.background?.length || 0 }}/100</span>
+          </div>
+          <div class="abstract-section">
+            <label>Methods</label>
+            <textarea v-model="store.formData.structuredAbstract.methods" 
+              placeholder="Describe the study design, participants, and analytical methods..."
+              maxlength="150" class="form-input"></textarea>
+            <span class="char-count">{{ store.formData.structuredAbstract.methods?.length || 0 }}/150</span>
+          </div>
+          <div class="abstract-section">
+            <label>Findings</label>
+            <textarea v-model="store.formData.structuredAbstract.findings" 
+              placeholder="Present the main findings with statistical significance..."
+              maxlength="200" class="form-input"></textarea>
+            <span class="char-count">{{ store.formData.structuredAbstract.findings?.length || 0 }}/200</span>
+          </div>
+          <div class="abstract-section">
+            <label>Interpretation</label>
+            <textarea v-model="store.formData.structuredAbstract.interpretation" 
+              placeholder="Explain the meaning and implications of the findings..."
+              maxlength="100" class="form-input"></textarea>
+            <span class="char-count">{{ store.formData.structuredAbstract.interpretation?.length || 0 }}/100</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group" v-else>
         <label class="form-label">{{ t('manuscriptData.abstract') }} <span class="required">*</span></label>
         <QuillEditor 
           v-model:content="store.formData.abstract" 
@@ -781,6 +815,40 @@ const confirmSubmit = async () => {
   position: relative;
   display: flex;
   align-items: center;
+}
+
+/* Structured Abstract */
+.structured-abstract {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.abstract-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.abstract-section label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.abstract-section textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.char-count {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-align: right;
 }
 
 /* Checkbox style to look like radio */.role-checkbox {

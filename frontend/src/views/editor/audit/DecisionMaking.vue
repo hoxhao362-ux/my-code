@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+import { usePlatformStore } from '../../../stores/platform'
 import Navigation from '../../../components/Navigation.vue'
 import RichTextEditor from '../../../components/RichTextEditor.vue'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -70,6 +71,23 @@ const showModal = ref(false)
 const currentJournal = ref(null)
 const decisionType = ref('')
 const decisionComments = ref('')
+const transferJournal = ref('')
+const transferReason = ref('')
+
+// Setup platform store to get transfer journals
+const platformStore = usePlatformStore()
+onMounted(() => {
+  if (platformStore.journals.length === 0) {
+    platformStore.fetchJournals()
+  }
+})
+
+const transferJournals = computed(() => {
+  const currentJournalId = 'lancet' // Mock current
+  return platformStore.journals
+    .filter(j => j.id !== currentJournalId)
+    .map(j => ({ id: j.id, name: j.name }))
+})
 
 // Structured Decision Rationale
 const decisionRationale = ref({
@@ -117,7 +135,8 @@ const autoConsolidateReviews = (journal) => {
 }
 
 const submitDecision = () => {
-  if (!decisionComments.value) {
+  // Validate comments unless it's a transfer or consensus meeting
+  if (!decisionComments.value && decisionType.value !== 'Transfer' && decisionType.value !== 'Consensus Meeting') {
     toastStore.add({ message: t('editor.audit.decisionMaking.alerts.enterComments'), type: 'warning' })
     return
   }
@@ -149,7 +168,31 @@ const submitDecision = () => {
     // New Option: Return to Reviewer (Directly restart review process)
     newStatus = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW // or 'under_peer_review'
   } else if (decisionType.value === 'Transfer') {
-    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
+    if (!transferJournal.value || !transferReason.value) {
+      toastStore.add({ message: 'Please select a target journal and provide a reason for transfer.', type: 'warning' })
+      return
+    }
+    newStatus = MANUSCRIPT_STATUS.TRANSFER_SUGGESTED || 'transfer_suggested'
+    
+    // Add transfer metadata
+    const targetJournalObj = platformStore.journals.find(j => j.name === transferJournal.value)
+    journal.transferTo = targetJournalObj ? targetJournalObj.id : 'unknown'
+    journal.transferReason = transferReason.value
+    
+    // Notify author
+    if (!userStore.notifications) userStore.notifications = []
+    const newNotification = {
+      id: Date.now(),
+      type: 'transfer_suggested',
+      title: 'Transfer Suggestion after Review',
+      message: `The editor has reviewed your manuscript "${journal.title}" and suggested transferring it to ${transferJournal.value}. Please review it in your dashboard.`,
+      date: new Date().toISOString().split('T')[0],
+      read: false,
+      manuscriptId: journal.id,
+      targetUser: journal.author
+    }
+    userStore.notifications.unshift(newNotification)
+    localStorage.setItem('notifications', JSON.stringify(userStore.notifications))
   } else if (decisionType.value === 'Consensus Meeting') {
     // Move to Meeting Queue
     journal.decisionStage = 'consensus_meeting'
@@ -361,6 +404,19 @@ const assignIndependentReviewer = (journal) => {
               </select>
               <div v-if="decisionType === 'Return to Reviewer'" class="alert-box warning">
                 <small><strong>Note:</strong> {{ t('editor.audit.decisionMaking.modals.decision.returnWarning') }}</small>
+              </div>
+              <div v-if="decisionType === 'Transfer'" class="transfer-section" style="margin-top: 1rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label class="input-label required" style="display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; font-size: 0.9rem;">Select Target Journal</label>
+                  <select v-model="transferJournal" class="form-control">
+                    <option value="" disabled>Select a sister journal...</option>
+                    <option v-for="j in transferJournals" :key="j.id" :value="j.name">{{ j.name }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="input-label required" style="display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; font-size: 0.9rem;">Transfer Reason</label>
+                  <textarea v-model="transferReason" class="form-control" rows="3" placeholder="Explain why this journal is a better fit..."></textarea>
+                </div>
               </div>
             </div>
 

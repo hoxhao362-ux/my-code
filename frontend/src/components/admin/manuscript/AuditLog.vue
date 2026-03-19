@@ -51,7 +51,7 @@ const showDetail = (log) => {
     <!-- Header -->
     <header class="header">
       <h2 class="title">Full Process Audit Log (Tamper-Proof)</h2>
-      <p class="subtitle">Logs are automatically generated, permanently stored, and cannot be deleted or modified (Journal Platform Compliance).</p>
+      <p class="subtitle">Logs are automatically generated, permanently stored, and cannot be deleted or modified (Peerex Peer Compliance).</p>
       
       <div class="filter-bar">
         <div class="filter-group">

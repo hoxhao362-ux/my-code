@@ -159,7 +159,7 @@ const handleSave = () => {
     <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <h2 class="title">Structured Initial Review Checklist (Journal Platform Compliance)</h2>
+        <h2 class="title">Structured Initial Review Checklist (Peerex Peer Compliance)</h2>
         <p class="subtitle">Please check item by item. All items must be verified. Remarks required for non-compliant items.</p>
       </div>
       <div class="header-right">

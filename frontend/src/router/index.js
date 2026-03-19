@@ -3,7 +3,8 @@ import { useUserStore } from '../stores/user'
 import { useToastStore } from '../stores/toast'
 
 const mainRoutes = [
-  { path: '/', redirect: '/home' },
+  { path: '/', name: 'journal-hub', component: () => import('../views/JournalHub.vue') },
+  { path: '/journals/:id', name: 'journal-home', component: () => import('../views/JournalHome.vue') },
   { path: '/home', name: 'main-home', component: () => import('../views/MainHome.vue') },
   { path: '/directory', name: 'main-directory', component: () => import('../views/MainDirectory.vue') },
   { path: '/journals/all', name: 'journal-list', component: () => import('../views/journals/JournalList.vue') },
@@ -369,11 +370,11 @@ router.beforeEach((to, from, next) => {
   // 同步主站用户上下文 (Read-Only)
   userStore.syncUserContext('main')
   
-  // 根路径重定向到主站首页
-  if (to.path === '/') {
-    next({ name: 'main-home' })
-    return
-  }
+  // 根路径不重定向，展示Hub
+  // if (to.path === '/') {
+  //   next({ name: 'main-home' })
+  //   return
+  // }
 
   next()
 })

@@ -2,36 +2,38 @@
 import { ref, computed } from 'vue'
 import { truncateHtml } from '../utils/helpers.js'
 import { useToastStore } from '../stores/toast'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const toastStore = useToastStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
 if (props.user?.role !== 'reviewer' && props.user?.role !== 'admin') {
-  toastStore.add({ message: '您没有权限访问审核员后台', type: 'warning' })
+  toastStore.add({ message: t('reviewer.permissionDenied'), type: 'warning' })
   props.navigateTo('home')
 }
 
 // 统计数据
 const stats = computed(() => {
   // 所有待审核状态：待审核、审稿中、待初审、待复审、待终审
-  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审']
+  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审', 'Pending', 'Under Review', 'pending_initial_review', 'under_peer_review']
   
   return {
     totalJournals: props.journals.length,
     pendingJournals: props.journals.filter(journal => pendingStatuses.includes(journal.status)).length,
-    reviewStage1Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && journal.reviewStage === '初审').length,
-    reviewStage2Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && journal.reviewStage === '复审').length
+    reviewStage1Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && (journal.reviewStage === '初审' || journal.reviewStage === 'Initial Review')).length,
+    reviewStage2Journals: props.journals.filter(journal => pendingStatuses.includes(journal.status) && (journal.reviewStage === '复审' || journal.reviewStage === 'Peer Review')).length
   }
 })
 
 // 待审核稿件 - 审核员只看到复审阶段，管理员看到初审和终审阶段
 const pendingJournals = computed(() => {
   const isAdmin = props.user?.role === 'admin'
-  const allowedStages = isAdmin ? ['初审', '终审'] : ['复审']
+  const allowedStages = isAdmin ? ['初审', '终审', 'Initial Review', 'Final Decision'] : ['复审', 'Peer Review']
   
   // 所有待审核状态：待审核、审稿中、待初审、待复审、待终审
-  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审']
+  const pendingStatuses = ['待审核', '审稿中', '待初审', '待复审', '待终审', 'Pending', 'Under Review', 'pending_initial_review', 'under_peer_review']
   
   return props.journals.filter(journal => {
     return pendingStatuses.includes(journal.status) && allowedStages.includes(journal.reviewStage)
@@ -61,13 +63,13 @@ const viewJournalDetail = (id) => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
-          <h1>期刊投稿平台</h1>
+          <h1>{{ $t('common.platformName') }}</h1>
         </div>
         <ul class="navbar-menu">
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="goBack">首页</a></li>
-          <li class="nav-item"><a href="#" class="nav-link active">审核员后台</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
-          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">退出登录</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="goBack">{{ $t('nav.home') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link active">{{ $t('reviewer.dashboard') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">{{ $t('nav.profile') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">{{ $t('nav.logout') }}</a></li>
         </ul>
       </div>
     </nav>
@@ -75,31 +77,31 @@ const viewJournalDetail = (id) => {
     <!-- 审核员后台内容 -->
     <main class="reviewer-content">
       <div class="reviewer-wrapper">
-        <h2 class="page-title">审核员后台</h2>
+        <h2 class="page-title">{{ $t('reviewer.dashboard') }}</h2>
         
         <!-- 统计数据 -->
         <div class="stats-section">
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.totalJournals }}</h3>
-            <p class="stat-label">总投稿数</p>
+            <p class="stat-label">{{ $t('reviewer.stats.totalJournals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.pendingJournals }}</h3>
-            <p class="stat-label">待审核稿件</p>
+            <p class="stat-label">{{ $t('reviewer.stats.pendingJournals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.reviewStage1Journals }}</h3>
-            <p class="stat-label">初审稿件</p>
+            <p class="stat-label">{{ $t('reviewer.stats.stage1Journals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.reviewStage2Journals }}</h3>
-            <p class="stat-label">复审稿件</p>
+            <p class="stat-label">{{ $t('reviewer.stats.stage2Journals') }}</p>
           </div>
         </div>
         
         <!-- 待审核稿件 -->
         <div class="pending-journals">
-          <h3 class="section-title">待审核稿件</h3>
+          <h3 class="section-title">{{ $t('reviewer.pendingList.title') }}</h3>
           
           <div v-if="pendingJournals.length > 0" class="journal-list">
             <div 
@@ -109,7 +111,7 @@ const viewJournalDetail = (id) => {
             >
               <div class="journal-info">
                 <h4 class="journal-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h4>
-                <p class="journal-meta">作者：{{ journal.author }} | 投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
+                <p class="journal-meta">{{ $t('reviewer.pendingList.author') }}：{{ journal.author }} | {{ $t('reviewer.pendingList.date') }}：{{ journal.date }} | {{ $t('reviewer.pendingList.module') }}：{{ journal.module }}</p>
                 <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
               </div>
               <div class="journal-status">
@@ -122,7 +124,7 @@ const viewJournalDetail = (id) => {
           </div>
           
           <div v-else class="no-journals">
-            <p>暂无待审核稿件</p>
+            <p>{{ $t('reviewer.pendingList.empty') }}</p>
           </div>
         </div>
       </div>
@@ -131,7 +133,7 @@ const viewJournalDetail = (id) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 {{ $t('common.platformName') }}. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -400,6 +402,7 @@ const viewJournalDetail = (id) => {
 .btn-primary:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
+  opacity: 0.7;
   opacity: 0.7;
 }
 

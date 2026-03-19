@@ -443,7 +443,7 @@ export default {
               declaration: {
                 title: 'Editorial Declaration',
                 reviewedComments: 'I have reviewed all reviewer comments and ensured they are accurately reflected in this request.',
-                deadlineGuidelines: 'The revision deadline is set in accordance with the Journal Submission Platform editorial guidelines.',
+                deadlineGuidelines: 'The revision deadline is set in accordance with the Peerex Peer editorial guidelines.',
                 scopePolicy: 'I confirm that this revision request is consistent with the journal policies.'
               },
               tooltips: {
@@ -635,7 +635,7 @@ export default {
       },
       revisionHandling: {
         title: 'Revision Handling',
-        subtitle: 'Journal Platform-Style Revision Audit & Control',
+        subtitle: 'Peerex Peer-Style Revision Audit & Control',
         columns: {
           id: 'MS ID',
           title: 'Title',
@@ -718,7 +718,7 @@ export default {
     }
   },
   nav: {
-    logo: '期刊平台名字',
+    logo: 'Peerex Peer',
     home: 'Home',
     directory: 'Directory',
     submissionCenter: 'Submission Center',
@@ -824,7 +824,7 @@ export default {
     helpSupport: 'Help & Support'
   },
   home: {
-    topBar: 'Welcome to the Academic Journal Platform',
+    topBar: 'Welcome to the Peerex Peer Platform',
     hero: {
       title: 'Advancing Science, Together',
       subtitle: 'A modern platform for academic excellence and peer-reviewed research.',
@@ -966,7 +966,7 @@ export default {
     },
     welcome: {
       title: 'Welcome to Submission Module for',
-      platform: 'Journal Submission Platform'
+      platform: 'Peerex Peer'
     },
     login: {
       title: 'Login to Submit System',
@@ -998,7 +998,7 @@ export default {
       }
     },
     register: {
-      title: 'Journal Platform - Register Account',
+      title: 'Peerex Peer - Register Account',
       alreadyHaveAccount: 'Already have an account?',
       backToLogin: 'Login now',
       btn: {
@@ -1330,6 +1330,312 @@ export default {
       page: 'Page {current} / {total}',
       prev: 'Previous',
       next: 'Next'
+    }
+  },
+  notification: {
+    title: 'System Settings - Notification Settings',
+    subtitle: 'Manage platform notification templates and reminder rules',
+    reminderRules: {
+      title: 'Reminder Rules',
+      enableEmail: 'Enable Email Notification',
+      enableEmailDesc: 'Send notifications via email',
+      enableSMS: 'Enable SMS Notification',
+      enableSMSDesc: 'Send notifications via SMS',
+      submissionReminder: 'Post-submission Notification (Hours)',
+      reviewReminder: 'Post-review Notification (Hours)',
+      statusUpdateReminder: 'Status Update Notification (Hours)',
+      reviewInterval: 'Review Cycle Reminder (Days)',
+      placeholder: 'Enter notification time'
+    },
+    emailTemplates: {
+      title: 'Email Templates',
+      submissionSuccess: 'Submission Success',
+      reviewResult: 'Review Result',
+      statusUpdate: 'Status Update',
+      reviewerInvitation: 'Reviewer Invitation',
+      recommendationResult: 'Recommendation Result',
+      subject: 'Email Subject',
+      content: 'Email Content',
+      placeholderSubject: 'Enter email subject',
+      placeholderContent: 'Enter email content',
+      tips: 'Available variables:'
+    },
+    smsTemplates: {
+      title: 'SMS Templates',
+      submissionSuccess: 'Submission Success',
+      reviewResult: 'Review Result',
+      statusUpdate: 'Status Update',
+      content: 'SMS Content',
+      placeholder: 'Enter SMS content'
+    },
+    announcement: {
+      title: 'Announcement Settings',
+      desc: 'Manage platform announcements displayed on the homepage',
+      addTitle: 'New Announcement',
+      editTitle: 'Edit Announcement',
+      listTitle: 'Announcement List',
+      form: {
+        title: 'Title',
+        content: 'Content',
+        titlePlaceholder: 'Enter announcement title',
+        contentPlaceholder: 'Enter announcement content'
+      },
+      actions: {
+        add: 'Add Announcement',
+        saveEdit: 'Save Changes',
+        cancel: 'Cancel',
+        edit: 'Edit',
+        delete: 'Delete',
+        confirmDelete: 'Are you sure you want to delete this announcement?'
+      },
+      empty: 'No announcements yet. Please add the first one.'
+    },
+    actions: {
+      reset: 'Reset',
+      save: 'Save Configuration',
+      saveSuccess: 'Notification configuration saved!',
+      resetSuccess: 'Configuration reset to default!',
+      addSuccess: 'Announcement added successfully!',
+      editSuccess: 'Announcement edited successfully!',
+      deleteSuccess: 'Announcement deleted successfully!',
+      incomplete: 'Please fill in complete announcement information'
+    },
+    basicConfig: {
+      title: 'System Settings - Basic Configuration',
+      subtitle: 'Manage platform basic information and rules',
+      platformInfo: {
+        title: 'Platform Information',
+        name: 'Platform Name',
+        logo: 'Platform Logo',
+        placeholderName: 'Enter platform name',
+        placeholderLogo: 'Click to upload Logo'
+      },
+      contact: {
+        title: 'Contact Information',
+        email: 'Contact Email',
+        phone: 'Contact Phone',
+        placeholderEmail: 'Enter contact email',
+        placeholderPhone: 'Enter contact phone'
+      },
+      rules: {
+        title: 'Submission Rules',
+        label: 'Submission Rules',
+        placeholder: 'Enter submission rules'
+      },
+      copyright: {
+        title: 'Copyright Information',
+        label: 'Copyright Information',
+        placeholder: 'Enter copyright information'
+      },
+      actions: {
+        reset: 'Reset',
+        save: 'Save Configuration',
+        saveSuccess: 'Basic configuration saved!',
+        resetSuccess: 'Configuration reset to default!'
+      }
+    }
+  },
+  reviewer: {
+    dashboard: 'Reviewer Dashboard',
+    stats: {
+      totalJournals: 'Total Submissions',
+      pendingJournals: 'Pending Reviews',
+      stage1Journals: 'Initial Review',
+      stage2Journals: 'Peer Review'
+    },
+    pendingList: {
+      title: 'Pending Reviews',
+      empty: 'No pending reviews',
+      author: 'Author',
+      date: 'Date',
+      module: 'Module'
+    },
+    status: {
+      pending: 'Pending',
+      reviewing: 'Under Review',
+      stage1: 'Initial Review',
+      stage2: 'Peer Review',
+      stage3: 'Final Decision',
+      accepted: 'Accepted',
+      rejected: 'Rejected'
+    },
+    permissionDenied: 'You do not have permission to access the Reviewer Dashboard'
+  },
+  author: {
+    dashboard: 'Author Dashboard',
+    stats: {
+      totalJournals: 'Total Submissions',
+      pendingJournals: 'Pending',
+      passedJournals: 'Accepted',
+      rejectedJournals: 'Rejected',
+      transferJournals: 'Transfer Suggested'
+    },
+    quickActions: {
+      newSubmission: '+ New Submission'
+    },
+    mySubmissions: {
+      title: 'My Submissions',
+      empty: 'No submissions yet',
+      date: 'Date',
+      module: 'Module',
+      transferAction: 'Review Transfer'
+    },
+    transferDetails: {
+      title: 'Transfer Recommendation',
+      suggestedJournal: 'Recommended Journal',
+      reason: 'Editor\'s Note',
+      acceptBtn: 'Accept Transfer',
+      declineBtn: 'Decline Transfer',
+      acceptConfirm: 'Are you sure you want to transfer this manuscript to the recommended journal?',
+      declineConfirm: 'If you decline, your manuscript will be considered withdrawn from the current journal. Do you want to proceed?',
+      successAccept: 'Manuscript successfully transferred.',
+      successDecline: 'Transfer declined. Manuscript withdrawn.'
+    },
+    permissionDenied: 'You do not have permission to access the Author Dashboard'
+  },
+  logs: {
+    title: 'System Settings - Logs Management',
+    subtitle: 'Manage platform operation logs, login logs, and error logs.',
+    types: {
+      all: 'All Logs',
+      operation: 'Operation Logs',
+      login: 'Login Logs',
+      error: 'Error Logs'
+    },
+    filters: {
+      searchPlaceholder: 'Search logs...',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      reset: 'Reset',
+      to: 'to'
+    },
+    actions: {
+      export: 'Export',
+      clear: 'Clear Logs',
+      confirmClearTitle: 'Confirm Clear Logs',
+      confirmClearMessage: 'Are you sure you want to clear all logs? This action cannot be undone!',
+      cancel: 'Cancel',
+      confirm: 'Clear All'
+    },
+    table: {
+      id: 'ID',
+      type: 'Type',
+      user: 'User',
+      action: 'Action',
+      target: 'Target',
+      ip: 'IP Address',
+      time: 'Time',
+      status: 'Status',
+      empty: 'No matching logs found'
+    }
+  },
+  clinicalTerminology: {
+    irbApproval: 'Institutional Review Board (IRB) Approval',
+    informedConsent: 'Informed Consent Statement',
+    dataAvailability: 'Data Availability Statement',
+    conflictOfInterest: 'Declaration of Competing Interest',
+    fundingStatement: 'Funding Statement',
+    authorshipContribution: 'Author Contributions (ICMJE)',
+    orcidRequirement: 'ORCID iD Required for All Authors',
+    patientConsent: 'Patient Consent Form Required',
+    clinicalTrialRegistration: 'Clinical Trial Registration Number'
+  },
+  guide: {
+    downloadPdf: 'Download Full Guide PDF',
+    preparation: {
+      title: 'Preparation',
+      desc: 'Before submitting your manuscript, please ensure you have read the following guidelines carefully. Adherence to these guidelines will ensure a smooth review process.',
+      ethicsTitle: 'Ethics & Disclosure',
+      ethicsDesc: 'All authors must disclose any financial and personal relationships with other people or organizations that could inappropriately influence (bias) their work.'
+    },
+    formatting: {
+      title: 'Formatting',
+      textTitle: 'Text Formatting',
+      textDesc: 'Manuscripts should be submitted in Word format. Use a standard font (e.g., Times New Roman, Arial) at 12 pt size. Double-space the entire manuscript.',
+      figuresTitle: 'Figures & Tables',
+      figuresDesc: 'Figures should be high-resolution (min 300 dpi). Tables should be editable text, not images.'
+    },
+    process: {
+      title: 'Review Process',
+      desc: 'Our journal follows a double-blind peer review process. All manuscripts are initially screened by the editor. Manuscripts that meet the journal\'s standards are sent to at least two independent reviewers.'
+    },
+    policies: {
+      title: 'Policies',
+      openAccessTitle: 'Open Access',
+      openAccessDesc: 'We offer authors the option to make their article open access. A publication fee applies.',
+      copyrightTitle: 'Copyright',
+      copyrightDesc: 'Authors retain copyright of their work under a Creative Commons Attribution License.'
+    },
+    faq: {
+      title: 'FAQ',
+      searchPlaceholder: 'Search FAQs...'
+    },
+    toast: 'PDF download started...',
+    articleTypes: {
+      original: {
+        title: 'Original Research',
+        structure: 'Manuscripts should include: Introduction, Methods, Results, Discussion, and Conclusion.',
+        abstract: 'A structured abstract is required with four sections: Background, Methods, Findings, and Interpretation.',
+        figures: 'Maximum 5 figures and/or tables.',
+        ethics: 'Must include IRB approval, patient consent, and data sharing statements.'
+      },
+      review: {
+        title: 'Review Article',
+        structure: 'Comprehensive reviews with clear headings and logical flow.',
+        abstract: 'Unstructured abstract summarizing the main points.',
+        figures: 'Maximum 8 figures and/or tables.',
+        ethics: 'Conflict of interest statement required.'
+      },
+      caseReport: {
+        title: 'Case Report',
+        structure: 'Should include: Introduction, Case Presentation, Discussion, and Conclusion.',
+        abstract: 'Unstructured abstract summarizing the case.',
+        figures: 'Maximum 3 figures and/or tables.',
+        ethics: 'Patient consent for publication must be obtained and stated.'
+      }
+    }
+  },
+  templates: {
+    filters: {
+      subject: 'Subject:',
+      type: 'Type:',
+      allSubjects: 'All Subjects',
+      medicine: 'Medicine',
+      biology: 'Biology',
+      publicHealth: 'Public Health',
+      original: 'Original Research',
+      review: 'Review',
+      caseReport: 'Case Report'
+    },
+    preview: 'Preview',
+    download: 'Download',
+    toast: 'Template download started.',
+    list: {
+      originalResearch: 'Original Research Template',
+      systematicReview: 'Systematic Review Template',
+      caseReport: 'Case Report Template',
+      biologyResearch: 'Biology Research Template',
+      publicHealth: 'Public Health Survey',
+      clinicalTrial: 'Clinical Trial Protocol'
+    }
+  },
+  news: {
+    events: {
+      title: 'Upcoming Events',
+      register: 'Register',
+      watchReplay: 'Watch Replay',
+      addToCalendar: 'Add to Calendar',
+      toastRegister: 'Registration for "{title}" opened.',
+      toastReplay: 'Opening replay for "{title}"...'
+    },
+    calls: {
+      title: 'Call for Papers',
+      intro: 'Submit your manuscript to our upcoming special issues.',
+      deadline: 'Deadline:',
+      guestEditor: 'Guest Editor:',
+      submitNow: 'Submit Now',
+      pastIssues: 'Past Special Issues',
+      ended: 'Ended {date}'
     }
   }
 }

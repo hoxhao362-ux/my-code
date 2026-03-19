@@ -1,5 +1,5 @@
-export const PLATFORM_NAME = 'Journal Submission Platform';
-export const PLATFORM_DOMAIN = 'journal-submit.com'; // Example domain
+export const PLATFORM_NAME = 'Peerex Peer';
+export const PLATFORM_DOMAIN = 'peerexpeer.com'; // Example domain
 export const BRAND_RED = '#C93737';
 export const DARK_GRAY = '#333333';
 export const LIGHT_GRAY = '#999999';
@@ -43,7 +43,7 @@ const HEADER = `
       <span style="color: ${BRAND_RED};">${PLATFORM_NAME.charAt(0)}</span>${PLATFORM_NAME.slice(1)}
     </div>
     <div style="font-size: 12px; color: ${LIGHT_GRAY}; margin-top: 5px;">
-      Journal Submission & Peer Review Platform
+      Journal Publication & Peer Review Platform
     </div>
   </div>
 `;

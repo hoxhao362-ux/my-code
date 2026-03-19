@@ -246,7 +246,7 @@ defineExpose({ runCheck })
       </div>
       
       <div v-else class="success-message">
-        <span class="check-icon">✓</span> All manuscripts are flowing correctly according to Journal Platform norms.
+        <span class="check-icon">✓</span> All manuscripts are flowing correctly according to Peerex Peer norms.
       </div>
     </div>
   </div>

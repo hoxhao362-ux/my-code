@@ -26,7 +26,9 @@ export const MANUSCRIPT_STATUS = {
   PENDING_PROOF: 'pending_proof', // 待校样确认
   PENDING_PUBLICATION: 'pending_publication', // 待出版
   PUBLISHED: 'published', // 已出版
-  WITHDRAWN: 'withdrawn' // 已撤稿
+  WITHDRAWN: 'withdrawn', // 已撤稿
+  TRANSFER_SUGGESTED: 'transfer_suggested', // 建议转投
+  TRANSFERRED: 'transferred' // 已转投
 };
 
 export const STATUS_LABELS = {
@@ -49,7 +51,9 @@ export const STATUS_LABELS = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: 'Pending Proof',
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: 'Pending Publication',
   [MANUSCRIPT_STATUS.PUBLISHED]: 'Published',
-  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn'
+  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn',
+  [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: 'Transfer Suggested',
+  [MANUSCRIPT_STATUS.TRANSFERRED]: 'Transferred'
 };
 
 export const AUTHOR_STATUS_MAP = {
@@ -72,7 +76,9 @@ export const AUTHOR_STATUS_MAP = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: 'Pending Proof',
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: 'Pending Publication',
   [MANUSCRIPT_STATUS.PUBLISHED]: 'Published',
-  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn'
+  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn',
+  [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: 'Transfer Suggested',
+  [MANUSCRIPT_STATUS.TRANSFERRED]: 'Transferred'
 };
 
 export const STATUS_COLORS = {
@@ -95,5 +101,7 @@ export const STATUS_COLORS = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: '#999999', // Light Gray
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: '#999999', // Light Gray
   [MANUSCRIPT_STATUS.PUBLISHED]: '#1B5E20', // Dark Green
-  [MANUSCRIPT_STATUS.WITHDRAWN]: '#333333' // Dark Gray
+  [MANUSCRIPT_STATUS.WITHDRAWN]: '#333333', // Dark Gray
+  [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: '#8E44AD', // Purple
+  [MANUSCRIPT_STATUS.TRANSFERRED]: '#8E44AD' // Purple
 };

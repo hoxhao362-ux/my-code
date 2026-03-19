@@ -80,7 +80,7 @@ const letters = computed(() => {
             manuscriptId: journal.id,
             manuscriptTitle: journal.title,
             date: journal.submitDate,
-            content: `Dear Author,\n\nThank you for submitting your manuscript "${journal.title}" to Journal Platform. Your submission ID is ${journal.id}.\n\nSincerely,\nThe Editorial Office`,
+            content: `Dear Author,\n\nThank you for submitting your manuscript "${journal.title}" to Peerex Peer. Your submission ID is ${journal.id}.\n\nSincerely,\nThe Editorial Office`,
             status: 'read'
         })
     }

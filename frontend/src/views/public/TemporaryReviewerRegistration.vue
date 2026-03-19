@@ -9,7 +9,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 
-const PLATFORM_NAME = computed(() => userStore.basicConfig.platformName || 'Journal Submission Platform')
+const PLATFORM_NAME = computed(() => userStore.basicConfig.platformName || 'Peerex Peer')
 const BRAND_RED = '#C93737'
 
 // State

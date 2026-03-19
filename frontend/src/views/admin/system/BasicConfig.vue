@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+import { useI18n } from 'vue-i18n'
 import Navigation from '../../../components/Navigation.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const user = ref(userStore.user)
@@ -35,23 +37,23 @@ onMounted(() => {
 
 const saveConfig = () => {
   userStore.setBasicConfig(basicConfig.value)
-  toastStore.add({ message: '基础配置已保存！', type: 'success' })
+  toastStore.add({ message: t('notification.basicConfig.actions.saveSuccess'), type: 'success' })
 }
 
 const resetConfig = () => {
   const defaultConfig = {
-    platformName: '期刊投稿平台',
+    platformName: 'Peerex Peer',
     platformLogo: '',
-    submissionRules: '1. 投稿内容必须符合学术规范\n2. 禁止抄袭和剽窃\n3. 所有投稿将经过严格审核\n4. 审核周期一般为1-2周\n5. 最终解释权归平台所有',
+    submissionRules: '1. Content must comply with academic standards\n2. Plagiarism is strictly prohibited\n3. All submissions undergo strict review\n4. Review cycle is typically 1-2 weeks\n5. Platform reserves all rights',
     contactEmail: 'contact@example.com',
     contactPhone: '13800138000',
-    copyrightInfo: '© 2026 期刊投稿平台. All rights reserved.'
+    copyrightInfo: '© 2026 Peerex Peer. All rights reserved.'
   }
   basicConfig.value = {
     ...defaultConfig
   }
   userStore.setBasicConfig(defaultConfig)
-  toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
+  toastStore.add({ message: t('notification.basicConfig.actions.resetSuccess'), type: 'success' })
 }
 </script>
 
@@ -70,29 +72,29 @@ const resetConfig = () => {
     <!-- 基础配置内容 -->
     <main class="content" :class="{ 'embedded-content': embedded }">
       <div class="header">
-        <h1>系统设置 - 基础配置</h1>
-        <p class="subtitle">管理平台的基础信息和规则</p>
+        <h1>{{ $t('notification.basicConfig.title') }}</h1>
+        <p class="subtitle">{{ $t('notification.basicConfig.subtitle') }}</p>
       </div>
 
       <section class="config-section">
         <div class="config-form-container">
           <form class="config-form">
             <div class="form-section">
-              <h3>平台基本信息</h3>
+              <h3>{{ $t('notification.basicConfig.platformInfo.title') }}</h3>
               
               <div class="form-group">
-                <label for="platformName">平台名称</label>
+                <label for="platformName">{{ $t('notification.basicConfig.platformInfo.name') }}</label>
                 <input 
                   type="text" 
                   id="platformName" 
                   v-model="basicConfig.platformName" 
                   class="form-control"
-                  placeholder="请输入平台名称"
+                  :placeholder="$t('notification.basicConfig.platformInfo.placeholderName')"
                 >
               </div>
               
               <div class="form-group">
-                <label for="platformLogo">平台Logo</label>
+                <label for="platformLogo">{{ $t('notification.basicConfig.platformInfo.logo') }}</label>
                 <div class="file-upload">
                   <input 
                     type="file" 
@@ -105,73 +107,73 @@ const resetConfig = () => {
                       <path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 13a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
                       <path d="M8 6a.5.5 0 0 1 .5.5v2.5h2.5a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H4a.5.5 0 0 1 0-1H7.5V6.5A.5.5 0 0 1 8 6z"/>
                     </svg>
-                    <span>{{ basicConfig.platformLogo || '点击上传Logo' }}</span>
+                    <span>{{ basicConfig.platformLogo || $t('notification.basicConfig.platformInfo.placeholderLogo') }}</span>
                   </label>
                 </div>
               </div>
             </div>
             
             <div class="form-section">
-              <h3>联系方式</h3>
+              <h3>{{ $t('notification.basicConfig.contact.title') }}</h3>
               
               <div class="form-row">
                 <div class="form-group">
-                  <label for="contactEmail">联系邮箱</label>
+                  <label for="contactEmail">{{ $t('notification.basicConfig.contact.email') }}</label>
                   <input 
                     type="email" 
                     id="contactEmail" 
                     v-model="basicConfig.contactEmail" 
                     class="form-control"
-                    placeholder="请输入联系邮箱"
+                    :placeholder="$t('notification.basicConfig.contact.placeholderEmail')"
                   >
                 </div>
                 
                 <div class="form-group">
-                  <label for="contactPhone">联系电话</label>
+                  <label for="contactPhone">{{ $t('notification.basicConfig.contact.phone') }}</label>
                   <input 
                     type="tel" 
                     id="contactPhone" 
                     v-model="basicConfig.contactPhone" 
                     class="form-control"
-                    placeholder="请输入联系电话"
+                    :placeholder="$t('notification.basicConfig.contact.placeholderPhone')"
                   >
                 </div>
               </div>
             </div>
             
             <div class="form-section">
-              <h3>投稿规则</h3>
+              <h3>{{ $t('notification.basicConfig.rules.title') }}</h3>
               
               <div class="form-group">
-                <label for="submissionRules">投稿规则</label>
+                <label for="submissionRules">{{ $t('notification.basicConfig.rules.label') }}</label>
                 <textarea 
                   id="submissionRules" 
                   v-model="basicConfig.submissionRules" 
                   class="form-control textarea-large"
                   rows="8"
-                  placeholder="请输入投稿规则"
+                  :placeholder="$t('notification.basicConfig.rules.placeholder')"
                 ></textarea>
               </div>
             </div>
             
             <div class="form-section">
-              <h3>版权信息</h3>
+              <h3>{{ $t('notification.basicConfig.copyright.title') }}</h3>
               
               <div class="form-group">
-                <label for="copyrightInfo">版权信息</label>
+                <label for="copyrightInfo">{{ $t('notification.basicConfig.copyright.label') }}</label>
                 <input 
                   type="text" 
                   id="copyrightInfo" 
                   v-model="basicConfig.copyrightInfo" 
                   class="form-control"
-                  placeholder="请输入版权信息"
+                  :placeholder="$t('notification.basicConfig.copyright.placeholder')"
                 >
               </div>
             </div>
             
             <div class="form-actions">
-              <button type="button" class="btn btn-reset" @click="resetConfig">重置</button>
-              <button type="button" class="btn btn-save" @click="saveConfig">保存配置</button>
+              <button type="button" class="btn btn-reset" @click="resetConfig">{{ $t('notification.basicConfig.actions.reset') }}</button>
+              <button type="button" class="btn btn-save" @click="saveConfig">{{ $t('notification.basicConfig.actions.save') }}</button>
             </div>
           </form>
         </div>
@@ -181,7 +183,7 @@ const resetConfig = () => {
     <!-- 页脚 -->
     <footer class="footer" v-if="!embedded">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
       </div>
     </footer>
   </div>

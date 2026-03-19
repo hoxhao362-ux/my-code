@@ -5,26 +5,26 @@
       :current-page="'resources-news-calls'"
       :logout="userStore.logout"
     />
-    <h1>Call for Papers</h1>
-    <p class="intro">Submit your manuscript to our upcoming special issues.</p>
+    <h1>{{ $t('news.calls.title') }}</h1>
+    <p class="intro">{{ $t('news.calls.intro') }}</p>
 
     <div class="cards-grid">
       <div v-for="call in activeCalls" :key="call.id" class="call-card">
         <h2 class="card-title">{{ call.title }}</h2>
         <div class="card-info">
-          <p><strong>Deadline:</strong> <span class="deadline">{{ call.deadline }}</span></p>
-          <p><strong>Guest Editor:</strong> {{ call.editor }}</p>
+          <p><strong>{{ $t('news.calls.deadline') }}</strong> <span class="deadline">{{ call.deadline }}</span></p>
+          <p><strong>{{ $t('news.calls.guestEditor') }}</strong> {{ call.editor }}</p>
         </div>
         <p class="card-desc">{{ call.description }}</p>
-        <button class="btn-submit" @click="submitManuscript(call.id)">Submit Now</button>
+        <button class="btn-submit" @click="submitManuscript(call.id)">{{ $t('news.calls.submitNow') }}</button>
       </div>
     </div>
 
     <div class="past-calls">
-      <h3>Past Special Issues</h3>
+      <h3>{{ $t('news.calls.pastIssues') }}</h3>
       <ul>
         <li v-for="past in pastCalls" :key="past.id">
-          <a href="#">{{ past.title }} (Ended {{ past.deadline }})</a>
+          <a href="#">{{ past.title }} ({{ $t('news.calls.ended', { date: past.deadline }) }})</a>
         </li>
       </ul>
     </div>
@@ -36,13 +36,16 @@ import { useRouter } from 'vue-router'
 import { computed } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
 const router = useRouter()
 
-const activeCalls = [
+// TODO: In a real app, fetch these from an API (/api/calls-for-papers)
+const activeCalls = computed(() => [
   {
     id: 1,
     title: "AI in Medical Diagnosis",
@@ -64,12 +67,12 @@ const activeCalls = [
     editor: "Dr. Sigmund Freud",
     description: "Impact of social media and digital connectivity on adolescent mental health."
   }
-]
+])
 
-const pastCalls = [
+const pastCalls = computed(() => [
   { id: 101, title: "Telemedicine Advances", deadline: "2025-12-31" },
   { id: 102, title: "Vaccine Equity", deadline: "2025-06-30" }
-]
+])
 
 const submitManuscript = (id) => {
   // Redirect to submission system with special issue ID if supported

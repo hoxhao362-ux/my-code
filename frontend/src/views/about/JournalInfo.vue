@@ -83,8 +83,8 @@ const copyISSN = () => {
 
       <div class="info-block">
         <h2>{{ t('about.journalInfo.contact') }}</h2>
-        <p>{{ t('about.journalInfo.technicalIssues') }} <a href="mailto:support@journalplatform.com" class="link-text">support@journalplatform.com</a></p>
-        <p>{{ t('about.journalInfo.submissionQueries') }} <a href="mailto:editorial@journalplatform.com" class="link-text">editorial@journalplatform.com</a></p>
+        <p>{{ t('about.journalInfo.technicalIssues') }} <a href="mailto:support@peerexpeer.com" class="link-text">support@peerexpeer.com</a></p>
+        <p>{{ t('about.journalInfo.submissionQueries') }} <a href="mailto:editorial@peerexpeer.com" class="link-text">editorial@peerexpeer.com</a></p>
       </div>
     </div>
 
