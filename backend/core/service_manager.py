@@ -29,9 +29,12 @@ class BaseManagedService:
         """
         raise NotImplementedError(f"服务 {self.service_name} 未实现 stop 方法")
 
-    async def _create_process(self, cmd: str, shell: bool = True) -> asyncio.subprocess.Process:
+    async def _create_process(self, cmd: str, shell: bool = True, log_output: bool = False) -> asyncio.subprocess.Process:
         """
         创建异步子进程的辅助方法
+        :param cmd: 启动命令
+        :param shell: 是否使用 shell
+        :param log_output: 是否在后台自动读取并记录日志（避免长期运行进程的缓冲区阻塞）
         """
         try:
             process = await asyncio.create_subprocess_shell(
@@ -40,11 +43,44 @@ class BaseManagedService:
                 stderr=asyncio.subprocess.PIPE
             )
             self.process = process
+            
+            if log_output:
+                # 启动后台任务读取输出，防止输出缓冲区满导致进程阻塞
+                asyncio.create_task(self._read_stream(process.stdout, "STDOUT"))
+                asyncio.create_task(self._read_stream(process.stderr, "STDERR"))
+                
             return process
         except Exception as e:
             traceback.print_exc()
             global_logger.error("Service", f"创建服务 {self.service_name} 进程失败: {e}")
             raise
+
+    async def _read_stream(self, stream: asyncio.StreamReader, stream_type: str):
+        """
+        异步读取子进程流并输出到日志
+        """
+        if not stream:
+            return
+        while True:
+            try:
+                line = await stream.readline()
+                if not line:
+                    break
+                
+                # 尝试多种编码解码
+                try:
+                    text = line.decode('utf-8', errors='ignore').strip()
+                except Exception:
+                    text = line.decode('gbk', errors='ignore').strip()
+                    
+                if text:
+                    if stream_type == "STDERR":
+                        global_logger.warning(self.service_name, text)
+                    else:
+                        global_logger.debug(self.service_name, text)
+            except Exception as e:
+                global_logger.error(self.service_name, f"读取进程日志异常 ({stream_type}): {e}")
+                break
     
     async def _check_args(self, args: List[str]) -> dict[str, str]:
         """
