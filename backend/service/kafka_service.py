@@ -59,8 +59,8 @@ class KafkaService(BaseManagedService):
         global_logger.info("Kafka", f"正在启动 Kafka 服务: {start_cmd}")
         
         try:
-            # 创建进程
-            await self._create_process(start_cmd)
+            # 创建进程，并开启后台日志读取防止缓冲区阻塞
+            await self._create_process(start_cmd, log_output=True)
             
             # 3. 就绪检查与连接初始化
             retry_count = 0

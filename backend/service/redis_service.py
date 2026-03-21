@@ -47,8 +47,8 @@ class RedisService(BaseManagedService):
         global_logger.info("Redis", f"正在启动 Redis: {start_cmd}")
         
         try:
-            # 创建进程
-            await self._create_process(start_cmd)
+            # 创建进程，并开启后台日志读取防止缓冲区阻塞
+            await self._create_process(start_cmd, log_output=True)
             
             # 3. 就绪检查与连接
             host = config["redis.redis.redis_host"]

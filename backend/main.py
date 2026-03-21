@@ -1,5 +1,11 @@
 import sys
 import os
+import asyncio
+
+# 修复 Windows 下 asyncio 子进程 NotImplementedError 报错
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 # 添加backend目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
