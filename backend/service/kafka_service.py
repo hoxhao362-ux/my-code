@@ -32,37 +32,18 @@ class KafkaService(BaseManagedService):
 
     async def start(self):
         """
-        定制化启动计划：
-        1. 从配置读取启动脚本路径。
-        2. 启动 Kafka 服务进程
-        3. 循环尝试连接 Kafka Broker，直到成功或超时。
+        连接 Kafka 服务
         """
-        global_logger.info("Kafka", "执行 Kafka 定制化启动计划...")
+        global_logger.info("Kafka", "正在连接 Kafka 服务...")
         
-        # 1. 获取配置
-        exe_path = config["kafka.kafka.kafka_service_path"]
-        # 注意：这里假设 args 是列表，如果为空则为空列表
-        args_config = config.get("kafka.kafka.kafka_service_args", [])
-        args = await self._check_args(args_config)
-        
-        host = config["kafka.kafka.kafka_host"]
-        port = config["kafka.kafka.kafka_port"]
+        env = config.get("global.global.env", "dev")
+        host_key = f"kafka.kafka.kafka_host_{env}"
+        host = config.get(host_key, "localhost")
+        port = config.get("kafka.kafka.kafka_port", 9092)
         bootstrap_servers = f"{host}:{port}"
         
-        # 2. 启动进程
-        # 构建启动命令
-        cmd_parts = [f'"{exe_path}"']
-        for k, v in args.items():
-            cmd_parts.append(f'{k} "{v}"')
-            
-        start_cmd = " ".join(cmd_parts)
-        global_logger.info("Kafka", f"正在启动 Kafka 服务: {start_cmd}")
-        
         try:
-            # 创建进程，并开启后台日志读取防止缓冲区阻塞
-            await self._create_process(start_cmd, log_output=True)
-            
-            # 3. 就绪检查与连接初始化
+            # 就绪检查与连接初始化
             retry_count = 0
             max_retries = 30  # Kafka 启动可能较慢，给予较多重试机会
             
@@ -90,8 +71,8 @@ class KafkaService(BaseManagedService):
                         global_logger.warning("Kafka", f"等待 Kafka 就绪 ({retry_count}/{max_retries})...")
                     
                     if retry_count >= max_retries:
-                        global_logger.error("Kafka", f"Kafka 服务启动超时，无法连接到: {bootstrap_servers}")
-                        raise RuntimeError(f"Kafka 服务启动失败: {e}")
+                        global_logger.error("Kafka", f"Kafka 服务连接超时: {bootstrap_servers}")
+                        raise RuntimeError(f"Kafka 服务连接失败: {e}")
                     
                     # 等待后重试
                     await asyncio.sleep(2)
@@ -102,17 +83,15 @@ class KafkaService(BaseManagedService):
                     await asyncio.sleep(2)
                     
         except Exception as e:
-            global_logger.error("Kafka", f"定制启动计划执行失败: {e}")
+            global_logger.error("Kafka", f"连接 Kafka 失败: {e}")
             traceback.print_exc()
             raise
 
     async def stop(self):
         """
-        定制化关闭计划：
-        1. 关闭 Producer 连接。
-        2. 执行停止脚本安全关闭 Kafka 服务。
+        关闭 Kafka 连接
         """
-        global_logger.info("Kafka", "正在执行 Kafka 安全关闭计划...")
+        global_logger.info("Kafka", "正在关闭 Kafka 连接...")
         
         try:
             # 1. 关闭 Producer
@@ -121,31 +100,6 @@ class KafkaService(BaseManagedService):
                 self.producer = None
                 self._initialized = False
                 global_logger.info("Kafka", "Kafka Producer 已关闭")
-            
-            # 2. 执行停止脚本
-            stop_path = config.get("kafka.kafka.kafka_stop_path")
-            if stop_path:
-                global_logger.info("Kafka", f"执行停止脚本: {stop_path}")
-                stop_process = await asyncio.create_subprocess_shell(
-                    f'"{stop_path}"',
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                # 等待停止脚本执行完成
-                stdout, stderr = await stop_process.communicate()
-                
-                if stop_process.returncode != 0:
-                    err_msg = stderr.decode('gbk', errors='ignore')
-                    global_logger.warning("Kafka", f"Kafka 停止脚本返回非零状态: {err_msg}")
-                else:
-                    global_logger.info("Kafka", "Kafka 服务停止指令已发送")
-            else:
-                # 如果没有配置停止脚本，且之前启动的进程还在运行，尝试终止它
-                if self.process and self.process.returncode is None:
-                    global_logger.warning("Kafka", "未配置停止脚本，尝试直接终止 Kafka 进程...")
-                    self.process.terminate()
-                    await self.process.wait()
-                    global_logger.info("Kafka", "Kafka 进程已终止")
                     
         except Exception as e:
             global_logger.error("Kafka", f"关闭 Kafka 失败: {e}")

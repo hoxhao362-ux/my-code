@@ -21,6 +21,7 @@ from database.uow import transactional
 user_router = APIRouter(
     prefix="/user",
     tags=["用户相关接口"],
+    dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
     responses={
         401: {"description": "未授权"},
         403: {"description": "禁止访问"},

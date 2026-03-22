@@ -15,6 +15,7 @@ from .invitations import router as invitations_router
 admin_router = APIRouter(
     prefix="/admin",
     tags=["管理员相关接口"],
+    dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
     responses={
         401: {"description": "未授权"},
         403: {"description": "禁止访问"},

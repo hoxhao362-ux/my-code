@@ -22,6 +22,7 @@ from model.journal import (
 journal_router = APIRouter(
     prefix="/journal",
     tags=["文献相关接口"],
+    dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
 )
 
 @journal_router.get("/public", summary="获取公开文献列表", response_model=JournalListResponse)

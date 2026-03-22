@@ -35,7 +35,9 @@ class ElasticsearchService:
         # 加载配置
         # 配置文件: backend/configs/elasticsearch.toml
         # 访问格式: 配置文件名.表名.键名
-        self.host = config.get("elasticsearch.elasticsearch.elasticsearch_host", "localhost")
+        env = config.get("global.global.env", "dev")
+        host_key = f"elasticsearch.elasticsearch.elasticsearch_host_{env}"
+        self.host = config.get(host_key, "localhost")
         self.port = config.get("elasticsearch.elasticsearch.elasticsearch_port", 9200)
         self.scheme = config.get("elasticsearch.elasticsearch.elasticsearch_scheme", "http")
         self.username = config.get("elasticsearch.elasticsearch.elasticsearch_username", "")

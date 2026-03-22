@@ -21,6 +21,7 @@ from database.uow import transactional
 review_router = APIRouter(
     prefix="/review",
     tags=["审稿相关接口"],
+    dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
 )
 
 @review_router.post("/login", summary="审稿人登录", response_model=LoginResponse)

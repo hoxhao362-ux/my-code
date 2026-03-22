@@ -1,0 +1,126 @@
+name: journal_platform
+
+networks:
+  journal_network:
+    driver: bridge
+    name: journal_network
+
+services:
+  # 1. PostgreSQL 数据库
+  postgres:
+    image: postgres:18-alpine
+    container_name: journal_postgres
+    networks:
+      - journal_network
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PWD} 
+      POSTGRES_DB: ${PG_DB}
+    ports:
+      - "${PG_PORT}:5432"
+    healthcheck:  # 新增健康检查
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./.space/postgres:/var/lib/postgresql
+    restart: unless-stopped
+  
+  # 2. Redis 缓存
+  redis:
+    image: redis:8.6.1-alpine
+    container_name: journal_redis
+    networks:
+      - journal_network
+    environment:
+      - REDIS_PASSWORD=${REDIS_PWD}
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:  # 新增健康检查
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PWD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./.space/redis:/data
+    restart: unless-stopped
+
+  # 3. Elasticsearch 搜索
+  elasticsearch:
+    image: elasticsearch:9.3.2
+    container_name: journal_es
+    networks:
+      - journal_network
+    environment:
+      - ELASTIC_PASSWORD=${ES_PWD}
+      - discovery.type=single-node
+      - xpack.security.enabled=false # 方便开发，暂时关闭 https/密码认证
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "${ES_PORT}:9200"
+    healthcheck:  # 新增健康检查
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./.space/elasticsearch:/usr/share/elasticsearch/data
+      # 挂载插件目录以便后续安装 IK 分词器
+      - ./.space/es_plugins:/usr/share/elasticsearch/plugins 
+    restart: unless-stopped
+
+  # 4. Kafka (KRaft 模式，抛弃臃肿的 Zookeeper)
+  kafka:
+    image: apache/kafka:4.2.0
+    container_name: journal_kafka
+    networks:
+      - journal_network
+    environment:
+      # Apache Kafka KRaft 环境变量配置
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    healthcheck:  # 新增健康检查
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    volumes:
+      # Apache Kafka 的默认数据目录是 /tmp/kafka-logs
+      - ./.space/kafka:/tmp/kafka-logs
+    restart: unless-stopped
+
+  # 5. Nginx 反向代理/静态资源服务
+  nginx:
+    image: nginx:1.29.6-alpine
+    container_name: journal_nginx
+    networks:
+      - journal_network
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      # 挂载 nginx 配置文件目录
+      - ./.space/nginx/conf.d:/etc/nginx/conf.d
+      # 挂载静态资源目录（前端打包后的文件可放这里）
+      - ./.space/nginx/html:/usr/share/nginx/html
+      # 挂载日志目录
+      - ./.space/nginx/logs:/var/log/nginx
+      # 如果有 SSL 证书，可以挂载这个目录
+      - ./.space/nginx/certs:/etc/nginx/certs
+    restart: unless-stopped
