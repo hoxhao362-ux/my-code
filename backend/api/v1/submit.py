@@ -37,6 +37,7 @@ from database.uow import transactional
 submit_router = APIRouter(
     prefix="/submit",
     tags=["投稿相关接口"],
+    dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
     responses={
         401: {"description": "未授权"},
         403: {"description": "禁止访问"},

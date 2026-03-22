@@ -42,52 +42,21 @@ class DatabaseManager(BaseManagedService):
         self._initialized = False
     
     async def start(self):
-        """定制化启动：环境变量配置 -> 进程启动 -> 连接池初始化 -> 结构同步"""
-        global_logger.info("Database", "启动数据库托管服务...")
-        
-        exe_path = config["database.database.database_service_path"]
-        args = await self._check_args(config["database.database.database_service_args"])
-        db_dir = config["database.database.database_dir"]
-        
-        os.environ["PGDATA"] = db_dir
-        
-        cmd_parts = [f'"{exe_path}"', "start"]
-        for k, v in args.items():
-            cmd_parts.append(f'{k} "{v}"')
-        
-        start_cmd = " ".join(cmd_parts)
+        """连接数据库：连接池初始化 -> 结构同步"""
+        global_logger.info("Database", "正在连接数据库服务...")
         
         try:
-            process = await self._create_process(start_cmd)
-            stdout, stderr = await process.communicate()
-            if process.returncode != 0:
-                err_msg = stderr.decode('gbk', errors='ignore')
-                if "already running" not in err_msg and "另一个进程正在使用" not in err_msg:
-                    global_logger.error("Database", f"PostgreSQL 进程启动异常: {err_msg}")
-            
             await self.initialize_all()
-            
         except Exception as e:
-            global_logger.error("Database", f"数据库服务启动失败: {e}")
+            global_logger.error("Database", f"数据库服务连接失败: {e}")
             raise
 
     async def stop(self):
-        """安全关闭计划"""
-        global_logger.info("Database", "安全关闭数据库服务...")
+        """安全断开数据库连接"""
+        global_logger.info("Database", "正在安全关闭数据库连接...")
         
-        exe_path = config["database.database.database_service_path"]
-        db_dir = config["database.database.database_dir"]
-        
-        stop_cmd = f'"{exe_path}" stop -D "{db_dir}" -m fast'
         try:
             await self.close_all()
-            process = await asyncio.create_subprocess_shell(
-                stop_cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            await process.communicate()
-            global_logger.info("Database", "PostgreSQL 进程已安全退出")
         except Exception as e:
             global_logger.error("Database", f"数据库关闭异常: {e}")
 

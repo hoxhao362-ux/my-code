@@ -12,3 +12,10 @@ from .rate_limit import (
     login_rate_limit,
     register_rate_limit
 )
+
+from .services import (
+    check_db_service,
+    check_redis_service,
+    check_kafka_service,
+    check_es_service
+)

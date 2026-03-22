@@ -27,32 +27,15 @@ class RedisService(BaseManagedService):
     
     async def start(self):
         """
-        定制化启动计划：
-        1. 从配置读取 redis-server 路径和参数
-        2. 启动 Redis 进程
-        3. 尝试连接并进行 PING 检查
+        连接 Redis 服务
         """
-        global_logger.info("Redis", "执行 Redis 定制化启动计划...")
-        
-        # 1. 获取配置
-        exe_path = config["redis.redis.redis_service_path"]
-        args = await self._check_args(config["redis.redis.redis_service_args"])
-        
-        # 2. 启动进程
-        cmd_parts = [f'"{exe_path}"']
-        for k, v in args.items():
-            cmd_parts.append(f'{k} "{v}"')
-            
-        start_cmd = " ".join(cmd_parts)
-        global_logger.info("Redis", f"正在启动 Redis: {start_cmd}")
+        global_logger.info("Redis", "正在连接 Redis 服务...")
         
         try:
-            # 创建进程，并开启后台日志读取防止缓冲区阻塞
-            await self._create_process(start_cmd, log_output=True)
-            
-            # 3. 就绪检查与连接
-            host = config["redis.redis.redis_host"]
-            port = config["redis.redis.redis_port"]
+            env = config.get("global.global.env", "dev")
+            host_key = f"redis.redis.redis_host_{env}"
+            host = config.get(host_key, "localhost")
+            port = config.get("redis.redis.redis_port", 6379)
             password = config.get("redis.redis.redis_password")
             db = config.get("redis.redis.redis_db", 0)
             
@@ -70,7 +53,8 @@ class RedisService(BaseManagedService):
                         password=password,
                         db=db
                     )
-                    global_logger.info("Redis", "Redis 服务就绪并连接成功")
+                    self._initialized = True
+                    global_logger.info("Redis", f"Redis 服务就绪并连接成功: {host}:{port}")
                     return
                 except Exception:
                     retry_count += 1
@@ -79,24 +63,17 @@ class RedisService(BaseManagedService):
                     await asyncio.sleep(1)
                     
         except Exception as e:
-            global_logger.error("Redis", f"定制启动计划执行失败: {e}")
+            global_logger.error("Redis", f"Redis 连接失败: {e}")
             raise
 
     async def stop(self):
         """
-        定制化关闭计划：
-        终止进程并关闭客户端连接
+        关闭 Redis 连接
         """
-        global_logger.info("Redis", "正在执行 Redis 安全关闭计划...")
+        global_logger.info("Redis", "正在关闭 Redis 连接...")
         try:
-            # 关闭连接
             await self.close()
-            
-            # 终止进程
-            if self.process and self.process.returncode is None:
-                self.process.terminate()
-                await self.process.wait()
-                global_logger.info("Redis", "Redis 进程已终止")
+            self._initialized = False
         except Exception as e:
             global_logger.error("Redis", f"关闭 Redis 失败: {e}")
 

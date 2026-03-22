@@ -41,7 +41,9 @@ class SqlAlchemyAsyncConfig:
 def load_sqlalchemy_async_config() -> SqlAlchemyAsyncConfig:
     """从项目配置加载 SQLAlchemy 异步连接信息。"""
 
-    host = config["database.database.database_host"]
+    env = config.get("global.global.env", "dev")
+    host_key = f"database.database.database_host_{env}"
+    host = config.get(host_key, "localhost")
     port = int(config["database.database.database_port"])
     user = config["database.database.database_user"]
     database = config["database.database.database_name"]
@@ -90,7 +92,7 @@ def build_async_engine(cfg: SqlAlchemyAsyncConfig) -> AsyncEngine:
     )
 
     global_logger.info(
-        "database",
+        "Database",
         f"SQLAlchemy AsyncEngine 就绪: {cfg.host}:{cfg.port}/{cfg.database} (pool_size={cfg.pool_size}, max_overflow={cfg.max_overflow})",
     )
     return engine
