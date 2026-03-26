@@ -19,7 +19,7 @@ class InvitationCode(Base):
 
     code_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment="主键ID（自增）")
     code: Mapped[str] = mapped_column(Text, unique=True, nullable=False, comment="邀请码（唯一）")
-    role: Mapped[str] = mapped_column(Text, nullable=False, comment="授予角色")
+    role: Mapped[str] = mapped_column(Text, nullable=False, comment="授予角色：user/author/reviewer/ea_ae/associate_editor/editor/admin")
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="active", comment="状态：active/disabled/expired")
 
     max_uses: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1", comment="最大可使用次数")

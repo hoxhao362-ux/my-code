@@ -41,6 +41,8 @@ uploads/
 .db
 .space/
 
+*.bak
+
 *.md
 !前端需求.md
 !后端需求.md

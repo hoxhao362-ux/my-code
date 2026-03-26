@@ -25,7 +25,7 @@ class User(Base):
     password: Mapped[str] = mapped_column(Text, nullable=False, comment="密码哈希")
     email: Mapped[str] = mapped_column(Text, unique=True, nullable=False, comment="邮箱（唯一）")
 
-    role: Mapped[str] = mapped_column(Text, nullable=False, server_default="normal", comment="角色：normal/writer/reviewer/admin")
+    role: Mapped[str] = mapped_column(Text, nullable=False, server_default="author", comment="角色：user/author/reviewer/ea_ae/associate_editor/editor/admin")
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", comment="是否已验证邮箱/账号")
     verification_code: Mapped[str | None] = mapped_column(Text, nullable=True, comment="验证码")
 
