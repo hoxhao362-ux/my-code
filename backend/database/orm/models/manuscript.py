@@ -54,6 +54,11 @@ class Manuscript(Base):
     create_time: Mapped[str] = mapped_column(Text, nullable=False, comment="创建时间（ISO 字符串）")
     update_time: Mapped[str | None] = mapped_column(Text, nullable=True, comment="更新时间（ISO 字符串）")
     
+    # 软删除
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", comment="是否已删除（软删除）")
+    deleted_at: Mapped[str | None] = mapped_column(Text, nullable=True, comment="删除时间（ISO 字符串）")
+    delete_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="删除原因")
+    
     # 关联关系
     versions: Mapped[list["ManuscriptVersion"]] = relationship(back_populates="manuscript", lazy="select")
     participants: Mapped[list["ManuscriptParticipant"]] = relationship(back_populates="manuscript", lazy="select")
@@ -163,3 +168,5 @@ Index("idx_manuscript_participants_role_type", ManuscriptParticipant.role_type)
 Index("idx_manuscript_files_manuscript_id", ManuscriptFile.manuscript_id)
 Index("idx_manuscript_files_file_hash", ManuscriptFile.file_hash)
 Index("idx_manuscript_files_file_type", ManuscriptFile.file_type)
+
+Index("idx_manuscripts_is_deleted", Manuscript.is_deleted)

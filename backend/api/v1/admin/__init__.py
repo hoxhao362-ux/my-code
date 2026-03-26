@@ -7,6 +7,7 @@ from database.repositories.journal_repo import JournalRepository
 from database.repositories.review_repo import ReviewRepository
 from database.repositories.user_repo import UserRepository
 from service.admin_log_service import admin_log_service
+from model.response import ApiResponse
 
 from .users import router as users_router
 from .journals import router as journals_router
@@ -56,10 +57,10 @@ async def get_system_statistics(
         session=session,
     )
     
-    return {
+    return ApiResponse.success(data={
         "total_users": total_users,
         "user_roles": user_roles,
         "total_journals": total_journals,
         "journal_status": journal_status,
         "total_reviews": total_reviews,
-    }
+    })

@@ -32,7 +32,7 @@ async def check_redis_service():
 
 async def check_kafka_service():
     """检查 Kafka 服务是否可用"""
-    if not kafka_service._initialized or not kafka_service.producer:
+    if not kafka_service.is_ready:
         global_logger.warning("Dependency", "Kafka 服务不可用")
         raise HTTPException(status_code=503, detail="消息队列服务暂不可用，请稍后再试")
     return kafka_service

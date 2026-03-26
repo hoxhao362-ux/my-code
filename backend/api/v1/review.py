@@ -1,3 +1,14 @@
+"""
+[DEPRECATED] 审稿相关API接口
+
+本模块已废弃，请勿在新代码中使用。
+- 登录功能已迁移至 auth.py
+- 审稿功能已迁移至 reviews.py
+- Journal 模型已统一为 Manuscript 模型
+
+废弃日期：2026-03-26
+保留原因：向后兼容
+"""
 from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Optional
 from datetime import datetime
@@ -20,68 +31,16 @@ from database.uow import transactional
 
 review_router = APIRouter(
     prefix="/review",
-    tags=["审稿相关接口"],
+    tags=["[已废弃] 审稿相关接口"],
     dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
 )
 
-@review_router.post("/login", summary="审稿人登录", response_model=LoginResponse)
-async def reviewer_login(
-    request: LoginRequest,
-    req: Request,
-    session: AsyncSession = Depends(get_db_session),
-):
-    """审稿人登录接口 - 支持reviewer及以上角色登录"""
-    # 获取客户端IP
-    client_ip = req.client.host if req.client else "unknown"
-    
-    # 检查登录频率限制
-    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
-    if not allowed:
-        raise HTTPException(
-            status_code=429,
-            detail=f"登录请求过于频繁，请稍后再试。当前尝试次数：{attempts}/5"
-        )
-    
-    user_repo = UserRepository(session)
-    user = await user_repo.get_by_username(request.username)
-    if not user:
-        raise HTTPException(status_code=401, detail="用户名或密码错误")
-    
-    # 验证密码
-    if not jwt_util.verify_password(request.password, user.password):
-        raise HTTPException(status_code=401, detail="用户名或密码错误")
-    
-    # 检查用户角色权限（reviewer及以上角色才能登录审核系统）
-    allowed_roles = ["reviewer", "admin"]
-    if user.role not in allowed_roles:
-        raise HTTPException(status_code=403, detail="该用户没有审核权限，需要使用reviewer及以上角色的账号登录")
-    
-    # 更新最后登录时间
-    async with transactional(session):
-        user.last_login_time = datetime.now().isoformat()
-    
-    # 生成token
-    token = jwt_util.create_access_token({
-        "uid": user.uid,
-        "username": user.username,
-        "email": user.email,
-        "role": user.role,
-    })
-    
-    # 设置用户在线状态
-    expire_time = 3600 * 24 * 30 if request.is_remember else 3600
-    await redis_service.set_user_online(
-        user_id=user.uid,
-        token=token,
-        expire_time=expire_time
-    )
-    
-    return LoginResponse(
-        login_time=datetime.now(),
-        is_remember=request.is_remember,
-        token=token,
-        message="审稿人登录成功"
-    )
+# ========== 已废弃的登录接口 ==========
+# 以下登录端点已废弃，请使用 POST /api/v1/auth/login 代替
+# 符合角色要求的用户均可通过统一登录接口登录
+
+# @review_router.post("/login", summary="审稿人登录", response_model=LoginResponse)
+# async def reviewer_login(...) 已移除 - 请使用 auth.py 中的登录接口
 
 @review_router.get("/pending", summary="获取待审核文献列表")
 async def get_pending_journals(

@@ -1,4 +1,4 @@
-from re import A
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -53,7 +53,35 @@ class Config:
         for config_file in config_files:
             config = load_toml(config_file)
             self._configs[config_file.stem] = config
+        
+        self._apply_env_overrides()
         self._initialized = True
+
+    def _apply_env_overrides(self):
+        """
+        从环境变量覆盖敏感配置项
+        
+        环境变量映射：
+        - JWT_SECRET_KEY -> global.global.secret_key
+        - DB_PASSWORD -> database.database.database_password
+        - REDIS_PASSWORD -> redis.redis.redis_password
+        """
+        env_overrides = {
+            "JWT_SECRET_KEY": ("global", ["global", "secret_key"]),
+            "DB_PASSWORD": ("database", ["database", "database_password"]),
+            "REDIS_PASSWORD": ("redis", ["redis", "redis_password"]),
+        }
+        
+        for env_var, (config_file, key_path) in env_overrides.items():
+            value = os.environ.get(env_var)
+            if value:
+                # 逐级访问并设置配置值
+                config_dict = self._configs.get(config_file, {})
+                target = config_dict
+                for key in key_path[:-1]:
+                    target = target.setdefault(key, {})
+                target[key_path[-1]] = value
+                global_logger.info('config', f'环境变量 {env_var} 已覆盖配置项')
 
     def __getitem__(self, key):
         """
@@ -378,7 +406,7 @@ def setup_core(app: FastAPI):
     @app.exception_handler(IntegrityError)
     async def _integrity_exception_handler(request: Request, exc: IntegrityError):
         global_logger.exception("database", f"数据完整性异常: {exc}")
-        return JSONResponse(status_code=409, content={"detail": "数据冲突或重复提交"})
+        return JSONResponse(status_code=409, content={"code": 409, "message": "数据冲突或重复提交", "data": None, "meta": None})
 
     @app.exception_handler(SQLAlchemyError)
     async def _sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
@@ -391,4 +419,4 @@ def setup_core(app: FastAPI):
         """
 
         global_logger.exception("database", f"数据库异常: {exc}")
-        return JSONResponse(status_code=500, content={"detail": "数据库服务异常，请稍后重试"})
+        return JSONResponse(status_code=500, content={"code": 500, "message": "数据库服务异常，请稍后重试", "data": None, "meta": None})

@@ -12,6 +12,7 @@ from database.orm.models.invitation import InvitationCode, InvitationCodeUsage
 from database.orm.models.journal import Journal, ReviewRecord
 from database.orm.models.journal_info import JournalInfo
 from database.orm.models.manuscript import Manuscript, ManuscriptVersion, ManuscriptParticipant, ManuscriptFile
+from database.orm.models.manuscript_info import ManuscriptInfo
 from database.orm.models.payment_order import PaymentOrder
 from database.orm.models.review_opinion import ReviewOpinion
 from database.orm.models.user import User
@@ -22,21 +23,21 @@ __all__ = [
     "InvitationCode",
     "InvitationCodeUsage",
     
-    # 稿件管理
+    # 稿件管理（主力模型）
     "Manuscript",
     "ManuscriptVersion",
     "ManuscriptParticipant",
     "ManuscriptFile",
+    "ManuscriptInfo",
     
     # 审稿与决策
     "ReviewOpinion",
-    "ReviewRecord",
     "DecisionRecord",
     
     # 编委会
     "EditorialBoard",
     
-    # 旧版兼容
+    # 旧版兼容（Deprecated）
     "Journal",
     "ReviewRecord",
     "JournalInfo",
@@ -46,4 +47,3 @@ __all__ = [
     "AdminLog",
     "PaymentOrder",
 ]
-

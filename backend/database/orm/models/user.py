@@ -34,6 +34,7 @@ class User(Base):
 
     create_time: Mapped[str] = mapped_column(Text, nullable=False, comment="创建时间（ISO字符串）")
     last_login_time: Mapped[str | None] = mapped_column(Text, nullable=True, comment="最后登录时间（ISO字符串）")
+    login_days: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", comment="累计登录天数")
 
 
 Index("idx_users_username", User.username)

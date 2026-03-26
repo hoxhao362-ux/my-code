@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 
 from core.enums import UserRole
+from model.response import ApiResponse
 from api import dependencies as deps
 from utils.log import global_logger
 
@@ -51,12 +52,12 @@ async def get_my_review_tasks(
     # TODO: 实现审稿任务查询
     global_logger.debug("Reviews", f"获取审稿任务 - uid: {current_user['uid']}, page: {page}")
     
-    return {
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "tasks": []
-    }
+    return ApiResponse.paginated(
+        items=[],
+        total=0,
+        page=page,
+        page_size=page_size
+    )
 
 
 @router.put("/me/tasks/{task_id}", summary="提交评审意见")
@@ -87,7 +88,7 @@ async def submit_review_opinion(
     # TODO: 实现评审意见提交逻辑
     global_logger.info("Reviews", f"提交评审意见 - task_id: {task_id}, uid: {current_user['uid']}, decision: {decision}")
     
-    return {"message": "评审意见提交成功"}
+    return ApiResponse.success(message="评审意见提交成功")
 
 
 @router.get("/reviewers", summary="获取审稿人列表（管理员）")
@@ -110,9 +111,9 @@ async def get_reviewer_list(
         dict: 审稿人列表
     """
     # TODO: 实现审稿人列表查询
-    return {
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "reviewers": []
-    }
+    return ApiResponse.paginated(
+        items=[],
+        total=0,
+        page=page,
+        page_size=page_size
+    )

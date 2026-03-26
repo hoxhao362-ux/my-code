@@ -6,6 +6,13 @@
 - review_records：审核记录表
 """
 
+import warnings
+warnings.warn(
+    "Journal 和 ReviewRecord 模型已废弃，请使用 Manuscript 相关模型。保留仅为兼容旧数据。",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 from __future__ import annotations
 
 from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text

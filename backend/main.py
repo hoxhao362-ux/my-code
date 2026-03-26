@@ -26,6 +26,8 @@ from database.service.database_service import db_manager
 from database.orm.models.user import User
 from service.redis_service import redis_service
 from service.kafka_service import kafka_service
+from service.elasticsearch_service import elasticsearch_service
+from service.email_service import email_service
 from service.payment_service import payment_service
 
 # 导入新重构的 API v1 路由（包含所有子模块）

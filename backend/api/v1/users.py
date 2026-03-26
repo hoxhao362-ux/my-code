@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime
 
 from core.enums import UserRole
+from model.response import ApiResponse
 from api import dependencies as deps
+from service.redis_service import redis_service
 from utils.log import global_logger
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,7 +51,7 @@ async def get_current_user_info(
         dict: 用户信息字典
     """
     # 从 Redis 验证用户在线状态
-    is_online = await deps.redis_service.is_user_online(current_user["uid"])
+    is_online = await redis_service.is_user_online(current_user["uid"])
     
     # 从数据库获取完整用户信息
     repo = UserRepository(session)
@@ -61,7 +63,7 @@ async def get_current_user_info(
     
     global_logger.debug("Users", f"获取用户信息成功 - uid: {current_user['uid']}, username: {user['username']}")
     
-    return {
+    return ApiResponse.success(data={
         "uid": user["uid"],
         "username": user["username"],
         "email": user["email"],
@@ -71,7 +73,7 @@ async def get_current_user_info(
         "last_login_time": user.get("last_login_time"),
         "avatar_hash": user.get("avatar_hash"),
         "is_online": is_online
-    }
+    })
 
 
 @router.put("/me", summary="更新当前用户信息")
@@ -111,7 +113,7 @@ async def update_current_user_info(
     
     global_logger.info("Users", f"用户信息更新成功 - uid: {current_user['uid']}, username: {current_user['username']}")
     
-    return {"message": "用户信息更新成功"}
+    return ApiResponse.success(message="用户信息更新成功")
 
 
 @router.get("/me/notifications", summary="获取我的消息列表")
@@ -137,12 +139,12 @@ async def get_my_notifications(
     global_logger.debug("Users", f"获取用户消息 - uid: {current_user['uid']}, page: {page}, size: {page_size}")
     
     # TODO: 实现消息通知系统
-    return {
-        "total": 0,
-        "page": page,
-        "page_size": page_size,
-        "notifications": []
-    }
+    return ApiResponse.paginated(
+        items=[],
+        total=0,
+        page=page,
+        page_size=page_size
+    )
 
 
 @router.put("/me/notifications/{notification_id}", summary="标记消息为已读")
@@ -165,7 +167,7 @@ async def mark_notification_as_read(
     # TODO: 实现消息通知系统
     global_logger.info("Users", f"标记消息已读 - uid: {current_user['uid']}, notification_id: {notification_id}")
     
-    return {"message": "消息已标记为已读"}
+    return ApiResponse.success(message="消息已标记为已读")
 
 
 @router.get("/", summary="获取用户列表（管理员）")
@@ -206,12 +208,12 @@ async def get_user_list(
     
     global_logger.info("Users", f"管理员获取用户列表 - admin_uid: {current_user['uid']}, total: {total}, role: {role}")
     
-    return {
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "users": users
-    }
+    return ApiResponse.paginated(
+        items=users,
+        total=total,
+        page=page,
+        page_size=page_size
+    )
 
 
 @router.get("/{user_id}", summary="获取指定用户信息（管理员）")
@@ -243,7 +245,7 @@ async def get_user_info(
     
     global_logger.info("Users", f"管理员获取用户详情 - admin_uid: {current_user['uid']}, target_uid: {user_id}")
     
-    return user
+    return ApiResponse.success(data=user)
 
 
 @router.put("/{user_id}", summary="更新指定用户信息（管理员）")
@@ -294,7 +296,7 @@ async def update_user_info(
             user.is_verified = is_verified
             global_logger.info("Users", f"管理员更新用户验证状态 - admin_uid: {current_user['uid']}, target_uid: {user_id}, verified: {is_verified}")
     
-    return {"message": "用户信息更新成功"}
+    return ApiResponse.success(message="用户信息更新成功")
 
 
 @router.delete("/{user_id}", summary="删除指定用户（管理员）")
@@ -335,4 +337,4 @@ async def delete_user(
     
     global_logger.info("Users", f"管理员删除用户 - admin_uid: {current_user['uid']}, target_uid: {user_id}")
     
-    return {"message": "用户已删除"}
+    return ApiResponse.success(message="用户已删除")

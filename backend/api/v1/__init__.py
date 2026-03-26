@@ -10,7 +10,7 @@ from .users import router as users_router
 from .manuscripts import router as manuscripts_router
 from .reviews import router as reviews_router
 from .editorial import router as editorial_router
-from .admin import router as admin_router
+from .admin import admin_router
 from .public import router as public_router
 
 # 创建 v1 版本的路由器

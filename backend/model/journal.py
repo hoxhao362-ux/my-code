@@ -1,8 +1,31 @@
+"""
+[DEPRECATED] 文献相关 Pydantic 模型
+
+本模块已废弃，请使用 model/manuscript.py 代替。
+
+废弃原因：
+1. Journal 模型已统一为 Manuscript 模型
+2. UploadFile 不应作为 Pydantic BaseModel 字段
+   - 应在路由函数中使用 File() / UploadFile 依赖注入
+
+迁移指南：
+- JournalUploadRequest -> ManuscriptUploadRequest
+- JournalUploadResponse -> ManuscriptUploadResponse
+- JournalInfo -> ManuscriptInfo
+- JournalListResponse -> ManuscriptListResponse
+- JournalStatusUpdateRequest -> ManuscriptStatusUpdateRequest
+
+废弃日期：2026-03-26
+保留原因：向后兼容
+"""
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
 
 from fastapi import UploadFile
+
+# [DEPRECATED] UploadFile 不应放在 Pydantic BaseModel 中
+# 请参考 model/manuscript.py 中的正确用法
 
 class JournalUploadRequest(BaseModel):
     """文献上传请求模型"""

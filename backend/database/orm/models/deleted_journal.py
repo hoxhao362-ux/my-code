@@ -1,11 +1,17 @@
 """
-已删除文献表 ORM Model
+"""已删除文献表 ORM Model
 
 表名：deleted_journals
 用途：存档软删除/删除原因等信息，便于审计与追溯。
 """
-
 from __future__ import annotations
+
+import warnings
+warnings.warn(
+    "DeletedJournal 模型已废弃。软删除功能已迁移至 Manuscript.is_deleted 字段。保留仅为兼容旧数据。",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from sqlalchemy import BigInteger, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column

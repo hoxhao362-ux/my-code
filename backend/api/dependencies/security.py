@@ -4,7 +4,7 @@
 提供 JWT 令牌解析、用户认证、权限校验等功能。
 """
 from typing import Optional, Dict, Any, List, Union
-from fastapi import Depends, HTTPException, status, Query, Header
+from fastapi import Depends, HTTPException, status, Header
 
 from core.enums import UserRole
 from utils.jwt import jwt_util
@@ -16,23 +16,20 @@ from database.repositories.user_repo import UserRepository
 from utils.log import global_logger
 
 async def get_token(
-    token: Optional[str] = Query(None, description="访问令牌"),
-    authorization: Optional[str] = Header(None, description="认证头")
+    authorization: Optional[str] = Header(None, description="认证头 Authorization: Bearer <token>")
 ) -> str:
     """
     获取认证令牌
     
-    优先从查询参数 'token' 获取，其次从 'Authorization: Bearer <token>' 头获取。
+    仅从 'Authorization: Bearer <token>' 请求头获取，不再支持 query parameter 传递（安全考虑）。
     """
-    if token:
-        return token
     if authorization:
         scheme, _, param = authorization.partition(" ")
-        if scheme.lower() == "bearer":
-            return param
+        if scheme.lower() == "bearer" and param and param.strip():
+            return param.strip()
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="未提供认证令牌",
+        detail="未提供认证令牌，请在请求头中添加 Authorization: Bearer <token>",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -101,7 +98,7 @@ async def get_admin_user(current_user: Dict[str, Any] = Depends(get_current_acti
     
     仅限 role='admin' 的用户访问
     """
-    if current_user["role"] != "admin":
+    if current_user["role"] != UserRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要管理员权限"
@@ -112,9 +109,9 @@ async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_a
     """
     获取审稿人用户
     
-    允许 role 为 'reviewer' 或 'admin' 的用户访问
+    允许 reviewer 及以上角色访问
     """
-    if current_user["role"] not in ["reviewer", "admin"]:
+    if not UserRole.has_permission(current_user["role"], UserRole.REVIEWER.value):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要审稿人权限"
@@ -123,11 +120,14 @@ async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_a
 
 async def get_writer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
     """
-    获取作者用户
+    [DEPRECATED] 获取作者用户
     
-    允许 role 为 'writer', 'reviewer', 'admin' 的用户访问
+    此函数已废弃，请使用 get_author_user 代替
+    旧角色名 'writer' 已统一为 'author' (UserRole.AUTHOR)
+    
+    允许 author 及以上角色访问
     """
-    if current_user["role"] not in ["writer", "reviewer", "admin"]:
+    if not UserRole.has_permission(current_user["role"], UserRole.AUTHOR.value):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要作者权限"

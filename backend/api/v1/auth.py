@@ -12,7 +12,8 @@ from utils.jwt import jwt_util
 from service.redis_service import redis_service
 from utils.generator import generator
 from service.invitation_service import invitation_service
-from model.user import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
+from model.user import RegisterRequest, LoginRequest
+from model.response import ApiResponse
 from api import dependencies as deps
 from utils.log import global_logger
 
@@ -37,7 +38,7 @@ router = APIRouter(
 )
 
 
-@router.post("/register", summary="用户注册", response_model=RegisterResponse)
+@router.post("/register", summary="用户注册", response_model=ApiResponse)
 async def register(
     request: RegisterRequest,
     req: Request,
@@ -153,17 +154,16 @@ async def register(
         
         global_logger.info("Auth", f"用户注册成功 - uid: {new_user.uid}, username: {new_user.username}, role: {user_role}")
         
-        return RegisterResponse(
-            register_time=datetime.now(),
-            token=token,
-            message="注册成功"
-        )
+        return ApiResponse.success(data={
+            "register_time": datetime.now().isoformat(),
+            "token": token,
+        }, message="注册成功")
     except Exception as e:
         global_logger.exception("Auth", f"用户注册失败 - username: {request.username}, error: {e}")
         raise HTTPException(status_code=500, detail="注册失败，请稍后重试")
 
 
-@router.post("/login", summary="用户登录", response_model=LoginResponse)
+@router.post("/login", summary="用户登录", response_model=ApiResponse)
 async def login(
     request: LoginRequest,
     req: Request,
@@ -213,10 +213,11 @@ async def login(
         global_logger.warning("Auth", f"密码错误 - username: {request.username}")
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     
-    # 更新最后登录时间
+    # 更新最后登录时间并累加登录天数
     last_login_time = datetime.now().isoformat()
     async with transactional(session):
         user.last_login_time = last_login_time
+        user.login_days = User.login_days + 1
     
     # 生成 token
     token = jwt_util.create_access_token({
@@ -232,12 +233,11 @@ async def login(
     
     global_logger.info("Auth", f"用户登录成功 - uid: {user.uid}, username: {user.username}, role: {user.role}")
     
-    return LoginResponse(
-        login_time=datetime.now(),
-        is_remember=request.is_remember,
-        token=token,
-        message="登录成功"
-    )
+    return ApiResponse.success(data={
+        "login_time": datetime.now().isoformat(),
+        "is_remember": request.is_remember,
+        "token": token,
+    }, message="登录成功")
 
 
 @router.post("/logout", summary="用户登出")
@@ -261,7 +261,7 @@ async def logout(token: str = Depends(deps.get_token)):
         await redis_service.set_user_offline(user_id, token)
         global_logger.info("Auth", f"用户登出成功 - uid: {user_id}")
     
-    return {"message": "登出成功"}
+    return ApiResponse.success(message="登出成功")
 
 
 @router.put("/password", summary="修改密码")
@@ -306,4 +306,4 @@ async def change_password(
     
     global_logger.info("Auth", f"密码修改成功 - uid: {current_user['uid']}, username: {current_user['username']}")
     
-    return {"message": "密码修改成功"}
+    return ApiResponse.success(message="密码修改成功")
