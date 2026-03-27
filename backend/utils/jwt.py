@@ -6,7 +6,7 @@ JWT工具模块
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
 from jose import JWTError, jwt  # JWT库，用于生成和验证令牌
-from passlib.context import CryptContext  # 密码加密库
+import bcrypt  # 密码加密库
 
 from core.config import config
 
@@ -16,10 +16,9 @@ ALGORITHM = config["global.global.algorithm"]  # JWT加密算法，这里使用H
 ACCESS_TOKEN_EXPIRE_MINUTES = config["global.global.access_token_expire_minutes"]  # 访问令牌过期时间（分钟）
 REFRESH_TOKEN_EXPIRE_DAYS = config["global.global.refresh_token_expire_days"]  # 刷新令牌过期时间（天）
 
-# 密码加密上下文
-# schemes: 使用的加密算法，这里使用bcrypt
-# deprecated: 自动处理过时的加密算法
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt 密码哈希配置
+# bcrypt 限制密码最大 72 字节，超过将被截断
+BCRYPT_MAX_PASSWORD_BYTES = 72
 
 
 class JWTUtil:
@@ -107,19 +106,29 @@ class JWTUtil:
     def hash_password(password: str) -> str:
         """密码哈希加密
         
+        使用 bcrypt 算法对密码进行哈希。
+        bcrypt 限制密码最大 72 字节，超过部分将被截断。
+        
         Args:
             password (str): 原始密码
             
         Returns:
             str: 哈希后的密码
         """
-        if len(password) > 64:
-            password = password[:64]  # 截断密码到64个字符
-        return pwd_context.hash(password)  # 使用bcrypt算法对密码进行哈希
+        # 将密码编码为字节，并截断到 72 字节
+        password_bytes = password.encode('utf-8')[:BCRYPT_MAX_PASSWORD_BYTES]
+        # 生成盐并哈希密码
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        # 返回字符串形式的哈希值
+        return hashed.decode('utf-8')
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """验证密码
+        
+        验证原始密码与哈希密码是否匹配。
+        bcrypt 限制密码最大 72 字节，超过部分将被截断。
         
         Args:
             plain_password (str): 原始密码
@@ -128,6 +137,14 @@ class JWTUtil:
         Returns:
             bool: 密码匹配返回True，否则返回False
         """
-        return pwd_context.verify(plain_password, hashed_password)  # 验证原始密码与哈希密码是否匹配
+        try:
+            # 将密码和哈希值编码为字节
+            password_bytes = plain_password.encode('utf-8')[:BCRYPT_MAX_PASSWORD_BYTES]
+            hashed_bytes = hashed_password.encode('utf-8')
+            # 验证密码
+            return bcrypt.checkpw(password_bytes, hashed_bytes)
+        except Exception:
+            # 如果哈希值格式无效，返回 False
+            return False
 
 jwt_util = JWTUtil()

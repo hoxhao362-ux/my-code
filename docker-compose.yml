@@ -33,6 +33,7 @@ services:
     container_name: journal_redis
     networks:
       - journal_network
+    command: redis-server --requirepass ${REDIS_PWD}
     environment:
       - REDIS_PASSWORD=${REDIS_PWD}
     ports:
@@ -67,7 +68,7 @@ services:
     volumes:
       - ./.space/elasticsearch:/usr/share/elasticsearch/data
       # 挂载插件目录以便后续安装 IK 分词器
-      - ./.space/es_plugins:/usr/share/elasticsearch/plugins 
+      # - ./.space/es_plugins:/usr/share/elasticsearch/plugins 
     restart: unless-stopped
 
   # 4. Kafka (KRaft 模式，抛弃臃肿的 Zookeeper)

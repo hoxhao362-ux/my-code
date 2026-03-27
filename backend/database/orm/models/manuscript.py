@@ -35,7 +35,13 @@ class Manuscript(Base):
     
     # 基本信息
     title: Mapped[str] = mapped_column(Text, nullable=False, comment="稿件标题")
-    authors: Mapped[str] = mapped_column(Text, nullable=False, comment="作者列表（字符串，逗号分隔）")
+    article_type: Mapped[str] = mapped_column(Text, nullable=False, server_default="Research Article", comment="文章类型")
+    section_category: Mapped[str | None] = mapped_column(Text, nullable=True, comment="栏目/类别")
+    keywords: Mapped[str] = mapped_column(Text, nullable=False, server_default="", comment="关键字")
+    first_author: Mapped[str] = mapped_column(Text, nullable=False, server_default="", comment="第一作者")
+    corresponding_author: Mapped[str] = mapped_column(Text, nullable=False, server_default="", comment="通讯作者")
+    order_of_authors: Mapped[str] = mapped_column(Text, nullable=False, server_default="[]", comment="作者排序(JSON格式)")
+    authors: Mapped[str] = mapped_column(Text, nullable=False, comment="作者列表（字符串，逗号分隔，向下兼容）")
     abstract: Mapped[str | None] = mapped_column(Text, nullable=True, comment="摘要")
     subject: Mapped[str] = mapped_column(Text, nullable=False, comment="学科/主题")
     

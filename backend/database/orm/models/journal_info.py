@@ -4,6 +4,7 @@
 表名：journal_info
 用途：存储期数、出版信息、DOI 等扩展字段。
 """
+from __future__ import annotations
 
 import warnings
 warnings.warn(
@@ -11,8 +12,6 @@ warnings.warn(
     DeprecationWarning,
     stacklevel=2,
 )
-
-from __future__ import annotations
 
 from sqlalchemy import BigInteger, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column

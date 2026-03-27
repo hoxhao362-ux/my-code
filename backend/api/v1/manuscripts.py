@@ -4,7 +4,10 @@
 包含稿件投稿、流转、文件管理等功能
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -16,6 +19,7 @@ from core.enums import UserRole, ManuscriptStatus, FileContentType, WorkflowActi
 from utils.jwt import jwt_util
 from service.redis_service import redis_service
 from service.manuscript_service import manuscript_workflow_service
+from service.pdf_service import pdf_service
 from utils.generator import generator
 from api import dependencies as deps
 from model.response import ApiResponse
@@ -120,6 +124,12 @@ async def get_manuscript_list(
 @router.post("/", summary="创建/上传稿件")
 async def create_manuscript(
     title: str = Form(...),
+    article_type: str = Form("Research Article"),
+    section_category: str | None = Form(None),
+    keywords: str = Form(""),
+    first_author: str = Form(""),
+    corresponding_author: str = Form(""),
+    order_of_authors: str = Form("[]"),
     authors: str = Form(...),
     abstract: str | None = Form(None),
     subject: str = Form(...),
@@ -137,6 +147,12 @@ async def create_manuscript(
     
     Args:
         title: 稿件标题
+        article_type: 文章类型
+        section_category: 栏目/类别
+        keywords: 关键字
+        first_author: 第一作者
+        corresponding_author: 通讯作者
+        order_of_authors: 作者排序
         authors: 作者列表
         abstract: 摘要
         subject: 学科/主题
@@ -185,6 +201,12 @@ async def create_manuscript(
             manuscript_id=int(manuscript_id),
             author_uid=current_user["uid"],
             title=title,
+            article_type=article_type,
+            section_category=section_category,
+            keywords=keywords,
+            first_author=first_author,
+            corresponding_author=corresponding_author,
+            order_of_authors=order_of_authors,
             authors=authors,
             subject=subject,
             abstract=abstract,
@@ -249,6 +271,12 @@ async def get_manuscript_detail(
         "manuscript_id": manuscript.manuscript_id,
         "author_uid": manuscript.author_uid,
         "title": manuscript.title,
+        "article_type": manuscript.article_type,
+        "section_category": manuscript.section_category,
+        "keywords": manuscript.keywords,
+        "first_author": manuscript.first_author,
+        "corresponding_author": manuscript.corresponding_author,
+        "order_of_authors": manuscript.order_of_authors,
         "authors": manuscript.authors,
         "abstract": manuscript.abstract,
         "subject": manuscript.subject,
@@ -427,3 +455,83 @@ async def get_manuscript_history(
     """获取稿件的操作历史记录"""
     # TODO: 实现操作历史查询
     return ApiResponse.success(data={"manuscript_id": manuscript_id, "history": []})
+
+@router.post("/preview-pdf", summary="预览合并后的正式 PDF")
+async def preview_merged_pdf(
+    title: str = Form(...),
+    article_type: str = Form("Research Article"),
+    section_category: str | None = Form(None),
+    keywords: str = Form(""),
+    first_author: str = Form(""),
+    corresponding_author: str = Form(""),
+    order_of_authors: str = Form("[]"),
+    authors: str = Form(""),
+    abstract: str | None = Form(None),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(deps.get_current_active_user),
+):
+    """
+    高阶 PDF 合成与预览接口
+    
+    接收用户提交的稿件元数据和正文文件，动态生成符合学术规范的封面，
+    并与正文合并为单一 PDF 返回给前端进行预览。此接口不保存数据到数据库。
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="未上传文件")
+        
+    ext = Path(file.filename).suffix.lower()
+    if ext not in [".pdf", ".doc", ".docx"]:
+        raise HTTPException(status_code=400, detail="只支持 PDF 和 Word 文档转换")
+        
+    try:
+        # 使用临时目录来处理文件，避免占用存储空间
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # 1. 保存上传的原文件
+            input_file_path = os.path.join(temp_dir, f"input{ext}")
+            content = await file.read()
+            with open(input_file_path, "wb") as f:
+                f.write(content)
+                
+            # 2. 转换为 PDF (如果已经是 PDF，则内部会直接返回原路径)
+            main_pdf_path = pdf_service.convert_to_pdf(input_file_path, temp_dir)
+            
+            # 3. 生成封面 PDF
+            cover_pdf_path = os.path.join(temp_dir, "cover.pdf")
+            data = {
+                "title": title,
+                "article_type": article_type,
+                "section_category": section_category,
+                "keywords": keywords,
+                "first_author": first_author,
+                "corresponding_author": corresponding_author,
+                "order_of_authors": order_of_authors,
+                "authors": authors,
+                "abstract": abstract
+            }
+            pdf_service.generate_cover_pdf(data, cover_pdf_path)
+            
+            # 4. 合并 PDF
+            merged_pdf_path = os.path.join(temp_dir, "merged.pdf")
+            pdf_service.merge_pdfs([cover_pdf_path, main_pdf_path], merged_pdf_path)
+            
+            # 5. 读取合并后的内容并作为流返回
+            with open(merged_pdf_path, "rb") as f:
+                pdf_content = f.read()
+                
+            # 清理临时文件由 TemporaryDirectory 上下文管理器自动完成
+            
+        def iterfile():
+            yield pdf_content
+            
+        return StreamingResponse(
+            iterfile(), 
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename=preview_merged.pdf"
+            }
+        )
+        
+    except Exception as e:
+        global_logger.error("Manuscripts", f"PDF 合成预览失败: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF 处理失败: {str(e)}")
+

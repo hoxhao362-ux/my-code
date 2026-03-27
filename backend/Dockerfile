@@ -8,10 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     TZ=Asia/Shanghai
 
-# 安装系统依赖（如需编译部分Python包）
+# 安装系统依赖（如需编译部分Python包）及 LibreOffice 与中文字体
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    libreoffice-core \
+    libreoffice-writer \
+    fonts-wqy-microhei \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件并安装

@@ -5,6 +5,7 @@
 - journals：投稿主表
 - review_records：审核记录表
 """
+from __future__ import annotations
 
 import warnings
 warnings.warn(
@@ -12,8 +13,6 @@ warnings.warn(
     DeprecationWarning,
     stacklevel=2,
 )
-
-from __future__ import annotations
 
 from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column

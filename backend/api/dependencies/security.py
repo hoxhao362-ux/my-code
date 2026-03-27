@@ -3,7 +3,7 @@
 
 提供 JWT 令牌解析、用户认证、权限校验等功能。
 """
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List
 from fastapi import Depends, HTTPException, status, Header
 
 from core.enums import UserRole
@@ -133,64 +133,6 @@ async def get_writer_user(current_user: Dict[str, Any] = Depends(get_current_act
             detail="需要作者权限"
         )
     return current_user
-
-
-def require_role(required_roles: Union[str, List[str]]):
-    """
-    通用角色权限检查装饰器
-    
-    功能说明：
-    1. 支持单个角色或角色列表
-    2. 基于角色层级判断权限
-    3. 返回依赖注入函数
-    
-    Args:
-        required_roles: 所需角色（字符串或列表）
-        
-    Returns:
-        Callable: FastAPI 依赖注入函数
-        
-    Example:
-        @router.get("/admin-only")
-        async def admin_only_endpoint(
-            current_user: dict = Depends(require_role(["admin"]))
-        ):
-            pass
-            
-        @router.get("/editor-or-higher")
-        async def editor_or_higher(
-            current_user: dict = Depends(require_role(UserRole.EDITOR.value))
-        ):
-            pass
-    """
-    # 标准化为列表
-    if isinstance(required_roles, str):
-        required_roles = [required_roles]
-    
-    async def role_checker(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
-        current_role = current_user["role"]
-        
-        # 检查是否满足任一角色要求
-        allowed = False
-        for required_role in required_roles:
-            if UserRole.has_permission(current_role, required_role):
-                allowed = True
-                break
-        
-        if not allowed:
-            global_logger.warning(
-                "Security", 
-                f"权限不足 - uid: {current_user['uid']}, username: {current_user['username']}, "
-                f"current_role: {current_role}, required_roles: {required_roles}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"需要以下角色权限之一：{', '.join(required_roles)}"
-            )
-        
-        return current_user
-    
-    return role_checker
 
 
 async def get_editor_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
