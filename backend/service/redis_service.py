@@ -56,8 +56,10 @@ class RedisService(BaseManagedService):
                     self._initialized = True
                     global_logger.info("Redis", f"Redis 服务就绪并连接成功: {host}:{port}")
                     return
-                except Exception:
+                except Exception as e:
                     retry_count += 1
+                    if retry_count % 5 == 0 or retry_count == 1:
+                        global_logger.warning("Redis", f"Redis 连接失败，重试中 ({retry_count}/{max_retries}): {e}")
                     if retry_count >= max_retries:
                         raise
                     await asyncio.sleep(1)
@@ -84,7 +86,10 @@ class RedisService(BaseManagedService):
             port=port,
             password=password,
             db=db,
-            decode_responses=True
+            decode_responses=True,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            retry_on_timeout=True
         )
         # 测试连接
         await self.client.ping()

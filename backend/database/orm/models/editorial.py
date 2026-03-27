@@ -12,8 +12,8 @@ from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.orm.base import Base
-from backend.database.orm.models.manuscript import Manuscript
-from backend.database.orm.models.user import User
+from database.orm.models.manuscript import Manuscript
+from database.orm.models.user import User
 
 class EditorialBoard(Base):
     """

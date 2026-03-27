@@ -4,6 +4,10 @@ import tomllib
 from pathlib import Path
 from typing import Any
 from utils.log import global_logger
+from dotenv import load_dotenv
+
+# 加载 .env 文件（如果存在）
+load_dotenv()
 
 def _replace_env_vars(data: Any) -> Any:
     """

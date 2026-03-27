@@ -49,7 +49,7 @@ def load_sqlalchemy_async_config() -> SqlAlchemyAsyncConfig:
     database = config["database.database.database_name"]
 
     password = config.get("database.database.database_password")
-    if password is None or (isinstance(password, float) and password != password):
+    if password is None or (isinstance(password, float) and password != password) or password == "${PG_PWD}":
         password = None
 
     pool_size = int(config.get("database.database.pool_size", 10))

@@ -33,7 +33,12 @@ class ElasticsearchService(BaseManagedService):
         # 初始化父类，注册服务名为 'elasticsearch'
         super().__init__("elasticsearch")
         self.client: Optional[AsyncElasticsearch] = None
-        
+
+        # 分词器配置（启动时检测 IK 插件后确定）
+        self._ik_enabled: bool = False
+        self._analyzer: str = "standard"  # 默认使用 standard
+        self._search_analyzer: str = "standard"
+
         # 加载配置
         # 配置文件: backend/configs/elasticsearch.toml
         # 访问格式: 配置文件名.表名.键名
@@ -44,7 +49,7 @@ class ElasticsearchService(BaseManagedService):
         self.scheme = config.get("elasticsearch.elasticsearch.elasticsearch_scheme", "http")
         self.username = config.get("elasticsearch.elasticsearch.elasticsearch_username", "")
         self.password = config.get("elasticsearch.elasticsearch.elasticsearch_password", "")
-        
+
         self.index_name = config.get("elasticsearch.elasticsearch.elasticsearch_index", "journals")
         self.shards = config.get("elasticsearch.elasticsearch.elasticsearch_shards", 1)
         self.replicas = config.get("elasticsearch.elasticsearch.elasticsearch_replicas", 0)
@@ -75,8 +80,12 @@ class ElasticsearchService(BaseManagedService):
                 info = await self.client.info()
                 version = info['version']['number']
                 global_logger.info("Elasticsearch", f"连接成功，版本: {version}")
+
+                # 检测 IK 插件是否可用
+                await self._check_ik_plugin()
+
                 self._initialized = True
-                
+
                 # 检查索引是否存在，不存在则创建
                 await self.create_index_if_not_exists()
             else:
@@ -98,6 +107,53 @@ class ElasticsearchService(BaseManagedService):
             self._initialized = False
             global_logger.info("Elasticsearch", "连接已关闭")
 
+    async def _check_ik_plugin(self):
+        """
+        检测 IK 中文分词插件是否已安装
+
+        通过调用 ES 的 _cat/plugins API 检查 analysis-ik 插件
+        根据结果设置分词器类型实例变量
+        """
+        if not self.client:
+            return
+
+        try:
+            # 使用 _cat/plugins API 获取已安装插件列表
+            # 返回格式: component=analysis-ik, version=...
+            response = await self.client.cat.plugins(format="json")
+
+            # 检查是否包含 analysis-ik 插件
+            ik_installed = any(
+                plugin.get("component") == "analysis-ik"
+                for plugin in response
+            )
+
+            if ik_installed:
+                self._ik_enabled = True
+                self._analyzer = "ik_max_word"
+                self._search_analyzer = "ik_smart"
+                global_logger.info("Elasticsearch", "检测到 IK 中文分词插件，已启用 IK 分词器")
+            else:
+                self._ik_enabled = False
+                self._analyzer = "standard"
+                self._search_analyzer = "standard"
+                global_logger.warning(
+                    "Elasticsearch",
+                    "未检测到 IK 中文分词插件，已回退使用 Standard 分词器。"
+                    "建议安装 IK 插件以获得更好的中文搜索效果："
+                    "https://github.com/medcl/elasticsearch-analysis-ik"
+                )
+
+        except Exception as e:
+            # 检测失败时默认使用 standard 分词器
+            self._ik_enabled = False
+            self._analyzer = "standard"
+            self._search_analyzer = "standard"
+            global_logger.warning(
+                "Elasticsearch",
+                f"检测 IK 插件时发生异常: {e}，已回退使用 Standard 分词器"
+            )
+
     async def create_index_if_not_exists(self):
         """如果索引不存在则创建"""
         if not self.client:
@@ -111,78 +167,68 @@ class ElasticsearchService(BaseManagedService):
         if not self.client:
             return
 
-        # 定义 Mapping
-        # 注意：这里默认使用了 ik_max_word 和 ik_smart 分词器
-        # 如果 ES 服务端未安装 IK 插件，创建索引会失败
+        # 根据启动时检测到的 IK 插件状态动态生成 mapping
+        # 如果 IK 可用则使用 ik_max_word/ik_smart，否则使用 standard
         mapping = {
             "settings": {
                 "number_of_shards": self.shards,
                 "number_of_replicas": self.replicas,
-                "analysis": {
-                    "analyzer": {
-                        "default": {
-                            "type": "ik_max_word"
-                        },
-                        "default_search": {
-                            "type": "ik_smart"
-                        }
-                    }
-                }
             },
             "mappings": {
                 "properties": {
                     "manuscript_id": {"type": "long"},
                     "title": {
                         "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_smart",
+                        "analyzer": self._analyzer,
+                        "search_analyzer": self._search_analyzer,
                         "fields": {"keyword": {"type": "keyword", "ignore_above": 256}}
+                    },
+                    "keywords": {
+                        "type": "text",
+                        "analyzer": self._analyzer,
+                        "search_analyzer": self._search_analyzer
                     },
                     "authors": {
                         "type": "text",
-                        "analyzer": "ik_max_word",  # 作者名也可能包含中文
-                        "search_analyzer": "ik_smart"
+                        "analyzer": self._analyzer,
+                        "search_analyzer": self._search_analyzer
+                    },
+                    "first_author": {
+                        "type": "text",
+                        "analyzer": self._analyzer,
+                        "search_analyzer": self._search_analyzer
                     },
                     "abstract": {
                         "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_smart"
+                        "analyzer": self._analyzer,
+                        "search_analyzer": self._search_analyzer
                     },
-                    "subject": {"type": "keyword"},  # 学科作为过滤条件
-                    "stage": {"type": "keyword"},  # 流转阶段
+                    "article_type": {"type": "keyword"},
+                    "subject": {"type": "keyword"},
+                    "section_category": {"type": "keyword"},
+                    "stage": {"type": "keyword"},
                     "status": {"type": "keyword"},
-                    "create_time": {"type": "keyword"},  # ISO 字符串格式
-                    "update_time": {"type": "keyword"}   # ISO 字符串格式
+                    "create_time": {"type": "keyword"},
+                    "update_time": {"type": "keyword"}
                 }
             }
         }
 
+        # 仅当 IK 可用时才添加自定义 analysis 配置
+        if self._ik_enabled:
+            mapping["settings"]["analysis"] = {
+                "analyzer": {
+                    "default": {"type": "ik_max_word"},
+                    "default_search": {"type": "ik_smart"}
+                }
+            }
+
         try:
-            # 尝试创建带 IK 分词器的索引
             await self.client.indices.create(index=self.index_name, body=mapping)
-            global_logger.info("Elasticsearch", f"索引 {self.index_name} 创建成功 (使用 IK 分词器)")
+            analyzer_type = "IK" if self._ik_enabled else "Standard"
+            global_logger.info("Elasticsearch", f"索引 {self.index_name} 创建成功 (使用 {analyzer_type} 分词器)")
         except Exception as e:
-            error_msg = str(e)
-            if "unknown analysis" in error_msg or "analyzer [ik_max_word] not found" in error_msg:
-                global_logger.warning("Elasticsearch", "创建索引失败，未检测到 IK 分词器，尝试使用标准分词器回退...")
-                # 回退方案：移除 analysis 设置，使用默认 standard 分词器
-                fallback_mapping = mapping.copy()
-                del fallback_mapping["settings"]["analysis"]
-                # 移除字段中的 analyzer 指定
-                props = fallback_mapping["mappings"]["properties"]
-                for field in ["title", "authors", "abstract"]:
-                    if field in props and "analyzer" in props[field]:
-                        del props[field]["analyzer"]
-                    if field in props and "search_analyzer" in props[field]:
-                        del props[field]["search_analyzer"]
-                
-                try:
-                    await self.client.indices.create(index=self.index_name, body=fallback_mapping)
-                    global_logger.info("Elasticsearch", f"索引 {self.index_name} 创建成功 (使用 Standard 分词器)")
-                except Exception as e2:
-                    global_logger.error("Elasticsearch", f"回退创建索引失败: {e2}")
-            else:
-                global_logger.error("Elasticsearch", f"创建索引失败: {e}")
+            global_logger.error("Elasticsearch", f"创建索引失败: {e}")
 
     async def delete_index(self):
         """删除索引"""
@@ -208,6 +254,10 @@ class ElasticsearchService(BaseManagedService):
         doc = {
             "manuscript_id": manuscript.manuscript_id,
             "title": manuscript.title,
+            "article_type": manuscript.article_type,
+            "section_category": manuscript.section_category,
+            "keywords": manuscript.keywords,
+            "first_author": manuscript.first_author,
             "authors": manuscript.authors,
             "subject": manuscript.subject,
             "abstract": manuscript.abstract,
