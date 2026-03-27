@@ -54,34 +54,7 @@ class Config:
             config = load_toml(config_file)
             self._configs[config_file.stem] = config
         
-        self._apply_env_overrides()
         self._initialized = True
-
-    def _apply_env_overrides(self):
-        """
-        从环境变量覆盖敏感配置项
-        
-        环境变量映射：
-        - JWT_SECRET_KEY -> global.global.secret_key
-        - DB_PASSWORD -> database.database.database_password
-        - REDIS_PASSWORD -> redis.redis.redis_password
-        """
-        env_overrides = {
-            "JWT_SECRET_KEY": ("global", ["global", "secret_key"]),
-            "DB_PASSWORD": ("database", ["database", "database_password"]),
-            "REDIS_PASSWORD": ("redis", ["redis", "redis_password"]),
-        }
-        
-        for env_var, (config_file, key_path) in env_overrides.items():
-            value = os.environ.get(env_var)
-            if value:
-                # 逐级访问并设置配置值
-                config_dict = self._configs.get(config_file, {})
-                target = config_dict
-                for key in key_path[:-1]:
-                    target = target.setdefault(key, {})
-                target[key_path[-1]] = value
-                global_logger.info('config', f'环境变量 {env_var} 已覆盖配置项')
 
     def __getitem__(self, key):
         """

@@ -1,12 +1,57 @@
+import os
+import re
 import tomllib
 from pathlib import Path
+from typing import Any
+from utils.log import global_logger
+
+def _replace_env_vars(data: Any) -> Any:
+    """
+    递归遍历配置字典，替换所有的环境变量占位符 ${ENV_VAR}
+    
+    Args:
+        data: 配置数据，可能是字典、列表或字符串等基本类型
+        
+    Returns:
+        替换环境变量后的数据
+    """
+    if isinstance(data, dict):
+        return {k: _replace_env_vars(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [_replace_env_vars(v) for v in data]
+    elif isinstance(data, str):
+        # 匹配 ${ENV_VAR} 格式的占位符
+        pattern = re.compile(r'\$\{([^}]+)\}')
+        
+        def replacer(match):
+            env_name = match.group(1)
+            env_value = os.environ.get(env_name)
+            if env_value is not None:
+                global_logger.info('config', f"成功从环境变量加载配置项: {env_name}")
+                return env_value
+            global_logger.warning('config', f"未找到环境变量: {env_name}，将保留原占位符")
+            return match.group(0)
+            
+        return pattern.sub(replacer, data)
+    return data
 
 def load_toml(path: Path) -> dict:
+    """
+    读取并解析 TOML 文件，同时将内容中的环境变量占位符替换为实际环境变量值
+    
+    Args:
+        path: TOML 文件的路径
+        
+    Returns:
+        解析并替换后的配置字典
+    """
     if not path.exists():
         raise FileNotFoundError(f"TOML文件不存在喵: {path}")
     try:
         with open(path, 'rb') as f:
             config = tomllib.load(f)
+            # 解析完成后，替换可能存在的环境变量占位符
+            config = _replace_env_vars(config)
             return config
     except Exception as e:
         raise RuntimeError(f"加载TOML文件失败喵: {e}")
