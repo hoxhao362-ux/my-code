@@ -122,12 +122,21 @@ async def lifespan(app: FastAPI):
     global_logger.info('main', "应用已完全关闭")
 
 
+# 获取环境配置，生产环境关闭 API 文档
+env = config.get("global.global.env", "dev")
+docs_url = "/docs" if env != "prod" else None
+redoc_url = "/redoc" if env != "prod" else None
+openapi_url = "/openapi.json" if env != "prod" else None
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title="期刊平台 API", 
     description="期刊平台投稿站后端 API",
     version="2.0.0",  # 升级到 2.0 版本，标记重构完成
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url
 )
 
 # 配置核心功能
