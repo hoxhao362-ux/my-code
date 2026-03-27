@@ -15,6 +15,8 @@ from model.invitation import (
 from api import dependencies as deps
 
 from database.dependencies import get_db_session
+from model.response import ApiResponse
+
 router = APIRouter(tags=["管理员-邀请码管理"])
 
 @router.post("/invitation-codes", summary="创建邀请码", response_model=InvitationCodeResponse)
@@ -49,17 +51,17 @@ async def create_invitation_code(
     )
     
     # 返回邀请码信息
-    return InvitationCodeResponse(
-        code=code,
-        role=request.role,
-        status="active",
-        max_uses=request.max_uses,
-        used_count=0,
-        description=request.description,
-        created_by=current_user["username"],
-        create_time=datetime.now(),
-        expire_time=request.expire_time
-    )
+    return ApiResponse.success(data={
+        "code": code,
+        "role": request.role,
+        "status": "active",
+        "max_uses": request.max_uses,
+        "used_count": 0,
+        "description": request.description,
+        "created_by": current_user["username"],
+        "create_time": datetime.now().isoformat(),
+        "expire_time": request.expire_time.isoformat() if request.expire_time else None
+    })
 
 @router.get("/invitation-codes", summary="获取邀请码列表", response_model=InvitationCodeListResponse)
 async def get_invitation_codes(
@@ -93,10 +95,10 @@ async def get_invitation_codes(
         session=session,
     )
     
-    return InvitationCodeListResponse(
-        total=result["total"],
-        codes=[InvitationCodeResponse(**code) for code in result["codes"]]
-    )
+    return ApiResponse.success(data={
+        "total": result["total"],
+        "codes": result["codes"]
+    })
 
 @router.put("/invitation-codes/{code}/status", summary="更新邀请码状态")
 async def update_invitation_code_status(
@@ -124,7 +126,7 @@ async def update_invitation_code_status(
         session=session,
     )
     
-    return {"message": "邀请码状态更新成功", "code": code, "status": request.status}
+    return ApiResponse.success(data={"code": code, "status": request.status}, message="邀请码状态更新成功")
 
 @router.get("/invitation-codes/validate/{code}", summary="验证邀请码")
 async def validate_invitation_code(
@@ -149,4 +151,4 @@ async def validate_invitation_code(
         session=session,
     )
     
-    return InvitationCodeValidateResponse(**result)
+    return ApiResponse.success(data=result)

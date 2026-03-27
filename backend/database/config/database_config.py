@@ -1,6 +1,20 @@
 """
-数据库配置管理模块
-基于配置文件标准化的数据库配置管理
+[DEPRECATED] 数据库配置管理模块
+
+本模块已废弃，这是 SQLite 遗留配置。
+
+废弃原因：
+1. 项目已迁移至 PostgreSQL
+2. 数据库配置已统一通过 database.toml 和 ORM 模块管理
+3. 新的数据库服务使用 database/service/database_service.py
+
+如需数据库配置，请参考：
+- configs/database.toml - 数据库连接配置
+- database/orm/session.py - SQLAlchemy 会话管理
+- database/service/database_service.py - 数据库服务管理
+
+废弃日期：2026-03-26
+保留原因：向后兼容（部分旧代码可能仍在引用）
 """
 import os
 from pathlib import Path

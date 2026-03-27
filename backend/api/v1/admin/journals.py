@@ -17,6 +17,7 @@ from database.orm.models.user import User
 from database.repositories.journal_repo import JournalRepository
 from database.repositories.review_repo import ReviewRepository
 from database.uow import transactional
+from model.response import ApiResponse
 
 router = APIRouter(tags=["管理员-文献管理"])
 
@@ -46,10 +47,10 @@ async def get_all_journals(
         session=session,
     )
     
-    return {
+    return ApiResponse.success(data={
         "total": total,
         "journals": journals,
-    }
+    })
 
 @router.delete("/journals/{jid}", summary="删除文献")
 async def admin_delete_journal(
@@ -97,7 +98,7 @@ async def admin_delete_journal(
         session=session,
     )
     
-    return {"message": "文献删除成功"}
+    return ApiResponse.success(message="文献删除成功")
 
 @router.get("/review-records", summary="获取所有审核记录")
 async def get_all_review_records(
@@ -128,10 +129,10 @@ async def get_all_review_records(
         session=session,
     )
     
-    return {
+    return ApiResponse.success(data={
         "total": total,
         "records": review_records,
-    }
+    })
 
 @router.get("/journals/deleted", summary="获取已删除文献列表")
 async def get_deleted_journals(
@@ -158,10 +159,10 @@ async def get_deleted_journals(
         session=session,
     )
     
-    return {
+    return ApiResponse.success(data={
         "total": total,
         "journals": journals,
-    }
+    })
 
 @router.delete("/journals/deleted/{jid}", summary="彻底删除文献")
 async def permanently_delete_journal(
@@ -178,7 +179,7 @@ async def permanently_delete_journal(
         raise HTTPException(status_code=404, detail="已删除文献不存在")
     
     # 获取配置
-    paper_dir = Path(config['global.global.papers_dir'])
+    paper_dir = Path(config['global.global.literature_dir'])
     
     # 删除文件
     file_ext = Path(journal.file_name).suffix
@@ -203,4 +204,4 @@ async def permanently_delete_journal(
         session=session,
     )
     
-    return {"message": "文献彻底删除成功"}
+    return ApiResponse.success(message="文献彻底删除成功")

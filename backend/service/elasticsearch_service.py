@@ -21,16 +21,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from core.config import config
+from core.service_manager import BaseManagedService
 from utils.log import global_logger
-from database.orm.models.journal import Journal
-from database.orm.models.journal_info import JournalInfo
+from database.orm.models.manuscript import Manuscript
 
-class ElasticsearchService:
+
+class ElasticsearchService(BaseManagedService):
     """Elasticsearch 服务管理器 (异步)"""
 
     def __init__(self):
+        # 初始化父类，注册服务名为 'elasticsearch'
+        super().__init__("elasticsearch")
         self.client: Optional[AsyncElasticsearch] = None
-        self._initialized = False
         
         # 加载配置
         # 配置文件: backend/configs/elasticsearch.toml
@@ -47,8 +49,12 @@ class ElasticsearchService:
         self.shards = config.get("elasticsearch.elasticsearch.elasticsearch_shards", 1)
         self.replicas = config.get("elasticsearch.elasticsearch.elasticsearch_replicas", 0)
 
-    async def initialize(self):
-        """初始化 Elasticsearch 客户端连接"""
+    async def start(self):
+        """
+        启动 Elasticsearch 服务（实现 BaseManagedService 接口）
+        
+        初始化 Elasticsearch 客户端连接
+        """
         if self._initialized:
             return
 
@@ -80,10 +86,15 @@ class ElasticsearchService:
             global_logger.exception("Elasticsearch", f"初始化失败: {e}")
             self.client = None
 
-    async def close(self):
-        """关闭连接"""
+    async def stop(self):
+        """
+        停止 Elasticsearch 服务（实现 BaseManagedService 接口）
+        
+        关闭连接
+        """
         if self.client:
             await self.client.close()
+            self.client = None
             self._initialized = False
             global_logger.info("Elasticsearch", "连接已关闭")
 
@@ -120,7 +131,7 @@ class ElasticsearchService:
             },
             "mappings": {
                 "properties": {
-                    "jid": {"type": "long"},
+                    "manuscript_id": {"type": "long"},
                     "title": {
                         "type": "text",
                         "analyzer": "ik_max_word",
@@ -129,7 +140,7 @@ class ElasticsearchService:
                     },
                     "authors": {
                         "type": "text",
-                        "analyzer": "ik_max_word", # 作者名也可能包含中文
+                        "analyzer": "ik_max_word",  # 作者名也可能包含中文
                         "search_analyzer": "ik_smart"
                     },
                     "abstract": {
@@ -137,19 +148,11 @@ class ElasticsearchService:
                         "analyzer": "ik_max_word",
                         "search_analyzer": "ik_smart"
                     },
-                    "subject": {"type": "keyword"}, # 学科作为过滤条件
-                    "keywords": {
-                        "type": "text",
-                        "analyzer": "ik_max_word",
-                        "search_analyzer": "ik_smart",
-                         "fields": {"keyword": {"type": "keyword", "ignore_above": 256}}
-                    },
+                    "subject": {"type": "keyword"},  # 学科作为过滤条件
+                    "stage": {"type": "keyword"},  # 流转阶段
                     "status": {"type": "keyword"},
-                    "journal_type": {"type": "keyword"},
-                    "issue_number": {"type": "keyword"},
-                    "publication_date": {"type": "date"}, # 支持时间范围查询
-                    "create_time": {"type": "date"},
-                    "update_time": {"type": "date"}
+                    "create_time": {"type": "keyword"},  # ISO 字符串格式
+                    "update_time": {"type": "keyword"}   # ISO 字符串格式
                 }
             }
         }
@@ -167,10 +170,10 @@ class ElasticsearchService:
                 del fallback_mapping["settings"]["analysis"]
                 # 移除字段中的 analyzer 指定
                 props = fallback_mapping["mappings"]["properties"]
-                for field in ["title", "authors", "abstract", "keywords"]:
-                    if "analyzer" in props[field]:
+                for field in ["title", "authors", "abstract"]:
+                    if field in props and "analyzer" in props[field]:
                         del props[field]["analyzer"]
-                    if "search_analyzer" in props[field]:
+                    if field in props and "search_analyzer" in props[field]:
                         del props[field]["search_analyzer"]
                 
                 try:
@@ -192,57 +195,64 @@ class ElasticsearchService:
         except Exception as e:
             global_logger.error("Elasticsearch", f"删除索引失败: {e}")
 
-    def _model_to_doc(self, journal: Journal, info: Optional[JournalInfo] = None) -> Dict[str, Any]:
-        """将 ORM 模型转换为 ES 文档"""
-        doc = {
-            "jid": journal.jid,
-            "title": journal.title,
-            "authors": journal.authors,
-            "subject": journal.subject,
-            "abstract": journal.abstract,
-            "status": journal.status,
-            "create_time": journal.create_time,
-            "update_time": journal.update_time
-        }
+    def _model_to_doc(self, manuscript: Manuscript) -> Dict[str, Any]:
+        """
+        将 Manuscript ORM 模型转换为 ES 文档
         
-        if info:
-            doc.update({
-                "keywords": info.keywords,
-                "journal_type": info.journal_type,
-                "issue_number": info.issue_number,
-                "publication_date": info.publication_date,
-                "volume": info.volume,
-                "issue": info.issue,
-                "doi": info.doi
-            })
+        Args:
+            manuscript: 稿件模型实例
             
+        Returns:
+            ES 文档字典
+        """
+        doc = {
+            "manuscript_id": manuscript.manuscript_id,
+            "title": manuscript.title,
+            "authors": manuscript.authors,
+            "subject": manuscript.subject,
+            "abstract": manuscript.abstract,
+            "stage": manuscript.stage,
+            "status": manuscript.status,
+            "create_time": manuscript.create_time,
+            "update_time": manuscript.update_time
+        }
         return doc
 
-    async def index_journal(self, journal: Journal, info: Optional[JournalInfo] = None):
-        """索引单个文献"""
+    async def index_manuscript(self, manuscript: Manuscript):
+        """
+        索引单个稿件
+        
+        Args:
+            manuscript: 稿件模型实例
+        """
         if not self.client or not self._initialized:
             # 尝试惰性初始化，防止服务未启动
             if not self._initialized:
-                 await self.initialize()
+                await self.start()
             if not self.client:
                 return
 
         try:
-            doc = self._model_to_doc(journal, info)
-            await self.client.index(index=self.index_name, id=str(journal.jid), document=doc)
-            # global_logger.debug("Elasticsearch", f"文献已索引: {journal.jid}")
+            doc = self._model_to_doc(manuscript)
+            await self.client.index(index=self.index_name, id=str(manuscript.manuscript_id), document=doc)
+            global_logger.debug("Elasticsearch", f"稿件已索引: {manuscript.manuscript_id}")
         except Exception as e:
-            global_logger.error("Elasticsearch", f"索引文献失败 {journal.jid}: {e}")
+            global_logger.error("Elasticsearch", f"索引稿件失败 {manuscript.manuscript_id}: {e}")
 
-    async def delete_journal(self, jid: int):
-        """删除单个文献文档"""
+    async def delete_manuscript(self, manuscript_id: int):
+        """
+        删除单个稿件文档
+        
+        Args:
+            manuscript_id: 稿件 ID
+        """
         if not self.client:
             return
         try:
-            await self.client.delete(index=self.index_name, id=str(jid), ignore=[404])
-            global_logger.info("Elasticsearch", f"文献索引已删除: {jid}")
+            await self.client.delete(index=self.index_name, id=str(manuscript_id), ignore=[404])
+            global_logger.info("Elasticsearch", f"稿件索引已删除: {manuscript_id}")
         except Exception as e:
-            global_logger.error("Elasticsearch", f"删除文档失败 {jid}: {e}")
+            global_logger.error("Elasticsearch", f"删除文档失败 {manuscript_id}: {e}")
 
     async def search(self, 
                      query: str, 
@@ -338,37 +348,38 @@ class ElasticsearchService:
 
     async def sync_all_data(self, session: AsyncSession):
         """
-        全量同步 PostgreSQL 数据到 Elasticsearch
-        :param session: SQLAlchemy AsyncSession
+        全量同步 PostgreSQL 稿件数据到 Elasticsearch
+        
+        Args:
+            session: SQLAlchemy AsyncSession
         """
         if not self.client:
-            await self.initialize()
+            await self.start()
             if not self.client:
                 global_logger.error("Elasticsearch", "服务未就绪，无法同步")
                 return
 
-        global_logger.info("Elasticsearch", "开始全量同步数据...")
+        global_logger.info("Elasticsearch", "开始全量同步稿件数据...")
         start_time = datetime.now()
         
         try:
-            # 1. 查询所有已发布的文献，并预加载 JournalInfo
+            # 查询所有已发布的稿件
             # 注意：如果数据量巨大，应使用 stream 或分页查询
-            # 使用 Join 查询获取 Journal 和 JournalInfo
             stmt = (
-                select(Journal, JournalInfo)
-                .join(JournalInfo, Journal.jid == JournalInfo.jid, isouter=True)
-                .where(Journal.status == "published")
+                select(Manuscript)
+                .where(Manuscript.status == "published")
+                .where(Manuscript.is_deleted == False)
             )
             
             result = await session.execute(stmt)
-            rows = result.all()
+            manuscripts = result.scalars().all()
             
             actions = []
-            for journal, info in rows:
-                doc = self._model_to_doc(journal, info)
+            for manuscript in manuscripts:
+                doc = self._model_to_doc(manuscript)
                 action = {
                     "_index": self.index_name,
-                    "_id": str(journal.jid),
+                    "_id": str(manuscript.manuscript_id),
                     "_source": doc
                 }
                 actions.append(action)

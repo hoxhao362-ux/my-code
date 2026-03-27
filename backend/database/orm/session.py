@@ -52,12 +52,17 @@ def load_sqlalchemy_async_config() -> SqlAlchemyAsyncConfig:
     if password is None or (isinstance(password, float) and password != password):
         password = None
 
+    pool_size = int(config.get("database.database.pool_size", 10))
+    max_overflow = int(config.get("database.database.max_overflow", 20))
+
     return SqlAlchemyAsyncConfig(
         host=host,
         port=port,
         database=database,
         user=user,
         password=password,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
     )
 
 

@@ -1,3 +1,14 @@
+"""
+[DEPRECATED] 文献相关API接口
+
+本模块已废弃，请勿在新代码中使用。
+- Journal 模型已统一为 Manuscript 模型
+- 文献相关功能已迁移至 manuscripts.py
+- 公开查询功能已迁移至 public.py
+
+废弃日期：2026-03-26
+保留原因：向后兼容
+"""
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from typing import List, Optional
 from datetime import datetime
@@ -21,7 +32,7 @@ from model.journal import (
 
 journal_router = APIRouter(
     prefix="/journal",
-    tags=["文献相关接口"],
+    tags=["[已废弃] 文献相关接口"],
     dependencies=[Depends(deps.check_db_service), Depends(deps.check_redis_service)],
 )
 

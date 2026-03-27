@@ -1,4 +1,4 @@
-from re import A
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -9,6 +9,7 @@ ROOT = Path(__file__).parent.parent
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
@@ -53,7 +54,27 @@ class Config:
         for config_file in config_files:
             config = load_toml(config_file)
             self._configs[config_file.stem] = config
+            
+        self._build_flat_configs()
+        self._validate_prod_env()
+        
         self._initialized = True
+
+    def _validate_prod_env(self):
+        """生产环境配置安全校验"""
+        env = self._flat_configs.get("global.global.env", "dev")
+        if env != "prod":
+            return
+            
+        missing_vars = []
+        for key, value in self._flat_configs.items():
+            if isinstance(value, str) and "${" in value and "}" in value:
+                missing_vars.append(f"{key}: {value}")
+                
+        if missing_vars:
+            error_msg = "生产环境(prod)缺少必要的环境变量配置：\n" + "\n".join(missing_vars)
+            global_logger.critical("config", error_msg)
+            raise ValueError(error_msg)
 
     def __getitem__(self, key):
         """
@@ -367,9 +388,23 @@ def setup_core(app: FastAPI):
         # 现在应用支持跨域访问
         # 允许的源地址由 config.global.global.cors_origins 配置决定
     """
+    # 代理请求头解析中间件，放在最外层，用于在 Nginx 等代理后获取真实 IP
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+    # 解析 CORS origins
+    cors_origins_raw = config["global.global.cors_origins"]
+    if isinstance(cors_origins_raw, str):
+        if "${CORS_ORIGINS}" in cors_origins_raw:
+            # 开发环境如果未设置 CORS_ORIGINS，默认放行本地前端
+            cors_origins = ["http://localhost:5173"]
+        else:
+            cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+    else:
+        cors_origins = cors_origins_raw
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config["global.global.cors_origins"], 
+        allow_origins=cors_origins, 
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -378,7 +413,7 @@ def setup_core(app: FastAPI):
     @app.exception_handler(IntegrityError)
     async def _integrity_exception_handler(request: Request, exc: IntegrityError):
         global_logger.exception("database", f"数据完整性异常: {exc}")
-        return JSONResponse(status_code=409, content={"detail": "数据冲突或重复提交"})
+        return JSONResponse(status_code=409, content={"code": 409, "message": "数据冲突或重复提交", "data": None, "meta": None})
 
     @app.exception_handler(SQLAlchemyError)
     async def _sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
@@ -391,4 +426,4 @@ def setup_core(app: FastAPI):
         """
 
         global_logger.exception("database", f"数据库异常: {exc}")
-        return JSONResponse(status_code=500, content={"detail": "数据库服务异常，请稍后重试"})
+        return JSONResponse(status_code=500, content={"code": 500, "message": "数据库服务异常，请稍后重试", "data": None, "meta": None})

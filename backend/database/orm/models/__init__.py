@@ -7,23 +7,43 @@ ORM Model 注册入口
 
 from database.orm.models.admin_log import AdminLog
 from database.orm.models.deleted_journal import DeletedJournal
+from database.orm.models.editorial import EditorialBoard, DecisionRecord
 from database.orm.models.invitation import InvitationCode, InvitationCodeUsage
 from database.orm.models.journal import Journal, ReviewRecord
 from database.orm.models.journal_info import JournalInfo
+from database.orm.models.manuscript import Manuscript, ManuscriptVersion, ManuscriptParticipant, ManuscriptFile
+from database.orm.models.manuscript_info import ManuscriptInfo
 from database.orm.models.payment_order import PaymentOrder
 from database.orm.models.review_opinion import ReviewOpinion
 from database.orm.models.user import User
 
 __all__ = [
+    # 用户与权限
     "User",
-    "Journal",
-    "ReviewRecord",
-    "AdminLog",
-    "DeletedJournal",
-    "JournalInfo",
-    "ReviewOpinion",
     "InvitationCode",
     "InvitationCodeUsage",
+    
+    # 稿件管理（主力模型）
+    "Manuscript",
+    "ManuscriptVersion",
+    "ManuscriptParticipant",
+    "ManuscriptFile",
+    "ManuscriptInfo",
+    
+    # 审稿与决策
+    "ReviewOpinion",
+    "DecisionRecord",
+    
+    # 编委会
+    "EditorialBoard",
+    
+    # 旧版兼容（Deprecated）
+    "Journal",
+    "ReviewRecord",
+    "JournalInfo",
+    "DeletedJournal",
+    
+    # 日志与支付
+    "AdminLog",
     "PaymentOrder",
 ]
-

@@ -15,6 +15,7 @@ from database.orm.models.journal import Journal, ReviewRecord
 from database.orm.models.user import User
 from database.repositories.user_repo import UserRepository
 from database.uow import transactional
+from model.response import ApiResponse
 
 router = APIRouter(tags=["管理员-用户管理"])
 
@@ -54,12 +55,11 @@ async def admin_login(
     expire_time = 3600 * 24 * 30 if request.is_remember else 3600
     await redis_service.set_user_online(user_id=user.uid, token=token, expire_time=expire_time)
 
-    return LoginResponse(
-        login_time=datetime.now(),
-        is_remember=request.is_remember,
-        token=token,
-        message="登录成功"
-    )
+    return ApiResponse.success(data={
+        "login_time": datetime.now().isoformat(),
+        "is_remember": request.is_remember,
+        "token": token,
+    }, message="登录成功")
 
 @router.get("/users", summary="获取用户列表")
 async def get_users(
@@ -74,10 +74,10 @@ async def get_users(
     total = await user_repo.count(role=role)
     users = await user_repo.list_page(page=page, page_size=page_size, role=role)
     
-    return {
+    return ApiResponse.success(data={
         "total": total,
         "users": users,
-    }
+    })
 
 @router.put("/users/{uid}/role", summary="修改用户角色")
 async def update_user_role(
@@ -113,11 +113,10 @@ async def update_user_role(
         session=session,
     )
     
-    return {
-        "message": "用户角色更新成功",
+    return ApiResponse.success(data={
         "uid": uid,
         "new_role": role
-    }
+    }, message="用户角色更新成功")
 
 @router.delete("/users/{uid}", summary="删除用户")
 async def delete_user(
@@ -149,7 +148,4 @@ async def delete_user(
         session=session,
     )
     
-    return {
-        "message": "用户删除成功",
-        "uid": uid
-    }
+    return ApiResponse.success(data={"uid": uid}, message="用户删除成功")
