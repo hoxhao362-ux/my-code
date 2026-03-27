@@ -1,4 +1,3 @@
-"""
 """已删除文献表 ORM Model
 
 表名：deleted_journals

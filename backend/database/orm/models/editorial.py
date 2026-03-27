@@ -12,7 +12,8 @@ from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.orm.base import Base
-
+from backend.database.orm.models.manuscript import Manuscript
+from backend.database.orm.models.user import User
 
 class EditorialBoard(Base):
     """
@@ -40,7 +41,7 @@ class EditorialBoard(Base):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False, server_default="true", comment="是否在职")
     
     # 关联关系
-    appointer: Mapped["User"] = relationship(foreign_keys=[appointed_by_uid], lazy="joined")
+    appointer: Mapped[User] = relationship(foreign_keys=[appointed_by_uid], lazy="joined")
 
 
 class DecisionRecord(Base):
@@ -68,8 +69,8 @@ class DecisionRecord(Base):
     decided_at: Mapped[str] = mapped_column(Text, nullable=False, comment="决策时间（ISO 字符串）")
     
     # 关联关系
-    manuscript: Mapped["Manuscript"] = relationship(lazy="joined")
-    decider: Mapped["User"] = relationship(foreign_keys=[decided_by_uid], lazy="joined")
+    manuscript: Mapped[Manuscript] = relationship(lazy="joined")
+    decider: Mapped[User] = relationship(foreign_keys=[decided_by_uid], lazy="joined")
 
 
 # 索引定义
