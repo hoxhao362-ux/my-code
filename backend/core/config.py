@@ -58,6 +58,9 @@ class Config:
         self._build_flat_configs()
         self._validate_prod_env()
         
+        # 配置系统初始化完成后，更新日志配置
+        global_logger.configure_from_config(self)
+        
         self._initialized = True
 
     def _validate_prod_env(self):
