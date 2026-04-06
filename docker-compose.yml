@@ -24,7 +24,7 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./.space/postgres:/var/lib/postgresql
+      - ./.data/postgres:/var/lib/postgresql
     restart: unless-stopped
   
   # 2. Redis 缓存
@@ -44,7 +44,7 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./.space/redis:/data
+      - ./.data/redis:/data
     restart: unless-stopped
 
   # 3. Elasticsearch 搜索
@@ -66,9 +66,9 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./.space/elasticsearch:/usr/share/elasticsearch/data
+      - ./.data/elasticsearch:/usr/share/elasticsearch/data
       # 挂载插件目录以便后续安装 IK 分词器
-      # - ./.space/es_plugins:/usr/share/elasticsearch/plugins 
+      - ./.plugins/es_plugins:/usr/share/elasticsearch/plugins 
     restart: unless-stopped
 
   # 4. Kafka (KRaft 模式，抛弃臃肿的 Zookeeper)
@@ -98,7 +98,7 @@ services:
       retries: 3
     volumes:
       # Apache Kafka 的默认数据目录是 /tmp/kafka-logs
-      - ./.space/kafka:/tmp/kafka-logs
+      - ./.data/kafka:/tmp/kafka-logs
     restart: unless-stopped
 
   # 5. Nginx 反向代理/静态资源服务
@@ -117,11 +117,11 @@ services:
       retries: 3
     volumes:
       # 挂载 nginx 配置文件目录
-      - ./.space/nginx/conf.d:/etc/nginx/conf.d
+      - ./.data/nginx/conf.d:/etc/nginx/conf.d
       # 挂载静态资源目录（前端打包后的文件可放这里）
-      - ./.space/nginx/html:/usr/share/nginx/html
+      - ./.data/nginx/html:/usr/share/nginx/html
       # 挂载日志目录
-      - ./.space/nginx/logs:/var/log/nginx
+      - ./.data/nginx/logs:/var/log/nginx
       # 如果有 SSL 证书，可以挂载这个目录
-      - ./.space/nginx/certs:/etc/nginx/certs
+      - ./.data/nginx/certs:/etc/nginx/certs
     restart: unless-stopped

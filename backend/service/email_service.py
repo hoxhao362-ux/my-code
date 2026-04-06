@@ -55,57 +55,90 @@ class EmailService(BaseManagedService):
         # 加载配置
         self._load_config()
 
+    @staticmethod
+    def _email_file_root() -> dict:
+        """email.toml 根字典：Config.get 仅匹配文件名等顶层键，整文件需用 config.get('email')。"""
+        root = config.get("email", {})
+        return root if isinstance(root, dict) else {}
+
+    @staticmethod
+    def _parse_smtp_port(port_value: Any, default: int = 465) -> int:
+        try:
+            return int(port_value)
+        except (ValueError, TypeError):
+            return default
+
+    @classmethod
+    def _lookup_template_dict(cls, full_key: str) -> Dict[str, Any]:
+        """
+        从 email.toml 嵌套结构中解析模板表。
+        full_key 形如 email.verify_email、email.custom.submission_confirmation，
+        对应文件中 [email.verify_email]、[email.custom.xxx]。
+        """
+        if not full_key.startswith("email."):
+            return {}
+        email_root = cls._email_file_root()
+        nested = email_root.get("email", {})
+        if not isinstance(nested, dict):
+            return {}
+        parts = full_key[len("email.") :].split(".")
+        node: Any = nested
+        for p in parts:
+            if not isinstance(node, dict):
+                return {}
+            node = node.get(p)
+            if node is None:
+                return {}
+        return node if isinstance(node, dict) else {}
+
     def _load_config(self):
         """加载邮件配置"""
-        # 尝试从 email.toml 读取配置
-        sender_config = config.get('email.sender', {})
-        code_config = config.get('email.code', {})
-        
+        email_root = self._email_file_root()
+        sender_config = email_root.get("sender", {})
+        code_config = email_root.get("code", {})
+
         if sender_config:
-            self._smtp_server = sender_config.get('smtp_server', '')
-            # 端口可能是字符串，转换为整数
-            port_value = sender_config.get('smtp_port', 465)
-            try:
-                self._smtp_port = int(port_value)
-            except (ValueError, TypeError):
-                self._smtp_port = 465
-            # 支持两种配置键名
-            self._username = sender_config.get('sender_email', sender_config.get('username', ''))
-            self._password = sender_config.get('sender_auth_code', sender_config.get('password', ''))
-            self._sender = sender_config.get('sender_email', self._username)
-            self._use_tls = sender_config.get('use_tls', True)
+            self._smtp_server = sender_config.get("smtp_server", "")
+            self._smtp_port = self._parse_smtp_port(sender_config.get("smtp_port", 465))
+            self._username = sender_config.get("sender_email", sender_config.get("username", ""))
+            self._password = sender_config.get("sender_auth_code", sender_config.get("password", ""))
+            self._sender = sender_config.get("sender_email", self._username)
+            self._use_tls = sender_config.get("use_tls", True)
         else:
-            # 尝试从 global.email 读取
-            email_config = config.get('global.email', {})
+            global_root = config.get("global", {})
+            email_config = global_root.get("email", {}) if isinstance(global_root, dict) else {}
             if email_config:
-                self._smtp_server = email_config.get('smtp_server', '')
-                self._smtp_port = email_config.get('smtp_port', 465)
-                self._username = email_config.get('username', '')
-                self._password = email_config.get('password', '')
-                self._sender = email_config.get('sender', self._username)
-                self._use_tls = email_config.get('use_tls', True)
+                self._smtp_server = email_config.get("smtp_server", "")
+                self._smtp_port = self._parse_smtp_port(email_config.get("smtp_port", 465))
+                self._username = email_config.get("username", "")
+                self._password = email_config.get("password", "")
+                self._sender = email_config.get("sender", self._username)
+                self._use_tls = email_config.get("use_tls", True)
             else:
                 global_logger.warning("Email", "Email 配置未找到")
-        
-        # 加载验证码配置
+
         if code_config:
-            self._code_length = code_config.get('code_length', 6)
-            self._code_expire_minutes = code_config.get('code_expire_minutes', 5)
-        
-        # 预加载邮件模板
+            self._code_length = code_config.get("code_length", 6)
+            self._code_expire_minutes = code_config.get("code_expire_minutes", 5)
+
         self._load_templates()
-    
+
     def _load_templates(self):
         """预加载邮件模板到缓存"""
-        template_sections = ['email.verify_email', 'email.reset_password', 
-                            'email.invite_reviewer', 'email.custom']
-        
-        for section in template_sections:
-            templates = config.get(section, {})
-            if templates:
-                for key, value in templates.items():
-                    if isinstance(value, dict) and 'title' in value and 'content' in value:
-                        self._template_cache[f"{section}.{key}"] = value
+        nested = self._email_file_root().get("email", {})
+        if not isinstance(nested, dict):
+            nested = {}
+
+        for name in ("verify_email", "reset_password", "invite_reviewer"):
+            tmpl = nested.get(name)
+            if isinstance(tmpl, dict) and "title" in tmpl and "content" in tmpl:
+                self._template_cache[f"email.{name}"] = tmpl
+
+        custom = nested.get("custom", {})
+        if isinstance(custom, dict):
+            for key, value in custom.items():
+                if isinstance(value, dict) and "title" in value and "content" in value:
+                    self._template_cache[f"email.custom.{key}"] = value
                         
         global_logger.info("Email", f"已加载 {len(self._template_cache)} 个邮件模板")
 
@@ -335,7 +368,7 @@ class EmailService(BaseManagedService):
         
         # 获取模板配置
         template_key = f"email.{code_type}"
-        template = config.get(template_key, {})
+        template = self._template_cache.get(template_key) or self._lookup_template_dict(template_key)
         
         if not template:
             global_logger.error("Email", f"未找到验证码模板: {template_key}")
@@ -383,7 +416,7 @@ class EmailService(BaseManagedService):
         # 从缓存或配置获取模板
         template = self._template_cache.get(full_key)
         if not template:
-            template = config.get(full_key, {})
+            template = self._lookup_template_dict(full_key)
         
         if not template:
             global_logger.error("Email", f"未找到邮件模板: {full_key}")
@@ -445,7 +478,9 @@ class EmailService(BaseManagedService):
         Returns:
             bool: 发送是否成功
         """
-        template = config.get('email.invite_reviewer', {})
+        template = self._template_cache.get("email.invite_reviewer") or self._lookup_template_dict(
+            "email.invite_reviewer"
+        )
         
         if not template:
             global_logger.error("Email", "未找到审稿人邀请模板")
@@ -483,7 +518,10 @@ class EmailService(BaseManagedService):
         ]
         
         # 自定义模板
-        custom_templates = config.get('email.custom', {})
+        email_nested = self._email_file_root().get("email", {})
+        custom_templates = (
+            email_nested.get("custom", {}) if isinstance(email_nested, dict) else {}
+        )
         for key in custom_templates.keys():
             template = custom_templates.get(key, {})
             templates.append({

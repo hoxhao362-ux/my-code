@@ -11,12 +11,34 @@
 """
 import abc
 import json
+import logging
 from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 
+from pathlib import Path
+
 from core.config import config
 from utils.log import global_logger
+
+
+def _resolve_payment_key_path(path: Optional[str]) -> Optional[str]:
+    """将密钥路径解析为可读绝对路径（绝对路径优先；否则相对 global.key_dir）。"""
+    if not path:
+        return None
+    try:
+        p = Path(path).expanduser()
+        if p.is_file():
+            return str(p.resolve())
+        key_dir = config.get("global.global.key_dir", "")
+        if key_dir:
+            cand = Path(key_dir) / path
+            if cand.is_file():
+                return str(cand.resolve())
+    except Exception:
+        pass
+    return path
+
 
 # ==========================================
 # 尝试导入 alipay-sdk-python (官方 SDK)
@@ -99,14 +121,15 @@ class BasePaymentProvider(abc.ABC):
         pass
 
     def _read_key_file(self, path: str) -> Optional[str]:
-        """读取密钥文件辅助方法"""
-        if not path:
+        """读取密钥文件。"""
+        resolved = _resolve_payment_key_path(path)
+        if not resolved:
             return None
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(resolved, "r", encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
-            self.logger.error("Payment", f"读取密钥文件失败 {path}: {e}")
+            self.logger.error("Payment", f"读取密钥文件失败 {resolved}: {e}")
             return None
 
 class MockPaymentProvider(BasePaymentProvider):
@@ -364,14 +387,14 @@ class WechatPaymentProvider(BasePaymentProvider):
         self.mchid = config.get("mch_id")
         self.cert_serial_no = config.get("cert_serial_no")
         self.apiv3_key = config.get("api_key")
-        self.cert_path = config.get("cert_path")
-        self.key_path = config.get("key_path")
-        
+        self.cert_path = _resolve_payment_key_path(config.get("cert_path"))
+        self.key_path = _resolve_payment_key_path(config.get("key_path"))
+
         if not self.cert_path or not self.key_path:
             self.logger.error("Payment", "微信支付证书配置缺失")
-        
+
         try:
-            with open(self.key_path, 'r') as f:
+            with open(self.key_path, "r", encoding="utf-8") as f:
                 private_key = f.read()
             
             self.client = WeChatPay(
@@ -526,35 +549,40 @@ class PaymentService:
         if self._initialized:
             return
 
-        payment_config = config.get("payment.payment", {})
+        payment_file = config.get("payment", {})
+        if not isinstance(payment_file, dict):
+            global_logger.warning("Payment", "payment.toml 未加载或格式异常")
+            return
+
+        payment_config = payment_file.get("payment", {})
         if not payment_config.get("enabled", False):
             global_logger.info("Payment", "支付功能未启用")
             return
 
         provider_type = payment_config.get("provider", "mock")
         global_logger.info("Payment", f"正在初始化支付服务，提供商: {provider_type}")
-        
+
         common_config = {
             "notify_url": payment_config.get("notify_url"),
-            "return_url": payment_config.get("return_url")
+            "return_url": payment_config.get("return_url"),
         }
-        
+
         try:
             if provider_type == "alipay":
-                alipay_config = config.get("payment.alipay", {})
+                alipay_config = payment_file.get("alipay", {})
                 full_config = {**common_config, **alipay_config}
                 self.provider = AlipayProvider(full_config)
-            
+
             elif provider_type == "paypal":
-                paypal_config = config.get("payment.paypal", {})
+                paypal_config = payment_file.get("paypal", {})
                 full_config = {**common_config, **paypal_config}
                 self.provider = PaypalProvider(full_config)
-                
+
             elif provider_type == "mock":
                 self.provider = MockPaymentProvider(common_config)
-                
+
             elif provider_type == "wechat":
-                wechat_config = config.get("payment.wechat", {})
+                wechat_config = payment_file.get("wechat", {})
                 full_config = {**common_config, **wechat_config}
                 self.provider = WechatPaymentProvider(full_config)
                 
