@@ -4,6 +4,7 @@ Redis 服务模块
 用于处理 Redis 连接和操作。
 """
 import asyncio
+import os
 from typing import Optional
 from datetime import timedelta
 
@@ -35,13 +36,17 @@ class RedisService(BaseManagedService):
             env = config.get("global.global.env", "dev")
             host_key = f"redis.redis.redis_host_{env}"
             host = config.get(host_key, "localhost")
-            port = config.get("redis.redis.redis_port", 6379)
+            port = int(config.get("redis.redis.redis_port", 6379))
             password = config.get("redis.redis.redis_password")
-            db = config.get("redis.redis.redis_db", 0)
-            
-            # 处理 TOML 中的 nan 值
-            if password is None or (isinstance(password, float) and password != password):
-                password = None
+            db = int(config.get("redis.redis.redis_db", 0))
+
+            if password is None or (isinstance(password, float) and password != password) or password in ("", "${REDIS_PWD}"):
+                password = os.environ.get("REDIS_PWD") or None
+            if not password:
+                global_logger.warning(
+                    "Redis",
+                    "Redis 密码为空：容器若使用 --requirepass，请在 .env 中设置 REDIS_PWD 或与 TOML 中 redis_password 一致",
+                )
 
             retry_count = 0
             max_retries = 30

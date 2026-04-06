@@ -12,6 +12,7 @@ SQLAlchemy AsyncEngine / AsyncSession 工厂
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -49,8 +50,13 @@ def load_sqlalchemy_async_config() -> SqlAlchemyAsyncConfig:
     database = config["database.database.database_name"]
 
     password = config.get("database.database.database_password")
-    if password is None or (isinstance(password, float) and password != password) or password == "${PG_PWD}":
-        password = None
+    if password is None or (isinstance(password, float) and password != password) or password in ("", "${PG_PWD}"):
+        password = os.environ.get("PG_PWD") or None
+    if not password:
+        global_logger.warning(
+            "Database",
+            "PostgreSQL 密码为空：请检查 .env 中 PG_PWD 与 configs/database.toml 中 database_password 占位符是否已解析",
+        )
 
     pool_size = int(config.get("database.database.pool_size", 10))
     max_overflow = int(config.get("database.database.max_overflow", 20))

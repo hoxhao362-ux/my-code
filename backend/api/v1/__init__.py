@@ -12,6 +12,7 @@ from .reviews import router as reviews_router
 from .editorial import router as editorial_router
 from .admin import admin_router
 from .public import router as public_router
+from .captcha import router as captcha_router
 
 # 创建 v1 版本的路由器
 v1_router = APIRouter(prefix="/api/v1")
@@ -24,3 +25,4 @@ v1_router.include_router(reviews_router)
 v1_router.include_router(editorial_router)
 v1_router.include_router(admin_router)
 v1_router.include_router(public_router)
+v1_router.include_router(captcha_router)

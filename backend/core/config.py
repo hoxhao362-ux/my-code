@@ -58,6 +58,9 @@ class Config:
         self._build_flat_configs()
         self._validate_prod_env()
         
+        # 配置系统初始化完成后，更新日志配置
+        global_logger.configure_from_config(self)
+        
         self._initialized = True
 
     def _validate_prod_env(self):
@@ -126,11 +129,34 @@ class Config:
             env = config.get('global.global.env', 'development')
             port = config.get('global.global.PORT', 8000)
             # 当键不存在时不会报错，返回默认值
+
+        说明:
+            带点路径与 __getitem__ 一致，从扁平映射读取；无点路径仍表示「整份配置文件」。
         """
-        try:
-            return self[key]
-        except (AttributeError, KeyError):
+        if not isinstance(key, str):
             return default
+        if "." not in key:
+            return self._configs.get(key, default)
+        if not hasattr(self, "_flat_configs"):
+            self._build_flat_configs()
+        return self._flat_configs.get(key, default)
+
+    def get_table(self, table_name: str, default: dict[str, Any] = {}) -> dict[str, Any]:
+        """
+        获取指定表的配置（推荐用于获取一整张表/节，返回字典）
+        
+        Args:
+            table_name (str): 表名/节名（如 'global', 'database', 'email.sender'）
+            default (dict): 当不存在该表时返回的默认值（默认为空字典）
+        
+        Returns:
+            dict[str, Any]: 该表完整配置（字典类型），若表不存在则返回 default
+        
+        Examples:
+            db_conf = config.get_table('database')
+            email_sender = config.get_table('email.sender', {})
+        """
+        return self._configs.get(table_name, default)
 
     def get_match(self, part_key: str) -> dict[str, Any]:
         """

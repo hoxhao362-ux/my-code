@@ -52,3 +52,7 @@ uploads/
 !README.en.md
 
 .qoder/
+
+.data/
+.plugins/
+.keys/

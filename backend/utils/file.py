@@ -6,8 +6,20 @@ from typing import Any
 from utils.log import global_logger
 from dotenv import load_dotenv
 
-# 加载 .env 文件（如果存在）
-load_dotenv()
+# 后端目录 backend/ 与仓库根目录（与 docker-compose.yml、根 .env 同级）
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_REPO_ROOT = _BACKEND_DIR.parent
+
+_env_loaded = False
+for _env_path in (_REPO_ROOT / ".env", _BACKEND_DIR / ".env"):
+    if _env_path.is_file():
+        load_dotenv(_env_path)
+        global_logger.info("config", f"已加载环境变量: {_env_path}")
+        _env_loaded = True
+        break
+if not _env_loaded:
+    load_dotenv()
+    global_logger.warning("config", "未在仓库根或 backend 下找到 .env，已尝试从当前工作目录加载")
 
 def _replace_env_vars(data: Any) -> Any:
     """
