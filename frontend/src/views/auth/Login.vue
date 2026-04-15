@@ -33,8 +33,11 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    const loginPayload = { ...loginForm.value }
-    loginPayload.password = await encryptPassword(loginForm.value.password)
+    const loginPayload = {
+      username: loginForm.value.username,
+      password: await encryptPassword(loginForm.value.password),
+      is_remember: rememberMe.value
+    }
     
     await userStore.login(loginPayload)
     

@@ -54,8 +54,8 @@ export const journalApi = {
     fd.append('file', file) 
     return http.post(`/manuscripts/${jid}/files`, fd) 
   }, 
-  // 预览 
-  previewPdf: (data) => http.post('/manuscripts/preview-pdf', data) 
+  // 预览
+  previewPdf: (data) => http.post('/manuscripts/preview-pdf', data, { responseType: 'blob' })
 } 
 
 // ================= 4. 审稿人 API (/reviews) ================= 

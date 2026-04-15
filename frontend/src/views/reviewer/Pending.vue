@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
+import { useReviewStore } from '../../stores/review'
 import { useToastStore } from '../../stores/toast'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 import Navigation from '../../components/Navigation.vue'
@@ -10,9 +11,15 @@ import ReviewForm from '../../components/ReviewForm.vue'
 import { reviewApi } from '../../utils/api'
 
 const userStore = useUserStore()
+const reviewStore = useReviewStore()
 const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
+
+// 页面挂载时拉取真实数据
+onMounted(() => {
+  reviewStore.fetchPendingTasks()
+})
 
 const showReviewModal = ref(false)
 const currentReviewJournal = ref(null)
@@ -49,6 +56,14 @@ const handleReviewSubmit = async ({ ratings, comments, confidentialComments, dec
   }
 }
 
+// 使用真实数据
+const fetchPendingJournals = async () => {
+  await reviewStore.fetchPendingTasks()
+}
+
+const pendingJournals = computed(() => reviewStore.pendingTasks)
+const isLoading = computed(() => reviewStore.isLoading)
+
 // 筛选相关状态
 const searchQuery = ref('') // 搜索关键词
 const selectedModule = ref('all') // 模块筛选
@@ -65,28 +80,7 @@ const totalPages = computed(() => {
 
 // 过滤后的待审核稿件列表
 const pendingJournalsFiltered = computed(() => {
-  // 基础筛选：只显示待审核或审稿中且处于审核阶段的稿件
-  // 管理员看到初审和终审阶段的稿件，审核员只看到复审阶段的稿件
-  let journals = userStore.journals.filter(journal => {
-    const isAdmin = user.value?.role === 'admin';
-    const allowedStages = isAdmin 
-      ? ['Initial Review', 'Final Decision', '初审', '终审'] 
-      : ['Peer Review', '复审'];
-    // 包含所有待审核状态
-    const isPendingStatus = [
-      MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-      MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
-      MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
-      MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
-      '待审核', '审稿中', '待初审', '待复审', '待终审'
-    ].includes(journal.status);
-    return isPendingStatus && allowedStages.some(stage => 
-      journal.reviewStage === stage || 
-      (stage === 'Initial Review' && journal.reviewStage === '初审') ||
-      (stage === 'Peer Review' && journal.reviewStage === '复审') ||
-      (stage === 'Final Decision' && journal.reviewStage === '终审')
-    );
-  })
+  let journals = pendingJournals.value
   
   // 模块筛选
   if (selectedModule.value !== 'all') {
@@ -103,7 +97,7 @@ const pendingJournalsFiltered = computed(() => {
       journal.title.toLowerCase().includes(query) ||
       journal.author.toLowerCase().includes(query) ||
       journal.abstract.toLowerCase().includes(query) ||
-      journal.keywords.some(keyword => keyword.toLowerCase().includes(query))
+      (journal.keywords && journal.keywords.some(keyword => keyword.toLowerCase().includes(query)))
     )
   }
   

@@ -1,25 +1,48 @@
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
 import { usePlatformStore } from '../../../stores/platform'
+import { editorApi, journalApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
-import { useI18n } from '../../../composables/useI18n'
 
-const { t } = useI18n()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// Filter for New Submissions
+// 拉取真实看板数据与待处理列表
+const pendingList = ref([])
+const stats = ref({})
+const isLoading = ref(true)
+
+// 页面加载时拉取后端数据
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    const res = await editorApi.getDashboard()
+    // 匹配 backend/api/v1/editorial.py 的返回值
+    pendingList.value = res.data?.pending_list || res.pending_list || []
+    stats.value = res.data?.statistics || res.statistics || {}
+  } catch (error) {
+    console.error('拉取看板数据失败', error)
+    toastStore.add({ message: '拉取数据失败，请检查网络', type: 'error' })
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// 兼容旧的 Mock 数据逻辑（Fallback）
 const pendingJournals = computed(() => {
+  if (pendingList.value.length > 0) {
+    return pendingList.value
+  }
+  // Fallback 到本地 Mock
   return userStore.journals.filter(journal => 
     journal.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || 
-    // Legacy support
     journal.status === 'Submitted' || 
     journal.status === 'Pending Screening'
   )
@@ -120,6 +143,41 @@ const refreshAttachmentList = () => {
   setTimeout(() => {
     isRefreshingList.value = false
   }, 1500)
+}
+
+// === 柳叶刀核心机制：初筛与直接拒稿 (Desk Reject) ===
+/**
+ * 处理稿件初筛决策
+ * @param {Number} manuscriptId 稿件 ID
+ * @param {String} decision 决策类型 ('reject' 为直接拒稿，'pass' 为通过进入同行评审)
+ */
+const handleTriage = async (manuscriptId, decision) => {
+  try {
+    // 构造 workflow 接口需要的 payload
+    // 注意：api.js 中的 updateJournal 会自动将对象转为 FormData，完全契合后端 Form(...) 的要求
+    const payload = {
+      action: 'screen', // 对应后端的 WorkflowAction.SCREEN
+      decision_type: decision,
+      comment: decision === 'reject'
+        ? '编辑部初审：不符合本刊主题范围或创新性不足，作退稿处理 (Desk Reject)。'
+        : '初筛通过，准备分配外部审稿人。'
+    }
+
+    // 调用流转接口
+    await journalApi.updateJournal(manuscriptId, payload)
+    
+    toastStore.add({
+      message: decision === 'reject' ? '已直接拒稿 (Desk Reject)' : '初筛通过',
+      type: decision === 'reject' ? 'success' : 'info'
+    })
+    
+    // 操作成功后，刷新列表将该稿件移出待处理区域
+    const res = await editorApi.getDashboard()
+    pendingList.value = res.data?.pending_list || res.pending_list || []
+    stats.value = res.data?.statistics || res.statistics || {}
+  } catch (error) {
+    toastStore.add({ message: `操作失败：${error.message || '未知错误'}`, type: 'error' })
+  }
 }
 
 // --- Ethics Statement State ---

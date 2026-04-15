@@ -3,71 +3,61 @@ import { ref, computed } from 'vue'
 import { reviewApi } from '../utils/api'
 
 export const useReviewStore = defineStore('review', () => {
-  const pendingReviews = ref([]) // 待我审核的稿件
-  const reviewHistory = ref([]) // 我的审稿历史
-  const loading = ref(false)
-  const error = ref(null)
+  const pendingTasks = ref([])
+  const isLoading = ref(false)
 
-  // 获取待审稿件
-  const fetchPendingReviews = async () => {
-    loading.value = true
+  // 获取真实的待审稿件列表
+  const fetchPendingTasks = async () => {
+    isLoading.value = true
     try {
-      const data = await reviewApi.getPendingJournals()
-      pendingReviews.value = data
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch pending reviews'
+      const response = await reviewApi.getPendingJournals()
+      pendingTasks.value = Array.isArray(response) ? response : (response.items || [])
+    } catch (error) {
+      console.error('获取待审任务失败:', error)
+      pendingTasks.value = []
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
 
   // 获取审稿历史
-  const fetchReviewHistory = async (reviewerName) => {
-    loading.value = true
+  const reviewHistory = ref([])
+  const fetchReviewHistory = async () => {
     try {
-      const data = await reviewApi.getReviewHistory(reviewerName)
-      reviewHistory.value = data
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch review history'
-    } finally {
-      loading.value = false
+      const response = await reviewApi.getReviewHistory()
+      reviewHistory.value = Array.isArray(response) ? response : (response.items || [])
+    } catch (error) {
+      console.error('获取审稿历史失败:', error)
+      reviewHistory.value = []
     }
   }
 
   // 提交审稿意见
   const submitReview = async (journalId, reviewData) => {
-    loading.value = true
     try {
       await reviewApi.reviewJournal(journalId, reviewData)
-      // 提交成功后，从待审列表中移除
-      pendingReviews.value = pendingReviews.value.filter(j => String(j.id) !== String(journalId))
-      // 刷新历史
-      if (reviewData.reviewer) {
-          await fetchReviewHistory(reviewData.reviewer)
-      }
+      pendingTasks.value = pendingTasks.value.filter(j => String(j.id) !== String(journalId))
+      await fetchReviewHistory()
     } catch (err) {
-      error.value = err.message || 'Failed to submit review'
+      console.error('提交审稿失败:', err)
       throw err
-    } finally {
-      loading.value = false
     }
   }
 
   // 统计信息
   const reviewStats = computed(() => {
     return {
-      pendingCount: pendingReviews.value.length,
+      pendingCount: pendingTasks.value.length,
       completedCount: reviewHistory.value.length
     }
   })
 
   return {
-    pendingReviews,
+    pendingTasks,
+    isLoading,
     reviewHistory,
-    loading,
-    error,
     reviewStats,
-    fetchPendingReviews,
+    fetchPendingTasks,
     fetchReviewHistory,
     submitReview
   }
