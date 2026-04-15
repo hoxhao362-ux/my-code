@@ -2,8 +2,8 @@ import axios from 'axios'
 
 // 创建 axios 实例
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,51 +12,43 @@ const http = axios.create({
 // 请求拦截器
 http.interceptors.request.use(
   config => {
-    // 从 localStorage 获取 token
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   },
-  error => {
-    return Promise.reject(error)
-  }
+  error => Promise.reject(error)
 )
 
 // 响应拦截器
 http.interceptors.response.use(
   response => {
-    // 兼容后端返回的 ApiResponse { code, message, data, meta }
-    if (response.data && response.data.code !== undefined) {
-      if (response.data.code === 200) {
-        // 如果后端有 meta 分页信息，可以将其附加到 data 上或者按需处理
-        // 为了兼容前端已有代码，默认返回 data
-        return response.data.data !== undefined ? response.data.data : response.data
+    const res = response.data
+    if (res && res.code !== undefined) {
+      if (res.code === 200) {
+        return res.data !== undefined ? res.data : res
       } else {
-        return Promise.reject(new Error(response.data.message || '请求失败'))
+        return Promise.reject(new Error(res.message || '请求失败'))
       }
     }
-    return response.data
+    return res
   },
   error => {
     if (error.response) {
       switch (error.response.status) {
         case 401:
-          // 未授权，清除 token 并跳转登录页
           localStorage.removeItem('token')
           window.location.href = '/login'
           break
         case 403:
-          // 权限不足
-          console.error('Permission denied')
+          console.error('权限不足:', error.response.data.detail)
           break
-        case 500:
-          // 服务器错误
-          console.error('Server error')
+        case 429:
+          console.error('请求太频繁，被限流')
           break
         default:
-          console.error('Network error')
+          console.error('后端接口报错:', error.response.data.detail || '未知错误')
       }
     }
     return Promise.reject(error)

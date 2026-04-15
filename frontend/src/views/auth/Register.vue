@@ -1,18 +1,17 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
-import { useI18n } from '../../composables/useI18n'
-import { userApi } from '../../utils/api'
+import { authApi } from '../../utils/api'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { t } = useI18n()
 
 const username = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const inviteCode = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
 const error = ref('')
@@ -20,105 +19,76 @@ const usernameError = ref('')
 const emailError = ref('')
 const passwordError = ref('')
 const confirmPasswordError = ref('')
+const inviteCodeError = ref('')
 
-// Background images
-const backgroundImages = [
-  '/images/24.jpg',
-  '/images/26.jpg',
-  '/images/wzmc_20140317155634.jpg',
-  '/images/wzmc_20140317160144.jpg'
-]
-const currentImageIndex = ref(0)
-const backgroundImage = ref(backgroundImages[0])
-let imageInterval = null
-
-onMounted(() => {
-  // Start background image rotation
-  startImageRotation()
-})
-
-onUnmounted(() => {
-  // Clear interval when component is unmounted
-  if (imageInterval) {
-    clearInterval(imageInterval)
-  }
-})
-
-// Start background image rotation
-const startImageRotation = () => {
-  imageInterval = setInterval(() => {
-    currentImageIndex.value = (currentImageIndex.value + 1) % backgroundImages.length
-    backgroundImage.value = backgroundImages[currentImageIndex.value]
-  }, 5000) // Change image every 5 seconds
-}
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
 const handleRegister = async () => {
-  // Reset error
   error.value = ''
   usernameError.value = ''
   emailError.value = ''
   passwordError.value = ''
   confirmPasswordError.value = ''
+  inviteCodeError.value = ''
   
-  // Validation
   let hasError = false
   if (!username.value) {
-    usernameError.value = t('auth.register.usernamePlaceholder')
+    usernameError.value = '请输入用户名'
     hasError = true
   }
   if (!email.value) {
-    emailError.value = t('auth.register.emailPlaceholder')
+    emailError.value = '请输入邮箱'
     hasError = true
   } else if (!emailRegex.test(email.value)) {
-    emailError.value = 'Invalid email format'
+    emailError.value = '邮箱格式不正确'
     hasError = true
   }
   
   if (!password.value) {
-    passwordError.value = t('auth.register.passwordPlaceholder')
+    passwordError.value = '请输入密码'
     hasError = true
   } else if (password.value.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters'
+    passwordError.value = '密码至少 6 个字符'
     hasError = true
   }
 
   if (!confirmPassword.value) {
-    confirmPasswordError.value = t('auth.register.confirmPasswordPlaceholder')
+    confirmPasswordError.value = '请确认密码'
     hasError = true
   } else if (password.value !== confirmPassword.value) {
-    confirmPasswordError.value = 'Passwords do not match'
+    confirmPasswordError.value = '两次密码不一致'
+    hasError = true
+  }
+
+  if (!inviteCode.value) {
+    inviteCodeError.value = '请输入邀请码'
     hasError = true
   }
 
   if (hasError) return
   
-  // Simulate Loading
   isLoading.value = true
   
-  // Mock API Call (1.5s delay)
-  setTimeout(() => {
-    // Create Mock User
-    const newUser = {
+  try {
+    const registerData = {
       username: username.value,
       email: email.value,
-      role: 'user', // Force Read-Only role
-      id: 'readonly_' + Date.now()
+      password: password.value,
+      invite_code: inviteCode.value
     }
     
-    // In a real app, we would send this to backend.
-    // For pure frontend simulation, we can optionally save to a mock DB in localStorage if needed for "Login" later.
-    // But for this task, the requirement is "Registration successful! Please log in." flow.
-    // We can store it in a 'mock_users' list to allow login simulation to check it? 
-    // The Login.vue mock logic currently just accepts any non-empty input or specific mocks.
-    // To make it consistent, let's just proceed to success.
+    await authApi.register(registerData)
     
     isLoading.value = false
     router.push('/login?registered=true')
-  }, 1500)
+  } catch (err) {
+    error.value = err.message || '注册失败'
+    isLoading.value = false
+  }
 }
 
 const goToLogin = () => {
@@ -127,18 +97,18 @@ const goToLogin = () => {
 </script>
 
 <template>
-  <div class="register-container" :style="{ backgroundImage: `url(${backgroundImage})` }">
+  <div class="register-container">
     <div class="register-overlay">
       <div class="register-card">
       <!-- Header Section -->
       <div class="register-header">
         <h1 class="platform-title">
-          {{ t('nav.logo') }}
+          Peerex Peer
         </h1>
-        <h2 class="register-subtitle">{{ t('auth.register.title') }}</h2>
+        <h2 class="register-subtitle">Register</h2>
         <p class="register-desc">
-          {{ t('auth.register.subtitle') }}<br>
-          {{ t('auth.register.desc') }}
+          Create your account<br>
+          Join our research community.
         </p>
       </div>
 
@@ -146,11 +116,11 @@ const goToLogin = () => {
       <div class="register-form">
         <!-- Username -->
         <div class="form-group">
-          <label>{{ t('auth.register.usernameLabel') }}</label>
+          <label>Username</label>
           <input 
             type="text" 
             v-model="username" 
-            :placeholder="t('auth.register.usernamePlaceholder')"
+            placeholder="Enter username"
             :class="{ 'error': usernameError }"
           />
           <span v-if="usernameError" class="error-msg">{{ usernameError }}</span>
@@ -158,11 +128,11 @@ const goToLogin = () => {
         
         <!-- Email -->
         <div class="form-group">
-          <label>{{ t('auth.register.emailLabel') }}</label>
+          <label>Email</label>
           <input 
             type="email" 
             v-model="email" 
-            :placeholder="t('auth.register.emailPlaceholder')"
+            placeholder="Enter email"
             :class="{ 'error': emailError }"
           />
           <span v-if="emailError" class="error-msg">{{ emailError }}</span>
@@ -170,12 +140,12 @@ const goToLogin = () => {
 
         <!-- Password -->
         <div class="form-group">
-          <label>{{ t('auth.register.passwordLabel') }}</label>
+          <label>Password</label>
           <div class="password-input-wrapper">
             <input 
               :type="showPassword ? 'text' : 'password'" 
               v-model="password" 
-              :placeholder="t('auth.register.passwordPlaceholder')"
+              placeholder="Enter password"
               :class="{ 'error': passwordError }"
             />
             <span class="eye-icon" @click="togglePasswordVisibility">
@@ -187,14 +157,26 @@ const goToLogin = () => {
         
         <!-- Confirm Password -->
         <div class="form-group">
-          <label>{{ t('auth.register.confirmPasswordLabel') }}</label>
+          <label>Confirm Password</label>
           <input 
             :type="showPassword ? 'text' : 'password'" 
             v-model="confirmPassword" 
-            :placeholder="t('auth.register.confirmPasswordPlaceholder')"
+            placeholder="Confirm password"
             :class="{ 'error': confirmPasswordError }"
           />
           <span v-if="confirmPasswordError" class="error-msg">{{ confirmPasswordError }}</span>
+        </div>
+
+        <!-- Invite Code -->
+        <div class="form-group">
+          <label>Invite Code <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="inviteCode" 
+            placeholder="Enter invite code"
+            :class="{ 'error': inviteCodeError }"
+          />
+          <span v-if="inviteCodeError" class="error-msg">{{ inviteCodeError }}</span>
         </div>
 
         <!-- Error Message -->
@@ -207,25 +189,25 @@ const goToLogin = () => {
           :disabled="isLoading"
           :class="{ 'loading': isLoading }"
         >
-          {{ isLoading ? t('auth.register.submitting') : t('auth.register.submit') }}
+          {{ isLoading ? 'Registering...' : 'Register' }}
         </button>
         
         <!-- Back to Login Link -->
         <div class="login-link-wrapper">
-          <span class="login-text-label">{{ t('auth.register.alreadyHaveAccount') }} </span>
-          <a href="#" class="login-link" @click.prevent="goToLogin">{{ t('auth.register.loginLink') }}</a>
+          <span class="login-text-label">Already have an account? </span>
+          <a href="#" class="login-link" @click.prevent="goToLogin">Login</a>
         </div>
       </div>
 
       <!-- Footer Section -->
       <div class="register-footer">
         <div class="footer-links">
-          <a href="#" target="_blank">{{ t('auth.footer.privacy') }}</a>
+          <a href="#" target="_blank">Privacy Policy</a>
           <span class="separator">|</span>
-          <a href="#" target="_blank">{{ t('auth.footer.terms') }}</a>
+          <a href="#" target="_blank">Terms of Service</a>
         </div>
         <p class="copyright">
-          {{ t('auth.footer.copyright') }}
+          © 2026 Peerex Peer. All rights reserved.
         </p>
       </div>
       </div>
