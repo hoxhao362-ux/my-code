@@ -1,24 +1,22 @@
 // 密码加密工具函数
 
 /**
- * 加密密码
+ * 使用 SHA-256 算法哈希密码
  * @param {string} password - 原始密码
- * @returns {string} 加密后的密码
+ * @returns {Promise<string>} 哈希后的十六进制字符串
  */
-export function encryptPassword(password) {
-  // 使用 Base64 加密（简单实现，实际项目中应使用更安全的加密算法）
-  return btoa(password)
+export async function encryptPassword(password) {
+  // 将字符串转为 Buffer
+  const msgUint8 = new TextEncoder().encode(password)
+  // 计算哈希值
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8)
+  // 将 ArrayBuffer 转为十六进制字符串
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashHex
 }
 
-/**
- * 解密密码
- * @param {string} encryptedPassword - 加密后的密码
- * @returns {string} 解密后的密码
- */
-export function decryptPassword(encryptedPassword) {
-  // 使用 Base64 解密
-  return atob(encryptedPassword)
-}
+// 注意：SHA-256 是单向哈希，不可逆，因此原 decryptPassword 函数应删除或弃用
 
 /**
  * Validate email format
@@ -26,7 +24,6 @@ export function decryptPassword(encryptedPassword) {
  * @returns {boolean} Is valid email
  */
 export function validateEmail(email) {
-  // More robust email regex
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
   return emailRegex.test(email)
 }
@@ -37,7 +34,6 @@ export function validateEmail(email) {
  * @returns {boolean} Is valid phone number
  */
 export function validatePhone(phone) {
-  // Allow optional + prefix, 7 to 15 digits
   const phoneRegex = /^\+?[0-9]{7,15}$/
   return phoneRegex.test(phone)
 }

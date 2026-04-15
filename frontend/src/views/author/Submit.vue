@@ -2,16 +2,17 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
+import { journalApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { useI18n } from '../../composables/useI18n'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
-const { t } = useI18n()
-const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+const toastStore = useToastStore()
 
 // 表单数据
 const formData = ref({
@@ -451,11 +452,9 @@ const formatFileSize = (bytes) => {
 const modules = computed(() => userStore.modules)
 
 const handleSubmit = async () => {
-  // 表单验证 - 处理Delta对象和HTML标签
-  const hasTitle = !!formData.value.title
-  const hasAuthor = !!formData.value.author
+  let hasTitle = !!formData.value.title
+  let hasAuthor = !!formData.value.author
   
-  // 处理摘要 - 可能是Delta对象或HTML字符串
   let hasAbstract = false
   if (typeof formData.value.abstract === 'string') {
     hasAbstract = !!formData.value.abstract && formData.value.abstract.replace(/<[^>]*>/g, '').trim() !== ''
@@ -463,7 +462,6 @@ const handleSubmit = async () => {
     hasAbstract = formData.value.abstract.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
   }
   
-  // 处理正文 - 可能是Delta对象或HTML字符串
   let hasContent = false
   if (typeof formData.value.content === 'string') {
     hasContent = !!formData.value.content && formData.value.content.replace(/<[^>]*>/g, '').trim() !== ''
@@ -471,11 +469,10 @@ const handleSubmit = async () => {
     hasContent = formData.value.content.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
   }
   
-  // 检查是否有附件
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
   if (!hasTitle || !hasAuthor || !hasAbstract || (!hasContent && !hasAttachments)) {
-    error.value = t('submit.validation.required')
+    error.value = '请填写标题、作者、摘要，并上传内容或附件'
     return
   }
   
@@ -484,7 +481,6 @@ const handleSubmit = async () => {
   success.value = ''
   
   try {
-    // 编辑器已配置contentType="html"，直接返回HTML字符串
     const convertToHTML = (content) => {
       if (typeof content === 'string') {
         return content
@@ -492,36 +488,28 @@ const handleSubmit = async () => {
       return ''
     }
     
-    // 创建新期刊对象
-    const newJournal = {
-      id: Date.now().toString(),
-      title: formData.value.title,
-      author: formData.value.author,
-      abstract: convertToHTML(formData.value.abstract),
-      keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
-      content: convertToHTML(formData.value.content),
-      module: formData.value.modules.length > 0 && formData.value.modules.includes('all') ? 'Others' : formData.value.modules.filter(m => m !== 'all'),
-      status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-      reviewStage: 'Initial Review',
-      date: new Date().toISOString().split('T')[0],
-      submissionDate: new Date().toISOString().split('T')[0],
-      viewCount: 0,
-      attachments: formData.value.attachments.map(att => ({
-        id: att.id,
-        name: att.name,
-        type: att.type,
-        size: att.size,
-        url: att.url
-      }))
+    const fd = new FormData()
+    
+    fd.append('title', formData.value.title)
+    fd.append('authors', formData.value.author)
+    fd.append('abstract', convertToHTML(formData.value.abstract))
+    fd.append('content', convertToHTML(formData.value.content))
+    fd.append('keywords', formData.value.keywords)
+    
+    const moduleValue = formData.value.modules.includes('all') ? 'Others' : formData.value.modules.join(',')
+    fd.append('field', moduleValue)
+    
+    if (formData.value.attachments && formData.value.attachments.length > 0) {
+      formData.value.attachments.forEach(att => {
+        fd.append('file', att.file)
+      })
     }
     
-    // 调用userStore提供的addJournal方法
-    userStore.addJournal(newJournal)
+    await journalApi.upload(fd)
     
-    // 显示成功消息
-    success.value = t('submit.success')
+    success.value = '投稿成功！'
+    toastStore.add({ message: '投稿成功！', type: 'success' })
     
-    // 清空表单并跳转
     setTimeout(() => {
       formData.value = {
         title: '',
@@ -529,13 +517,15 @@ const handleSubmit = async () => {
         abstract: '',
         keywords: '',
         content: '',
-        modules: ['all']
+        modules: ['all'],
+        attachments: []
       }
       success.value = ''
       router.push('/admin/author-dashboard')
     }, 2000)
   } catch (err) {
-    error.value = t('submit.error')
+    console.error('上传失败:', err)
+    error.value = err.message || '上传失败，请稍后重试'
   } finally {
     submitting.value = false
   }

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { encryptPassword } from '../../utils/encryption'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -32,7 +33,10 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    await userStore.login(loginForm.value)
+    const loginPayload = { ...loginForm.value }
+    loginPayload.password = await encryptPassword(loginForm.value.password)
+    
+    await userStore.login(loginPayload)
     
     const role = userStore.role
     if (role === 'admin') {

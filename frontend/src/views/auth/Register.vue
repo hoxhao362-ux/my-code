@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { authApi } from '../../utils/api'
+import { encryptPassword } from '../../utils/encryption'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -77,7 +78,7 @@ const handleRegister = async () => {
     const registerData = {
       username: username.value,
       email: email.value,
-      password: password.value,
+      password: await encryptPassword(password.value),
       invite_code: inviteCode.value
     }
     

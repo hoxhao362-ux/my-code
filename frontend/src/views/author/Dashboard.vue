@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { journalApi } from '../../utils/api'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
 import FlowCheckPanel from './FlowCheckPanel.vue'
 import ViewSubmissionModal from './ViewSubmissionModal.vue'
@@ -15,26 +16,28 @@ import { MANUSCRIPT_STATUS, AUTHOR_STATUS_MAP } from '../../constants/manuscript
 const router = useRouter()
 const toastStore = useToastStore()
 const flowCheckPanelRef = ref(null)
-
-const handleRunCheck = () => {
-  if (flowCheckPanelRef.value) {
-    flowCheckPanelRef.value.runCheck(userJournals.value)
-  }
-}
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser)
 
-// Author submission data
-const userJournals = computed(() => {
-  // Use submissionUser if available (Author Dashboard Context), fallback to user
-  const currentUser = userStore.submissionUser || userStore.user
-  if (!currentUser) return []
-  return userStore.journals.filter(j => {
-    // Robust matching for author field (handle case sensitivity and potential format differences)
-    if (!j.author) return false
-    return j.author === currentUser.username || 
-           j.author.toLowerCase() === currentUser.username.toLowerCase()
-  })
+// Author submission data - Real API
+const userJournals = ref([])
+const loading = ref(false)
+
+const fetchMyManuscripts = async () => {
+  loading.value = true
+  try {
+    const res = await journalApi.getMyJournals()
+    userJournals.value = res.items || res.journals || res || []
+  } catch (error) {
+    console.error('获取稿件列表失败:', error)
+    toastStore.add({ message: '获取稿件列表失败', type: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchMyManuscripts()
 })
 
 // Helper to check status groups
