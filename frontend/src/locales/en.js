@@ -1187,10 +1187,22 @@ export default {
       passwordPlaceholder: 'Enter your password',
       confirmPasswordLabel: 'Confirm Password',
       confirmPasswordPlaceholder: 'Confirm your password',
-      error: {
+      invitationCodeLabel: 'Invitation Code (Optional)',
+      invitationCodePlaceholder: 'Enter code for specialized roles',
+      invitation: {
+        valid: "Code valid. Assigned Role: {role}",
+        invalid: "Invalid or expired invitation code.",
+        verifying: "Verifying code...",
+        error: "Failed to verify invitation code."
+      },
+      errors: {
         emailFormat: 'Invalid email format',
         passwordLength: 'Password must be at least 6 characters',
-        passwordMatch: 'Passwords do not match'
+        passwordMatch: 'Passwords do not match.',
+        frequencyLimit: 'Too many attempts. Please wait a while.',
+        invalidInviteCode: 'Please provide a valid invitation code.',
+        registrationFailed: 'Registration failed. Please check your details.',
+        internalError: 'An internal server error occurred.'
       }
     }
   },

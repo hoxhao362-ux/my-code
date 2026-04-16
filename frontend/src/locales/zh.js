@@ -415,10 +415,22 @@ export default {
       passwordPlaceholder: '请输入密码',
       confirmPasswordLabel: '确认密码',
       confirmPasswordPlaceholder: '请再次输入密码',
-      error: {
+      invitationCodeLabel: '邀请码（选填）',
+      invitationCodePlaceholder: '输入邀请码以获取特殊角色',
+      invitation: {
+        valid: "邀请码有效。分配角色: {role}",
+        invalid: "邀请码无效或已过期。",
+        verifying: "正在验证邀请码...",
+        error: "邀请码验证失败。"
+      },
+      errors: {
         emailFormat: '邮箱格式不正确',
         passwordLength: '密码长度至少为 6 位',
-        passwordMatch: '两次输入的密码不一致'
+        passwordMatch: '两次输入的密码不一致。',
+        frequencyLimit: '请求过于频繁，请稍后再试。',
+        invalidInviteCode: '请提供有效的邀请码。',
+        registrationFailed: '注册失败，请检查您的信息。',
+        internalError: '服务器内部错误。'
       }
     }
   },
