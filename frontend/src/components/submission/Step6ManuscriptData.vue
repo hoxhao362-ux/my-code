@@ -266,7 +266,7 @@ const confirmSubmit = async () => {
         />
       </div>
       
-      <div class="form-group" v-if="store.formData.articleType === 'original'">
+      <div class="form-group" v-if="store.formData.article_type === 'Original Research'">
         <label class="form-label">Structured Abstract <span class="required">*</span></label>
         <div class="structured-abstract">
           <div class="abstract-section">

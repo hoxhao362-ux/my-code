@@ -57,7 +57,7 @@ const dragOver = ref(false)
 
 // Valid Extensions
 const allowedExtensions = ['pdf', 'doc', 'docx']
-const maxFileSize = 100 * 1024 * 1024 // 100MB
+const maxFileSize = 20 * 1024 * 1024 // 统一为 20MB 与后端/前文保持一致
 
 const validateFile = (file) => {
   const ext = file.name.split('.').pop().toLowerCase()
@@ -65,38 +65,20 @@ const validateFile = (file) => {
     return 'Invalid file format. Only PDF, DOC, DOCX are supported.'
   }
   if (file.size > maxFileSize) {
-    return 'File size exceeds 100MB limit.'
+    return 'File size exceeds 20MB limit.'
   }
   return null
 }
 
-const calculateMD5 = (file) => {
-  return new Promise((resolve) => {
-    // Mock MD5 calculation for frontend-only requirement
-    // In real app, use SparkMD5 to read file chunks
-    setTimeout(() => {
-      resolve(`mock-md5-${file.name}-${file.size}`)
-    }, 500)
-  })
-}
-
+// 移除 MD5 计算，仅模拟本地加载动画，真实哈希由后端 /manuscripts 接口生成
 const simulateUpload = async (fileObj) => {
   isUploading.value = true
   uploadProgress.value = 0
   
   const totalSteps = 10
   for(let i = 1; i <= totalSteps; i++) {
-    await new Promise(r => setTimeout(r, 200)) // Simulate network delay
+    await new Promise(r => setTimeout(r, 100)) // 缩短本地模拟延迟
     uploadProgress.value = i * 10
-  }
-  
-  // Integrity Check
-  const clientMD5 = await calculateMD5(fileObj.fileObj)
-  // Mock Server MD5 (should match)
-  const serverMD5 = `mock-md5-${fileObj.name}-${fileObj.size}`
-  
-  if (clientMD5 !== serverMD5) {
-    throw new Error('File upload incomplete. Please re-upload the manuscript.')
   }
   
   isUploading.value = false
@@ -370,7 +352,7 @@ const handleAnonFileChange = (e) => {
       <div class="upload-content">
         <div class="upload-icon">☁️</div>
         <p>{{ t('attachFiles.dragDrop') }}</p>
-        <p class="upload-hint">Supported Formats: PDF, DOC, DOCX only (Max 100MB)</p>
+        <p class="upload-hint">Supported Formats: PDF, DOC, DOCX only (Max 20MB)</p>
         <button class="btn-browse">{{ t('attachFiles.browse') }}</button>
       </div>
       <input 

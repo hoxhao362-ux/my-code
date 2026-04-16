@@ -20,7 +20,8 @@ export const useSubmissionStore = defineStore('submission', () => {
   // 表单数据
   const formData = ref({
     // Step 1
-    articleType: '',
+    article_type: '',
+    section_category: '',
     
     // Step 2
     files: [], // { id, name, type, description, fileObj (raw), url }
@@ -30,8 +31,8 @@ export const useSubmissionStore = defineStore('submission', () => {
     },
     
     // Step 3
-    region: '',
-    classifications: [],
+    subject: '',
+    keywords: '',
     
     // Step 4
     additionalInfo: {
@@ -115,7 +116,7 @@ export const useSubmissionStore = defineStore('submission', () => {
 
     switch (step) {
       case 1:
-        isValid = !!formData.value.articleType
+        isValid = !!formData.value.article_type
         break
       case 2:
         isValid = formData.value.files.length > 0
@@ -135,7 +136,7 @@ export const useSubmissionStore = defineStore('submission', () => {
         }
         break
       case 3:
-        isValid = !!formData.value.region && formData.value.classifications.length > 0
+        isValid = !!formData.value.subject && !!formData.value.keywords
         break
       case 4:
         const { q1, q2, q3, q4, q5, q6, recommendedReviewers, avoidedReviewers } = formData.value.additionalInfo
@@ -287,11 +288,12 @@ export const useSubmissionStore = defineStore('submission', () => {
     currentStep.value = 1
     steps.value.forEach(s => s.status = s.id === 1 ? 'current' : 'pending')
     formData.value = {
-      articleType: '',
+      article_type: '',
+      section_category: '',
       files: [],
       referenceAnonymization: { file: null, confirmed: false },
-      region: '',
-      classifications: [],
+      subject: '',
+      keywords: '',
       additionalInfo: {
         q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
         ssrn: false, socialMedia: '', conference: 'No',
@@ -317,15 +319,15 @@ export const useSubmissionStore = defineStore('submission', () => {
       // 1. 附加基础文本字段
       fd.append('title', formData.value.title.replace(/<[^>]*>/g, '').trim())
       fd.append('abstract', formData.value.abstract.replace(/<[^>]*>/g, '').trim())
-      fd.append('article_type', formData.value.articleType)
-      fd.append('region', formData.value.region)
+      fd.append('article_type', formData.value.article_type)
+      fd.append('section_category', formData.value.section_category)
+      fd.append('subject', formData.value.subject)
       fd.append('keywords', formData.value.keywords)
       fd.append('cover_letter', formData.value.coverLetter)
       fd.append('publishing_option', formData.value.publishingOption)
       
       // 2. 附加复杂对象（对于 FastAPI 的 Form(...)，复杂结构需要转为 JSON 字符串）
       fd.append('authors', JSON.stringify(formData.value.authors))
-      fd.append('classifications', JSON.stringify(formData.value.classifications))
       fd.append('funding', JSON.stringify(formData.value.funding))
       fd.append('additional_info', JSON.stringify(formData.value.additionalInfo))
       
