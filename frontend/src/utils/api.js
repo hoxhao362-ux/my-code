@@ -11,19 +11,29 @@ export const platformJournalApi = {
 
 // ================= 2. 用户与认证 API (/auth & /users) ================= 
 export const userApi = { 
-  // 认证体系 (auth.py) 
+  // --- 认证体系 (对接 auth.py) --- 
+  // RequestBody: {username, email, password, invite_code} 
   register: (data) => http.post('/auth/register', data), 
+  
+  // RequestBody: {username, password, is_remember} 
   login: (credentials) => http.post('/auth/login', credentials), 
+  
+  // Token 直接在 Header 携带即可 
   logout: () => http.post('/auth/logout'), 
+  
+  // QueryParam: ?old_password=xx&new_password=xx 
   changePassword: (oldPassword, newPassword) => http.put('/auth/password', null, { 
     params: { old_password: oldPassword, new_password: newPassword } 
   }), 
   
-  // 用户体系 (users.py) 
+  // --- 用户体系 (对接 users.py) --- 
   getCurrentUser: () => http.get('/users/me'), 
-  updateCurrentUser: (data) => http.put('/users/me', data), 
   
-  // 系统公告 (如果后端没写这块，保留你的 mock 或忽略) 
+  // QueryParam: ?avatar_hash=xx 
+  updateCurrentUser: (avatarHash) => http.put('/users/me', null, { 
+    params: { avatar_hash: avatarHash } 
+  }), 
+  
   getAnnouncements: () => http.get('/public/announcements'), 
 } 
 
@@ -77,13 +87,21 @@ export const reviewApi = {
 
 // ================= 5. 管理员 API (/admin) ================= 
 export const adminApi = { 
+  // [新增] 管理员独立登录 
+  adminLogin: (credentials) => http.post('/admin/login', credentials), 
+
   // 面板与统计 
   getDashboard: () => http.get('/admin/dashboard'), 
   getSystemStatistics: () => http.get('/admin/statistics'), 
   
   // 用户管理 
   getUsers: (params) => http.get('/admin/users', { params }), 
-  updateUserRole: (uid, role) => http.put(`/admin/users/${uid}/role`, { role }), 
+  
+  // QueryParam: ?role=xxx 
+  updateUserRole: (uid, role) => http.put(`/admin/users/${uid}/role`, null, { 
+    params: { role } 
+  }), 
+  
   deleteUser: (uid) => http.delete(`/admin/users/${uid}`), 
   
   // 稿件管理 (全局) 

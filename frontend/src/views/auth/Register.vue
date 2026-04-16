@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
-import { authApi } from '../../utils/api'
+import { userApi } from '../../utils/api'
 import { encryptPassword } from '../../utils/encryption'
 
 const router = useRouter()
@@ -82,7 +82,7 @@ const handleRegister = async () => {
       invite_code: inviteCode.value
     }
     
-    await authApi.register(registerData)
+    await userApi.register(registerData)
     
     isLoading.value = false
     router.push('/login?registered=true')
