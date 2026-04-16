@@ -3,16 +3,19 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { useI18n } from 'vue-i18n'
 import { manuscriptApi } from '../../utils/api'
+import { useManuscriptStore } from '../../stores/manuscript'
 import Navigation from '../../components/Navigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const toastStore = useToastStore()
+const manuscriptStore = useManuscriptStore()
 
 // 表单数据
 const formData = ref({
@@ -50,7 +53,7 @@ const handleFileUpload = (event) => {
     }
     
     // 检查文件类型
-    const allowedTypes = ['.doc', '.docx', '.pdf', '.txt']
+    const allowedTypes = ['.doc', '.docx', '.pdf']
     const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
     if (!allowedTypes.includes(fileExtension)) {
       error.value = t('submit.validation.fileType')
@@ -462,17 +465,10 @@ const handleSubmit = async () => {
     hasAbstract = formData.value.abstract.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
   }
   
-  let hasContent = false
-  if (typeof formData.value.content === 'string') {
-    hasContent = !!formData.value.content && formData.value.content.replace(/<[^>]*>/g, '').trim() !== ''
-  } else if (formData.value.content && formData.value.content.ops) {
-    hasContent = formData.value.content.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
-  }
-  
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
-  if (!hasTitle || !hasAuthor || !hasAbstract || (!hasContent && !hasAttachments)) {
-    error.value = '请填写标题、作者、摘要，并上传内容或附件'
+  if (!hasTitle || !hasAuthor || !hasAbstract || !hasAttachments) {
+    error.value = t('submit.errors.incomplete') || 'Please fill in Title, Author, Abstract, and attach manuscript files.'
     return
   }
   
@@ -482,22 +478,28 @@ const handleSubmit = async () => {
   
   try {
     const convertToHTML = (content) => {
-      if (typeof content === 'string') {
-        return content
-      }
+      if (typeof content === 'string') return content
       return ''
     }
     
     const fd = new FormData()
     
     fd.append('title', formData.value.title)
-    fd.append('authors', formData.value.author)
+    fd.append('article_type', 'Original Research')
+    
+    const authorArray = [{
+      name: formData.value.author,
+      is_first: true,
+      is_corresponding: true,
+      email: userStore.userInfo?.email || ''
+    }]
+    fd.append('authors', JSON.stringify(authorArray))
+    
     fd.append('abstract', convertToHTML(formData.value.abstract))
-    fd.append('content', convertToHTML(formData.value.content))
     fd.append('keywords', formData.value.keywords)
     
     const moduleValue = formData.value.modules.includes('all') ? 'Others' : formData.value.modules.join(',')
-    fd.append('field', moduleValue)
+    fd.append('subject', moduleValue)
     
     if (formData.value.attachments && formData.value.attachments.length > 0) {
       formData.value.attachments.forEach(att => {
@@ -505,10 +507,12 @@ const handleSubmit = async () => {
       })
     }
     
-    await manuscriptApi.upload(fd)
+    const response = await manuscriptStore.submitManuscript(fd)
     
-    success.value = '投稿成功！'
-    toastStore.add({ message: '投稿成功！', type: 'success' })
+    console.log(`Successfully created manuscript ID: ${response.manuscript_id}, Status: ${response.status}`)
+    
+    success.value = t('submit.successMessage') || 'Manuscript submitted successfully! Waiting for initial review.'
+    toastStore.add({ message: success.value, type: 'success' })
     
     setTimeout(() => {
       formData.value = {
@@ -521,18 +525,18 @@ const handleSubmit = async () => {
         attachments: []
       }
       success.value = ''
-      router.push('/admin/author-dashboard')
+      router.push('/author/dashboard')
     }, 2000)
   } catch (err) {
-    console.error('上传失败:', err)
-    error.value = err.message || '上传失败，请稍后重试'
+    console.error('Submission Error:', err)
+    error.value = err.response?.data?.detail || err.message || 'Submission failed. Please try again later.'
   } finally {
     submitting.value = false
   }
 }
 
 const goBack = () => {
-  router.push('/admin/author-dashboard')
+  router.push('/author/dashboard')
 }
 </script>
 
@@ -728,7 +732,7 @@ const goBack = () => {
                     id="attachment-upload" 
                     class="file-input" 
                     @change="handleFileUpload" 
-                    accept=".doc,.docx,.pdf,.txt"
+                    accept=".doc,.docx,.pdf"
                   />
                   <div class="upload-trigger" @click="triggerFileUpload">
                     <div class="upload-icon">📁</div>
