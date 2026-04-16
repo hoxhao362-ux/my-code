@@ -3,7 +3,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
-import { journalApi } from '../../utils/api'
+import { manuscriptApi } from '../../utils/api'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
 import FlowCheckPanel from './FlowCheckPanel.vue'
 import ViewSubmissionModal from './ViewSubmissionModal.vue'
@@ -26,7 +26,7 @@ const loading = ref(false)
 const fetchMyManuscripts = async () => {
   loading.value = true
   try {
-    const res = await journalApi.getMyJournals()
+    const res = await manuscriptApi.getMyManuscripts({})
     userJournals.value = res.items || res.journals || res || []
   } catch (error) {
     console.error('获取稿件列表失败:', error)

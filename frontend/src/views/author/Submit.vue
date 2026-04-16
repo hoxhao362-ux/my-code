@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
-import { journalApi } from '../../utils/api'
+import { manuscriptApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -505,7 +505,7 @@ const handleSubmit = async () => {
       })
     }
     
-    await journalApi.upload(fd)
+    await manuscriptApi.upload(fd)
     
     success.value = '投稿成功！'
     toastStore.add({ message: '投稿成功！', type: 'success' })

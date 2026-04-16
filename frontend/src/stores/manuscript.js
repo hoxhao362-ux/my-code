@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { journalApi } from '../utils/api'
+import { manuscriptApi, adminApi } from '../utils/api'
 
 export const useManuscriptStore = defineStore('manuscript', () => {
   const manuscripts = ref([])
@@ -13,7 +13,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
     loading.value = true
     error.value = null
     try {
-      const data = await journalApi.getAllJournals()
+      const data = await adminApi.getAllJournals({})
       manuscripts.value = data
     } catch (err) {
       error.value = err.message || 'Failed to fetch manuscripts'
@@ -28,7 +28,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
     loading.value = true
     error.value = null
     try {
-      const data = await journalApi.getMyJournals(username)
+      const data = await manuscriptApi.getMyManuscripts({})
       manuscripts.value = data
     } catch (err) {
       error.value = err.message || 'Failed to fetch my manuscripts'
@@ -43,7 +43,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
     loading.value = true
     error.value = null
     try {
-      const data = await journalApi.getJournalDetail(id)
+      const data = await manuscriptApi.getManuscriptDetail(id)
       currentManuscript.value = data
       return data
     } catch (err) {
@@ -60,7 +60,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
     loading.value = true
     error.value = null
     try {
-      const result = await journalApi.upload(formData)
+      const result = await manuscriptApi.upload(formData)
       return result
     } catch (err) {
       error.value = err.message || 'Submission failed'
@@ -74,7 +74,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
   const updateManuscript = async (id, updates) => {
     loading.value = true
     try {
-      await journalApi.updateJournal(id, updates)
+      await manuscriptApi.updateWorkflow(id, updates)
       // 更新本地状态
       const index = manuscripts.value.findIndex(m => String(m.id) === String(id))
       if (index !== -1) {
@@ -95,7 +95,7 @@ export const useManuscriptStore = defineStore('manuscript', () => {
   const deleteManuscript = async (id) => {
     loading.value = true
     try {
-      await journalApi.deleteJournal(id)
+      await adminApi.deleteJournal(id)
       manuscripts.value = manuscripts.value.filter(m => String(m.id) !== String(id))
     } catch (err) {
       error.value = err.message || 'Delete failed'

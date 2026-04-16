@@ -1148,31 +1148,16 @@ export default {
   },
   auth: {
     adminLogin: {
-      title: {
-        admin: 'Editor Portal Login',
-        reviewer: 'Reviewer Dashboard Login',
-        author: 'Author Dashboard Login',
-        default: 'Admin Portal Login'
-      },
-      username: 'Username',
-      password: 'Password',
+      title: 'Administrative Portal',
+      username: 'Admin Username',
+      password: 'Security Password',
       rememberMe: 'Remember Me',
-      role: 'Role',
-      selectRole: 'Select Role',
-      roles: {
-        admin: 'Administrator',
-        editor: 'Editor',
-        reviewer: 'Reviewer',
-        author: 'Author'
-      },
-      loginBtn: 'Login',
-      noAccount: "Don't have an account?",
-      registerNow: 'Register Now',
-      backToHome: 'Back to Home',
+      submit: 'Access Dashboard',
       error: {
-        required: 'Please enter username and password',
-        authorized: 'You are only authorized to access the [{role} Dashboard]',
-        failed: 'Login failed, please try again later'
+        accessDenied: 'Access Denied: This account does not have administrative privileges.',
+        accountNotFound: 'Account not found. Please check your username.',
+        invalidPassword: 'Invalid password. Please try again.',
+        connectionError: 'A connection error occurred. Please verify your network.'
       }
     },
     register: {

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useUserStore } from './user'
-import { journalApi } from '../utils/api'
+import { manuscriptApi } from '../utils/api'
 
 export const useSubmissionStore = defineStore('submission', () => {
   // 当前步骤 (1-6)
@@ -346,7 +346,7 @@ export const useSubmissionStore = defineStore('submission', () => {
       }
 
       // 4. 发起真实请求
-      const response = await journalApi.upload(fd)
+      const response = await manuscriptApi.upload(fd)
       
       // 5. 提交成功后清理本地草稿和状态
       localStorage.removeItem('submission_draft')

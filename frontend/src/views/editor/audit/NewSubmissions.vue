@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
 import { usePlatformStore } from '../../../stores/platform'
-import { editorApi, journalApi } from '../../../utils/api'
+import { editorApi, manuscriptApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -164,7 +164,7 @@ const handleTriage = async (manuscriptId, decision) => {
     }
 
     // 调用流转接口
-    await journalApi.updateJournal(manuscriptId, payload)
+    await manuscriptApi.updateWorkflow(manuscriptId, payload)
     
     toastStore.add({
       message: decision === 'reject' ? '已直接拒稿 (Desk Reject)' : '初筛通过',

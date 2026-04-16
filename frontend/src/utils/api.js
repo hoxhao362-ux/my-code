@@ -37,35 +37,79 @@ export const userApi = {
   getAnnouncements: () => http.get('/public/announcements'), 
 } 
 
-// ================= 3. 稿件/文献 API (原 /journal -> 现 /manuscripts) ================= 
-export const journalApi = { 
-  // 核心上传 
-  upload: (formData) => http.post('/manuscripts/', formData, { 
-    headers: { 'Content-Type': 'multipart/form-data' } 
-  }), 
-  // 获取我的稿件 
-  getMyJournals: (params) => http.get('/manuscripts/', { params }), 
-  // 获取详情 
-  getJournalDetail: (jid) => http.get(`/manuscripts/${jid}`), 
-  // 稿件历史 
-  getManuscriptHistory: (jid) => http.get(`/manuscripts/${jid}/history`), 
-  // 工作流操作 (更新状态等) 
-  updateJournal: (jid, data) => { 
-    const fd = new FormData() 
-    for (const key in data) fd.append(key, data[key]) 
-    return http.post(`/manuscripts/${jid}/workflow`, fd) 
-  }, 
-  // 获取可用操作 
-  getManuscriptActions: (jid) => http.get(`/manuscripts/${jid}/actions`), 
-  // 文件管理 
-  getManuscriptFiles: (jid) => http.get(`/manuscripts/${jid}/files`), 
-  uploadManuscriptFile: (jid, file) => { 
-    const fd = new FormData() 
-    fd.append('file', file) 
-    return http.post(`/manuscripts/${jid}/files`, fd) 
-  }, 
-  // 预览
-  previewPdf: (data) => http.post('/manuscripts/preview-pdf', data, { responseType: 'blob' })
+// ================= 3. 稿件中心 API (重构自 journalApi) =================
+export const manuscriptApi = {
+  /**
+   * 核心投稿接口
+   * 适配后端: POST /api/v1/manuscripts/
+   * Content-Type: multipart/form-data
+   */
+  upload: (formData) => http.post('/manuscripts/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+
+  /**
+   * 获取我的稿件列表
+   * 适配后端: GET /api/v1/manuscripts/
+   * params: { status, page, page_size }
+   */
+  getMyManuscripts: (params) => http.get('/manuscripts/', { params }),
+
+  /**
+   * 获取稿件详情
+   * 适配后端: GET /api/v1/manuscripts/{manuscript_id}
+   */
+  getManuscriptDetail: (id) => http.get(`/manuscripts/${id}`),
+
+  /**
+   * 稿件历史流转记录
+   * 适配后端: GET /api/v1/manuscripts/{id}/history
+   */
+  getManuscriptHistory: (id) => http.get(`/manuscripts/${id}/history`),
+
+  /**
+   * 工作流状态流转 (审核、退修、分配等核心逻辑)
+   * 适配后端: POST /api/v1/manuscripts/{id}/workflow
+   * Payload: FormData or JSON depending on the action
+   */
+  updateWorkflow: (id, data) => {
+    // 后端工作流接口适配，支持附加文件或表单数据
+    const fd = data instanceof FormData ? data : new FormData()
+    if (!(data instanceof FormData)) {
+      for (const key in data) fd.append(key, data[key])
+    }
+    return http.post(`/manuscripts/${id}/workflow`, fd)
+  },
+
+  /**
+   * 获取当前稿件可用的操作指令
+   * 适配后端: GET /api/v1/manuscripts/{id}/actions
+   */
+  getAvailableActions: (id) => http.get(`/manuscripts/${id}/actions`),
+
+  /**
+   * 稿件关联文件列表
+   * 适配后端: GET /api/v1/manuscripts/{id}/files
+   */
+  getManuscriptFiles: (id) => http.get(`/manuscripts/${id}/files`),
+
+  /**
+   * 为指定稿件补充上传文件
+   * 适配后端: POST /api/v1/manuscripts/{id}/files
+   */
+  uploadManuscriptFile: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post(`/manuscripts/${id}/files`, fd)
+  },
+
+  /**
+   * PDF 预览 (处理 Blob)
+   * 适配后端: POST /api/v1/manuscripts/preview-pdf
+   */
+  previewPdf: (data) => http.post('/manuscripts/preview-pdf', data, {
+    responseType: 'blob'
+  })
 } 
 
 // ================= 4. 审稿人 API (/reviews) ================= 

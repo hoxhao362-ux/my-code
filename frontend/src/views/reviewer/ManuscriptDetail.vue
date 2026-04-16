@@ -5,7 +5,7 @@ import { useUserStore } from '../../stores/user'
 import { useMessageStore } from '../../stores/messages'
 import { useToastStore } from '../../stores/toast'
 import { useReviewStore } from '../../stores/review'
-import { journalApi } from '../../utils/api'
+import { manuscriptApi } from '../../utils/api'
 
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
@@ -30,7 +30,7 @@ onMounted(async () => {
   try {
     isLoading.value = true
     // 调用 API 获取稿件详情（前提是后端 /manuscripts/{id} 接口可用）
-    const response = await journalApi.getJournalDetail(journalId)
+    const response = await manuscriptApi.getManuscriptDetail(journalId)
     // 适配后端的 ApiResponse 格式 (response.data)
     journal.value = response.data || response
   } catch (error) {

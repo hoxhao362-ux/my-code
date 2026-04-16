@@ -2,7 +2,7 @@
 import { defineProps, defineEmits, ref, watch } from 'vue'
 import AttachmentsModal from './AttachmentsModal.vue'
 import PdfPreviewModal from '../../components/PdfPreviewModal.vue'
-import { journalApi } from '../../utils/api'
+import { manuscriptApi } from '../../utils/api'
 
 const props = defineProps({
   visible: Boolean,
@@ -34,7 +34,7 @@ watch(
 const fetchRealDetail = async (id) => {
   detailLoading.value = true
   try {
-    const res = await journalApi.getJournalDetail(id)
+    const res = await manuscriptApi.getManuscriptDetail(id)
     realManuscriptDetail.value = res
   } catch (error) {
     console.error('获取稿件真实详情失败:', error)

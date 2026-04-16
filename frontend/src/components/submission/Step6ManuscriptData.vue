@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import { useToastStore } from '../../stores/toast'
-import { journalApi } from '../../utils/api'
+import { manuscriptApi } from '../../utils/api'
 import StepNavigation from './StepNavigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -164,7 +164,7 @@ const generatePDF = async () => {
     }
 
     // 调用后端的合成接口
-    const response = await journalApi.previewPdf(previewData)
+    const response = await manuscriptApi.previewPdf(previewData)
     
     // 创建本地访问 URL 并打开新标签页
     const blob = new Blob([response], { type: 'application/pdf' })
