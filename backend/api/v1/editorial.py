@@ -3,19 +3,17 @@
 
 包含编委会管理、编辑看板等功能
 """
-from fastapi import APIRouter, HTTPException, Depends
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from core.enums import UserRole, ManuscriptStatus, ReviewStage
-from model.response import ApiResponse
-from model.manuscript import EditorialPendingItemDTO
 from api import dependencies as deps
-from utils.log import global_logger
-
+from core.enums import ManuscriptStatus, ReviewStage
 from database.dependencies import get_db_session
 from database.orm.models.manuscript import Manuscript
 from database.repositories.manuscript_repo import ManuscriptRepository
+from fastapi import APIRouter, Depends
+from model.manuscript import EditorialPendingItemDTO
+from model.response import ApiResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.log import global_logger
 
 # 创建编辑中心路由
 router = APIRouter(
@@ -37,21 +35,24 @@ async def get_editorial_dashboard(
 ):
     """
     获取编辑工作台看板数据
-    
+
     功能说明：
     1. 待处理稿件数
     2. 进行中审稿数
     3. 统计数据
-    
+
     Args:
         current_user: 当前用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 看板统计数据
     """
-    global_logger.debug("Editorial", f"获取编辑看板 - uid: {current_user['uid']}, role: {current_user['role']}")
-    
+    global_logger.debug(
+        "Editorial",
+        f"获取编辑看板 - uid: {current_user['uid']}, role: {current_user['role']}",
+    )
+
     repo = ManuscriptRepository(session)
 
     # 定义待处理状态（需要编辑从业者处理的状态）
@@ -62,14 +63,14 @@ async def get_editorial_dashboard(
         ManuscriptStatus.REVIEW_COMPLETED.value,
         ManuscriptStatus.PENDING_FINAL_DECISION.value,
     ]
-    
+
     # 定义审稿中状态
     under_review_statuses = [
         ManuscriptStatus.UNDER_INITIAL_REVIEW.value,
         ManuscriptStatus.UNDER_PEER_REVIEW.value,
         ManuscriptStatus.UNDER_FINAL_DECISION.value,
     ]
-    
+
     # 定义已完成状态
     completed_statuses = [
         ManuscriptStatus.PUBLISHED.value,
@@ -77,55 +78,58 @@ async def get_editorial_dashboard(
         ManuscriptStatus.WITHDRAWN.value,
         ManuscriptStatus.TRANSFERRED.value,
     ]
-    
+
     # 通过 Repository 查询各状态统计
     status_counts = await repo.get_status_breakdown()
-    
+
     # 计算各类别数量
     pending_count = sum(status_counts.get(s, 0) for s in pending_statuses)
     under_review_count = sum(status_counts.get(s, 0) for s in under_review_statuses)
     completed_count = sum(status_counts.get(s, 0) for s in completed_statuses)
     total_count = sum(status_counts.values())
-    
+
     # 通过 Repository 查询待处理稿件 top 10
     pending_manuscripts = await repo.list_by_statuses(
-        pending_statuses, limit=10,
+        pending_statuses,
+        limit=10,
         order_by=Manuscript.create_time.asc(),
     )
-    
+
     # 使用 Pydantic DTO 转换为响应格式
     pending_list = [
         EditorialPendingItemDTO.model_validate(m).model_dump()
         for m in pending_manuscripts
     ]
-    
+
     # 按阶段统计
     stage_stats = {
         ReviewStage.INITIAL_REVIEW.value: sum(
-            status_counts.get(s, 0) 
+            status_counts.get(s, 0)
             for s in ManuscriptStatus.get_status_by_phase(ReviewStage.INITIAL_REVIEW)
         ),
         ReviewStage.PEER_REVIEW.value: sum(
-            status_counts.get(s, 0) 
+            status_counts.get(s, 0)
             for s in ManuscriptStatus.get_status_by_phase(ReviewStage.PEER_REVIEW)
         ),
         ReviewStage.FINAL_DECISION.value: sum(
-            status_counts.get(s, 0) 
+            status_counts.get(s, 0)
             for s in ManuscriptStatus.get_status_by_phase(ReviewStage.FINAL_DECISION)
         ),
     }
-    
-    return ApiResponse.success(data={
-        "pending_manuscripts": pending_count,
-        "under_review": under_review_count,
-        "completed_reviews": completed_count,
-        "total_manuscripts": total_count,
-        "statistics": {
-            "by_status": status_counts,
-            "by_stage": stage_stats,
-        },
-        "pending_list": pending_list,
-    })
+
+    return ApiResponse.success(
+        data={
+            "pending_manuscripts": pending_count,
+            "under_review": under_review_count,
+            "completed_reviews": completed_count,
+            "total_manuscripts": total_count,
+            "statistics": {
+                "by_status": status_counts,
+                "by_stage": stage_stats,
+            },
+            "pending_list": pending_list,
+        }
+    )
 
 
 @router.get("/board", summary="获取编委会列表")
@@ -137,13 +141,13 @@ async def get_editorial_board(
 ):
     """
     获取编委会成员列表
-    
+
     Args:
         page: 页码
         page_size: 每页数量
         current_user: 当前用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 编委会成员列表
     """
@@ -198,12 +202,7 @@ async def get_editorial_board(
     - 联表查询时注意使用 joinedload 或显式 join 避免懒加载 N+1 问题
     - 研究领域 research_areas 为逗号分隔的字符串，前端可自行拆分展示
     """
-    return ApiResponse.paginated(
-        items=[],
-        total=0,
-        page=page,
-        page_size=page_size
-    )
+    return ApiResponse.paginated(items=[], total=0, page=page, page_size=page_size)
 
 
 @router.post("/board", summary="添加编委会成员（管理员）")
@@ -215,13 +214,13 @@ async def add_editorial_board_member(
 ):
     """
     添加编委会成员（仅限管理员或主编）
-    
+
     Args:
         user_id: 用户 ID
         position: 职位（editor/associate_editor/ea_ae）
         current_user: 管理员用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 添加成功消息
     """
@@ -272,6 +271,9 @@ async def add_editorial_board_member(
     - appointed_by_uid 应为当前操作管理员的 uid
     - 不能将自己添加为编委（已有管理员角色，无需重复）
     """
-    global_logger.info("Editorial", f"添加编委 - admin_uid: {current_user['uid']}, target_uid: {user_id}, position: {position}")
-    
+    global_logger.info(
+        "Editorial",
+        f"添加编委 - admin_uid: {current_user['uid']}, target_uid: {user_id}, position: {position}",
+    )
+
     return ApiResponse.success(message="编委成员添加成功")

@@ -3,27 +3,30 @@
 
 提供邀请码生成、验证、管理等功能。
 """
+
 import secrets
 import string
-from datetime import datetime
-from typing import Optional, Dict, Any, AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any, AsyncIterator, Dict, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from database.service.database_service import db_manager
 from database.orm.models.invitation import InvitationCode, InvitationCodeUsage
 from database.repositories.invitation_repo import InvitationRepository
+from database.service.database_service import db_manager
 from database.uow import transactional
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 class InvitationService:
     """邀请码服务类"""
-    
+
     def __init__(self):
         pass
 
     @asynccontextmanager
-    async def _ensure_session(self, session: Optional[AsyncSession]) -> AsyncIterator[AsyncSession]:
+    async def _ensure_session(
+        self, session: Optional[AsyncSession]
+    ) -> AsyncIterator[AsyncSession]:
         """
         确保存在可用的 AsyncSession。
 
@@ -38,23 +41,23 @@ class InvitationService:
 
         async with db_manager.get_session() as owned_session:
             yield owned_session
-    
+
     def generate_code(self, length: int = 8) -> str:
         """
         生成邀请码
-        
+
         Args:
             length: 邀请码长度，默认为8位
-            
+
         Returns:
             str: 生成的邀请码
         """
         alphabet = string.ascii_uppercase + string.digits
-        return ''.join(secrets.choice(alphabet) for _ in range(length))
-    
+        return "".join(secrets.choice(alphabet) for _ in range(length))
+
     async def create_invitation_code(
         self,
-        role: str, 
+        role: str,
         created_by: str,
         created_by_uid: int,
         description: Optional[str] = None,
@@ -64,7 +67,7 @@ class InvitationService:
     ) -> str:
         """
         创建邀请码
-        
+
         Args:
             role: 邀请码对应的角色
             created_by: 创建者用户名
@@ -72,7 +75,7 @@ class InvitationService:
             description: 邀请码描述
             max_uses: 最大使用次数
             expire_time: 过期时间
-            
+
         Returns:
             str: 生成的邀请码
         """
@@ -99,14 +102,16 @@ class InvitationService:
                 )
 
         return code
-    
-    async def validate_invitation_code(self, code: str, session: Optional[AsyncSession] = None) -> Dict[str, Any]:
+
+    async def validate_invitation_code(
+        self, code: str, session: Optional[AsyncSession] = None
+    ) -> Dict[str, Any]:
         """
         验证邀请码
-        
+
         Args:
             code: 邀请码
-            
+
         Returns:
             Dict[str, Any]: 验证结果，包含valid、role、message
         """
@@ -121,7 +126,11 @@ class InvitationService:
                 return {"valid": False, "role": None, "message": "邀请码已失效"}
 
             if invitation.used_count >= invitation.max_uses:
-                return {"valid": False, "role": None, "message": "邀请码已达到最大使用次数"}
+                return {
+                    "valid": False,
+                    "role": None,
+                    "message": "邀请码已达到最大使用次数",
+                }
 
             if invitation.expire_time:
                 expire_time_dt = invitation.expire_time
@@ -129,7 +138,7 @@ class InvitationService:
                     return {"valid": False, "role": None, "message": "邀请码已过期"}
 
             return {"valid": True, "role": invitation.role, "message": "邀请码有效"}
-    
+
     async def use_invitation_code(
         self,
         code: str,
@@ -139,12 +148,12 @@ class InvitationService:
     ) -> bool:
         """
         使用邀请码
-        
+
         Args:
             code: 邀请码
             used_by_uid: 使用者用户ID
             used_by_username: 使用者用户名
-            
+
         Returns:
             bool: 是否使用成功
         """
@@ -185,15 +194,17 @@ class InvitationService:
                 return True
             except Exception:
                 return False
-    
-    async def update_code_status(self, code: str, status: str, session: Optional[AsyncSession] = None) -> bool:
+
+    async def update_code_status(
+        self, code: str, status: str, session: Optional[AsyncSession] = None
+    ) -> bool:
         """
         更新邀请码状态
-        
+
         Args:
             code: 邀请码
             status: 新状态
-            
+
         Returns:
             bool: 是否更新成功
         """
@@ -205,10 +216,10 @@ class InvitationService:
                     return False
                 invitation.status = status
             return True
-    
+
     async def get_invitation_codes(
         self,
-        page: int = 1, 
+        page: int = 1,
         page_size: int = 10,
         status: Optional[str] = None,
         role: Optional[str] = None,
@@ -216,13 +227,13 @@ class InvitationService:
     ) -> Dict[str, Any]:
         """
         获取邀请码列表
-        
+
         Args:
             page: 页码
             page_size: 每页条数
             status: 状态筛选
             role: 角色筛选
-            
+
         Returns:
             Dict[str, Any]: 邀请码列表和总数
         """
@@ -231,8 +242,11 @@ class InvitationService:
         async with self._ensure_session(session) as s:
             repo = InvitationRepository(s)
             total = await repo.count(status=status, role=role)
-            codes = await repo.list_page(page=page, page_size=page_size, status=status, role=role)
+            codes = await repo.list_page(
+                page=page, page_size=page_size, status=status, role=role
+            )
             return {"total": total, "codes": codes}
+
 
 # 全局邀请码服务实例
 invitation_service = InvitationService()

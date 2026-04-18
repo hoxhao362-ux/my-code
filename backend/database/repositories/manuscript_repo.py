@@ -4,17 +4,17 @@
 提供稿件（Manuscript）相关的数据库操作。
 将路由中分散的 SQLAlchemy 查询集中到 Repository 层。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-
-from sqlalchemy import func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.enums import ManuscriptStatus
 from database.orm.models.manuscript import Manuscript
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ManuscriptRepository(BaseRepository[Manuscript]):
@@ -50,13 +50,9 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
         conditions = [Manuscript.manuscript_id == manuscript_id]
         if not include_deleted:
             conditions.append(Manuscript.is_deleted == False)  # noqa: E712
-        return await self.session.scalar(
-            select(Manuscript).where(*conditions)
-        )
+        return await self.session.scalar(select(Manuscript).where(*conditions))
 
-    async def get_published_by_id(
-        self, manuscript_id: int
-    ) -> Optional[Manuscript]:
+    async def get_published_by_id(self, manuscript_id: int) -> Optional[Manuscript]:
         """
         获取已发表的稿件。
 
@@ -93,9 +89,7 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
         conditions = []
         if not include_deleted:
             conditions.append(Manuscript.is_deleted == False)  # noqa: E712
-        stmt = select(Manuscript.status, func.count()).group_by(
-            Manuscript.status
-        )
+        stmt = select(Manuscript.status, func.count()).group_by(Manuscript.status)
         if conditions:
             stmt = stmt.where(*conditions)
         result = await self.session.execute(stmt)
@@ -227,7 +221,9 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
 
         total = await self.count(*conditions)
         manuscripts = await self.list_page(
-            page, page_size, *conditions,
+            page,
+            page_size,
+            *conditions,
             order_by=Manuscript.update_time.desc(),
         )
         return manuscripts, total
@@ -256,21 +252,18 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
             List[Dict[str, Any]]: 字典列表
         """
         offset = (page - 1) * page_size
-        stmt = (
-            select(
-                Manuscript.manuscript_id.label("jid"),
-                Manuscript.title,
-                Manuscript.authors,
-                Manuscript.abstract,
-                Manuscript.status,
-                Manuscript.file_name,
-                Manuscript.file_size,
-                Manuscript.create_time,
-                Manuscript.update_time,
-                User.username.label("uploader"),
-            )
-            .join(User, Manuscript.author_uid == User.uid)
-        )
+        stmt = select(
+            Manuscript.manuscript_id.label("jid"),
+            Manuscript.title,
+            Manuscript.authors,
+            Manuscript.abstract,
+            Manuscript.status,
+            Manuscript.file_name,
+            Manuscript.file_size,
+            Manuscript.create_time,
+            Manuscript.update_time,
+            User.username.label("uploader"),
+        ).join(User, Manuscript.author_uid == User.uid)
         conditions = []
         if include_deleted:
             conditions.append(Manuscript.is_deleted == True)  # noqa: E712

@@ -3,17 +3,13 @@
 
 包含审稿人任务、评审意见提交等功能
 """
-from fastapi import APIRouter, HTTPException, Depends
-from datetime import datetime
 
-from core.enums import UserRole
-from model.response import ApiResponse
 from api import dependencies as deps
-from utils.log import global_logger
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.dependencies import get_db_session
+from fastapi import APIRouter, Depends
+from model.response import ApiResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.log import global_logger
 
 # 创建审稿中心路由
 router = APIRouter(
@@ -38,14 +34,14 @@ async def get_my_review_tasks(
 ):
     """
     获取当前审稿人的审稿任务列表
-    
+
     Args:
         page: 页码
         page_size: 每页数量
         status: 任务状态筛选
         current_user: 当前用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 审稿任务列表
     """
@@ -106,14 +102,11 @@ async def get_my_review_tasks(
     - 查询 ReviewOpinion 时注意审稿轮次 review_round，同一审稿人可能有多轮意见
     - 联表查询建议使用 joinedload 预加载 Manuscript 避免懒加载 N+1 问题
     """
-    global_logger.debug("Reviews", f"获取审稿任务 - uid: {current_user['uid']}, page: {page}")
-    
-    return ApiResponse.paginated(
-        items=[],
-        total=0,
-        page=page,
-        page_size=page_size
+    global_logger.debug(
+        "Reviews", f"获取审稿任务 - uid: {current_user['uid']}, page: {page}"
     )
+
+    return ApiResponse.paginated(items=[], total=0, page=page, page_size=page_size)
 
 
 @router.put("/me/tasks/{task_id}", summary="提交评审意见")
@@ -128,7 +121,7 @@ async def submit_review_opinion(
 ):
     """
     提交审稿意见
-    
+
     Args:
         task_id: 审稿任务 ID
         score: 评分
@@ -137,7 +130,7 @@ async def submit_review_opinion(
         decision: 评审结论（accept/reject/revision）
         current_user: 当前用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 提交成功消息
     """
@@ -194,8 +187,11 @@ async def submit_review_opinion(
     - 同一审稿人对同一稿件同一轮次不应重复提交，需检查是否已有 ReviewOpinion 记录
     - 全部审稿人完成后触发状态流转是核心业务逻辑，需确保原子性
     """
-    global_logger.info("Reviews", f"提交评审意见 - task_id: {task_id}, uid: {current_user['uid']}, decision: {decision}")
-    
+    global_logger.info(
+        "Reviews",
+        f"提交评审意见 - task_id: {task_id}, uid: {current_user['uid']}, decision: {decision}",
+    )
+
     return ApiResponse.success(message="评审意见提交成功")
 
 
@@ -208,13 +204,13 @@ async def get_reviewer_list(
 ):
     """
     获取所有审稿人列表（仅限管理员）
-    
+
     Args:
         page: 页码
         page_size: 每页数量
         current_user: 管理员用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 审稿人列表
     """
@@ -275,9 +271,4 @@ async def get_reviewer_list(
     - 审稿人的历史统计数据可考虑缓存到 Redis，定期刷新
     - 需排除 is_deleted=True 的用户
     """
-    return ApiResponse.paginated(
-        items=[],
-        total=0,
-        page=page,
-        page_size=page_size
-    )
+    return ApiResponse.paginated(items=[], total=0, page=page, page_size=page_size)

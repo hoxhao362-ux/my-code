@@ -14,4 +14,3 @@ async def transactional(session: AsyncSession) -> AsyncIterator[AsyncSession]:
 
     async with session.begin():
         yield session
-

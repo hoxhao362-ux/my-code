@@ -11,22 +11,21 @@
 主要类：
 - DatabaseManager: 全局数据库管理器，维护 Engine/Session 与服务生命周期。
 """
+
 from __future__ import annotations
 
 import asyncio
-import os
 from contextlib import asynccontextmanager
-from typing import Dict, Optional
+from typing import Optional
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
-
-from utils.log import global_logger
-from core.config import config
 from core.service_manager import BaseManagedService
 from database.orm import Base
-from database.orm import models as _models
-from database.orm.session import build_async_engine, build_sessionmaker, load_sqlalchemy_async_config
+from database.orm.session import (build_async_engine, build_sessionmaker,
+                                  load_sqlalchemy_async_config)
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
+                                    async_sessionmaker)
+from utils.log import global_logger
 
 
 class DatabaseManager(BaseManagedService):
@@ -34,17 +33,17 @@ class DatabaseManager(BaseManagedService):
     数据库全局管理器
     实现 BaseManagedService 接口，负责连接池的生命周期与服务分发。
     """
-    
+
     def __init__(self):
         super().__init__("database")
         self.engine: Optional[AsyncEngine] = None
         self.sessionmaker: Optional[async_sessionmaker] = None
         self._initialized = False
-    
+
     async def start(self):
         """连接数据库：连接池初始化 -> 结构同步"""
         global_logger.info("Database", "正在连接数据库服务...")
-        
+
         try:
             await self.initialize_all()
         except Exception as e:
@@ -54,7 +53,7 @@ class DatabaseManager(BaseManagedService):
     async def stop(self):
         """安全断开数据库连接"""
         global_logger.info("Database", "正在安全关闭数据库连接...")
-        
+
         try:
             await self.close_all()
         except Exception as e:
@@ -80,7 +79,9 @@ class DatabaseManager(BaseManagedService):
             except Exception:
                 retry_count += 1
                 if retry_count >= max_retries:
-                    global_logger.error("database", "数据库连接测试失败，已达到最大重试次数")
+                    global_logger.error(
+                        "database", "数据库连接测试失败，已达到最大重试次数"
+                    )
                     raise
                 await asyncio.sleep(1)
 
@@ -121,16 +122,16 @@ class DatabaseManager(BaseManagedService):
         """全量初始化：Engine 初始化 -> ORM 元数据同步"""
         if self._initialized:
             return
-        
+
         try:
             await self._init_engine()
             await self._create_schema()
 
             self._initialized = True
             global_logger.info("database", "全量数据库环境初始化成功（SQLAlchemy ORM）")
-            
+
         except Exception as e:
-            global_logger.error('database', f"数据库环境初始化失败: {e}")
+            global_logger.error("database", f"数据库环境初始化失败: {e}")
             raise RuntimeError("数据库环境初始化失败") from e
 
     @asynccontextmanager
@@ -144,7 +145,9 @@ class DatabaseManager(BaseManagedService):
         """
 
         if not self.sessionmaker:
-            raise RuntimeError("数据库尚未初始化，请确保在 lifespan 启动后再获取 session。")
+            raise RuntimeError(
+                "数据库尚未初始化，请确保在 lifespan 启动后再获取 session。"
+            )
 
         session = self.sessionmaker()
         try:

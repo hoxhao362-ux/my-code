@@ -9,21 +9,23 @@
 
 创建日期：2026-03-26
 """
-from pydantic import BaseModel, ConfigDict, Field
+
 from typing import List, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ============================================================
 # 请求模型
 # ============================================================
 
+
 class ManuscriptUploadRequest(BaseModel):
     """
     稿件上传请求模型
-    
+
     注意：文件上传字段 (file: UploadFile) 不包含在此模型中，
     应在路由函数中单独声明为 FastAPI 依赖：
-    
+
     Example:
         @router.post("/upload")
         async def upload_manuscript(
@@ -32,6 +34,7 @@ class ManuscriptUploadRequest(BaseModel):
         ):
             pass
     """
+
     title: str = Field(..., description="稿件标题", min_length=1, max_length=500)
     authors: str = Field(..., description="作者列表，多个作者用逗号分隔")
     abstract: Optional[str] = Field(None, description="稿件摘要", max_length=5000)
@@ -41,6 +44,7 @@ class ManuscriptUploadRequest(BaseModel):
 
 class ManuscriptStatusUpdateRequest(BaseModel):
     """稿件状态更新请求模型"""
+
     status: str = Field(..., description="新状态值")
     comment: Optional[str] = Field(None, description="状态变更备注/审核意见")
     reason: Optional[str] = Field(None, description="变更原因（如拒稿原因）")
@@ -48,6 +52,7 @@ class ManuscriptStatusUpdateRequest(BaseModel):
 
 class ManuscriptDeleteRequest(BaseModel):
     """稿件删除请求模型（软删除）"""
+
     reason: Optional[str] = Field(None, description="删除原因", max_length=500)
 
 
@@ -55,8 +60,10 @@ class ManuscriptDeleteRequest(BaseModel):
 # 响应模型
 # ============================================================
 
+
 class ManuscriptUploadResponse(BaseModel):
     """稿件上传响应模型"""
+
     manuscript_id: int = Field(..., description="稿件ID")
     title: str = Field(..., description="稿件标题")
     status: str = Field(..., description="稿件状态")
@@ -67,10 +74,11 @@ class ManuscriptUploadResponse(BaseModel):
 class ManuscriptListItemDTO(BaseModel):
     """
     稿件列表项 DTO
-    
+
     用于稿件列表展示，从 Manuscript ORM 对象转换。
     使用 from_attributes=True 支持 model_validate(orm_object)。
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     manuscript_id: int = Field(..., description="稿件ID")
@@ -87,10 +95,11 @@ class ManuscriptListItemDTO(BaseModel):
 class ManuscriptDetailDTO(BaseModel):
     """
     稿件详情 DTO
-    
+
     用于稿件详情页展示，从 Manuscript ORM 对象转换。
     使用 from_attributes=True 支持 model_validate(orm_object)。
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     manuscript_id: int = Field(..., description="稿件ID")
@@ -119,9 +128,10 @@ class ManuscriptDetailDTO(BaseModel):
 class EditorialPendingItemDTO(BaseModel):
     """
     编辑看板待处理稿件项 DTO
-    
+
     用于编辑看板中待处理稿件列表展示。
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     manuscript_id: int = Field(..., description="稿件ID")
@@ -136,10 +146,11 @@ class EditorialPendingItemDTO(BaseModel):
 class ArticleListItemDTO(BaseModel):
     """
     公开文章列表项 DTO
-    
+
     用于公共接口中已发表论文列表展示。
     字段命名以 article_ 前缀对齐公共接口语义。
     """
+
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     article_id: int = Field(..., alias="manuscript_id", description="文章ID")
@@ -147,15 +158,18 @@ class ArticleListItemDTO(BaseModel):
     authors: str = Field(..., description="作者列表")
     abstract: Optional[str] = Field(None, description="摘要")
     subject: Optional[str] = Field(None, description="学科/主题")
-    publish_time: Optional[str] = Field(None, alias="update_time", description="发表时间")
+    publish_time: Optional[str] = Field(
+        None, alias="update_time", description="发表时间"
+    )
 
 
 class ArticleDetailDTO(BaseModel):
     """
     公开文章详情 DTO
-    
+
     用于公共接口中已发表论文详情展示。
     """
+
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     article_id: int = Field(..., alias="manuscript_id", description="文章ID")
@@ -166,7 +180,9 @@ class ArticleDetailDTO(BaseModel):
     version: Optional[int] = Field(None, description="版本号")
     file_name: Optional[str] = Field(None, description="文件名")
     file_size: Optional[int] = Field(None, description="文件大小")
-    publish_time: Optional[str] = Field(None, alias="update_time", description="发表时间")
+    publish_time: Optional[str] = Field(
+        None, alias="update_time", description="发表时间"
+    )
     create_time: Optional[str] = Field(None, description="创建时间")
 
 
@@ -174,12 +190,14 @@ class ArticleDetailDTO(BaseModel):
 # 兼容旧版模型
 # ============================================================
 
+
 class ManuscriptInfo(BaseModel):
     """
     稿件信息模型（兼容旧版）
-    
+
     用于展示稿件详情和列表项
     """
+
     manuscript_id: int = Field(..., description="稿件ID", alias="id")
     title: str = Field(..., description="稿件标题")
     authors: str = Field(..., description="作者列表")
@@ -189,17 +207,20 @@ class ManuscriptInfo(BaseModel):
     file_size: Optional[int] = Field(None, description="文件大小（字节）")
     created_at: Optional[str] = Field(None, description="创建时间")
     updated_at: Optional[str] = Field(None, description="更新时间")
-    
+
     class Config:
         populate_by_name = True
 
 
 class ManuscriptListResponse(BaseModel):
     """稿件列表响应模型"""
+
     total: int = Field(..., description="总条数")
     page: int = Field(default=1, description="当前页码")
     page_size: int = Field(default=10, description="每页条数")
-    manuscripts: List[ManuscriptInfo] = Field(default_factory=list, description="稿件列表")
+    manuscripts: List[ManuscriptInfo] = Field(
+        default_factory=list, description="稿件列表"
+    )
 
 
 # ========== 兼容旧版 Journal 模型的别名 ==========

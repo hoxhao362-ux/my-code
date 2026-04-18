@@ -1,24 +1,22 @@
-import os
 import asyncio
-import tempfile
+import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 import fitz  # PyMuPDF
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
-
 from utils.log import global_logger
+
 
 class PDFService:
     """PDF 处理服务"""
-    
+
     def __init__(self):
         # 尝试注册中文字体（这里假设系统中有常用中文字体，如果找不到可以做兼容处理）
         # 为了学术正式，通常使用宋体或黑体
@@ -33,23 +31,26 @@ class PDFService:
                 "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
                 "/usr/share/fonts/truetype/arphic/uming.ttc",
                 "C:/Windows/Fonts/simsun.ttc",  # Windows 宋体
-                "C:/Windows/Fonts/msyh.ttc",    # Windows 微软雅黑
+                "C:/Windows/Fonts/msyh.ttc",  # Windows 微软雅黑
             ]
             font_path = None
             for p in possible_fonts:
                 if os.path.exists(p):
                     font_path = p
                     break
-            
+
             if font_path:
-                pdfmetrics.registerFont(TTFont('SimSun', font_path))
-                self.font_name = 'SimSun'
+                pdfmetrics.registerFont(TTFont("SimSun", font_path))
+                self.font_name = "SimSun"
                 global_logger.info("PDFService", f"成功加载中文字体: {font_path}")
             else:
-                self.font_name = 'Helvetica'
-                global_logger.warning("PDFService", "未找到中文字体，使用默认 Helvetica 字体，可能导致中文乱码")
+                self.font_name = "Helvetica"
+                global_logger.warning(
+                    "PDFService",
+                    "未找到中文字体，使用默认 Helvetica 字体，可能导致中文乱码",
+                )
         except Exception as e:
-            self.font_name = 'Helvetica'
+            self.font_name = "Helvetica"
             global_logger.warning("PDFService", f"字体加载失败: {e}")
 
     async def generate_cover_pdf(self, data: Dict[str, Any], output_path: str):
@@ -73,39 +74,39 @@ class PDFService:
             rightMargin=inch,
             leftMargin=inch,
             topMargin=inch,
-            bottomMargin=inch
+            bottomMargin=inch,
         )
 
         styles = getSampleStyleSheet()
 
         # 自定义样式
         title_style = ParagraphStyle(
-            'TitleStyle',
-            parent=styles['Heading1'],
+            "TitleStyle",
+            parent=styles["Heading1"],
             fontName=self.font_name,
             fontSize=18,
             leading=22,
             alignment=TA_CENTER,
-            spaceAfter=20
+            spaceAfter=20,
         )
 
         heading_style = ParagraphStyle(
-            'HeadingStyle',
-            parent=styles['Heading3'],
+            "HeadingStyle",
+            parent=styles["Heading3"],
             fontName=self.font_name,
             fontSize=12,
             spaceAfter=6,
-            textColor="black"
+            textColor="black",
         )
 
         normal_style = ParagraphStyle(
-            'NormalStyle',
-            parent=styles['Normal'],
+            "NormalStyle",
+            parent=styles["Normal"],
             fontName=self.font_name,
             fontSize=11,
             leading=16,
             alignment=TA_JUSTIFY,
-            spaceAfter=12
+            spaceAfter=12,
         )
 
         elements = []
@@ -131,9 +132,15 @@ class PDFService:
         order_of_authors = data.get("order_of_authors", "")
 
         if first_author:
-            elements.append(Paragraph(f"<b>First Author:</b> {first_author}", normal_style))
+            elements.append(
+                Paragraph(f"<b>First Author:</b> {first_author}", normal_style)
+            )
         if corresponding_author:
-            elements.append(Paragraph(f"<b>Corresponding Author:</b> {corresponding_author}", normal_style))
+            elements.append(
+                Paragraph(
+                    f"<b>Corresponding Author:</b> {corresponding_author}", normal_style
+                )
+            )
         if authors:
             elements.append(Paragraph(f"<b>All Authors:</b> {authors}", normal_style))
 
@@ -184,7 +191,13 @@ class PDFService:
         try:
             # 使用 asyncio.create_subprocess_exec 替代 subprocess.run
             process = await asyncio.create_subprocess_exec(
-                cmd, "--headless", "--convert-to", "pdf", input_path, "--outdir", output_dir,
+                cmd,
+                "--headless",
+                "--convert-to",
+                "pdf",
+                input_path,
+                "--outdir",
+                output_dir,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -194,7 +207,9 @@ class PDFService:
             if process.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="ignore")
                 global_logger.error("PDFService", f"文档转换失败: {error_msg}")
-                raise RuntimeError(f"无法转换文档为 PDF: 可能是系统未安装 LibreOffice 或发生错误。")
+                raise RuntimeError(
+                    "无法转换文档为 PDF: 可能是系统未安装 LibreOffice 或发生错误。"
+                )
 
             # 转换后的文件路径
             output_filename = Path(input_path).stem + ".pdf"
@@ -207,8 +222,12 @@ class PDFService:
             return output_path
 
         except FileNotFoundError:
-            global_logger.error("PDFService", "系统中未找到 LibreOffice 命令行工具，无法进行格式转换。")
-            raise RuntimeError("系统不支持将此类型的文件转换为 PDF（缺少 LibreOffice）。")
+            global_logger.error(
+                "PDFService", "系统中未找到 LibreOffice 命令行工具，无法进行格式转换。"
+            )
+            raise RuntimeError(
+                "系统不支持将此类型的文件转换为 PDF（缺少 LibreOffice）。"
+            )
         except asyncio.TimeoutError:
             global_logger.error("PDFService", "文档转换超时")
             raise RuntimeError("文档转换超时。")
@@ -235,11 +254,14 @@ class PDFService:
                 with fitz.open(pdf_path) as pdf:
                     result_pdf.insert_pdf(pdf)
             except Exception as e:
-                global_logger.error("PDFService", f"合并 PDF 时读取 {pdf_path} 失败: {e}")
-                raise RuntimeError(f"合并 PDF 失败，文件损坏或格式不正确。")
+                global_logger.error(
+                    "PDFService", f"合并 PDF 时读取 {pdf_path} 失败: {e}"
+                )
+                raise RuntimeError("合并 PDF 失败，文件损坏或格式不正确。")
 
         result_pdf.save(output_path)
         result_pdf.close()
         global_logger.info("PDFService", f"PDF 合并成功: {output_path}")
+
 
 pdf_service = PDFService()

@@ -3,15 +3,15 @@
 
 提供管理员操作日志（AdminLog）相关的数据库操作。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.orm.models.admin_log import AdminLog
 from database.repositories.base_repo import BaseRepository
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AdminLogRepository(BaseRepository[AdminLog]):
@@ -27,7 +27,12 @@ class AdminLogRepository(BaseRepository[AdminLog]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, AdminLog)
 
-    async def count(self, operation_type: Optional[str] = None, start_time: Optional[str] = None, end_time: Optional[str] = None) -> int:
+    async def count(
+        self,
+        operation_type: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+    ) -> int:
         """
         统计操作日志数（兼容原接口签名）。
 
@@ -78,10 +83,16 @@ class AdminLogRepository(BaseRepository[AdminLog]):
         if end_time:
             stmt = stmt.where(AdminLog.operation_time <= end_time)
         rows = (
-            await self.session.execute(
-                stmt.order_by(AdminLog.operation_time.desc()).limit(page_size).offset(offset)
+            (
+                await self.session.execute(
+                    stmt.order_by(AdminLog.operation_time.desc())
+                    .limit(page_size)
+                    .offset(offset)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [
             {
                 "log_id": r.log_id,

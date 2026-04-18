@@ -1,9 +1,7 @@
-import traceback
-import re
-import asyncio
-from typing import Dict, List, Optional
+from typing import List
 
 from utils.log import global_logger
+
 
 class BaseManagedService:
     """
@@ -11,6 +9,7 @@ class BaseManagedService:
     每个具体的第三方服务（如 DatabaseManager, RedisService）都应继承此类，
     并实现自己的连接与断开逻辑。
     """
+
     def __init__(self, service_name: str):
         self.service_name = service_name
         self._initialized = False
@@ -28,12 +27,14 @@ class BaseManagedService:
         断开服务的定制化逻辑。由子类实现。
         """
         raise NotImplementedError(f"服务 {self.service_name} 未实现 stop 方法")
-    
+
+
 class ServiceManager:
     """
     第三方服务全局管理器（注册器）
     负责协调所有已注册服务的统一启动和关闭。
     """
+
     _instance = None
     _initialized = False
 
@@ -56,7 +57,9 @@ class ServiceManager:
             self.services.append(service)
             global_logger.debug("Service", f"服务单例已注册: {service.service_name}")
 
-    async def start_all(self, critical_services: list[str] = None, optional_services: list[str] = None):
+    async def start_all(
+        self, critical_services: list[str] = None, optional_services: list[str] = None
+    ):
         """
         触发所有已注册服务的定制化启动计划
 
@@ -88,14 +91,21 @@ class ServiceManager:
             except Exception as e:
                 if is_critical:
                     # 核心服务启动失败，记录错误并抛出异常终止应用
-                    global_logger.error("Service", f"核心服务 {service_name} 启动失败: {e}")
+                    global_logger.error(
+                        "Service", f"核心服务 {service_name} 启动失败: {e}"
+                    )
                     raise RuntimeError(f"核心服务 {service_name} 启动失败: {e}") from e
                 elif is_optional:
                     # 非核心服务启动失败，记录警告但继续运行
-                    global_logger.warning("Service", f"非核心服务 {service_name} 启动失败，将继续运行: {e}")
+                    global_logger.warning(
+                        "Service",
+                        f"非核心服务 {service_name} 启动失败，将继续运行: {e}",
+                    )
                 else:
                     # 未分类服务，记录警告但继续运行
-                    global_logger.warning("Service", f"服务 {service_name} 启动失败，将继续运行: {e}")
+                    global_logger.warning(
+                        "Service", f"服务 {service_name} 启动失败，将继续运行: {e}"
+                    )
 
         global_logger.info("Service", "所有第三方服务启动计划执行完毕")
 
@@ -107,15 +117,18 @@ class ServiceManager:
             return
 
         global_logger.info("Service", "正在关闭所有第三方服务...")
-        
+
         # 逆序关闭服务
         for service in reversed(self.services):
             try:
                 await service.stop()
             except Exception as e:
-                global_logger.error("Service", f"关闭服务 {service.service_name} 时出错: {e}")
-            
+                global_logger.error(
+                    "Service", f"关闭服务 {service.service_name} 时出错: {e}"
+                )
+
         global_logger.info("Service", "所有第三方服务已关闭")
+
 
 # 全局服务管理器单例（注册器）
 service_manager = ServiceManager()

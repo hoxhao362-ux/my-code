@@ -4,6 +4,7 @@
 基于 Redis 的分布式频率限制服务。
 所有频率限制统一通过 Redis 原子操作实现，支持多 Worker 进程。
 """
+
 from typing import Dict, Tuple
 
 from service.redis_service import redis_service
@@ -61,7 +62,7 @@ class RateLimitService:
             global_logger.warning(
                 "RateLimit",
                 f"频率限制触发 - 策略: {preset}, 标识: {identifier}, "
-                f"累计: {count}/{cfg['max_attempts']}, 窗口: {cfg['window_seconds']}s"
+                f"累计: {count}/{cfg['max_attempts']}, 窗口: {cfg['window_seconds']}s",
             )
 
         return allowed, count
@@ -98,7 +99,7 @@ class RateLimitService:
             global_logger.warning(
                 "RateLimit",
                 f"频率限制触发 - 自定义前缀: {key_prefix}, 标识: {identifier}, "
-                f"累计: {count}/{max_attempts}, 窗口: {window_seconds}s"
+                f"累计: {count}/{max_attempts}, 窗口: {window_seconds}s",
             )
 
         return allowed, count

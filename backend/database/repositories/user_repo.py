@@ -3,15 +3,15 @@
 
 提供用户（User）相关的数据库操作。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UserRepository(BaseRepository[User]):
@@ -33,9 +33,7 @@ class UserRepository(BaseRepository[User]):
 
     async def get_by_username(self, username: str) -> Optional[User]:
         """根据用户名获取用户"""
-        return await self.session.scalar(
-            select(User).where(User.username == username)
-        )
+        return await self.session.scalar(select(User).where(User.username == username))
 
     async def username_exists(self, username: str) -> bool:
         """检查用户名是否已存在"""
@@ -46,42 +44,48 @@ class UserRepository(BaseRepository[User]):
 
     async def email_exists(self, email: str) -> bool:
         """检查邮箱是否已存在"""
-        uid = await self.session.scalar(
-            select(User.uid).where(User.email == email)
-        )
+        uid = await self.session.scalar(select(User.uid).where(User.email == email))
         return uid is not None
 
     async def get_public_fields_by_id(self, uid: int) -> Optional[Dict[str, Any]]:
         """获取用户的公开字段（脱敏后）"""
         row = (
-            await self.session.execute(
-                select(
-                    User.uid,
-                    User.username,
-                    User.email,
-                    User.role,
-                    User.is_verified,
-                    User.is_deleted,
-                ).where(User.uid == uid)
+            (
+                await self.session.execute(
+                    select(
+                        User.uid,
+                        User.username,
+                        User.email,
+                        User.role,
+                        User.is_verified,
+                        User.is_deleted,
+                    ).where(User.uid == uid)
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         return dict(row) if row else None
 
     async def get_profile_fields_by_id(self, uid: int) -> Optional[Dict[str, Any]]:
         """获取用户的个人资料字段"""
         row = (
-            await self.session.execute(
-                select(
-                    User.uid,
-                    User.username,
-                    User.email,
-                    User.role,
-                    User.create_time,
-                    User.last_login_time,
-                    User.avatar_hash,
-                ).where(User.uid == uid)
+            (
+                await self.session.execute(
+                    select(
+                        User.uid,
+                        User.username,
+                        User.email,
+                        User.role,
+                        User.create_time,
+                        User.last_login_time,
+                        User.avatar_hash,
+                    ).where(User.uid == uid)
+                )
             )
-        ).mappings().first()
+            .mappings()
+            .first()
+        )
         return dict(row) if row else None
 
     # ------------------------------------------------------------------
@@ -150,19 +154,27 @@ class UserRepository(BaseRepository[User]):
         if role:
             stmt = stmt.where(User.role == role)
         rows = (
-            await self.session.execute(
-                stmt.order_by(User.create_time.desc())
-                .limit(page_size)
-                .offset(offset)
+            (
+                await self.session.execute(
+                    stmt.order_by(User.create_time.desc())
+                    .limit(page_size)
+                    .offset(offset)
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
         return [dict(r) for r in rows]
 
     async def role_breakdown(self) -> list[Dict[str, Any]]:
         """按角色分组统计"""
         rows = (
-            await self.session.execute(
-                select(User.role, func.count().label("count")).group_by(User.role)
+            (
+                await self.session.execute(
+                    select(User.role, func.count().label("count")).group_by(User.role)
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
         return [dict(r) for r in rows]

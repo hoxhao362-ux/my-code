@@ -3,8 +3,8 @@
 
 提供基于 Redis 的分布式频率限制功能，支持多 Worker 进程。
 """
-from fastapi import Request, HTTPException
 
+from fastapi import HTTPException, Request
 from service.rate_limit_service import rate_limit_service
 from utils.log import global_logger
 
@@ -32,12 +32,12 @@ async def rate_limit_check(request: Request, preset: str = "general"):
         global_logger.warning(
             "RateLimit",
             f"频率限制拒绝访问 - 策略: {preset}, IP: {client_ip}, "
-            f"累计: {count}/{cfg['max_attempts']}"
+            f"累计: {count}/{cfg['max_attempts']}",
         )
         raise HTTPException(
             status_code=429,
             detail="请求频率超过限制，请稍后再试",
-            headers={"X-RateLimit-Remaining": "0"}
+            headers={"X-RateLimit-Remaining": "0"},
         )
 
     cfg = rate_limit_service.get_preset_config(preset)
@@ -45,7 +45,7 @@ async def rate_limit_check(request: Request, preset: str = "general"):
         "client_ip": client_ip,
         "remaining": cfg["max_attempts"] - count,
         "limit": cfg["max_attempts"],
-        "window_seconds": cfg["window_seconds"]
+        "window_seconds": cfg["window_seconds"],
     }
 
 

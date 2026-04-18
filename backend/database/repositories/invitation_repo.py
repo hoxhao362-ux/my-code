@@ -3,15 +3,15 @@
 
 提供邀请码（InvitationCode）相关的数据库操作。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.orm.models.invitation import InvitationCode
 from database.repositories.base_repo import BaseRepository
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class InvitationRepository(BaseRepository[InvitationCode]):
@@ -27,7 +27,9 @@ class InvitationRepository(BaseRepository[InvitationCode]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, InvitationCode)
 
-    async def get_by_code(self, code: str, for_update: bool = False) -> Optional[InvitationCode]:
+    async def get_by_code(
+        self, code: str, for_update: bool = False
+    ) -> Optional[InvitationCode]:
         """
         根据邀请码获取记录。
 
@@ -43,7 +45,9 @@ class InvitationRepository(BaseRepository[InvitationCode]):
             stmt = stmt.with_for_update()
         return await self.session.scalar(stmt)
 
-    async def count(self, status: Optional[str] = None, role: Optional[str] = None) -> int:
+    async def count(
+        self, status: Optional[str] = None, role: Optional[str] = None
+    ) -> int:
         """
         统计邀请码数（兼容原接口签名）。
 
@@ -61,7 +65,13 @@ class InvitationRepository(BaseRepository[InvitationCode]):
             conditions.append(InvitationCode.role == role)
         return await super().count(*conditions)
 
-    async def list_page(self, page: int, page_size: int, status: Optional[str] = None, role: Optional[str] = None) -> list[Dict[str, Any]]:
+    async def list_page(
+        self,
+        page: int,
+        page_size: int,
+        status: Optional[str] = None,
+        role: Optional[str] = None,
+    ) -> list[Dict[str, Any]]:
         """
         分页查询邀请码列表。
 
@@ -81,8 +91,16 @@ class InvitationRepository(BaseRepository[InvitationCode]):
         if role:
             stmt = stmt.where(InvitationCode.role == role)
         rows = (
-            await self.session.execute(stmt.order_by(InvitationCode.create_time.desc()).limit(page_size).offset(offset))
-        ).scalars().all()
+            (
+                await self.session.execute(
+                    stmt.order_by(InvitationCode.create_time.desc())
+                    .limit(page_size)
+                    .offset(offset)
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [
             {
                 "code": r.code,

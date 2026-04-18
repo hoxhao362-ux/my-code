@@ -11,9 +11,8 @@ from __future__ import annotations
 
 from typing import AsyncIterator
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.service.database_service import db_manager
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_db_session() -> AsyncIterator[AsyncSession]:
@@ -28,4 +27,3 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
 
     async with db_manager.get_session() as session:
         yield session
-

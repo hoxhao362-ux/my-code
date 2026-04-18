@@ -4,6 +4,7 @@
 提供通用的 CRUD 操作，所有具体仓库应继承此基类并指定模型类型。
 子类可通过设置 _pk_field 类属性指定主键字段名（默认 "id"）。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Generic, List, Optional, TypeVar
@@ -52,9 +53,7 @@ class BaseRepository(Generic[T]):
         field = id_field or self._pk_field
         column = getattr(self._model_class, field, None)
         if column is None:
-            raise ValueError(
-                f"模型 {self._model_class.__name__} 不存在字段 {field}"
-            )
+            raise ValueError(f"模型 {self._model_class.__name__} 不存在字段 {field}")
         return await self.session.scalar(
             select(self._model_class).where(column == id_value)
         )
