@@ -3,11 +3,22 @@
 """
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from core.enums import UserRole
+
 
 class InvitationCodeCreateRequest(BaseModel):
     """创建邀请码请求模型"""
-    role: str = Field(..., description="邀请码对应的角色", pattern="^(admin|reviewer|writer|normal)$")
+    role: str = Field(..., description="邀请码对应的角色")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        """校验角色值是否合法"""
+        if not UserRole.is_valid(value):
+            raise ValueError(f"无效的角色值: {value}，允许的角色: {UserRole.get_assignable_roles()}")
+        return value
     description: Optional[str] = Field(None, description="邀请码描述")
     max_uses: Optional[int] = Field(1, description="最大使用次数，默认为1")
     expire_time: Optional[datetime] = Field(None, description="过期时间")

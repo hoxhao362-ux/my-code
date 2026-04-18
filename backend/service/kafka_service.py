@@ -28,7 +28,12 @@ class KafkaService(BaseManagedService):
     - 完全异步的 Producer 和 Consumer
     - 支持多 topic 消息处理器注册
     - 自动管理消费循环任务
+    - 消息重试机制与死信队列支持
     """
+    
+    # 重试配置
+    MAX_RETRIES = 3
+    BASE_RETRY_DELAY = 1  # 秒
     
     def __init__(self):
         # 初始化父类，注册服务名为 'kafka'
@@ -44,6 +49,9 @@ class KafkaService(BaseManagedService):
         
         # 配置
         self._bootstrap_servers: str = ""
+        
+        # 消费统计
+        self._consume_stats: Dict[str, Dict[str, int]] = {}
 
     async def start(self):
         """
@@ -126,7 +134,7 @@ class KafkaService(BaseManagedService):
                 group_id=config.get("kafka.kafka.consumer_group_id", "journal-platform-group"),
                 value_deserializer=lambda v: json.loads(v.decode('utf-8')),
                 auto_offset_reset="earliest",
-                enable_auto_commit=True
+                enable_auto_commit=False  # 关闭自动提交，改为手动提交
             )
             
             await self._consumer.start()
@@ -142,6 +150,7 @@ class KafkaService(BaseManagedService):
     async def _consume_loop(self):
         """
         消费循环 - 从 Kafka 拉取消息并分发给对应的 handler
+        支持重试机制和死信队列
         """
         global_logger.info("Kafka", "消费循环开始运行...")
         
@@ -152,24 +161,112 @@ class KafkaService(BaseManagedService):
                 
                 global_logger.debug("Kafka", f"收到消息: topic={topic}, partition={msg.partition}, offset={msg.offset}")
                 
-                # 查找并调用对应的 handler
+                # 初始化该 topic 的统计信息
+                if topic not in self._consume_stats:
+                    self._consume_stats[topic] = {
+                        "success": 0,
+                        "failed": 0,
+                        "dlq": 0
+                    }
+                
+                # 查找对应的 handler
                 handler = self._handlers.get(topic)
-                if handler:
-                    try:
-                        # 支持同步和异步 handler
-                        if asyncio.iscoroutinefunction(handler):
-                            await handler(value)
-                        else:
-                            handler(value)
-                    except Exception as e:
-                        global_logger.error("Kafka", f"处理消息失败 topic={topic}: {e}")
+                if not handler:
+                    global_logger.warning("Kafka", f"未注册的 topic handler: {topic}")
+                    await self._consumer.commit()
+                    continue
+                
+                # 重试机制处理消息
+                success = await self._process_message_with_retry(topic, value, handler)
+                
+                if success:
+                    self._consume_stats[topic]["success"] += 1
                 else:
-                    global_logger.warning("Kafka", f"未找到 topic={topic} 的处理器")
+                    self._consume_stats[topic]["failed"] += 1
+                
+                # 手动提交偏移量
+                await self._consumer.commit()
                     
         except asyncio.CancelledError:
             global_logger.info("Kafka", "消费循环被取消")
         except Exception as e:
             global_logger.error("Kafka", f"消费循环异常: {e}")
+    
+    async def _process_message_with_retry(self, topic: str, value: Any, handler: Callable) -> bool:
+        """
+        处理消息，支持重试机制
+        
+        Args:
+            topic: 消息主题
+            value: 消息内容
+            handler: 消息处理器
+            
+        Returns:
+            bool: 处理是否成功
+        """
+        success = False
+        last_error = None
+        
+        for attempt in range(1, self.MAX_RETRIES + 1):
+            try:
+                # 支持同步和异步 handler
+                if asyncio.iscoroutinefunction(handler):
+                    await handler(value)
+                else:
+                    handler(value)
+                success = True
+                break
+            except Exception as e:
+                last_error = e
+                delay = self.BASE_RETRY_DELAY * (2 ** (attempt - 1))
+                global_logger.warning("Kafka", 
+                    f"消息处理失败 (topic={topic}, 第{attempt}次重试): {e}")
+                if attempt < self.MAX_RETRIES:
+                    await asyncio.sleep(delay)
+        
+        if not success:
+            # 重试耗尽，发送到死信队列
+            await self._send_to_dlq(topic, value, last_error)
+        
+        return success
+    
+    async def _send_to_dlq(self, topic: str, value: Any, error: Exception):
+        """
+        将消息发送到死信队列
+        
+        Args:
+            topic: 原始消息主题
+            value: 消息内容
+            error: 导致失败的异常
+        """
+        dlq_topic = f"{topic}.dlq"
+        
+        # 构造死信消息，包含原始消息和错误信息
+        dlq_message = {
+            "original_topic": topic,
+            "original_message": value,
+            "error": str(error),
+            "error_type": type(error).__name__,
+            "retry_count": self.MAX_RETRIES
+        }
+        
+        try:
+            await self.send_message(dlq_topic, dlq_message)
+            self._consume_stats[topic]["dlq"] += 1
+            global_logger.error("Kafka", 
+                f"消息重试耗尽，已发送到死信队列: {dlq_topic}")
+        except Exception as e:
+            global_logger.error("Kafka", 
+                f"发送到死信队列失败: {e}")
+    
+    def get_consume_stats(self) -> Dict[str, Dict[str, int]]:
+        """
+        获取消费统计信息
+        
+        Returns:
+            Dict: 各 topic 的消费统计
+        """
+        return self._consume_stats.copy()
 
     async def stop(self):
         """

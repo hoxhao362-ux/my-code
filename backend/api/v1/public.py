@@ -7,17 +7,17 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 
-from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api import dependencies as deps
 from model.response import ApiResponse
+from model.manuscript import ArticleListItemDTO, ArticleDetailDTO
 from service.elasticsearch_service import elasticsearch_service
 from utils.log import global_logger
 from core.enums import ManuscriptStatus
 
 from database.dependencies import get_db_session
-from database.orm.models.manuscript import Manuscript
+from database.repositories.manuscript_repo import ManuscriptRepository
 
 # 创建公共接口路由
 router = APIRouter(
@@ -53,29 +53,13 @@ async def get_journal_list(
     """
     global_logger.debug("Public", f"获取期刊列表 - page: {page}, subject: {subject}")
     
-    # 查询已发表文章数量
-    published_count_query = (
-        select(func.count())
-        .select_from(Manuscript)
-        .where(
-            Manuscript.status == ManuscriptStatus.PUBLISHED.value,
-            Manuscript.is_deleted == False
-        )
+    # 通过 Repository 查询统计数据
+    repo = ManuscriptRepository(session)
+    published_count = await repo.count(
+        Manuscript.status == ManuscriptStatus.PUBLISHED.value,
+        Manuscript.is_deleted == False,  # noqa: E712
     )
-    published_result = await session.execute(published_count_query)
-    published_count = published_result.scalar() or 0
-    
-    # 查询学科分类统计
-    subject_stats_query = (
-        select(Manuscript.subject, func.count())
-        .where(
-            Manuscript.status == ManuscriptStatus.PUBLISHED.value,
-            Manuscript.is_deleted == False
-        )
-        .group_by(Manuscript.subject)
-    )
-    subject_result = await session.execute(subject_stats_query)
-    subject_stats = {row[0]: row[1] for row in subject_result.fetchall()}
+    subject_stats = await repo.get_subject_breakdown(status=ManuscriptStatus.PUBLISHED.value)
     
     # 当前系统为单期刊模式，返回期刊基本信息
     journals = [
@@ -120,55 +104,15 @@ async def get_published_articles(
     """
     global_logger.debug("Public", f"获取已发表论文 - page: {page}, keyword: {keyword}, subject: {subject}")
     
-    offset = (page - 1) * page_size
-    
-    # 构建查询条件
-    conditions = [
-        Manuscript.status == ManuscriptStatus.PUBLISHED.value,
-        Manuscript.is_deleted == False
-    ]
-    
-    # 关键词搜索（标题/作者/摘要）
-    if keyword:
-        keyword_pattern = f"%{keyword}%"
-        conditions.append(
-            or_(
-                Manuscript.title.ilike(keyword_pattern),
-                Manuscript.authors.ilike(keyword_pattern),
-                Manuscript.abstract.ilike(keyword_pattern)
-            )
-        )
-    
-    # 学科筛选
-    if subject:
-        conditions.append(Manuscript.subject == subject)
-    
-    # 查询总数
-    count_query = select(func.count()).select_from(Manuscript).where(*conditions)
-    total_result = await session.execute(count_query)
-    total = total_result.scalar() or 0
-    
-    # 查询列表
-    list_query = (
-        select(Manuscript)
-        .where(*conditions)
-        .order_by(Manuscript.update_time.desc())
-        .offset(offset)
-        .limit(page_size)
+    # 通过 Repository 查询已发表论文
+    repo = ManuscriptRepository(session)
+    manuscripts, total = await repo.list_published_page(
+        page, page_size, keyword=keyword, subject=subject
     )
-    list_result = await session.execute(list_query)
-    manuscripts = list_result.scalars().all()
     
-    # 转换为响应格式
+    # 使用 Pydantic DTO 转换为响应格式
     articles = [
-        {
-            "article_id": m.manuscript_id,
-            "title": m.title,
-            "authors": m.authors,
-            "abstract": m.abstract,
-            "subject": m.subject,
-            "publish_time": m.update_time,
-        }
+        ArticleListItemDTO.model_validate(m).model_dump()
         for m in manuscripts
     ]
     
@@ -197,30 +141,16 @@ async def get_article_detail(
     """
     global_logger.debug("Public", f"获取论文详情 - article_id: {article_id}")
     
-    # 查询已发表的论文
-    query = select(Manuscript).where(
-        Manuscript.manuscript_id == article_id,
-        Manuscript.status == ManuscriptStatus.PUBLISHED.value,
-        Manuscript.is_deleted == False
-    )
-    result = await session.execute(query)
-    manuscript = result.scalar_one_or_none()
+    # 通过 Repository 查询已发表的论文
+    repo = ManuscriptRepository(session)
+    manuscript = await repo.get_published_by_id(article_id)
     
     if not manuscript:
         raise HTTPException(status_code=404, detail="论文不存在或未发表")
     
-    return ApiResponse.success(data={
-        "article_id": manuscript.manuscript_id,
-        "title": manuscript.title,
-        "authors": manuscript.authors,
-        "abstract": manuscript.abstract,
-        "subject": manuscript.subject,
-        "version": manuscript.version,
-        "file_name": manuscript.file_name,
-        "file_size": manuscript.file_size,
-        "publish_time": manuscript.update_time,
-        "create_time": manuscript.create_time,
-    })
+    # 使用 Pydantic DTO 转换为响应格式
+    dto = ArticleDetailDTO.model_validate(manuscript)
+    return ApiResponse.success(data=dto.model_dump())
 
 
 @router.get("/search", summary="搜索论文")
@@ -280,11 +210,69 @@ async def search_articles(
 async def get_journal_info():
     """
     获取期刊基本信息
-    
-    Returns:
-        dict: 期刊信息
+
+    TODO: 从数据库或配置读取期刊信息
+
+    建议实现流程：
+    1. 从 configs/journal.toml 配置文件读取期刊名称、描述、ISSN、出版周期等基础信息
+    2. 从数据库统计期刊的运营数据：已发表论文总数、本月新发表论文数、注册用户总数、编委人数
+    3. 查询 ManuscriptInfo 表获取最新期号信息（volume/issue/issue_number）
+    4. 查询 EditorialBoard 表获取主编和编委总数
+    5. 组装完整的期刊信息返回
+
+    所需 ORM 模型：
+    - Manuscript (database/orm/models/manuscript.py) — 稿件主表，统计已发表论文数
+    - ManuscriptInfo (database/orm/models/manuscript_info.py) — 稿件出版信息扩展表，获取最新期号/卷号
+    - EditorialBoard (database/orm/models/editorial.py) — 编委会成员表，统计编委人数
+    - User (database/orm/models/user.py) — 用户表，统计注册用户数
+
+    建议 Repository 方法：
+    - ManuscriptRepository.count_by_status(status='published') — 统计已发表论文总数
+    - ManuscriptInfoRepository.get_latest_issue() — 获取最新期号信息
+    - EditorialBoardRepository.count_active() — 统计在职编委人数
+    - UserRepository.count_all() — 统计注册用户总数
+
+    建议 Service 调用链：
+    API → config["journal"]] 读取基础信息
+        → ManuscriptRepository.count_by_status() 统计论文数
+        → ManuscriptInfoRepository.get_latest_issue() 获取期号
+        → EditorialBoardRepository.count_active() 统计编委
+        → 组装返回
+
+    权限要求：
+    - 当前无需登录（公开接口），符合要求
+    - 期刊信息属于公开信息，无需鉴权
+
+    返回数据格式建议：
+    {
+        "name": "XX大学学报",
+        "description": "XX大学主办的综合性学术期刊",
+        "issn": "1000-1234",
+        "publisher": "XX大学出版社",
+        "frequency": "双月刊",
+        "version": "1.0.0",
+        "statistics": {
+            "published_articles": 156,
+            "monthly_new_articles": 5,
+            "registered_users": 320,
+            "editorial_board_members": 12
+        },
+        "latest_issue": {
+            "volume": "2026",
+            "issue": "2",
+            "issue_number": "J2026-02",
+            "publication_date": "2026-03-01"
+        }
+    }
+
+    注意事项：
+    - 当前系统为单期刊模式，未来如需多期刊支持，需增加期刊 ID 参数
+    - 期刊基础信息建议从配置文件读取而非硬编码，便于动态修改
+    - 统计数据可缓存到 Redis（TTL 5分钟），避免每次请求都查数据库
+    - 此接口为高频访问接口，需注意性能优化
+    - configs/journal.toml 可能需要新增字段（如 issn/publisher/frequency）
+    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
     """
-    # TODO: 从数据库或配置读取期刊信息
     return ApiResponse.success(data={
         "name": "期刊平台",
         "description": "学术期刊投稿平台",

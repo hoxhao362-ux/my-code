@@ -56,21 +56,47 @@ class ServiceManager:
             self.services.append(service)
             global_logger.debug("Service", f"服务单例已注册: {service.service_name}")
 
-    async def start_all(self):
+    async def start_all(self, critical_services: list[str] = None, optional_services: list[str] = None):
         """
         触发所有已注册服务的定制化启动计划
+
+        Args:
+            critical_services: 核心服务列表，启动失败会抛出异常终止应用
+            optional_services: 非核心服务列表，启动失败仅记录警告，继续运行
         """
         if not self.services:
             global_logger.warning("Service", "未检测到任何已注册的第三方服务单例")
             return
 
-        global_logger.info("Service", f"正在并行启动 {len(self.services)} 个第三方服务...")
-        
-        # 并行执行所有服务的 start 方法
-        # 注意：每个服务的 start 方法内部应包含自己的就绪检查逻辑
-        tasks = [service.start() for service in self.services]
-        await asyncio.gather(*tasks)
-        
+        critical_services = critical_services or []
+        optional_services = optional_services or []
+
+        global_logger.info("Service", f"正在启动 {len(self.services)} 个第三方服务...")
+        global_logger.info("Service", f"核心服务: {critical_services}")
+        global_logger.info("Service", f"非核心服务: {optional_services}")
+
+        # 按重要性顺序启动服务
+        for service in self.services:
+            service_name = service.service_name
+            is_critical = service_name in critical_services
+            is_optional = service_name in optional_services
+
+            try:
+                global_logger.info("Service", f"正在启动服务: {service_name}")
+                await service.start()
+                global_logger.info("Service", f"服务启动成功: {service_name}")
+            except Exception as e:
+                if is_critical:
+                    # 核心服务启动失败，记录错误并抛出异常终止应用
+                    global_logger.error("Service", f"核心服务 {service_name} 启动失败: {e}")
+                    raise RuntimeError(f"核心服务 {service_name} 启动失败: {e}") from e
+                elif is_optional:
+                    # 非核心服务启动失败，记录警告但继续运行
+                    global_logger.warning("Service", f"非核心服务 {service_name} 启动失败，将继续运行: {e}")
+                else:
+                    # 未分类服务，记录警告但继续运行
+                    global_logger.warning("Service", f"服务 {service_name} 启动失败，将继续运行: {e}")
+
         global_logger.info("Service", "所有第三方服务启动计划执行完毕")
 
     async def stop_all(self):

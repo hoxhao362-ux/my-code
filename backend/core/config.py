@@ -417,6 +417,27 @@ def setup_core(app: FastAPI):
     # 代理请求头解析中间件，放在最外层，用于在 Nginx 等代理后获取真实 IP
     app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
+    # ============================================================
+    # 生产环境 CORS 配置说明
+    # ============================================================
+    # 生产环境部署时，应替换下方开发环境的 CORS 配置为以下严格配置：
+    #
+    # app.add_middleware(
+    #     CORSMiddleware,
+    #     allow_origins=cors_origins,          # 必须指定具体域名列表，禁止使用通配符 "*"
+    #     allow_credentials=True,
+    #     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 仅允许必要的 HTTP 方法
+    #     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],  # 仅允许必要的请求头
+    #     allow_origin_regex=None,             # 不使用正则匹配
+    #     max_age=600,                         # 预检请求缓存 10 分钟
+    # )
+    #
+    # 注意事项：
+    # 1. CORS_ORIGINS 环境变量必须配置为具体的前端域名（逗号分隔）
+    # 2. 不要使用 "*" 通配符，会导致 credentials 模式失效
+    # 3. 确保 allow_headers 包含所有前端实际发送的自定义头
+    # ============================================================
+
     # 解析 CORS origins
     cors_origins_raw = config["global.global.cors_origins"]
     if isinstance(cors_origins_raw, str):

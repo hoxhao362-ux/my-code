@@ -77,8 +77,8 @@ class InvitationService:
             str: 生成的邀请码
         """
         code = self.generate_code()
-        create_time = datetime.now().isoformat()
-        expire_time_str = expire_time.isoformat() if expire_time else None
+        create_time = datetime.now()
+        # expire_time 已是 datetime 对象，直接使用
 
         async with self._ensure_session(session) as s:
             repo = InvitationRepository(s)
@@ -94,7 +94,7 @@ class InvitationService:
                         created_by=created_by,
                         created_by_uid=created_by_uid,
                         create_time=create_time,
-                        expire_time=expire_time_str,
+                        expire_time=expire_time,
                     )
                 )
 
@@ -124,8 +124,8 @@ class InvitationService:
                 return {"valid": False, "role": None, "message": "邀请码已达到最大使用次数"}
 
             if invitation.expire_time:
-                expire_time = datetime.fromisoformat(invitation.expire_time)
-                if datetime.now() > expire_time:
+                expire_time_dt = invitation.expire_time
+                if datetime.now() > expire_time_dt:
                     return {"valid": False, "role": None, "message": "邀请码已过期"}
 
             return {"valid": True, "role": invitation.role, "message": "邀请码有效"}
@@ -164,15 +164,15 @@ class InvitationService:
                         return False
 
                     if invitation.expire_time:
-                        expire_time = datetime.fromisoformat(invitation.expire_time)
-                        if datetime.now() > expire_time:
+                        expire_time_dt = invitation.expire_time
+                        if datetime.now() > expire_time_dt:
                             return False
 
                     invitation.used_count += 1
                     if invitation.used_count >= invitation.max_uses:
                         invitation.status = "inactive"
 
-                    use_time = datetime.now().isoformat()
+                    use_time = datetime.now()
                     s.add(
                         InvitationCodeUsage(
                             code=code,

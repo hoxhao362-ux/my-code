@@ -8,12 +8,25 @@
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
+from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.orm.base import Base
 from database.orm.models.manuscript import Manuscript
 from database.orm.models.user import User
+
+
+# ============================================================
+# 数据迁移说明（TEXT → TIMESTAMP）
+# 执行以下 SQL 将现有数据从 TEXT 转换为 TIMESTAMP：
+#
+# ALTER TABLE editorial_board ALTER COLUMN appointed_at TYPE TIMESTAMP USING appointed_at::TIMESTAMP;
+# ALTER TABLE decision_records ALTER COLUMN decided_at TYPE TIMESTAMP USING decided_at::TIMESTAMP;
+#
+# 注意：执行前请备份数据库
+# ============================================================
 
 class EditorialBoard(Base):
     """
@@ -34,7 +47,7 @@ class EditorialBoard(Base):
     research_areas: Mapped[str | None] = mapped_column(Text, nullable=True, comment="研究领域（逗号分隔）")
     
     # 任命信息
-    appointed_at: Mapped[str] = mapped_column(Text, nullable=False, comment="任命时间（ISO 字符串）")
+    appointed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="任命时间")
     appointed_by_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="任命者用户 ID")
     
     # 状态信息
@@ -66,7 +79,7 @@ class DecisionRecord(Base):
     
     # 决策者信息
     decided_by_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="决策者用户 ID")
-    decided_at: Mapped[str] = mapped_column(Text, nullable=False, comment="决策时间（ISO 字符串）")
+    decided_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="决策时间")
     
     # 关联关系
     manuscript: Mapped[Manuscript] = relationship(lazy="joined")

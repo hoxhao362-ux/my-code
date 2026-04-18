@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+import hashlib
 
 # 修复 Windows 下 asyncio 子进程 NotImplementedError 报错
 if sys.platform == "win32":
@@ -59,12 +60,24 @@ async def lifespan(app: FastAPI):
     config.check_dirs()
     
     # 启动所有已注册的第三方服务
+    # 核心服务：启动失败则终止应用
+    critical_services = ["database", "redis"]
+    # 非核心服务：启动失败记录警告，继续运行
+    optional_services = ["kafka", "elasticsearch", "email", "payment"]
+
     try:
-        await service_manager.start_all()
+        await service_manager.start_all(critical_services=critical_services, optional_services=optional_services)
     except Exception as e:
-        global_logger.error('main', f"第三方服务集群启动失败：{e}")
-        # 根据业务需求决定是否终止应用启动
-        # raise e
+        global_logger.error('main', f"核心第三方服务启动失败，应用终止：{e}")
+        raise
+    
+    # 初始化 JWT 密钥（Redis 启动成功后）
+    try:
+        default_key = config["global.global.secret_key"]
+        await redis_service.init_jwt_keys(default_key)
+    except Exception as e:
+        global_logger.error('main', f"JWT 密钥初始化失败：{e}")
+        raise
     
     # 检查并创建初始管理员
     try:
@@ -77,13 +90,16 @@ async def lifespan(app: FastAPI):
 
                 try:
                     admin_username = config["admin.admin.default_username"]
-                    admin_password = config["admin.admin.default_password"]
+                    admin_password_plain = config["admin.admin.default_password"]
                     admin_email = config["admin.admin.default_email"]
                 except Exception as e:
                     raise ValueError("管理员配置缺失必要字段") from e
 
+                # 模拟前端行为：先对明文密码做 SHA256 哈希
+                admin_password_sha256 = hashlib.sha256(admin_password_plain.encode("utf-8")).hexdigest()
+
                 uid_hash = generator.generate_uid_hash(admin_username)
-                hashed_password = jwt_util.hash_password(admin_password)
+                hashed_password = jwt_util.hash_password(admin_password_sha256)
 
                 session.add(
                     User(
@@ -96,7 +112,7 @@ async def lifespan(app: FastAPI):
                         verification_code=None,
                         avatar_path=None,
                         avatar_hash=None,
-                        create_time=datetime.now().isoformat(),
+                        create_time=datetime.now(),
                         last_login_time=None,
                     )
                 )

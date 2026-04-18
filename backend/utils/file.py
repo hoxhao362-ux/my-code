@@ -43,7 +43,7 @@ def _replace_env_vars(data: Any) -> Any:
             env_name = match.group(1)
             env_value = os.environ.get(env_name)
             if env_value is not None:
-                global_logger.info('config', f"成功从环境变量加载配置项: {env_name}")
+                global_logger.debug('config', f"成功从环境变量加载配置项: {env_name}")
                 return env_value
             global_logger.warning('config', f"未找到环境变量: {env_name}，将保留原占位符")
             return match.group(0)

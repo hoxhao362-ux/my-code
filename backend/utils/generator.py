@@ -43,15 +43,30 @@ class Generator:
         return hashlib.sha256(file_content).hexdigest()
     
     @staticmethod
-    def generate_jid() -> str:
-        """根据当前时间戳生成唯一的JID
-        
+    async def generate_jid() -> str:
+        """生成稿件编号：YYYYMMDD + 每日自增序号（4位，不足补0）
+
+        使用 Redis INCR 实现每日自增计数器，键格式: jid:counter:YYYYMMDD。
+        示例: 202512120001（2025年12月12日第1篇）
+
         Returns:
-            生成的唯一JID
+            生成的稿件编号，如 202512120001
         """
-        # 时间戳，保留小数点后3位
-        timestamp = int(datetime.now().timestamp() * 1000)
-        return f"{timestamp}"
+        from service.redis_service import redis_service
+
+        today = datetime.now().strftime("%Y%m%d")
+        redis_key = f"jid:counter:{today}"
+
+        # Redis INCR 原子自增，首次调用自动创建键并返回 1
+        count = await redis_service.client.incr(redis_key)
+
+        # 设置键过期时间为 48 小时（保留一天缓冲）
+        if count == 1:
+            await redis_service.client.expire(redis_key, 172800)
+
+        # 格式化序号：默认 4 位，超过 9999 自动扩展
+        seq = str(count).zfill(4)
+        return f"{today}{seq}"
     
     @staticmethod
     def generate_verification_code(length: int = 6) -> str:

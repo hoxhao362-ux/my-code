@@ -4,11 +4,12 @@
 提供图形验证码的生成与校验，用于基础的人机验证场景（如登录、注册前校验）。
 基于异步架构，调用底层服务确保高并发下的性能表现。
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from model.response import ApiResponse
 from model.captcha import CaptchaVerifyRequest
 from service.captcha_service import captcha_service
+from api import dependencies as deps
 from utils.log import global_logger
 
 # 实例化验证码路由器
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 
 
-@router.get("/image", summary="获取图形验证码")
+@router.get("/image", summary="获取图形验证码", dependencies=[Depends(deps.captcha_rate_limit)])
 async def get_image_captcha():
     """
     生成并获取一张图形验证码。
@@ -54,7 +55,7 @@ async def get_image_captcha():
         return ApiResponse.error(code=500, message="获取验证码失败，服务内部异常")
 
 
-@router.post("/verify", summary="校验图形验证码")
+@router.post("/verify", summary="校验图形验证码", dependencies=[Depends(deps.captcha_rate_limit)])
 async def verify_image_captcha(request: CaptchaVerifyRequest):
     """
     校验用户提交的图形验证码。

@@ -59,7 +59,7 @@ class AdminLogService:
                     AdminLog(
                         admin_uid=admin_uid,
                         admin_username=admin_username,
-                        operation_time=datetime.now().isoformat(),
+                        operation_time=datetime.now(),
                         operation_type=operation_type,
                         operation_object=operation_object,
                         operation_details=operation_details,
@@ -73,8 +73,8 @@ class AdminLogService:
         page: int = 1,
         page_size: int = 10,
         operation_type: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
         session: Optional[AsyncSession] = None,
     ) -> Dict[str, Any]:
         """

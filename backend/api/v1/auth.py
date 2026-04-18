@@ -9,10 +9,11 @@ from datetime import datetime
 from core.config import config
 from core.enums import UserRole
 from utils.jwt import jwt_util
+from service.rate_limit_service import rate_limit_service
 from service.redis_service import redis_service
 from utils.generator import generator
 from service.invitation_service import invitation_service
-from model.user import RegisterRequest, LoginRequest
+from model.user import RegisterRequest, LoginRequest, ChangePasswordRequest
 from model.response import ApiResponse
 from api import dependencies as deps
 from utils.log import global_logger
@@ -68,12 +69,13 @@ async def register(
     client_ip = req.client.host if req.client else "unknown"
     
     # 检查注册频率限制
-    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=3, expire_time=3600)
+    allowed, attempts = await rate_limit_service.check("register", client_ip)
     if not allowed:
-        global_logger.warning("Auth", f"注册频率超限 - IP: {client_ip}, 尝试次数：{attempts}/3")
+        cfg = rate_limit_service.get_preset_config("register")
+        global_logger.warning("Auth", f"注册频率超限 - IP: {client_ip}, 尝试次数：{attempts}/{cfg['max_attempts']}")
         raise HTTPException(
             status_code=429,
-            detail=f"注册请求过于频繁，请稍后再试。当前尝试次数：{attempts}/3"
+            detail=f"注册请求过于频繁，请稍后再试。当前尝试次数：{attempts}/{cfg['max_attempts']}"
         )
     
     repo = UserRepository(session)
@@ -106,7 +108,7 @@ async def register(
     hashed_password = jwt_util.hash_password(request.password)
     
     # 注册时间
-    create_time = datetime.now().isoformat()
+    create_time = datetime.now()
 
     try:
         async with transactional(session):
@@ -137,7 +139,7 @@ async def register(
                     raise HTTPException(status_code=400, detail="邀请码使用失败")
         
         # 生成 token
-        token = jwt_util.create_access_token({
+        token = await jwt_util.create_access_token({
             "uid": new_user.uid,
             "username": new_user.username,
             "email": new_user.email,
@@ -193,12 +195,13 @@ async def login(
     client_ip = req.client.host if req.client else "unknown"
     
     # 检查登录频率限制
-    allowed, attempts = await redis_service.set_login_limit(client_ip, max_attempts=5, expire_time=3600)
+    allowed, attempts = await rate_limit_service.check("login", client_ip)
     if not allowed:
-        global_logger.warning("Auth", f"登录频率超限 - IP: {client_ip}, 尝试次数：{attempts}/5")
+        cfg = rate_limit_service.get_preset_config("login")
+        global_logger.warning("Auth", f"登录频率超限 - IP: {client_ip}, 尝试次数：{attempts}/{cfg['max_attempts']}")
         raise HTTPException(
             status_code=429,
-            detail=f"登录请求过于频繁，请稍后再试。当前尝试次数：{attempts}/5"
+            detail=f"登录请求过于频繁，请稍后再试。当前尝试次数：{attempts}/{cfg['max_attempts']}"
         )
     
     # 检查用户是否存在
@@ -208,19 +211,24 @@ async def login(
         global_logger.warning("Auth", f"用户不存在 - username: {request.username}")
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     
+    # 检查用户是否已被停用（软删除）
+    if user.is_deleted:
+        global_logger.warning("Auth", f"已停用用户尝试登录: {request.username}")
+        raise HTTPException(status_code=403, detail="账户已被停用，请联系管理员")
+    
     # 验证密码
     if not jwt_util.verify_password(request.password, user.password):
         global_logger.warning("Auth", f"密码错误 - username: {request.username}")
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     
     # 更新最后登录时间并累加登录天数
-    last_login_time = datetime.now().isoformat()
+    last_login_time = datetime.now()
     async with transactional(session):
         user.last_login_time = last_login_time
         user.login_days = User.login_days + 1
     
     # 生成 token
-    token = jwt_util.create_access_token({
+    token = await jwt_util.create_access_token({
         "uid": user.uid,
         "username": user.username,
         "email": user.email,
@@ -266,44 +274,55 @@ async def logout(token: str = Depends(deps.get_token)):
 
 @router.put("/password", summary="修改密码")
 async def change_password(
-    old_password: str,
-    new_password: str,
+    request: ChangePasswordRequest,
     current_user: dict = Depends(deps.get_current_active_user),
+    token: str = Depends(deps.get_token),
     session: AsyncSession = Depends(get_db_session),
 ):
     """
     修改密码接口
     
     功能说明：
-    1. 验证旧密码
-    2. 更新为新密码
+    1. 验证旧密码正确性
+    2. 加密新密码并更新数据库
+    3. 清除 Redis 会话，强制重新登录
     
     Args:
-        old_password: 旧密码
-        new_password: 新密码
+        request: 修改密码请求体（old_password、new_password，均为 SHA256 哈希）
         current_user: 当前用户信息
+        token: 当前访问令牌
         session: 数据库会话
         
     Returns:
-        dict: 修改成功消息
+        ApiResponse: 修改成功提示（需重新登录）
         
     Raises:
-        HTTPException: 旧密码错误、新密码不符合规则
+        HTTPException: 旧密码错误、用户不存在
     """
-    # 验证旧密码
-    if not jwt_util.verify_password(old_password, current_user["password"]):
-        global_logger.warning("Auth", f"旧密码错误 - uid: {current_user['uid']}, username: {current_user['username']}")
+    uid = current_user["uid"]
+    username = current_user["username"]
+    
+    # 1. 获取用户完整信息（包含密码哈希）
+    repo = UserRepository(session)
+    user = await repo.get_by_id(uid)
+    if not user:
+        global_logger.warning("Auth", f"修改密码时用户不存在 - uid: {uid}")
+        raise HTTPException(status_code=404, detail="用户不存在")
+    
+    # 2. 验证旧密码
+    if not jwt_util.verify_password(request.old_password, user.password):
+        global_logger.warning("Auth", f"旧密码错误 - uid: {uid}, username: {username}")
         raise HTTPException(status_code=400, detail="旧密码错误")
     
-    # 更新密码
-    hashed_password = jwt_util.hash_password(new_password)
-    repo = UserRepository(session)
+    # 3. 加密新密码并更新数据库
+    hashed_password = jwt_util.hash_password(request.new_password)
     async with transactional(session):
-        user = await repo.get_by_id(current_user["uid"])
-        if not user:
-            raise HTTPException(status_code=404, detail="用户不存在")
         user.password = hashed_password
     
-    global_logger.info("Auth", f"密码修改成功 - uid: {current_user['uid']}, username: {current_user['username']}")
+    # 4. 清除 Redis 会话，强制重新登录
+    await redis_service.set_user_offline(uid, token)
     
-    return ApiResponse.success(message="密码修改成功")
+    global_logger.info("Auth", f"密码修改成功，已强制下线 - uid: {uid}, username: {username}")
+    
+    # 5. 返回成功提示
+    return ApiResponse.success(message="密码修改成功，请重新登录")

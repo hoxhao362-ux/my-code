@@ -396,56 +396,92 @@ class ElasticsearchService(BaseManagedService):
             global_logger.error("Elasticsearch", f"搜索失败: {e}")
             return {"total": 0, "items": [], "error": str(e)}
 
-    async def sync_all_data(self, session: AsyncSession):
+    async def sync_all_data(self, session: AsyncSession) -> dict:
         """
-        全量同步 PostgreSQL 稿件数据到 Elasticsearch
-        
+        全量同步已发布稿件到 Elasticsearch（分页处理）。
+        采用分页查询避免大数据量时的内存溢出风险。
+
         Args:
             session: SQLAlchemy AsyncSession
+
+        Returns:
+            同步结果字典，包含成功和失败的文档数量
         """
         if not self.client:
             await self.start()
             if not self.client:
                 global_logger.error("Elasticsearch", "服务未就绪，无法同步")
-                return
+                return {"success": 0, "failed": 0}
 
-        global_logger.info("Elasticsearch", "开始全量同步稿件数据...")
+        global_logger.info("Elasticsearch", "开始全量同步稿件数据（分页处理）...")
         start_time = datetime.now()
-        
+
+        PAGE_SIZE = 500
+        offset = 0
+        total_success = 0
+        total_failed = 0
+        batch_count = 0
+
         try:
-            # 查询所有已发布的稿件
-            # 注意：如果数据量巨大，应使用 stream 或分页查询
-            stmt = (
-                select(Manuscript)
-                .where(Manuscript.status == "published")
-                .where(Manuscript.is_deleted == False)
-            )
-            
-            result = await session.execute(stmt)
-            manuscripts = result.scalars().all()
-            
-            actions = []
-            for manuscript in manuscripts:
-                doc = self._model_to_doc(manuscript)
-                action = {
-                    "_index": self.index_name,
-                    "_id": str(manuscript.manuscript_id),
-                    "_source": doc
-                }
-                actions.append(action)
-                
-            if actions:
-                # 使用 bulk 批量写入
-                success, failed = await helpers.async_bulk(self.client, actions, stats_only=True)
-                global_logger.info("Elasticsearch", f"同步完成。成功: {success}, 失败: {failed}")
-            else:
-                global_logger.info("Elasticsearch", "没有需要同步的数据")
-                
+            while True:
+                # 分页查询：每次只加载 PAGE_SIZE 条记录
+                stmt = (
+                    select(Manuscript)
+                    .where(Manuscript.status == "published")
+                    .where(Manuscript.is_deleted == False)
+                    .order_by(Manuscript.manuscript_id)
+                    .offset(offset)
+                    .limit(PAGE_SIZE)
+                )
+
+                result = await session.execute(stmt)
+                manuscripts = result.scalars().all()
+
+                if not manuscripts:
+                    break
+
+                # 构建 bulk actions
+                actions = []
+                for manuscript in manuscripts:
+                    doc = self._model_to_doc(manuscript)
+                    action = {
+                        "_index": self.index_name,
+                        "_id": str(manuscript.manuscript_id),
+                        "_source": doc
+                    }
+                    actions.append(action)
+
+                # 批量写入 ES
+                if actions:
+                    batch_count += 1
+                    success, failed = await helpers.async_bulk(
+                        self.client, actions, stats_only=True
+                    )
+                    total_success += success
+                    total_failed += failed
+
+                    global_logger.info(
+                        "Elasticsearch",
+                        f"同步进度: 第 {batch_count} 批, 成功 {success}, 失败 {failed}"
+                    )
+
+                offset += PAGE_SIZE
+
+                # 如果本批次数据不足 PAGE_SIZE，说明已到末尾
+                if len(manuscripts) < PAGE_SIZE:
+                    break
+
             duration = (datetime.now() - start_time).total_seconds()
-            global_logger.info("Elasticsearch", f"同步耗时: {duration:.2f}秒")
-            
+            global_logger.info(
+                "Elasticsearch",
+                f"同步完成。总批次: {batch_count}, 成功: {total_success}, 失败: {total_failed}, 耗时: {duration:.2f}秒"
+            )
+
+            return {"success": total_success, "failed": total_failed}
+
         except Exception as e:
             global_logger.exception("Elasticsearch", f"全量同步失败: {e}")
+            return {"success": total_success, "failed": total_failed}
 
 # 全局单例
 elasticsearch_service = ElasticsearchService()

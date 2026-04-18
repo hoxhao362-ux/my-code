@@ -8,15 +8,34 @@
 - manuscript_files：稿件附件表
 
 说明：
-项目当前以 ISO 字符串存储时间字段，为了兼容已有数据与业务逻辑，仍使用 TEXT。
+时间字段已从 TEXT 迁移为 PostgreSQL 原生 DateTime (TIMESTAMP) 类型，
+提升查询性能与规范性。写入时直接传 datetime 对象即可。
 """
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text, Boolean
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.orm.base import Base
+
+
+# ============================================================
+# 数据迁移说明（TEXT → TIMESTAMP）
+# 执行以下 SQL 将现有数据从 TEXT 转换为 TIMESTAMP：
+#
+# ALTER TABLE manuscripts ALTER COLUMN create_time TYPE TIMESTAMP USING create_time::TIMESTAMP;
+# ALTER TABLE manuscripts ALTER COLUMN update_time TYPE TIMESTAMP USING update_time::TIMESTAMP;
+# ALTER TABLE manuscripts ALTER COLUMN deleted_at TYPE TIMESTAMP USING deleted_at::TIMESTAMP;
+# ALTER TABLE manuscript_versions ALTER COLUMN submitted_at TYPE TIMESTAMP USING submitted_at::TIMESTAMP;
+# ALTER TABLE manuscript_participants ALTER COLUMN assigned_at TYPE TIMESTAMP USING assigned_at::TIMESTAMP;
+# ALTER TABLE manuscript_participants ALTER COLUMN completed_at TYPE TIMESTAMP USING completed_at::TIMESTAMP;
+# ALTER TABLE manuscript_files ALTER COLUMN uploaded_at TYPE TIMESTAMP USING uploaded_at::TIMESTAMP;
+#
+# 注意：执行前请备份数据库
+# ============================================================
 
 
 class Manuscript(Base):
@@ -57,12 +76,12 @@ class Manuscript(Base):
     file_size: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="文件大小（字节）")
     
     # 时间戳
-    create_time: Mapped[str] = mapped_column(Text, nullable=False, comment="创建时间（ISO 字符串）")
-    update_time: Mapped[str | None] = mapped_column(Text, nullable=True, comment="更新时间（ISO 字符串）")
+    create_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="创建时间")
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="更新时间")
     
     # 软删除
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", comment="是否已删除（软删除）")
-    deleted_at: Mapped[str | None] = mapped_column(Text, nullable=True, comment="删除时间（ISO 字符串）")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="删除时间")
     delete_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="删除原因")
     
     # 关联关系
@@ -96,7 +115,7 @@ class ManuscriptVersion(Base):
     
     # 提交信息
     submitted_by_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="提交者用户 ID")
-    submitted_at: Mapped[str] = mapped_column(Text, nullable=False, comment="提交时间（ISO 字符串）")
+    submitted_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="提交时间")
     change_summary: Mapped[str | None] = mapped_column(Text, nullable=True, comment="修改说明")
     
     # 关联关系
@@ -119,12 +138,12 @@ class ManuscriptParticipant(Base):
     role_type: Mapped[str] = mapped_column(Text, nullable=False, comment="参与角色：author/editor/associate_editor/ea_ae/reviewer")
     
     # 分配信息
-    assigned_at: Mapped[str] = mapped_column(Text, nullable=False, comment="分配时间（ISO 字符串）")
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="分配时间")
     assigned_by_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="分配者用户 ID")
     
     # 状态信息
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", comment="是否活跃")
-    completed_at: Mapped[str | None] = mapped_column(Text, nullable=True, comment="完成时间（ISO 字符串）")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="完成时间")
     
     # 关联关系
     manuscript: Mapped["Manuscript"] = relationship(back_populates="participants", lazy="joined")
@@ -151,7 +170,7 @@ class ManuscriptFile(Base):
     # 分类信息
     file_type: Mapped[str] = mapped_column(Text, nullable=False, server_default="attachment", comment="文件类型：main/review/letter/other")
     uploaded_by_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="上传者用户 ID")
-    uploaded_at: Mapped[str] = mapped_column(Text, nullable=False, comment="上传时间（ISO 字符串）")
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="上传时间")
     description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="文件描述")
     
     # 关联关系

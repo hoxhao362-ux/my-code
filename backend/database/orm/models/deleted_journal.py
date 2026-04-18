@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 import warnings
 warnings.warn(
     "DeletedJournal 模型已废弃。软删除功能已迁移至 Manuscript.is_deleted 字段。保留仅为兼容旧数据。",
@@ -12,10 +13,20 @@ warnings.warn(
     stacklevel=2,
 )
 
-from sqlalchemy import BigInteger, Integer, Text
+from sqlalchemy import BigInteger, DateTime, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.orm.base import Base
+
+
+# ============================================================
+# 数据迁移说明（TEXT → TIMESTAMP）
+# 执行以下 SQL 将现有数据从 TEXT 转换为 TIMESTAMP：
+#
+# ALTER TABLE deleted_journals ALTER COLUMN delete_time TYPE TIMESTAMP USING delete_time::TIMESTAMP;
+#
+# 注意：执行前请备份数据库
+# ============================================================
 
 
 class DeletedJournal(Base):
@@ -34,6 +45,6 @@ class DeletedJournal(Base):
     file_size: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="文件大小（字节）")
 
     abstract: Mapped[str | None] = mapped_column(Text, nullable=True, comment="摘要")
-    delete_time: Mapped[str] = mapped_column(Text, nullable=False, comment="删除时间（ISO字符串）")
+    delete_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="删除时间")
     delete_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="删除原因")
 

@@ -49,7 +49,7 @@ async def get_current_user(
     user_id = await redis_service.get_user_by_token(token)
     
     # 2. 验证JWT令牌
-    token_payload = jwt_util.verify_token(token)
+    token_payload = await jwt_util.verify_token(token)
     if not token_payload:
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,6 +76,14 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户不存在",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 检查用户是否已被停用（软删除）
+    if user.get("is_deleted"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户已被停用",
             headers={"WWW-Authenticate": "Bearer"},
         )
         
@@ -117,23 +125,6 @@ async def get_reviewer_user(current_user: Dict[str, Any] = Depends(get_current_a
             detail="需要审稿人权限"
         )
     return current_user
-
-async def get_writer_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
-    """
-    [DEPRECATED] 获取作者用户
-    
-    此函数已废弃，请使用 get_author_user 代替
-    旧角色名 'writer' 已统一为 'author' (UserRole.AUTHOR)
-    
-    允许 author 及以上角色访问
-    """
-    if not UserRole.has_permission(current_user["role"], UserRole.AUTHOR.value):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要作者权限"
-        )
-    return current_user
-
 
 async def get_editor_user(current_user: Dict[str, Any] = Depends(get_current_active_user)) -> Dict[str, Any]:
     """

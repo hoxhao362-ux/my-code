@@ -5,7 +5,7 @@ Redis 服务模块
 """
 import asyncio
 import os
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import timedelta
 
 import redis.asyncio as redis
@@ -180,34 +180,120 @@ class RedisService(BaseManagedService):
         
         return True
     
-    async def set_login_limit(self, ip_address: str, max_attempts: int = 5, expire_time: int = 3600):
-        """设置登录次数限制"""
+    async def increment_rate_limit(
+        self,
+        key_prefix: str,
+        identifier: str,
+        max_attempts: int = 5,
+        window_seconds: int = 3600,
+    ) -> Tuple[bool, int]:
+        """
+        通用的频率限制方法，使用 Redis INCR + EXPIRE 原子操作。
+
+        使用 Lua 脚本确保 INCR 和 EXPIRE 操作的原子性，避免高并发下的竞态条件。
+
+        Args:
+            key_prefix: 限制类型前缀（如 "login", "register"）
+            identifier: 限制对象标识（如 IP 地址）
+            max_attempts: 时间窗口内最大尝试次数
+            window_seconds: 时间窗口（秒）
+
+        Returns:
+            Tuple[bool, int]: (是否允许本次操作, 当前累计尝试次数)
+        """
         if not self.client:
             return False, 0
-        
-        key = f"login:limit:{ip_address}"
-        attempts = await self.client.get(key)
-        
-        if attempts:
-            attempts = int(attempts) + 1
-        else:
-            attempts = 1
-        
-        await self.client.setex(
-            key,
-            timedelta(seconds=expire_time),
-            str(attempts)
-        )
-        
-        return attempts <= max_attempts, attempts
-    
+
+        redis_key = f"rate_limit:{key_prefix}:{identifier}"
+
+        # 使用 Lua 脚本确保 INCR + EXPIRE 的原子性
+        lua_script = """
+        local current = redis.call('INCR', KEYS[1])
+        if current == 1 then
+            redis.call('EXPIRE', KEYS[1], ARGV[1])
+        end
+        return current
+        """
+        current_count = await self.client.eval(lua_script, 1, redis_key, window_seconds)
+
+        allowed = current_count <= max_attempts
+        return allowed, current_count
+
+    async def set_login_limit(self, ip_address: str, max_attempts: int = 5, expire_time: int = 3600) -> Tuple[bool, int]:
+        """
+        [DEPRECATED] 设置登录次数限制
+
+        请使用 increment_rate_limit 方法代替，该方法使用 Redis 原子操作避免竞态条件。
+
+        Args:
+            ip_address: IP 地址
+            max_attempts: 最大尝试次数
+            expire_time: 过期时间（秒）
+
+        Returns:
+            Tuple[bool, int]: (是否允许, 当前尝试次数)
+        """
+        global_logger.warning("Redis", "set_login_limit 已废弃，请使用 increment_rate_limit")
+        return await self.increment_rate_limit("login", ip_address, max_attempts, expire_time)
+
     async def get_login_attempts(self, ip_address: str) -> int:
         """获取登录尝试次数"""
         if not self.client:
             return 0
-        
-        attempts = await self.client.get(f"login:limit:{ip_address}")
+
+        attempts = await self.client.get(f"rate_limit:login:{ip_address}")
         return int(attempts) if attempts else 0
+
+    # ============ JWT 密钥轮换 ============
+
+    async def init_jwt_keys(self, default_key: str) -> None:
+        """
+        初始化 JWT 密钥：启动时若 Redis 中无密钥，则用配置中的 secret_key 初始化。
+        Args:
+            default_key: 配置文件中的默认密钥
+        """
+        # 检查 Redis 中是否已有当前密钥
+        current = await self.client.get("jwt:key:current")
+        if not current:
+            await self.client.set("jwt:key:current", default_key)
+            global_logger.info("RedisService", "JWT 密钥已从配置初始化到 Redis")
+
+    async def get_current_jwt_key(self) -> str:
+        """获取当前有效的 JWT 签发密钥"""
+        key = await self.client.get("jwt:key:current")
+        if not key:
+            # 兜底：从配置自动回填，避免服务完全不可用
+            from core.config import config
+            default_key = config["global.global.secret_key"]
+            await self.client.set("jwt:key:current", default_key)
+            global_logger.warning("RedisService", "Redis 中缺少 JWT 密钥，已从配置自动回填")
+            return default_key
+        return key
+
+    async def get_previous_jwt_key(self) -> Optional[str]:
+        """获取上一代 JWT 密钥（用于验证旧 token 的过渡期）"""
+        return await self.client.get("jwt:key:previous")
+
+    async def rotate_jwt_key(self) -> str:
+        """
+        执行 JWT 密钥轮换：当前密钥 → previous，生成新随机密钥 → current。
+        Returns:
+            新生成的当前密钥
+        """
+        import secrets
+        current_key = await self.client.get("jwt:key:current")
+        new_key = secrets.token_urlsafe(48)  # 生成 64 字符随机密钥
+
+        # 使用 pipeline 确保原子性
+        pipe = self.client.pipeline()
+        if current_key:
+            # 旧密钥保留 24 小时，覆盖 token 最大有效期
+            pipe.set("jwt:key:previous", current_key, ex=86400)
+        pipe.set("jwt:key:current", new_key)
+        await pipe.execute()
+
+        global_logger.info("RedisService", "JWT 密钥轮换完成")
+        return new_key
 
 # 创建全局 Redis 服务实例
 redis_service = RedisService()

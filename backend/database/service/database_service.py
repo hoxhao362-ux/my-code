@@ -85,10 +85,33 @@ class DatabaseManager(BaseManagedService):
                 await asyncio.sleep(1)
 
     async def _create_schema(self):
-        """根据 ORM Model 同步表结构与索引（create_all）。"""
+        """
+        根据 ORM Model 同步表结构与索引（create_all）。
+
+        注意：生产环境应使用 Alembic 进行数据库迁移管理
+        运行 `alembic upgrade head` 替代 create_all()
+        create_all() 仅在开发环境使用，用于快速创建表结构
+        """
 
         if not self.engine:
             raise RuntimeError("Engine 尚未初始化")
+
+        # ================================================================
+        # 数据库迁移说明
+        # ================================================================
+        # 生产环境请使用 Alembic 进行数据库迁移：
+        #   cd backend
+        #   alembic upgrade head
+        #
+        # 开发环境可以使用 create_all() 快速创建表结构：
+        #   当前代码即为开发环境使用的自动建表逻辑
+        #
+        # 创建新的迁移脚本：
+        #   alembic revision --autogenerate -m "描述信息"
+        #
+        # 查看迁移历史：
+        #   alembic history
+        # ================================================================
 
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

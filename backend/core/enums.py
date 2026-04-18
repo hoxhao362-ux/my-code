@@ -70,9 +70,19 @@ class UserRole(str, Enum):
         return current_level >= required_level and current_level >= 0 and required_level >= 0
     
     @classmethod
-    def get_all_roles(cls) -> list[str]:
-        """获取所有角色值的列表"""
+    def get_all_values(cls) -> list[str]:
+        """返回所有角色值列表"""
         return [role.value for role in cls]
+
+    @classmethod
+    def get_assignable_roles(cls) -> list[str]:
+        """返回可通过邀请码分配的角色（排除 admin，admin 不应通过邀请码创建）"""
+        return [role.value for role in cls if role != cls.ADMIN]
+
+    @classmethod
+    def is_valid(cls, value: str) -> bool:
+        """校验角色值是否合法"""
+        return value in cls.get_all_values()
 
 
 class ReviewStage(str, Enum):

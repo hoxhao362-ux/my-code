@@ -362,7 +362,7 @@ class ManuscriptWorkflowService:
         
         manuscript.status = next_status
         manuscript.stage = ManuscriptWorkflowService.get_stage_for_status(next_status)
-        manuscript.update_time = datetime.now().isoformat()
+        manuscript.update_time = datetime.now()
         
         # 如果是修改后重新提交，版本号 +1
         if action == WorkflowAction.REVISE.value:

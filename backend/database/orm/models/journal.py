@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 import warnings
 warnings.warn(
     "Journal 和 ReviewRecord 模型已废弃，请使用 Manuscript 相关模型。保留仅为兼容旧数据。",
@@ -14,10 +15,22 @@ warnings.warn(
     stacklevel=2,
 )
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.orm.base import Base
+
+
+# ============================================================
+# 数据迁移说明（TEXT → TIMESTAMP）
+# 执行以下 SQL 将现有数据从 TEXT 转换为 TIMESTAMP：
+#
+# ALTER TABLE journals ALTER COLUMN create_time TYPE TIMESTAMP USING create_time::TIMESTAMP;
+# ALTER TABLE journals ALTER COLUMN update_time TYPE TIMESTAMP USING update_time::TIMESTAMP;
+# ALTER TABLE review_records ALTER COLUMN review_time TYPE TIMESTAMP USING review_time::TIMESTAMP;
+#
+# 注意：执行前请备份数据库
+# ============================================================
 
 
 class Journal(Base):
@@ -38,8 +51,8 @@ class Journal(Base):
     abstract: Mapped[str | None] = mapped_column(Text, nullable=True, comment="摘要")
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="uploading", comment="状态")
 
-    create_time: Mapped[str] = mapped_column(Text, nullable=False, comment="创建时间（ISO字符串）")
-    update_time: Mapped[str | None] = mapped_column(Text, nullable=True, comment="更新时间（ISO字符串）")
+    create_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="创建时间")
+    update_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="更新时间")
 
 
 class ReviewRecord(Base):
@@ -49,7 +62,7 @@ class ReviewRecord(Base):
     jid: Mapped[int] = mapped_column(BigInteger, ForeignKey("journals.jid"), nullable=False, comment="文献ID")
     reviewer_uid: Mapped[int] = mapped_column(Integer, ForeignKey("users.uid"), nullable=False, comment="审核人用户ID")
 
-    review_time: Mapped[str] = mapped_column(Text, nullable=False, comment="审核时间（ISO字符串）")
+    review_time: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="审核时间")
     result: Mapped[str] = mapped_column(Text, nullable=False, comment="审核结果")
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, comment="审核意见")
 
@@ -59,4 +72,3 @@ Index("idx_journals_file_hash", Journal.file_hash)
 Index("idx_journals_status", Journal.status)
 Index("idx_review_records_jid", ReviewRecord.jid)
 Index("idx_review_records_reviewer_uid", ReviewRecord.reviewer_uid)
-
