@@ -16,10 +16,10 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from sqlalchemy.engine import URL
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-
 from core.config import config
+from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import (AsyncEngine, async_sessionmaker,
+                                    create_async_engine)
 from utils.log import global_logger
 
 
@@ -50,7 +50,11 @@ def load_sqlalchemy_async_config() -> SqlAlchemyAsyncConfig:
     database = config["database.database.database_name"]
 
     password = config.get("database.database.database_password")
-    if password is None or (isinstance(password, float) and password != password) or password in ("", "${PG_PWD}"):
+    if (
+        password is None
+        or (isinstance(password, float) and password != password)
+        or password in ("", "${PG_PWD}")
+    ):
         password = os.environ.get("PG_PWD") or None
     if not password:
         global_logger.warning(
@@ -117,4 +121,3 @@ def build_sessionmaker(engine: AsyncEngine) -> async_sessionmaker:
         autoflush=False,
         expire_on_commit=False,
     )
-

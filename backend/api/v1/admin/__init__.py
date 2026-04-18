@@ -1,18 +1,18 @@
-from fastapi import APIRouter, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from api import dependencies as deps
 from database.dependencies import get_db_session
-from database.repositories.journal_repo import JournalRepository
-from database.repositories.review_repo import ReviewRepository
+from database.orm.models.manuscript import Manuscript
+from database.orm.models.review_opinion import ReviewOpinion
 from database.repositories.user_repo import UserRepository
-from service.admin_log_service import admin_log_service
-from utils.log import global_logger
+from fastapi import APIRouter, Depends, Request
 from model.response import ApiResponse
+from service.admin_log_service import admin_log_service
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from utils.log import global_logger
 
-from .users import router as users_router
-from .journals import router as journals_router
 from .invitations import router as invitations_router
+from .journals import router as journals_router
+from .users import router as users_router
 
 admin_router = APIRouter(
     prefix="/admin",
@@ -22,7 +22,7 @@ admin_router = APIRouter(
         401: {"description": "未授权"},
         403: {"description": "禁止访问"},
         404: {"description": "资源不存在"},
-    }
+    },
 )
 
 admin_router.include_router(users_router)
@@ -38,23 +38,26 @@ async def get_admin_dashboard(
 ):
     """
     获取管理系统看板数据
-    
+
     Args:
         request: 请求对象
         current_user: 管理员用户信息
         session: 数据库会话
-        
+
     Returns:
         dict: 管理看板统计数据
     """
     user_repo = UserRepository(session)
-    journal_repo = JournalRepository(session)
-    review_repo = ReviewRepository(session)
 
     total_users = await user_repo.count()
     user_roles = await user_repo.role_breakdown()
-    total_journals = await journal_repo.count_all()
-    
+    total_manuscripts = await session.scalar(
+        select(func.count())
+        .select_from(Manuscript)
+        .where(Manuscript.is_deleted == False)
+    )
+    total_manuscripts = int(total_manuscripts or 0)
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -66,14 +69,17 @@ async def get_admin_dashboard(
         user_agent=request.headers.get("user-agent"),
         session=session,
     )
-    
+
     global_logger.info("Admin", f"管理员查看看板 - admin_uid: {current_user['uid']}")
-    
-    return ApiResponse.success(data={
-        "total_users": total_users,
-        "user_roles": user_roles,
-        "total_journals": total_journals,
-    })
+
+    return ApiResponse.success(
+        data={
+            "total_users": total_users,
+            "user_roles": user_roles,
+            "total_journals": total_manuscripts,
+        }
+    )
+
 
 @admin_router.get("/statistics", summary="获取系统统计信息")
 async def get_system_statistics(
@@ -83,15 +89,32 @@ async def get_system_statistics(
 ):
     """获取系统统计信息，仅限管理员访问"""
     user_repo = UserRepository(session)
-    journal_repo = JournalRepository(session)
-    review_repo = ReviewRepository(session)
 
     total_users = await user_repo.count()
     user_roles = await user_repo.role_breakdown()
-    total_journals = await journal_repo.count_all()
-    journal_status = await journal_repo.status_breakdown()
-    total_reviews = await review_repo.count_all_records()
-    
+    total_manuscripts = await session.scalar(
+        select(func.count())
+        .select_from(Manuscript)
+        .where(Manuscript.is_deleted == False)
+    )
+    total_manuscripts = int(total_manuscripts or 0)
+    manuscript_status_rows = (
+        (
+            await session.execute(
+                select(Manuscript.status, func.count().label("count"))
+                .where(Manuscript.is_deleted == False)
+                .group_by(Manuscript.status)
+            )
+        )
+        .mappings()
+        .all()
+    )
+    manuscript_status = [dict(r) for r in manuscript_status_rows]
+    total_reviews = await session.scalar(
+        select(func.count()).select_from(ReviewOpinion)
+    )
+    total_reviews = int(total_reviews or 0)
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -103,11 +126,13 @@ async def get_system_statistics(
         user_agent=request.headers.get("user-agent"),
         session=session,
     )
-    
-    return ApiResponse.success(data={
-        "total_users": total_users,
-        "user_roles": user_roles,
-        "total_journals": total_journals,
-        "journal_status": journal_status,
-        "total_reviews": total_reviews,
-    })
+
+    return ApiResponse.success(
+        data={
+            "total_users": total_users,
+            "user_roles": user_roles,
+            "total_journals": total_manuscripts,
+            "journal_status": manuscript_status,
+            "total_reviews": total_reviews,
+        }
+    )

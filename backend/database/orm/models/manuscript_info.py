@@ -7,25 +7,39 @@
 
 from __future__ import annotations
 
+from database.orm.base import Base
 from sqlalchemy import BigInteger, ForeignKey, Index, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
-from database.orm.base import Base
 
 
 class ManuscriptInfo(Base):
     __tablename__ = "manuscript_info"
 
-    info_id: Mapped[int] = mapped_column(Integer, primary_key=True, comment="信息ID（自增）")
-    manuscript_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("manuscripts.manuscript_id"), nullable=False, comment="稿件ID")
+    info_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, comment="信息ID（自增）"
+    )
+    manuscript_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("manuscripts.manuscript_id"),
+        nullable=False,
+        comment="稿件ID",
+    )
 
-    issue_number: Mapped[str] = mapped_column(Text, nullable=False, comment="期号（业务字段）")
-    publication_date: Mapped[str] = mapped_column(Text, nullable=False, comment="出版日期（ISO字符串）")
+    issue_number: Mapped[str] = mapped_column(
+        Text, nullable=False, comment="期号（业务字段）"
+    )
+    publication_date: Mapped[str] = mapped_column(
+        Text, nullable=False, comment="出版日期（ISO字符串）"
+    )
 
     volume: Mapped[str | None] = mapped_column(Text, nullable=True, comment="卷")
     issue: Mapped[str | None] = mapped_column(Text, nullable=True, comment="期")
-    journal_type: Mapped[str | None] = mapped_column(Text, nullable=True, comment="期刊类型")
-    keywords: Mapped[str | None] = mapped_column(Text, nullable=True, comment="关键词（字符串）")
+    journal_type: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="期刊类型"
+    )
+    keywords: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="关键词（字符串）"
+    )
     doi: Mapped[str | None] = mapped_column(Text, nullable=True, comment="DOI")
 
 

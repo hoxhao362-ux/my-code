@@ -1,25 +1,24 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
+from api import dependencies as deps
+from database.dependencies import get_db_session
+from fastapi import APIRouter, Depends, HTTPException, Request
+from model.invitation import (InvitationCodeCreateRequest,
+                              InvitationCodeListResponse,
+                              InvitationCodeResponse,
+                              InvitationCodeStatusUpdateRequest)
+from model.response import ApiResponse
 from service.admin_log_service import admin_log_service
 from service.invitation_service import invitation_service
 from sqlalchemy.ext.asyncio import AsyncSession
-from model.invitation import (
-    InvitationCodeCreateRequest,
-    InvitationCodeResponse,
-    InvitationCodeListResponse,
-    InvitationCodeStatusUpdateRequest,
-    InvitationCodeValidateResponse
-)
-from api import dependencies as deps
-
-from database.dependencies import get_db_session
-from model.response import ApiResponse
 
 router = APIRouter(tags=["管理员-邀请码管理"])
 
-@router.post("/invitation-codes", summary="创建邀请码", response_model=InvitationCodeResponse)
+
+@router.post(
+    "/invitation-codes", summary="创建邀请码", response_model=InvitationCodeResponse
+)
 async def create_invitation_code(
     request: InvitationCodeCreateRequest,
     req: Request,
@@ -37,7 +36,7 @@ async def create_invitation_code(
         expire_time=request.expire_time,
         session=session,
     )
-    
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -49,21 +48,30 @@ async def create_invitation_code(
         user_agent=req.headers.get("user-agent"),
         session=session,
     )
-    
-    # 返回邀请码信息
-    return ApiResponse.success(data={
-        "code": code,
-        "role": request.role,
-        "status": "active",
-        "max_uses": request.max_uses,
-        "used_count": 0,
-        "description": request.description,
-        "created_by": current_user["username"],
-        "create_time": datetime.now().isoformat(),
-        "expire_time": request.expire_time.isoformat() if request.expire_time else None
-    })
 
-@router.get("/invitation-codes", summary="获取邀请码列表", response_model=InvitationCodeListResponse)
+    # 返回邀请码信息
+    return ApiResponse.success(
+        data={
+            "code": code,
+            "role": request.role,
+            "status": "active",
+            "max_uses": request.max_uses,
+            "used_count": 0,
+            "description": request.description,
+            "created_by": current_user["username"],
+            "create_time": datetime.now().isoformat(),
+            "expire_time": request.expire_time.isoformat()
+            if request.expire_time
+            else None,
+        }
+    )
+
+
+@router.get(
+    "/invitation-codes",
+    summary="获取邀请码列表",
+    response_model=InvitationCodeListResponse,
+)
 async def get_invitation_codes(
     req: Request,
     page: int = 1,
@@ -82,7 +90,7 @@ async def get_invitation_codes(
         role=role,
         session=session,
     )
-    
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -94,11 +102,11 @@ async def get_invitation_codes(
         user_agent=req.headers.get("user-agent"),
         session=session,
     )
-    
-    return ApiResponse.success(data={
-        "total": result["total"],
-        "codes": result["codes"]
-    })
+
+    return ApiResponse.success(
+        data={"total": result["total"], "codes": result["codes"]}
+    )
+
 
 @router.put("/invitation-codes/{code}/status", summary="更新邀请码状态")
 async def update_invitation_code_status(
@@ -110,10 +118,12 @@ async def update_invitation_code_status(
 ):
     """更新邀请码状态，仅限管理员访问"""
     # 更新邀请码状态
-    success = await invitation_service.update_code_status(code, request.status, session=session)
+    success = await invitation_service.update_code_status(
+        code, request.status, session=session
+    )
     if not success:
         raise HTTPException(status_code=404, detail="邀请码不存在")
-    
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -125,8 +135,11 @@ async def update_invitation_code_status(
         user_agent=req.headers.get("user-agent"),
         session=session,
     )
-    
-    return ApiResponse.success(data={"code": code, "status": request.status}, message="邀请码状态更新成功")
+
+    return ApiResponse.success(
+        data={"code": code, "status": request.status}, message="邀请码状态更新成功"
+    )
+
 
 @router.get("/invitation-codes/validate/{code}", summary="验证邀请码")
 async def validate_invitation_code(
@@ -138,7 +151,7 @@ async def validate_invitation_code(
     """验证邀请码有效性，仅限管理员访问"""
     # 验证邀请码
     result = await invitation_service.validate_invitation_code(code, session=session)
-    
+
     # 记录管理员操作日志
     await admin_log_service.record_admin_log(
         admin_uid=current_user["uid"],
@@ -150,5 +163,5 @@ async def validate_invitation_code(
         user_agent=req.headers.get("user-agent"),
         session=session,
     )
-    
+
     return ApiResponse.success(data=result)

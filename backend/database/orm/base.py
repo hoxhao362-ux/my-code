@@ -11,9 +11,8 @@ SQLAlchemy ORM 基础设施
 
 from __future__ import annotations
 
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
-
+from sqlalchemy.orm import DeclarativeBase
 
 _NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_name)s",
@@ -32,4 +31,3 @@ class Base(DeclarativeBase):
     """
 
     metadata = MetaData(naming_convention=_NAMING_CONVENTION)
-

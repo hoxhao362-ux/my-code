@@ -1,0 +1,50 @@
+# Alembic 数据库迁移目录
+
+## 目录结构
+
+```
+alembic/
+├── versions/          # 迁移脚本存放目录
+├── env.py             # 迁移环境配置（支持异步 PostgreSQL）
+├── script.py.mako     # 迁移脚本模板
+└── README             # 本文件
+```
+
+## 常用命令
+
+### 创建新的迁移脚本
+
+```bash
+cd backend
+alembic revision --autogenerate -m "描述信息"
+```
+
+### 升级数据库到最新版本
+
+```bash
+alembic upgrade head
+```
+
+### 降级数据库到指定版本
+
+```bash
+alembic downgrade <revision_id>
+```
+
+### 查看当前版本
+
+```bash
+alembic current
+```
+
+### 查看迁移历史
+
+```bash
+alembic history
+```
+
+## 注意事项
+
+1. 本项目使用异步 PostgreSQL（asyncpg 驱动）
+2. 数据库连接字符串从项目配置系统动态获取
+3. 生产环境必须使用 Alembic 进行数据库迁移，不要使用 `create_all()`

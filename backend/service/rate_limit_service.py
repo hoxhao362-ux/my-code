@@ -1,58 +1,126 @@
 """
 频率限制服务模块
 
-提供内存级频率限制功能。
+基于 Redis 的分布式频率限制服务。
+所有频率限制统一通过 Redis 原子操作实现，支持多 Worker 进程。
 """
-import time
+
 from typing import Dict, Tuple
-from collections import defaultdict
+
+from service.redis_service import redis_service
+from utils.log import global_logger
+
 
 class RateLimitService:
-    """简单的内存频率限制服务"""
-    def __init__(self):
-        # 存储请求记录: {key: [(timestamp, count), ...]}
-        self.requests: Dict[str, list[Tuple[float, int]]] = defaultdict(list)
-    
-    def check_rate(self, key: str, limit: int, window_seconds: int) -> Tuple[bool, int]:
-        """检查请求频率是否超过限制
-        
+    """
+    基于 Redis 的分布式频率限制服务
+
+    通过委托 redis_service.increment_rate_limit() 实现，
+    使用 Lua 脚本原子操作确保多 Worker 进程下的计数一致性。
+    """
+
+    # 预设策略配置
+    PRESETS: Dict[str, Dict[str, int]] = {
+        "general": {"max_attempts": 100, "window_seconds": 3600},
+        "login": {"max_attempts": 5, "window_seconds": 60},
+        "register": {"max_attempts": 3, "window_seconds": 3600},
+        "upload": {"max_attempts": 10, "window_seconds": 3600},
+        "captcha": {"max_attempts": 10, "window_seconds": 60},
+    }
+
+    async def check(self, preset: str, identifier: str) -> Tuple[bool, int]:
+        """
+        按预设策略检查频率限制
+
+        自动递增计数器并判断是否超限。首次请求时在 Redis 中创建键并设置过期时间。
+
         Args:
-            key: 请求标识（如IP地址、用户ID等）
-            limit: 时间窗口内允许的最大请求数
-            window_seconds: 时间窗口大小（秒）
-            
+            preset: 预设策略名称（general / login / register / upload / captcha）
+            identifier: 限制对象标识（如 IP 地址、用户 ID）
+
         Returns:
-            Tuple[bool, int]: (是否允许请求, 剩余请求数)
+            Tuple[bool, int]: (是否允许本次操作, 当前累计次数)
+
+        Raises:
+            ValueError: 预设策略不存在时抛出
         """
-        now = time.time()
-        window_start = now - window_seconds
-        
-        # 清理过期的请求记录
-        self.requests[key] = [
-            (timestamp, count) 
-            for timestamp, count in self.requests[key] 
-            if timestamp >= window_start
-        ]
-        
-        # 计算当前窗口内的请求总数
-        total_requests = sum(count for _, count in self.requests[key])
-        
-        if total_requests >= limit:
-            return False, 0
-        
-        # 记录新请求
-        self.requests[key].append((now, 1))
-        return True, limit - total_requests - 1
-    
-    def add_request(self, key: str, count: int = 1):
-        """添加请求记录
-        
+        if preset not in self.PRESETS:
+            raise ValueError(
+                f"未知的频率限制预设策略: {preset}，"
+                f"可选值: {', '.join(self.PRESETS.keys())}"
+            )
+
+        cfg = self.PRESETS[preset]
+        allowed, count = await redis_service.increment_rate_limit(
+            key_prefix=preset,
+            identifier=identifier,
+            max_attempts=cfg["max_attempts"],
+            window_seconds=cfg["window_seconds"],
+        )
+
+        if not allowed:
+            global_logger.warning(
+                "RateLimit",
+                f"频率限制触发 - 策略: {preset}, 标识: {identifier}, "
+                f"累计: {count}/{cfg['max_attempts']}, 窗口: {cfg['window_seconds']}s",
+            )
+
+        return allowed, count
+
+    async def check_custom(
+        self,
+        key_prefix: str,
+        identifier: str,
+        max_attempts: int,
+        window_seconds: int,
+    ) -> Tuple[bool, int]:
+        """
+        自定义参数的频率限制检查
+
+        当预设策略无法满足需求时，可使用自定义参数。
+
         Args:
-            key: 请求标识
-            count: 请求次数，默认为1
+            key_prefix: 限制类型前缀（如 "password_reset"）
+            identifier: 限制对象标识（如 IP 地址）
+            max_attempts: 时间窗口内最大尝试次数
+            window_seconds: 时间窗口（秒）
+
+        Returns:
+            Tuple[bool, int]: (是否允许本次操作, 当前累计次数)
         """
-        now = time.time()
-        self.requests[key].append((now, count))
+        allowed, count = await redis_service.increment_rate_limit(
+            key_prefix=key_prefix,
+            identifier=identifier,
+            max_attempts=max_attempts,
+            window_seconds=window_seconds,
+        )
+
+        if not allowed:
+            global_logger.warning(
+                "RateLimit",
+                f"频率限制触发 - 自定义前缀: {key_prefix}, 标识: {identifier}, "
+                f"累计: {count}/{max_attempts}, 窗口: {window_seconds}s",
+            )
+
+        return allowed, count
+
+    def get_preset_config(self, preset: str) -> Dict[str, int]:
+        """
+        获取预设策略配置
+
+        Args:
+            preset: 预设策略名称
+
+        Returns:
+            Dict[str, int]: 包含 max_attempts 和 window_seconds 的配置字典
+        """
+        if preset not in self.PRESETS:
+            raise ValueError(
+                f"未知的频率限制预设策略: {preset}，"
+                f"可选值: {', '.join(self.PRESETS.keys())}"
+            )
+        return self.PRESETS[preset].copy()
+
 
 # 创建全局频率限制服务实例
 rate_limit_service = RateLimitService()
