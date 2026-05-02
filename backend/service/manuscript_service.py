@@ -299,8 +299,23 @@ class ManuscriptWorkflowService:
             # 检查是否存在从当前状态出发的转换
             for (status, act, _), _ in TRANSITION_MAP.items():
                 if status == current_status and act == action_value:
+                    # 审稿人须使用 /reviews/me/tasks 提交意见，禁止 workflow.review 绕过入库
+                    if (
+                        action_value == WorkflowAction.REVIEW.value
+                        and user_role == UserRole.REVIEWER.value
+                    ):
+                        break
                     allowed_actions.append(action_value)
                     break
+
+        # 评审进行期间仍可追加审稿人（API 层仅增加参与者，不依赖转换表自环）
+        assign_act = WorkflowAction.ASSIGN.value
+        if (
+            current_status == ManuscriptStatus.UNDER_PEER_REVIEW.value
+            and assign_act not in allowed_actions
+            and user_role in ACTION_PERMISSIONS.get(assign_act, [])
+        ):
+            allowed_actions.append(assign_act)
 
         return allowed_actions
 

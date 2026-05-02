@@ -4,6 +4,7 @@
 包含稿件投稿、流转、文件管理等功能
 """
 
+import json
 import os
 import tempfile
 from datetime import datetime
@@ -12,18 +13,29 @@ from typing import Optional
 
 from api import dependencies as deps
 from core.config import config
-from core.enums import (FileContentType, ManuscriptStatus, UserRole,
-                        WorkflowAction)
+from core.enums import (FileContentType, ManuscriptStatus, NotificationType,
+                        UserRole, WorkflowAction)
 from database.dependencies import get_db_session
-from database.orm.models.manuscript import Manuscript
+from database.orm.models.editorial import DecisionRecord
+from database.orm.models.manuscript import (Manuscript, ManuscriptFile)
+from database.orm.models.user import User
+from database.repositories.manuscript_participant_repo import (
+    ManuscriptParticipantRepository,
+)
 from database.repositories.manuscript_repo import ManuscriptRepository
+from database.repositories.review_opinion_repo import ReviewOpinionRepository
+from database.repositories.user_repo import UserRepository
 from database.uow import transactional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from model.manuscript import ManuscriptDetailDTO, ManuscriptListItemDTO
 from model.response import ApiResponse
 from service.manuscript_service import manuscript_workflow_service
+from service.manuscript_access import (user_can_upload_manuscript_file,
+                                       user_can_view_manuscript)
+from service.notification_service import create_notification
 from service.pdf_service import pdf_service
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils.generator import generator
 from utils.log import global_logger
@@ -418,40 +430,134 @@ async def manuscript_workflow(
     action: str = Form(...),
     decision_type: Optional[str] = Form(None),
     comment: Optional[str] = Form(None),
+    reviewer_uids: Optional[str] = Form(
+        None,
+        description="assign 时必填：审稿人 uid 的 JSON 数组，如 [1,2]",
+    ),
     current_user: dict = Depends(deps.get_current_active_user),
     session: AsyncSession = Depends(get_db_session),
 ):
     """
-    稿件流转核心接口
+    稿件流转核心接口。
 
-    支持的动作：
-    - save: 保存草稿
-    - submit: 提交稿件
-    - withdraw: 撤稿
-    - screen: 初审筛选
-    - assign: 分配审稿人
-    - review: 提交评审意见
-    - decide: 编辑决策（需要 decision_type: accept/reject/revision/transfer）
-    - revise: 提交修改稿
-    - approve: 录用确认
-    - publish: 出版
-
-    Args:
-        manuscript_id: 稿件 ID
-        action: 流转动作
-        decision_type: 决策类型（decide 动作需要）
-        comment: 备注信息
-        current_user: 当前用户信息
-        session: 数据库会话
-
-    Returns:
-        dict: 操作结果
+    assign：须提供 reviewer_uids（JSON 数组）。在初审已通过 / 待送审 / 评审中
+    均可追加审稿人；前两态会触发状态机前进，评审中仅写入参与者。
     """
     global_logger.info(
         "Manuscripts",
         f"稿件流转操作 - mid: {manuscript_id}, action: {action}, "
         f"decision_type: {decision_type}, uid: {current_user['uid']}",
     )
+
+    if action == WorkflowAction.ASSIGN.value:
+        if not reviewer_uids or not str(reviewer_uids).strip():
+            raise HTTPException(
+                status_code=400,
+                detail="assign 动作需提供 reviewer_uids（JSON 数字数组）",
+            )
+        try:
+            raw_list = json.loads(reviewer_uids)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="reviewer_uids 不是合法 JSON")
+        if not isinstance(raw_list, list) or len(raw_list) == 0:
+            raise HTTPException(status_code=400, detail="reviewer_uids 必须为非空数组")
+        try:
+            uid_list = list(dict.fromkeys(int(x) for x in raw_list))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="reviewer_uids 元素须为整数")
+
+        try:
+            async with transactional(session):
+                m_repo = ManuscriptRepository(session)
+                ms = await m_repo.get_by_manuscript_id(manuscript_id)
+                if not ms:
+                    raise ValueError("稿件不存在")
+
+                if not manuscript_workflow_service.validate_permission(
+                    action, current_user["role"]
+                ):
+                    raise ValueError("无权分配审稿人")
+
+                assign_ok = {
+                    ManuscriptStatus.INITIAL_REVIEW_PASSED.value,
+                    ManuscriptStatus.PENDING_PEER_REVIEW.value,
+                    ManuscriptStatus.UNDER_PEER_REVIEW.value,
+                }
+                if ms.status not in assign_ok:
+                    raise ValueError("当前稿件状态不可分配审稿人")
+
+                u_repo = UserRepository(session)
+                part_repo = ManuscriptParticipantRepository(session)
+
+                for rid in uid_list:
+                    assignee = await u_repo.get_by_id(rid)
+                    if not assignee or assignee.is_deleted:
+                        raise ValueError(f"用户不存在或已删除: {rid}")
+                    if UserRole.get_role_level(assignee.role) < UserRole.get_role_level(
+                        UserRole.REVIEWER.value
+                    ):
+                        raise ValueError(f"用户 {rid} 角色不具备审稿人资格")
+                    await part_repo.upsert_reviewer(
+                        manuscript_id, rid, current_user["uid"]
+                    )
+                    await create_notification(
+                        session,
+                        user_uid=rid,
+                        notification_type=NotificationType.REVIEW_INVITATION.value,
+                        title="审稿邀请",
+                        content=f"您被邀请审阅稿件《{ms.title}》（编号 {manuscript_id}）。",
+                        related_manuscript_id=manuscript_id,
+                        log_tag="Manuscripts",
+                    )
+
+                if ms.status == ManuscriptStatus.INITIAL_REVIEW_PASSED.value:
+                    wf_result = await manuscript_workflow_service.execute_action(
+                        manuscript_id=manuscript_id,
+                        action=action,
+                        user_id=current_user["uid"],
+                        user_role=current_user["role"],
+                        session=session,
+                        decision_type=decision_type,
+                        comment=comment,
+                    )
+                elif ms.status == ManuscriptStatus.PENDING_PEER_REVIEW.value:
+                    wf_result = await manuscript_workflow_service.execute_action(
+                        manuscript_id=manuscript_id,
+                        action=action,
+                        user_id=current_user["uid"],
+                        user_role=current_user["role"],
+                        session=session,
+                        decision_type=decision_type,
+                        comment=comment,
+                    )
+                else:
+                    wf_result = {
+                        "success": True,
+                        "manuscript_id": manuscript_id,
+                        "action": action,
+                        "decision_type": decision_type,
+                        "old_status": ms.status,
+                        "new_status": ms.status,
+                        "old_stage": ms.stage,
+                        "new_stage": ms.stage,
+                        "version": ms.version,
+                        "update_time": datetime.now(),
+                        "note": "评审中仅追加审稿人，未变更稿件状态",
+                    }
+
+            global_logger.info(
+                "Manuscripts",
+                f"分配审稿人成功 - mid: {manuscript_id}, uids: {uid_list}, "
+                f"status: {wf_result.get('old_status')} -> {wf_result.get('new_status')}",
+            )
+            return ApiResponse.success(data=wf_result)
+
+        except ValueError as e:
+            global_logger.warning(
+                "Manuscripts",
+                f"分配审稿人失败 - mid: {manuscript_id}, error: {e}",
+            )
+            raise HTTPException(status_code=400, detail=str(e))
 
     try:
         async with transactional(session):
@@ -480,122 +586,135 @@ async def manuscript_workflow(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+_ALLOWED_MANUSCRIPT_FILE_TYPES = frozenset(
+    {"main", "attachment", "review", "letter", "other"}
+)
+
+
 @router.get("/{manuscript_id}/files", summary="获取稿件附件列表")
 async def get_manuscript_files(
     manuscript_id: int,
     current_user: dict = Depends(deps.get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    """获取稿件的所有附件
+    """返回附件元数据（不含 file_hash）。"""
+    repo = ManuscriptRepository(session)
+    manuscript = await repo.get_by_manuscript_id(manuscript_id)
+    if not manuscript:
+        raise HTTPException(status_code=404, detail="稿件不存在")
+    if not await user_can_view_manuscript(
+        session,
+        manuscript,
+        current_user["uid"],
+        current_user["role"],
+    ):
+        raise HTTPException(status_code=403, detail="无权查看该稿件附件")
 
-    TODO: 实现稿件附件列表查询
-
-    建议实现流程：
-    1. 根据 manuscript_id 查询 Manuscript 记录，确认稿件存在且未删除
-    2. 权限检查：作者只能查看自己稿件的附件，编辑/审稿人可查看分配给自己的稿件附件
-    3. 查询 ManuscriptFile 表，筛选 manuscript_id 匹配的记录
-    4. 按上传时间排序，返回文件列表
-    5. 区分主文件（file_type='main'）和附件（file_type='attachment'/'review'/'letter'/'other'）
-
-    所需 ORM 模型：
-    - ManuscriptFile (database/orm/models/manuscript.py) — 稿件附件表，含 file_id/manuscript_id/file_hash/file_bucket/original_name/file_size/content_type/file_type/uploaded_by_uid/uploaded_at/description
-    - Manuscript (database/orm/models/manuscript.py) — 稿件主表，用于权限验证
-    - ManuscriptParticipant (database/orm/models/manuscript.py) — 参与者表，用于验证审稿人权限
-
-    建议 Repository 方法：
-    - ManuscriptFileRepository.list_by_manuscript(manuscript_id) — 查询某稿件的所有附件
-    - ManuscriptFileRepository.count_by_manuscript(manuscript_id) — 统计附件数
-
-    建议 Service 调用链：
-    API → 查询 Manuscript 确认存在 → 权限检查
-        → ManuscriptFileRepository.list_by_manuscript(mid) → 格式化返回
-
-    权限要求：
-    - 当前使用 get_current_active_user（已登录用户均可访问）
-    - 作者只能查看自己稿件的附件
-    - 编辑/审稿人可查看分配给自己的稿件附件（需查 ManuscriptParticipant）
-
-    返回数据格式建议：
-    {
-        "manuscript_id": 10001,
-        "files": [
-            {
-                "file_id": 1,
-                "original_name": "论文正文.pdf",
-                "file_size": 1024000,
-                "content_type": "application/pdf",
-                "file_type": "main",
-                "uploaded_by_uid": 5,
-                "uploaded_at": "2026-04-18T10:00:00",
-                "description": "稿件正文"
-            }
-        ]
-    }
-
-    注意事项：
-    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
-    - ManuscriptFile.file_type 区分：main=主文件/review=审稿意见附件/letter=通信附件/other=其他
-    - 前端可能需要下载链接，建议在返回中拼接文件下载 URL
-    - 不应在列表中返回 file_hash 等敏感信息
-    - 注意区分主文件（Manuscript 表的 file_hash）和附件文件（ManuscriptFile 表）
-    """
-    # TODO: 实现附件管理
-    return ApiResponse.success(data={"manuscript_id": manuscript_id, "files": []})
+    files = await repo.list_manuscript_files(manuscript_id)
+    items = [
+        {
+            "file_id": f.file_id,
+            "original_name": f.original_name,
+            "file_size": f.file_size,
+            "content_type": f.content_type,
+            "file_type": f.file_type,
+            "uploaded_by_uid": f.uploaded_by_uid,
+            "uploaded_at": f.uploaded_at.isoformat() if f.uploaded_at else None,
+            "description": f.description,
+        }
+        for f in files
+    ]
+    return ApiResponse.success(data={"manuscript_id": manuscript_id, "files": items})
 
 
 @router.post("/{manuscript_id}/files", summary="上传稿件附件")
 async def upload_manuscript_file(
     manuscript_id: int,
     file: UploadFile = File(...),
+    file_type: str = Form("attachment"),
+    description: str | None = Form(None),
     current_user: dict = Depends(deps.get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    """上传稿件附件
+    """上传 PDF/Word 附件；main 类型会同步更新稿件主文件字段。"""
+    if file_type not in _ALLOWED_MANUSCRIPT_FILE_TYPES:
+        raise HTTPException(status_code=400, detail="无效的文件类型")
 
-    TODO: 实现稿件附件上传
+    if not FileContentType.is_allowed(file.content_type or ""):
+        raise HTTPException(status_code=400, detail="只支持 PDF 和 Word 文档")
 
-    建议实现流程：
-    1. 根据 manuscript_id 查询 Manuscript 记录，确认稿件存在且未删除
-    2. 权限检查：仅作者本人可上传附件到自己的稿件（author_uid 匹配）
-    3. 验证文件类型（FileContentType.is_allowed），仅允许 PDF/Word
-    4. 读取文件内容，生成文件哈希（generator.generate_file_hash）
-    5. 计算哈希分桶路径（file_bucket），保存文件到磁盘
-    6. 创建 ManuscriptFile 记录，填充 file_hash/file_bucket/original_name/file_size/content_type/file_type/uploaded_by_uid/uploaded_at
-    7. 在事务中执行数据库插入
+    repo = ManuscriptRepository(session)
+    manuscript = await repo.get_by_manuscript_id(manuscript_id)
+    if not manuscript:
+        raise HTTPException(status_code=404, detail="稿件不存在")
 
-    所需 ORM 模型：
-    - ManuscriptFile (database/orm/models/manuscript.py) — 稿件附件表，需新建记录
-    - Manuscript (database/orm/models/manuscript.py) — 稿件主表，用于权限验证
+    if not await user_can_upload_manuscript_file(
+        manuscript,
+        current_user["uid"],
+        current_user["role"],
+        file_type,
+    ):
+        raise HTTPException(status_code=403, detail="无权上传该类型附件")
 
-    建议 Repository 方法：
-    - ManuscriptFileRepository.add(file_record) — 新增附件记录
+    max_size = FILE_SIZE_LIMITS.get(file.content_type, DEFAULT_SIZE_LIMIT)
+    file_content = await read_file_with_limit(file, max_size)
+    file_size = len(file_content)
+    file_hash = generator.generate_file_hash(file_content)
+    file_bucket_1 = file_hash[:2]
+    file_bucket_2 = file_hash[2:4]
+    papers_dir = Path(config["global.global.literature_dir"])
+    bucket_dir = papers_dir / file_bucket_1 / file_bucket_2
+    bucket_dir.mkdir(parents=True, exist_ok=True)
+    file_ext = Path(file.filename or "file").suffix or ".bin"
+    file_path = bucket_dir / f"{file_hash}{file_ext}"
+    with open(file_path, "wb") as fh:
+        fh.write(file_content)
 
-    建议 Service 调用链：
-    API → 查询 Manuscript → 权限检查 → 文件类型校验
-        → 生成文件哈希 → 保存到磁盘 → ManuscriptFileRepository.add() → 返回成功
+    uploaded_at = datetime.now()
+    out_file_id: int | None = None
+    out_name: str | None = None
 
-    权限要求：
-    - 当前使用 get_current_active_user（已登录用户均可访问）
-    - 仅作者本人可上传附件到自己的稿件，需验证 author_uid
-    - 编辑/审稿人上传附件应使用 file_type='review'/'letter'，需另外处理权限
+    async with transactional(session):
+        mf = ManuscriptFile(
+            manuscript_id=manuscript_id,
+            file_hash=file_hash,
+            file_bucket=f"{file_bucket_1}/{file_bucket_2}",
+            original_name=file.filename or "unnamed",
+            file_size=file_size,
+            content_type=file.content_type or "application/octet-stream",
+            file_type=file_type,
+            uploaded_by_uid=current_user["uid"],
+            uploaded_at=uploaded_at,
+            description=description,
+        )
+        session.add(mf)
+        await session.flush()
+        out_file_id = mf.file_id
+        out_name = mf.original_name
 
-    返回数据格式建议：
-    {
-        "file_id": 1,
-        "original_name": "补充材料.pdf",
-        "file_size": 512000,
-        "file_type": "attachment",
-        "uploaded_at": "2026-04-18T14:00:00"
-    }
+        if file_type == "main":
+            m = await repo.get_by_manuscript_id(manuscript_id)
+            if m:
+                m.file_hash = file_hash
+                m.file_bucket = f"{file_bucket_1}/{file_bucket_2}"
+                m.file_name = mf.original_name
+                m.file_size = file_size
+                m.update_time = uploaded_at
 
-    注意事项：
-    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
-    - 需增加 file_type 参数（Form），默认 'attachment'，允许 main/review/letter/other
-    - 文件存储逻辑参考 create_manuscript 接口中的哈希分桶方案
-    - 需检查文件大小限制（建议配置最大文件大小）
-    - 同名文件覆盖问题：使用文件哈希作为实际存储名，original_name 仅做展示
-    - 主文件（file_type='main'）应同步更新 Manuscript 表的 file_hash/file_bucket 等字段
-    """
-    # TODO: 实现附件上传
-    return ApiResponse.success(message="附件上传成功")
+    global_logger.info(
+        "Manuscripts",
+        f"附件上传成功 mid={manuscript_id} type={file_type} uid={current_user['uid']}",
+    )
+    return ApiResponse.success(
+        data={
+            "file_id": out_file_id,
+            "original_name": out_name,
+            "file_size": file_size,
+            "file_type": file_type,
+            "uploaded_at": uploaded_at.isoformat(),
+        },
+        message="附件上传成功",
+    )
 
 
 @router.get("/{manuscript_id}/history", summary="获取稿件操作历史")
@@ -604,93 +723,159 @@ async def get_manuscript_history(
     current_user: dict = Depends(deps.get_current_active_user),
     session: AsyncSession = Depends(get_db_session),
 ):
-    """获取稿件的操作历史记录
+    """合并版本、决策、审稿意见、参与者分配为时间线（审稿人视角脱敏他人意见）。"""
+    m_repo = ManuscriptRepository(session)
+    manuscript = await m_repo.get_by_manuscript_id(manuscript_id)
+    if not manuscript:
+        raise HTTPException(status_code=404, detail="稿件不存在")
+    if not await user_can_view_manuscript(
+        session,
+        manuscript,
+        current_user["uid"],
+        current_user["role"],
+    ):
+        raise HTTPException(status_code=403, detail="无权查看该稿件历史")
 
-    TODO: 实现稿件操作历史查询
+    hide_foreign_opinions = current_user["role"] == UserRole.REVIEWER.value
+    my_uid = current_user["uid"]
 
-    建议实现流程：
-    1. 根据 manuscript_id 查询 Manuscript 记录，确认稿件存在且未删除
-    2. 权限检查：作者只能查看自己稿件的历史，编辑/审稿人可查看分配给自己的稿件历史
-    3. 查询 ManuscriptVersion 表获取版本变更历史
-    4. 查询 DecisionRecord 表获取编辑决策记录
-    5. 查询 ReviewOpinion 表获取审稿意见历史
-    6. 查询 ManuscriptParticipant 表获取人员分配变更
-    7. 将以上记录按时间合并排序，形成完整的操作时间线
-    8. 返回合并后的历史列表
+    versions = await m_repo.list_manuscript_versions(manuscript_id)
+    d_rows = (
+        (
+            await session.execute(
+                select(DecisionRecord)
+                .where(DecisionRecord.manuscript_id == manuscript_id)
+                .order_by(DecisionRecord.decided_at.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    opinion_repo = ReviewOpinionRepository(session)
+    opinions = await opinion_repo.list_by_manuscript(manuscript_id)
+    part_repo = ManuscriptParticipantRepository(session)
+    participants = await part_repo.list_all_by_manuscript_ordered(manuscript_id)
 
-    所需 ORM 模型：
-    - ManuscriptVersion (database/orm/models/manuscript.py) — 稿件版本表，记录每次修改，含 version_id/version_number/title/authors/abstract/file_hash/submitted_by_uid/submitted_at/change_summary
-    - DecisionRecord (database/orm/models/editorial.py) — 编辑决策记录表，含 decision_id/stage/decision_type/decision_title/decision_comments/recommendations/decided_by_uid/decided_at
-    - ReviewOpinion (database/orm/models/review_opinion.py) — 审稿意见表，含 opinion_id/stage/review_round/review_score/review_comments/recommendations/decision/submitted_at
-    - ManuscriptParticipant (database/orm/models/manuscript.py) — 参与者表，记录分配变更，含 participant_id/role_type/assigned_at/assigned_by_uid/is_active/completed_at
+    uids: set[int] = set()
+    for v in versions:
+        uids.add(v.submitted_by_uid)
+    for d in d_rows:
+        uids.add(d.decided_by_uid)
+    for o in opinions:
+        uids.add(o.reviewer_uid)
+    for p in participants:
+        uids.add(p.user_uid)
+        uids.add(p.assigned_by_uid)
+    if uids:
+        unames = (
+            (
+                await session.execute(
+                    select(User.uid, User.username).where(User.uid.in_(uids))
+                )
+            )
+            .mappings()
+            .all()
+        )
+        names = {int(r["uid"]): r["username"] for r in unames}
+    else:
+        names = {}
 
-    建议 Repository 方法：
-    - ManuscriptVersionRepository.list_by_manuscript(manuscript_id) — 查询版本历史
-    - DecisionRecordRepository.list_by_manuscript(manuscript_id) — 查询决策记录
-    - ReviewOpinionRepository.list_by_manuscript(manuscript_id) — 查询审稿意见
-    - ManuscriptParticipantRepository.list_by_manuscript(manuscript_id) — 查询人员变更
+    history: list[dict] = []
 
-    建议 Service 调用链：
-    API → 查询 Manuscript 确认存在 → 权限检查
-        → 并行查询 4 张表 → 联表获取 User 用户名
-        → 按时间合并排序 → 格式化为时间线 → 返回
-
-    权限要求：
-    - 当前使用 get_current_active_user（已登录用户均可访问）
-    - 作者只能查看自己稿件的操作历史
-    - 审稿人查看时，审稿意见应脱敏（不显示其他审稿人的详细意见）
-    - 编辑/管理员可查看完整历史
-
-    返回数据格式建议：
-    {
-        "manuscript_id": 10001,
-        "history": [
+    for v in versions:
+        history.append(
             {
                 "event_type": "version_submit",
-                "event_time": "2026-04-18T14:00:00",
-                "operator_uid": 5,
-                "operator_name": "张三",
-                "description": "提交了第 2 版修改稿",
+                "event_time": v.submitted_at.isoformat() if v.submitted_at else None,
+                "operator_uid": v.submitted_by_uid,
+                "operator_name": names.get(v.submitted_by_uid, ""),
+                "description": f"提交版本 v{v.version_number}",
                 "details": {
-                    "version_number": 2,
-                    "change_summary": "根据审稿意见修改了实验部分"
-                }
-            },
+                    "version_number": v.version_number,
+                    "change_summary": v.change_summary,
+                },
+            }
+        )
+
+    for d in d_rows:
+        history.append(
             {
                 "event_type": "decision",
-                "event_time": "2026-04-15T09:00:00",
-                "operator_uid": 3,
-                "operator_name": "编辑李四",
-                "description": "初审通过",
+                "event_time": d.decided_at.isoformat() if d.decided_at else None,
+                "operator_uid": d.decided_by_uid,
+                "operator_name": names.get(d.decided_by_uid, ""),
+                "description": d.decision_title,
                 "details": {
-                    "stage": "initial_review",
-                    "decision_type": "accept"
-                }
-            },
-            {
-                "event_type": "review_opinion",
-                "event_time": "2026-04-12T16:30:00",
-                "operator_uid": 8,
-                "operator_name": "审稿人王五",
-                "description": "提交了审稿意见",
-                "details": {
-                    "stage": "peer_review",
-                    "review_round": 1,
-                    "decision": "revision"
-                }
+                    "stage": d.stage,
+                    "decision_type": d.decision_type,
+                    "decision_comments": d.decision_comments,
+                },
             }
-        ]
-    }
+        )
 
-    注意事项：
-    - 四张表的时间线合并排序是核心逻辑，建议统一用 ISO 字符串比较
-    - event_type 建议枚举：version_submit/decision/review_opinion/participant_assign/status_change
-    - 审稿人权限下，其他审稿人的 ReviewOpinion 不应返回 review_comments/review_score 等详情
-    - 可考虑增加 event_type 和时间范围筛选参数
-    - 大量历史记录时建议支持分页
-    """
-    # TODO: 实现操作历史查询
-    return ApiResponse.success(data={"manuscript_id": manuscript_id, "history": []})
+    for o in opinions:
+        if hide_foreign_opinions and o.reviewer_uid != my_uid:
+            history.append(
+                {
+                    "event_type": "review_opinion",
+                    "event_time": o.submitted_at.isoformat()
+                    if o.submitted_at
+                    else None,
+                    "operator_uid": o.reviewer_uid,
+                    "operator_name": names.get(o.reviewer_uid, ""),
+                    "description": "审稿人已提交意见（详情已对审稿人角色隐藏）",
+                    "details": {
+                        "stage": o.stage,
+                        "review_round": o.review_round,
+                    },
+                }
+            )
+        else:
+            history.append(
+                {
+                    "event_type": "review_opinion",
+                    "event_time": o.submitted_at.isoformat()
+                    if o.submitted_at
+                    else None,
+                    "operator_uid": o.reviewer_uid,
+                    "operator_name": names.get(o.reviewer_uid, ""),
+                    "description": "提交了审稿意见",
+                    "details": {
+                        "stage": o.stage,
+                        "review_round": o.review_round,
+                        "decision": o.decision,
+                        "review_score": o.review_score,
+                        "review_comments": o.review_comments,
+                        "recommendations": o.recommendations,
+                    },
+                }
+            )
+
+    for p in participants:
+        history.append(
+            {
+                "event_type": "participant_assign",
+                "event_time": p.assigned_at.isoformat() if p.assigned_at else None,
+                "operator_uid": p.assigned_by_uid,
+                "operator_name": names.get(p.assigned_by_uid, ""),
+                "description": f"分配参与者：{p.role_type}（uid {p.user_uid}）",
+                "details": {
+                    "participant_id": p.participant_id,
+                    "role_type": p.role_type,
+                    "user_uid": p.user_uid,
+                    "is_active": p.is_active,
+                    "completed_at": p.completed_at.isoformat()
+                    if p.completed_at
+                    else None,
+                },
+            }
+        )
+
+    history.sort(key=lambda e: e["event_time"] or "")
+
+    return ApiResponse.success(
+        data={"manuscript_id": manuscript_id, "history": history}
+    )
 
 
 @router.post("/preview-pdf", summary="预览合并后的正式 PDF")
