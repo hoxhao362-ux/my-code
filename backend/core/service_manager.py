@@ -58,7 +58,9 @@ class ServiceManager:
             global_logger.debug("Service", f"服务单例已注册: {service.service_name}")
 
     async def start_all(
-        self, critical_services: list[str] = None, optional_services: list[str] = None
+        self,
+        critical_services: None | list[str] = None,
+        optional_services: None | list[str] = None,
     ):
         """
         触发所有已注册服务的定制化启动计划
