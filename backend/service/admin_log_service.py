@@ -93,8 +93,6 @@ class AdminLogService:
         Returns:
             包含日志总数和日志列表的字典
         """
-        offset = (page - 1) * page_size
-
         async with self._ensure_session(session) as s:
             repo = AdminLogRepository(s)
             total = await repo.count(

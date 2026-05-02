@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -165,6 +165,44 @@ class UserRepository(BaseRepository[User]):
             .all()
         )
         return [dict(r) for r in rows]
+
+    async def list_reviewers_page(
+        self,
+        page: int,
+        page_size: int,
+        *,
+        roles: tuple[str, ...],
+        keyword: Optional[str] = None,
+    ) -> tuple[list[Dict[str, Any]], int]:
+        """
+        可审稿用户分页（管理端选人目录）。
+        """
+        conditions = [
+            User.is_deleted == False,  # noqa: E712
+            User.role.in_(roles),
+        ]
+        if keyword and keyword.strip():
+            kw = f"%{keyword.strip()}%"
+            conditions.append(or_(User.username.ilike(kw), User.email.ilike(kw)))
+
+        total = await self.session.scalar(
+            select(func.count()).select_from(User).where(*conditions)
+        )
+        total_i = int(total or 0)
+        offset = (page - 1) * page_size
+        stmt = (
+            select(User.uid, User.username, User.email, User.role)
+            .where(*conditions)
+            .order_by(User.username.asc())
+            .offset(offset)
+            .limit(page_size)
+        )
+        rows = (await self.session.execute(stmt)).mappings().all()
+        return [dict(r) for r in rows], total_i
+
+    async def count_active_users(self) -> int:
+        """未删除用户总数。"""
+        return await super().count(User.is_deleted == False)  # noqa: E712
 
     async def role_breakdown(self) -> list[Dict[str, Any]]:
         """按角色分组统计"""

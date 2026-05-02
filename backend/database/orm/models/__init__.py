@@ -12,6 +12,7 @@ from database.orm.models.manuscript import (Manuscript, ManuscriptFile,
                                             ManuscriptParticipant,
                                             ManuscriptVersion)
 from database.orm.models.manuscript_info import ManuscriptInfo
+from database.orm.models.notification import Notification
 from database.orm.models.payment_order import PaymentOrder
 from database.orm.models.review_opinion import ReviewOpinion
 from database.orm.models.user import User
@@ -27,6 +28,8 @@ __all__ = [
     "ManuscriptParticipant",
     "ManuscriptFile",
     "ManuscriptInfo",
+    # 通知
+    "Notification",
     # 审稿与决策
     "ReviewOpinion",
     "DecisionRecord",

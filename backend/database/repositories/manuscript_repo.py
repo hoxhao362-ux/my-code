@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from core.enums import ManuscriptStatus
-from database.orm.models.manuscript import Manuscript
+from database.orm.models.manuscript import Manuscript, ManuscriptFile, ManuscriptVersion
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
 from sqlalchemy import func, or_, select
@@ -325,3 +325,34 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
     async def count_deleted(self) -> int:
         """统计已删除稿件数量"""
         return await self.count(Manuscript.is_deleted == True)  # noqa: E712
+
+    async def list_manuscript_files(self, manuscript_id: int) -> List[ManuscriptFile]:
+        """某稿件全部附件，按上传时间倒序。"""
+        stmt = (
+            select(ManuscriptFile)
+            .where(ManuscriptFile.manuscript_id == manuscript_id)
+            .order_by(ManuscriptFile.uploaded_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_manuscript_versions(self, manuscript_id: int) -> List[ManuscriptVersion]:
+        """稿件版本历史，按提交时间正序。"""
+        stmt = (
+            select(ManuscriptVersion)
+            .where(ManuscriptVersion.manuscript_id == manuscript_id)
+            .order_by(ManuscriptVersion.submitted_at.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_latest_manuscript_info_row(self):
+        """最新一条出版扩展信息（按 publication_date 文本降序）。"""
+        from database.orm.models.manuscript_info import ManuscriptInfo
+
+        stmt = (
+            select(ManuscriptInfo)
+            .order_by(ManuscriptInfo.publication_date.desc())
+            .limit(1)
+        )
+        return await self.session.scalar(stmt)

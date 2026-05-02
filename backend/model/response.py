@@ -27,11 +27,14 @@ class ApiResponse(BaseModel):
 
     @classmethod
     def paginated(
-        cls, items: list, total: int, page: int = 1, page_size: int = 20
+        cls,
+        items: list,
+        total: int,
+        page: int = 1,
+        page_size: int = 20,
+        extra_meta: Optional[dict] = None,
     ) -> "ApiResponse":
-        return cls(
-            code=200,
-            message="success",
-            data=items,
-            meta={"total": total, "page": page, "page_size": page_size},
-        )
+        meta: dict = {"total": total, "page": page, "page_size": page_size}
+        if extra_meta:
+            meta = {**meta, **extra_meta}
+        return cls(code=200, message="success", data=items, meta=meta)
