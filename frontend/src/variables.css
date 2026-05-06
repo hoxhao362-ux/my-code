@@ -1,6 +1,11 @@
 :root {
+<<<<<<< HEAD
   /* Lancet Brand Colors */
   --color-primary: #C93737;       /* Lancet Red */
+=======
+  /* Peerex Peer Brand Colors */
+  --color-primary: #C93737;       /* Peerex Peer Red */
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   --color-primary-dark: #B02E2E;
   --color-secondary: #3498db;     /* Process Blue */
   --color-success: #2ecc71;       /* Success Green */

@@ -116,7 +116,7 @@ const toggleUserStatus = (id) => {
     <!-- 页脚 -->
     <footer class="footer" v-if="!embedded">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
       </div>
     </footer>
   </div>

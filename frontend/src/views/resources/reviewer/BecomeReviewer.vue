@@ -160,7 +160,11 @@ const handleSuccessConfirm = () => {
 
     <div class="sidebar-info">
       <h1>Become a Reviewer</h1>
+<<<<<<< HEAD
       <p>Reviewing for the Journal Submission Platform is a prestigious role that allows you to contribute to the scientific community. As a reviewer, you will:</p>
+=======
+      <p>Reviewing for the Peerex Peer is a prestigious role that allows you to contribute to the scientific community. As a reviewer, you will:</p>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       <ul>
         <li>Stay updated with the latest research in your field.</li>
         <li>Gain recognition for your service (Publons/Web of Science).</li>

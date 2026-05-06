@@ -2,8 +2,13 @@
 import { ref } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+<<<<<<< HEAD
+=======
+import { useI18n } from 'vue-i18n'
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 import Navigation from '../../../components/Navigation.vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const user = ref(userStore.user)
@@ -14,14 +19,15 @@ const notificationConfig = ref({
   emailTemplates: {
     submissionSuccess: {
       subject: '投稿成功通知',
-      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已成功提交，我们将尽快安排审核。\n\n投稿编号：{{submissionId}}\n投稿日期：{{submissionDate}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已成功提交，我们将尽快安排审核。\n\n投稿编号：{{submissionId}}\n投稿日期：{{submissionDate}}\n\n感谢您的投稿！\n\nPeerex Peer'
     },
     reviewResult: {
       subject: '审核结果通知',
-      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已完成审核，结果如下：\n\n审核结果：{{result}}\n审核意见：{{comments}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已完成审核，结果如下：\n\n审核结果：{{result}}\n审核意见：{{comments}}\n\n感谢您的投稿！\n\nPeerex Peer'
     },
     statusUpdate: {
       subject: '稿件状态更新通知',
+<<<<<<< HEAD
       content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\n期刊投稿平台'
     },
     reviewerInvitation: {
@@ -31,19 +37,30 @@ const notificationConfig = ref({
     recommendationResult: {
       subject: 'Update on Recommended Reviewer for {{title}}',
       content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
+=======
+      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\nPeerex Peer'
+    },
+    reviewerInvitation: {
+      subject: 'Invitation to Review: {{title}}',
+      content: 'Dear Dr. {{reviewerName}},\n\nWe would like to invite you to review the manuscript entitled "{{title}}" (ID: {{submissionId}}) for our journal.\n\nAbstract:\n{{abstract}}\n\nPlease click the link below to accept or decline this invitation:\n{{link}}\n\nSincerely,\n\nThe Editorial Office\nPeerex Peer'
+    },
+    recommendationResult: {
+      subject: 'Update on Recommended Reviewer for {{title}}',
+      content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nPeerex Peer'
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     }
   },
   
   // 短信模板
   smsTemplates: {
     submissionSuccess: {
-      content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》已成功提交，投稿编号：{{submissionId}}，我们将尽快安排审核。'
+      content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》已成功提交，投稿编号：{{submissionId}}，我们将尽快安排审核。'
     },
     reviewResult: {
-      content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》审核结果：{{result}}，详情请查看邮件。'
+      content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》审核结果：{{result}}，详情请查看邮件。'
     },
     statusUpdate: {
-      content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》状态已更新为{{status}}，详情请查看邮件。'
+      content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》状态已更新为{{status}}，详情请查看邮件。'
     }
   },
   
@@ -74,7 +91,11 @@ const isEditing = ref(false)
 // 添加公告
 const addAnnouncement = () => {
   if (!newAnnouncement.value.title || !newAnnouncement.value.content) {
+<<<<<<< HEAD
     toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
+=======
+    toastStore.add({ message: t('notification.actions.incomplete'), type: 'warning' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     return
   }
   
@@ -99,7 +120,11 @@ const addAnnouncement = () => {
   // 保存到userStore，以便在主页显示
   userStore.setAnnouncements(announcements.value)
   
+<<<<<<< HEAD
   toastStore.add({ message: '公告添加成功！', type: 'success' })
+=======
+  toastStore.add({ message: t('notification.actions.addSuccess'), type: 'success' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 编辑公告
@@ -111,7 +136,11 @@ const editAnnouncement = (announcement) => {
 // 保存编辑的公告
 const saveEditAnnouncement = () => {
   if (!editingAnnouncement.value.title || !editingAnnouncement.value.content) {
+<<<<<<< HEAD
     toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
+=======
+    toastStore.add({ message: t('notification.actions.incomplete'), type: 'warning' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     return
   }
   
@@ -122,7 +151,11 @@ const saveEditAnnouncement = () => {
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
+<<<<<<< HEAD
     toastStore.add({ message: '公告编辑成功！', type: 'success' })
+=======
+    toastStore.add({ message: t('notification.actions.editSuccess'), type: 'success' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     cancelEditAnnouncement()
   }
 }
@@ -135,51 +168,68 @@ const cancelEditAnnouncement = () => {
 
 // 删除公告
 const deleteAnnouncement = (id) => {
-  if (confirm('确定要删除这条公告吗？')) {
+  if (confirm(t('notification.announcement.actions.confirmDelete'))) {
     announcements.value = announcements.value.filter(a => a.id !== id)
     
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
+<<<<<<< HEAD
     toastStore.add({ message: '公告删除成功！', type: 'success' })
+=======
+    toastStore.add({ message: t('notification.actions.deleteSuccess'), type: 'success' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   }
 }
 
 // 保存配置
 const saveConfig = () => {
   // 这里应该保存配置到服务器，目前模拟保存
+<<<<<<< HEAD
   toastStore.add({ message: '通知配置已保存！', type: 'success' })
+=======
+  toastStore.add({ message: t('notification.actions.saveSuccess'), type: 'success' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 重置配置
 const resetConfig = () => {
+  // 这里保留原始重置逻辑，因为是Mock
   notificationConfig.value = {
     // 邮件模板
     emailTemplates: {
       submissionSuccess: {
         subject: '投稿成功通知',
-        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已成功提交，我们将尽快安排审核。\n\n投稿编号：{{submissionId}}\n投稿日期：{{submissionDate}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已成功提交，我们将尽快安排审核。\n\n投稿编号：{{submissionId}}\n投稿日期：{{submissionDate}}\n\n感谢您的投稿！\n\nPeerex Peer'
       },
       reviewResult: {
         subject: '审核结果通知',
-        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已完成审核，结果如下：\n\n审核结果：{{result}}\n审核意见：{{comments}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》已完成审核，结果如下：\n\n审核结果：{{result}}\n审核意见：{{comments}}\n\n感谢您的投稿！\n\nPeerex Peer'
       },
       statusUpdate: {
         subject: '稿件状态更新通知',
-        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\n期刊投稿平台'
+        content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\nPeerex Peer'
+      },
+      reviewerInvitation: {
+        subject: 'Invitation to Review: {{title}}',
+        content: 'Dear Dr. {{reviewerName}},\n\nWe would like to invite you to review the manuscript entitled "{{title}}" (ID: {{submissionId}}) for our journal.\n\nAbstract:\n{{abstract}}\n\nPlease click the link below to accept or decline this invitation:\n{{link}}\n\nSincerely,\n\nThe Editorial Office\nPeerex Peer'
+      },
+      recommendationResult: {
+        subject: 'Update on Recommended Reviewer for {{title}}',
+        content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nPeerex Peer'
       }
     },
     
     // 短信模板
     smsTemplates: {
       submissionSuccess: {
-        content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》已成功提交，投稿编号：{{submissionId}}，我们将尽快安排审核。'
+        content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》已成功提交，投稿编号：{{submissionId}}，我们将尽快安排审核。'
       },
       reviewResult: {
-        content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》审核结果：{{result}}，详情请查看邮件。'
+        content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》审核结果：{{result}}，详情请查看邮件。'
       },
       statusUpdate: {
-        content: '【期刊投稿平台】尊敬的{{username}}，您的投稿《{{title}}》状态已更新为{{status}}，详情请查看邮件。'
+        content: '【Peerex Peer】尊敬的{{username}}，您的投稿《{{title}}》状态已更新为{{status}}，详情请查看邮件。'
       }
     },
     
@@ -193,7 +243,11 @@ const resetConfig = () => {
       reviewInterval: 7 // 天
     }
   }
+<<<<<<< HEAD
   toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
+=======
+  toastStore.add({ message: t('notification.actions.resetSuccess'), type: 'success' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 发送测试通知
@@ -216,21 +270,21 @@ const sendTestNotification = () => {
     <!-- 通知配置内容 -->
     <main class="content">
       <div class="header">
-        <h1>系统设置 - 通知设置</h1>
-        <p class="subtitle">管理平台的通知模板和提醒规则</p>
+        <h1>{{ $t('notification.title') }}</h1>
+        <p class="subtitle">{{ $t('notification.subtitle') }}</p>
       </div>
 
       <section class="config-section">
         <div class="config-form-container">
           <form class="config-form">
             <div class="form-section">
-              <h3>提醒规则</h3>
+              <h3>{{ $t('notification.reminderRules.title') }}</h3>
               
               <div class="settings-grid">
                 <div class="setting-item">
                   <div class="setting-info">
-                    <h4>启用邮件通知</h4>
-                    <p class="setting-description">是否通过邮件发送通知</p>
+                    <h4>{{ $t('notification.reminderRules.enableEmail') }}</h4>
+                    <p class="setting-description">{{ $t('notification.reminderRules.enableEmailDesc') }}</p>
                   </div>
                   <div class="setting-control">
                     <label class="toggle-switch">
@@ -245,8 +299,8 @@ const sendTestNotification = () => {
                 
                 <div class="setting-item">
                   <div class="setting-info">
-                    <h4>启用短信通知</h4>
-                    <p class="setting-description">是否通过短信发送通知</p>
+                    <h4>{{ $t('notification.reminderRules.enableSMS') }}</h4>
+                    <p class="setting-description">{{ $t('notification.reminderRules.enableSMSDesc') }}</p>
                   </div>
                   <div class="setting-control">
                     <label class="toggle-switch">
@@ -262,125 +316,175 @@ const sendTestNotification = () => {
               
               <div class="form-row">
                 <div class="form-group">
-                  <label>投稿后通知时间（小时）</label>
+                  <label>{{ $t('notification.reminderRules.submissionReminder') }}</label>
                   <input 
                     type="number" 
                     v-model="notificationConfig.reminderRules.submissionReminder" 
                     class="form-control"
                     min="0"
-                    placeholder="请输入通知时间"
+                    :placeholder="$t('notification.reminderRules.placeholder')"
                   >
                 </div>
                 
                 <div class="form-group">
-                  <label>审核后通知时间（小时）</label>
+                  <label>{{ $t('notification.reminderRules.reviewReminder') }}</label>
                   <input 
                     type="number" 
                     v-model="notificationConfig.reminderRules.reviewReminder" 
                     class="form-control"
                     min="0"
-                    placeholder="请输入通知时间"
+                    :placeholder="$t('notification.reminderRules.placeholder')"
                   >
                 </div>
                 
                 <div class="form-group">
-                  <label>状态更新后通知时间（小时）</label>
+                  <label>{{ $t('notification.reminderRules.statusUpdateReminder') }}</label>
                   <input 
                     type="number" 
                     v-model="notificationConfig.reminderRules.statusUpdateReminder" 
                     class="form-control"
                     min="0"
-                    placeholder="请输入通知时间"
+                    :placeholder="$t('notification.reminderRules.placeholder')"
                   >
                 </div>
                 
                 <div class="form-group">
-                  <label>审核周期提醒（天）</label>
+                  <label>{{ $t('notification.reminderRules.reviewInterval') }}</label>
                   <input 
                     type="number" 
                     v-model="notificationConfig.reminderRules.reviewInterval" 
                     class="form-control"
                     min="1"
-                    placeholder="请输入审核周期"
+                    :placeholder="$t('notification.reminderRules.placeholder')"
                   >
                 </div>
               </div>
             </div>
             
             <div class="form-section">
-              <h3>邮件模板</h3>
+              <h3>{{ $t('notification.emailTemplates.title') }}</h3>
               
               <div class="template-group">
-                <h4>投稿成功通知</h4>
+                <h4>{{ $t('notification.emailTemplates.submissionSuccess') }}</h4>
                 <div class="form-group">
-                  <label>邮件主题</label>
+                  <label>{{ $t('notification.emailTemplates.subject') }}</label>
                   <input 
                     type="text" 
                     v-model="notificationConfig.emailTemplates.submissionSuccess.subject" 
                     class="form-control"
-                    placeholder="请输入邮件主题"
+                    :placeholder="$t('notification.emailTemplates.placeholderSubject')"
                   >
                 </div>
                 <div class="form-group">
-                  <label>邮件内容</label>
+                  <label>{{ $t('notification.emailTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.emailTemplates.submissionSuccess.content" 
                     class="form-control textarea-large"
                     rows="8"
-                    placeholder="请输入邮件内容"
+                    :placeholder="$t('notification.emailTemplates.placeholderContent')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{submissionDate}}（投稿日期）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{submissionId}}, {{submissionDate}}</p>
                   </div>
                 </div>
               </div>
               
               <div class="template-group">
-                <h4>审核结果通知</h4>
+                <h4>{{ $t('notification.emailTemplates.reviewResult') }}</h4>
                 <div class="form-group">
-                  <label>邮件主题</label>
+                  <label>{{ $t('notification.emailTemplates.subject') }}</label>
                   <input 
                     type="text" 
                     v-model="notificationConfig.emailTemplates.reviewResult.subject" 
                     class="form-control"
-                    placeholder="请输入邮件主题"
+                    :placeholder="$t('notification.emailTemplates.placeholderSubject')"
                   >
                 </div>
                 <div class="form-group">
-                  <label>邮件内容</label>
+                  <label>{{ $t('notification.emailTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.emailTemplates.reviewResult.content" 
                     class="form-control textarea-large"
                     rows="8"
-                    placeholder="请输入邮件内容"
+                    :placeholder="$t('notification.emailTemplates.placeholderContent')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{result}}（审核结果）、{{comments}}（审核意见）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{result}}, {{comments}}</p>
                   </div>
                 </div>
               </div>
               
               <div class="template-group">
-                <h4>状态更新通知</h4>
+                <h4>{{ $t('notification.emailTemplates.statusUpdate') }}</h4>
                 <div class="form-group">
-                  <label>邮件主题</label>
+                  <label>{{ $t('notification.emailTemplates.subject') }}</label>
                   <input 
                     type="text" 
                     v-model="notificationConfig.emailTemplates.statusUpdate.subject" 
                     class="form-control"
-                    placeholder="请输入邮件主题"
+                    :placeholder="$t('notification.emailTemplates.placeholderSubject')"
                   >
                 </div>
                 <div class="form-group">
-                  <label>邮件内容</label>
+                  <label>{{ $t('notification.emailTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.emailTemplates.statusUpdate.content" 
                     class="form-control textarea-large"
                     rows="8"
-                    placeholder="请输入邮件内容"
+                    :placeholder="$t('notification.emailTemplates.placeholderContent')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{status}}（当前状态）、{{updateTime}}（更新时间）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{status}}, {{updateTime}}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="template-group">
+                <h4>{{ $t('notification.emailTemplates.reviewerInvitation') }}</h4>
+                <div class="form-group">
+                  <label>{{ $t('notification.emailTemplates.subject') }}</label>
+                  <input 
+                    type="text" 
+                    v-model="notificationConfig.emailTemplates.reviewerInvitation.subject" 
+                    class="form-control"
+                    :placeholder="$t('notification.emailTemplates.placeholderSubject')"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>{{ $t('notification.emailTemplates.content') }}</label>
+                  <textarea 
+                    v-model="notificationConfig.emailTemplates.reviewerInvitation.content" 
+                    class="form-control textarea-large"
+                    rows="8"
+                    :placeholder="$t('notification.emailTemplates.placeholderContent')"
+                  ></textarea>
+                  <div class="template-tips">
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{reviewerName}}, {{title}}, {{submissionId}}, {{abstract}}, {{link}}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="template-group">
+                <h4>{{ $t('notification.emailTemplates.recommendationResult') }}</h4>
+                <div class="form-group">
+                  <label>{{ $t('notification.emailTemplates.subject') }}</label>
+                  <input 
+                    type="text" 
+                    v-model="notificationConfig.emailTemplates.recommendationResult.subject" 
+                    class="form-control"
+                    :placeholder="$t('notification.emailTemplates.placeholderSubject')"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>{{ $t('notification.emailTemplates.content') }}</label>
+                  <textarea 
+                    v-model="notificationConfig.emailTemplates.recommendationResult.content" 
+                    class="form-control textarea-large"
+                    rows="8"
+                    :placeholder="$t('notification.emailTemplates.placeholderContent')"
+                  ></textarea>
+                  <div class="template-tips">
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{authorName}}, {{reviewerName}}, {{title}}, {{submissionId}}, {{result}}, {{reason}}</p>
                   </div>
                 </div>
               </div>
@@ -437,52 +541,52 @@ const sendTestNotification = () => {
             </div>
             
             <div class="form-section">
-              <h3>短信模板</h3>
+              <h3>{{ $t('notification.smsTemplates.title') }}</h3>
               
               <div class="template-group">
-                <h4>投稿成功通知</h4>
+                <h4>{{ $t('notification.smsTemplates.submissionSuccess') }}</h4>
                 <div class="form-group">
-                  <label>短信内容</label>
+                  <label>{{ $t('notification.smsTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.smsTemplates.submissionSuccess.content" 
                     class="form-control textarea-medium"
                     rows="3"
-                    placeholder="请输入短信内容"
+                    :placeholder="$t('notification.smsTemplates.placeholder')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{submissionId}}</p>
                   </div>
                 </div>
               </div>
               
               <div class="template-group">
-                <h4>审核结果通知</h4>
+                <h4>{{ $t('notification.smsTemplates.reviewResult') }}</h4>
                 <div class="form-group">
-                  <label>短信内容</label>
+                  <label>{{ $t('notification.smsTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.smsTemplates.reviewResult.content" 
                     class="form-control textarea-medium"
                     rows="3"
-                    placeholder="请输入短信内容"
+                    :placeholder="$t('notification.smsTemplates.placeholder')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{result}}（审核结果）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{result}}</p>
                   </div>
                 </div>
               </div>
               
               <div class="template-group">
-                <h4>状态更新通知</h4>
+                <h4>{{ $t('notification.smsTemplates.statusUpdate') }}</h4>
                 <div class="form-group">
-                  <label>短信内容</label>
+                  <label>{{ $t('notification.smsTemplates.content') }}</label>
                   <textarea 
                     v-model="notificationConfig.smsTemplates.statusUpdate.content" 
                     class="form-control textarea-medium"
                     rows="3"
-                    placeholder="请输入短信内容"
+                    :placeholder="$t('notification.smsTemplates.placeholder')"
                   ></textarea>
                   <div class="template-tips">
-                    <p>可用变量：{{username}}（用户名）、{{title}}（稿件标题）、{{status}}（当前状态）</p>
+                    <p>{{ $t('notification.emailTemplates.tips') }} {{username}}, {{title}}, {{status}}</p>
                   </div>
                 </div>
               </div>
@@ -490,73 +594,73 @@ const sendTestNotification = () => {
             
             <!-- 公告设置部分 -->
             <div class="form-section">
-              <h3>公告设置</h3>
-              <p class="section-description">管理平台的公告信息，发布的公告将在主页展示</p>
+              <h3>{{ $t('notification.announcement.title') }}</h3>
+              <p class="section-description">{{ $t('notification.announcement.desc') }}</p>
               
               <!-- 新增公告表单 -->
               <div class="announcement-form-container">
-                <h4>新增公告</h4>
+                <h4>{{ $t('notification.announcement.addTitle') }}</h4>
                 <div class="announcement-form">
                   <div class="form-row">
                     <div class="form-group">
-                      <label>公告标题</label>
+                      <label>{{ $t('notification.announcement.form.title') }}</label>
                       <input 
                         type="text" 
                         v-model="newAnnouncement.title" 
                         class="form-control"
-                        placeholder="请输入公告标题"
+                        :placeholder="$t('notification.announcement.form.titlePlaceholder')"
                       >
                     </div>
                   </div>
                   <div class="form-group">
-                    <label>公告内容</label>
+                    <label>{{ $t('notification.announcement.form.content') }}</label>
                     <textarea 
                       v-model="newAnnouncement.content" 
                       class="form-control textarea-large"
                       rows="5"
-                      placeholder="请输入公告内容"
+                      :placeholder="$t('notification.announcement.form.contentPlaceholder')"
                     ></textarea>
                   </div>
                   <div class="form-actions-small">
-                    <button type="button" class="btn btn-save" @click="addAnnouncement">添加公告</button>
+                    <button type="button" class="btn btn-save" @click="addAnnouncement">{{ $t('notification.announcement.actions.add') }}</button>
                   </div>
                 </div>
               </div>
               
               <!-- 编辑公告表单 -->
               <div class="announcement-form-container" v-if="isEditing">
-                <h4>编辑公告</h4>
+                <h4>{{ $t('notification.announcement.editTitle') }}</h4>
                 <div class="announcement-form">
                   <div class="form-row">
                     <div class="form-group">
-                      <label>公告标题</label>
+                      <label>{{ $t('notification.announcement.form.title') }}</label>
                       <input 
                         type="text" 
                         v-model="editingAnnouncement.title" 
                         class="form-control"
-                        placeholder="请输入公告标题"
+                        :placeholder="$t('notification.announcement.form.titlePlaceholder')"
                       >
                     </div>
                   </div>
                   <div class="form-group">
-                    <label>公告内容</label>
+                    <label>{{ $t('notification.announcement.form.content') }}</label>
                     <textarea 
                       v-model="editingAnnouncement.content" 
                       class="form-control textarea-large"
                       rows="5"
-                      placeholder="请输入公告内容"
+                      :placeholder="$t('notification.announcement.form.contentPlaceholder')"
                     ></textarea>
                   </div>
                   <div class="form-actions-small">
-                    <button type="button" class="btn btn-reset" @click="cancelEditAnnouncement">取消</button>
-                    <button type="button" class="btn btn-save" @click="saveEditAnnouncement">保存编辑</button>
+                    <button type="button" class="btn btn-reset" @click="cancelEditAnnouncement">{{ $t('notification.announcement.actions.cancel') }}</button>
+                    <button type="button" class="btn btn-save" @click="saveEditAnnouncement">{{ $t('notification.announcement.actions.saveEdit') }}</button>
                   </div>
                 </div>
               </div>
               
               <!-- 公告列表 -->
               <div class="announcements-list-container">
-                <h4>公告列表</h4>
+                <h4>{{ $t('notification.announcement.listTitle') }}</h4>
                 <div class="announcements-list">
                   <div 
                     v-for="announcement in announcements" 
@@ -576,28 +680,28 @@ const sendTestNotification = () => {
                         class="btn btn-edit-small" 
                         @click="editAnnouncement(announcement)"
                       >
-                        编辑
+                        {{ $t('notification.announcement.actions.edit') }}
                       </button>
                       <button 
                         type="button" 
                         class="btn btn-delete-small" 
                         @click="deleteAnnouncement(announcement.id)"
                       >
-                        删除
+                        {{ $t('notification.announcement.actions.delete') }}
                       </button>
                     </div>
                   </div>
                   
                   <div v-if="announcements.length === 0" class="empty-announcements">
-                    <p>暂无公告，请添加第一条公告</p>
+                    <p>{{ $t('notification.announcement.empty') }}</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div class="form-actions">
-              <button type="button" class="btn btn-reset" @click="resetConfig">重置</button>
-              <button type="button" class="btn btn-save" @click="saveConfig">保存配置</button>
+              <button type="button" class="btn btn-reset" @click="resetConfig">{{ $t('notification.actions.reset') }}</button>
+              <button type="button" class="btn btn-save" @click="saveConfig">{{ $t('notification.actions.save') }}</button>
             </div>
           </form>
         </div>
@@ -607,7 +711,7 @@ const sendTestNotification = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
       </div>
     </footer>
   </div>

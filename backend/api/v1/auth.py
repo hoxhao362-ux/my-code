@@ -7,7 +7,10 @@
 from datetime import datetime
 
 from api import dependencies as deps
+<<<<<<< HEAD
 from core.config import config
+=======
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from core.enums import UserRole
 from database.dependencies import get_db_session
 from database.orm.models.user import User
@@ -92,11 +95,16 @@ async def register(
         global_logger.warning("Auth", f"邮箱已被注册 - email: {request.email}")
         raise HTTPException(status_code=400, detail="邮箱已被注册")
 
+<<<<<<< HEAD
     # 确定用户角色（基于邀请码；无邀请码时使用配置默认角色）
     default_role = config.get("user.registration.default_role", UserRole.AUTHOR.value)
     if not UserRole.is_valid(default_role):
         default_role = UserRole.AUTHOR.value
     user_role = default_role
+=======
+    # 确定用户角色（基于邀请码，默认 author）
+    user_role = UserRole.AUTHOR.value  # 默认角色为 author
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     if request.invite_code:
         # 验证邀请码
         validation_result = await invitation_service.validate_invitation_code(
@@ -164,6 +172,7 @@ async def register(
         )
 
         # 设置用户在线状态
+<<<<<<< HEAD
         hours_invite = float(
             config.get("user.invitation.register_session_expire_hours_with_invite", 24)
         )
@@ -173,6 +182,11 @@ async def register(
         expire_time = int(
             hours_invite * 3600 if request.invite_code else hours_plain * 3600
         )
+=======
+        expire_time = (
+            3600 * 24 if request.invite_code else 3600
+        )  # 使用邀请码注册记住 30 天
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         await redis_service.set_user_online(
             user_id=new_user.uid, token=token, expire_time=expire_time
         )

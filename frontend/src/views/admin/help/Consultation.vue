@@ -11,7 +11,7 @@
         <h3>联系方式</h3>
         <div class="info-item">
           <span class="info-label">客服邮箱：</span>
-          <span class="info-value">support@journalplatform.com</span>
+          <span class="info-value">support@peerexpeer.com</span>
         </div>
         <div class="info-item">
           <span class="info-label">客服电话：</span>

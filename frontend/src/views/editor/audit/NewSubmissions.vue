@@ -3,6 +3,10 @@ import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+<<<<<<< HEAD
+=======
+import { usePlatformStore } from '../../../stores/platform'
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -329,6 +333,7 @@ const confirmScreen = async () => {
 }
 
 // --- Suggest Transfer Logic ---
+<<<<<<< HEAD
 const transferForm = reactive({
   reason: '',
   targetJournal: 'Journal of Medical Science',
@@ -346,6 +351,40 @@ const openTransferModal = (journal) => {
       author: journal.author,
       title: journal.title,
       targetJournal: 'Journal of Medical Science',
+=======
+const platformStore = usePlatformStore()
+onMounted(() => {
+  if (platformStore.journals.length === 0) {
+    platformStore.fetchJournals()
+  }
+})
+
+const transferForm = reactive({
+  reason: '',
+  targetJournal: '',
+  letter: ''
+})
+
+const transferJournals = computed(() => {
+  // Filter out the current journal if we can determine it
+  // In a real app, you would filter by current platform context
+  const currentJournalId = 'lancet' // Mock: Assuming we are currently in 'lancet'
+  return platformStore.journals
+    .filter(j => j.id !== currentJournalId)
+    .map(j => ({ id: j.id, name: j.name }))
+})
+
+const openTransferModal = (journal) => {
+  currentJournal.value = journal
+  const defaultTarget = transferJournals.value.length > 0 ? transferJournals.value[0].name : 'Journal of Medical Science'
+  Object.assign(transferForm, {
+    reason: '',
+    targetJournal: defaultTarget,
+    letter: t('editor.audit.newSubmissions.modals.transfer.letterTemplate', {
+      author: journal.author,
+      title: journal.title,
+      targetJournal: defaultTarget,
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       journalName: t('common.journalName')
     })
   })
@@ -360,8 +399,41 @@ const sendTransfer = () => {
 
   const updatedJournal = { ...currentJournal.value }
   updatedJournal.status = 'transfer_suggested'
+<<<<<<< HEAD
   userStore.updateJournal(updatedJournal)
 
+=======
+  
+  // Find target journal ID based on name
+  const targetJournalObj = platformStore.journals.find(j => j.name === transferForm.targetJournal)
+  updatedJournal.transferTo = targetJournalObj ? targetJournalObj.id : 'unknown'
+  updatedJournal.transferReason = transferForm.reason
+
+  userStore.updateJournal(updatedJournal)
+
+  // Add system log
+  userStore.addSystemLog({
+    type: 'operation',
+    user: user.value?.username || 'editor',
+    action: 'Transfer Suggested',
+    target: `Manuscript ID: ${updatedJournal.id} to ${transferForm.targetJournal}`
+  })
+
+  // Add notification for author
+  const newNotification = {
+    id: Date.now(),
+    type: 'transfer_suggested',
+    title: 'Transfer Suggestion',
+    message: `The editor has suggested transferring your manuscript "${updatedJournal.title}" to ${transferForm.targetJournal}. Please review it in your dashboard.`,
+    date: new Date().toISOString().split('T')[0],
+    read: false,
+    manuscriptId: updatedJournal.id,
+    targetUser: updatedJournal.author
+  }
+  userStore.notifications.unshift(newNotification)
+  localStorage.setItem('notifications', JSON.stringify(userStore.notifications))
+
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   showTransferModal.value = false
   toastStore.add({ message: t('editor.audit.newSubmissions.alerts.transferSent'), type: 'success' })
 }
@@ -407,6 +479,14 @@ const confirmReject = () => {
   toastStore.add({ message: t('editor.audit.newSubmissions.alerts.rejectConfirmed'), type: 'success' })
 }
 
+<<<<<<< HEAD
+=======
+const getJournalName = (id) => {
+  const journal = platformStore.journals.find(j => j.id === id)
+  return journal ? journal.name : id
+}
+
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 const viewDetail = (id) => {
   router.push(`/admin/journal/${id}`)
 }
@@ -430,6 +510,10 @@ const viewDetail = (id) => {
               <span><strong>{{ t('editor.audit.newSubmissions.columns.author') }}:</strong> {{ journal.author }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ journal.date }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.module') }}:</strong> {{ journal.module }}</span>
+<<<<<<< HEAD
+=======
+              <span v-if="journal.transferredFrom" class="transfer-badge">Transferred from: {{ getJournalName(journal.transferredFrom) }}</span>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             </div>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract), 200) }}</p>
             <div class="materials-links">
@@ -556,7 +640,11 @@ const viewDetail = (id) => {
           <div class="modal-section">
             <label class="input-label">{{ t('editor.audit.newSubmissions.modals.transfer.journalLabel') }}</label>
             <select v-model="transferForm.targetJournal" class="jp-select">
+<<<<<<< HEAD
               <option v-for="j in transferJournals" :key="j" :value="j">{{ j }}</option>
+=======
+              <option v-for="j in transferJournals" :key="j.id" :value="j.name">{{ j.name }}</option>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             </select>
           </div>
 
@@ -905,6 +993,15 @@ const viewDetail = (id) => {
 .materials-links {
   display: flex;
   gap: 1rem;
+}
+
+.transfer-badge {
+  background-color: #f39c12;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: bold;
 }
 .link {
   color: #0056B3;

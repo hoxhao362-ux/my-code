@@ -611,7 +611,11 @@ ${link}
 Sincerely,
 
 The Editorial Office
+<<<<<<< HEAD
 ${userStore.basicConfig?.platformName || 'Journal Platform'}`
+=======
+${userStore.basicConfig?.platformName || 'Peerex Peer'}`
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   }
   
   showInviteModal.value = true

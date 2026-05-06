@@ -175,7 +175,11 @@ onUnmounted(() => {
       <div id="contact" class="section">
         <h1>{{ t('about.editorialBoard.contact') }}</h1>
         <div class="contact-info">
+<<<<<<< HEAD
           <p><strong>{{ t('about.editorialBoard.email') }}:</strong> editorial@journalplatform.com</p>
+=======
+          <p><strong>{{ t('about.editorialBoard.email') }}:</strong> editorial@peerexpeer.com</p>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
           <p><strong>{{ t('about.editorialBoard.address') }}:</strong> {{ t('about.editorialBoard.addressValue') }}</p>
           <p><strong>{{ t('about.editorialBoard.officeHours') }}:</strong> {{ t('about.editorialBoard.officeHoursValue') }}</p>
         </div>

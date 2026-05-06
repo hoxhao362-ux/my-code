@@ -7,6 +7,7 @@
 from typing import Optional
 
 from api import dependencies as deps
+<<<<<<< HEAD
 from core.config import config
 from core.enums import ManuscriptStatus
 from database.dependencies import get_db_session
@@ -14,6 +15,11 @@ from database.orm.models.manuscript import Manuscript
 from database.repositories.editorial_board_repo import EditorialBoardRepository
 from database.repositories.manuscript_repo import ManuscriptRepository
 from database.repositories.user_repo import UserRepository
+=======
+from core.enums import ManuscriptStatus
+from database.dependencies import get_db_session
+from database.repositories.manuscript_repo import ManuscriptRepository
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from fastapi import APIRouter, Depends, HTTPException, Query
 from model.manuscript import ArticleDetailDTO, ArticleListItemDTO
 from model.response import ApiResponse
@@ -55,6 +61,10 @@ async def get_journal_list(
     """
     global_logger.debug("Public", f"获取期刊列表 - page: {page}, subject: {subject}")
 
+<<<<<<< HEAD
+=======
+    # 通过 Repository 查询统计数据
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     repo = ManuscriptRepository(session)
     published_count = await repo.count(
         Manuscript.status == ManuscriptStatus.PUBLISHED.value,
@@ -64,6 +74,7 @@ async def get_journal_list(
         status=ManuscriptStatus.PUBLISHED.value
     )
 
+<<<<<<< HEAD
     journal_name = config.get("journal.display.name", "期刊平台")
     journal_desc = config.get("journal.display.description", "")
     journal_version = config.get("journal.display.version", "2.0.0")
@@ -74,6 +85,14 @@ async def get_journal_list(
             "name": journal_name,
             "description": journal_desc,
             "version": journal_version,
+=======
+    # 当前系统为单期刊模式，返回期刊基本信息
+    journals = [
+        {
+            "id": 1,
+            "name": "期刊平台",
+            "description": "学术期刊投稿平台",
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             "published_articles": published_count,
             "subjects": list(subject_stats.keys()),
             "subject_statistics": subject_stats,
@@ -204,6 +223,7 @@ async def search_articles(
 
 
 @router.get("/info", summary="获取期刊信息")
+<<<<<<< HEAD
 async def get_journal_info(session: AsyncSession = Depends(get_db_session)):
     """门户期刊信息：配置中的展示字段 + 运行统计 + 最近期号（如有）。"""
     m_repo = ManuscriptRepository(session)
@@ -246,3 +266,74 @@ async def get_journal_info(session: AsyncSession = Depends(get_db_session)):
 
     global_logger.debug("Public", "返回 /public/info")
     return ApiResponse.success(data=data)
+=======
+async def get_journal_info():
+    """
+    获取期刊基本信息
+
+    TODO: 从数据库或配置读取期刊信息
+
+    建议实现流程：
+    1. 从 configs/journal.toml 配置文件读取期刊名称、描述、ISSN、出版周期等基础信息
+    2. 从数据库统计期刊的运营数据：已发表论文总数、本月新发表论文数、注册用户总数、编委人数
+    3. 查询 ManuscriptInfo 表获取最新期号信息（volume/issue/issue_number）
+    4. 查询 EditorialBoard 表获取主编和编委总数
+    5. 组装完整的期刊信息返回
+
+    所需 ORM 模型：
+    - Manuscript (database/orm/models/manuscript.py) — 稿件主表，统计已发表论文数
+    - ManuscriptInfo (database/orm/models/manuscript_info.py) — 稿件出版信息扩展表，获取最新期号/卷号
+    - EditorialBoard (database/orm/models/editorial.py) — 编委会成员表，统计编委人数
+    - User (database/orm/models/user.py) — 用户表，统计注册用户数
+
+    建议 Repository 方法：
+    - ManuscriptRepository.count_by_status(status='published') — 统计已发表论文总数
+    - ManuscriptInfoRepository.get_latest_issue() — 获取最新期号信息
+    - EditorialBoardRepository.count_active() — 统计在职编委人数
+    - UserRepository.count_all() — 统计注册用户总数
+
+    建议 Service 调用链：
+    API → config["journal"]] 读取基础信息
+        → ManuscriptRepository.count_by_status() 统计论文数
+        → ManuscriptInfoRepository.get_latest_issue() 获取期号
+        → EditorialBoardRepository.count_active() 统计编委
+        → 组装返回
+
+    权限要求：
+    - 当前无需登录（公开接口），符合要求
+    - 期刊信息属于公开信息，无需鉴权
+
+    返回数据格式建议：
+    {
+        "name": "XX大学学报",
+        "description": "XX大学主办的综合性学术期刊",
+        "issn": "1000-1234",
+        "publisher": "XX大学出版社",
+        "frequency": "双月刊",
+        "version": "1.0.0",
+        "statistics": {
+            "published_articles": 156,
+            "monthly_new_articles": 5,
+            "registered_users": 320,
+            "editorial_board_members": 12
+        },
+        "latest_issue": {
+            "volume": "2026",
+            "issue": "2",
+            "issue_number": "J2026-02",
+            "publication_date": "2026-03-01"
+        }
+    }
+
+    注意事项：
+    - 当前系统为单期刊模式，未来如需多期刊支持，需增加期刊 ID 参数
+    - 期刊基础信息建议从配置文件读取而非硬编码，便于动态修改
+    - 统计数据可缓存到 Redis（TTL 5分钟），避免每次请求都查数据库
+    - 此接口为高频访问接口，需注意性能优化
+    - configs/journal.toml 可能需要新增字段（如 issn/publisher/frequency）
+    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
+    """
+    return ApiResponse.success(
+        data={"name": "期刊平台", "description": "学术期刊投稿平台", "version": "1.0.0"}
+    )
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea

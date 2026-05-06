@@ -2,13 +2,23 @@
 import { ref, computed } from 'vue'
 import { truncateHtml } from '../utils/helpers.js'
 import { useToastStore } from '../stores/toast'
+<<<<<<< HEAD
 
+=======
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 const toastStore = useToastStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
 if (props.user?.role !== 'author' && props.user?.role !== 'admin') {
+<<<<<<< HEAD
   toastStore.add({ message: '您没有权限访问作者后台', type: 'warning' })
+=======
+  toastStore.add({ message: t('author.permissionDenied'), type: 'warning' })
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   props.navigateTo('home')
 }
 
@@ -17,9 +27,9 @@ const stats = computed(() => {
   const userJournals = props.journals.filter(journal => journal.author === props.user?.username)
   return {
     totalJournals: userJournals.length,
-    pendingJournals: userJournals.filter(journal => journal.status === '审稿中').length,
-    passedJournals: userJournals.filter(journal => journal.status === '已通过').length,
-    rejectedJournals: userJournals.filter(journal => journal.status === '未通过').length
+    pendingJournals: userJournals.filter(journal => ['审稿中', 'Pending', 'Under Review'].includes(journal.status)).length,
+    passedJournals: userJournals.filter(journal => ['已通过', 'Accepted'].includes(journal.status)).length,
+    rejectedJournals: userJournals.filter(journal => ['未通过', 'Rejected'].includes(journal.status)).length
   }
 })
 
@@ -51,13 +61,13 @@ const viewJournalDetail = (id) => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
-          <h1>期刊投稿平台</h1>
+          <h1>{{ $t('common.platformName') }}</h1>
         </div>
         <ul class="navbar-menu">
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="goBack">首页</a></li>
-          <li class="nav-item"><a href="#" class="nav-link active">作者后台</a></li>
-          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">个人中心</a></li>
-          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">退出登录</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="goBack">{{ $t('nav.home') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link active">{{ $t('author.dashboard') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('profile')">{{ $t('nav.profile') }}</a></li>
+          <li class="nav-item"><a href="#" class="nav-link logout" @click.prevent="handleLogout">{{ $t('nav.logout') }}</a></li>
         </ul>
       </div>
     </nav>
@@ -65,38 +75,38 @@ const viewJournalDetail = (id) => {
     <!-- 作者后台内容 -->
     <main class="author-content">
       <div class="author-wrapper">
-        <h2 class="page-title">作者后台</h2>
+        <h2 class="page-title">{{ $t('author.dashboard') }}</h2>
         
         <!-- 统计数据 -->
         <div class="stats-section">
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.totalJournals }}</h3>
-            <p class="stat-label">总投稿数</p>
+            <p class="stat-label">{{ $t('author.stats.totalJournals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.pendingJournals }}</h3>
-            <p class="stat-label">待审核稿件</p>
+            <p class="stat-label">{{ $t('author.stats.pendingJournals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.passedJournals }}</h3>
-            <p class="stat-label">已通过稿件</p>
+            <p class="stat-label">{{ $t('author.stats.passedJournals') }}</p>
           </div>
           <div class="stat-card">
             <h3 class="stat-number">{{ stats.rejectedJournals }}</h3>
-            <p class="stat-label">已拒绝稿件</p>
+            <p class="stat-label">{{ $t('author.stats.rejectedJournals') }}</p>
           </div>
         </div>
         
         <!-- 快速操作 -->
         <div class="quick-actions">
           <button class="btn btn-primary" @click="navigateTo('submit')">
-            + 新投稿
+            {{ $t('author.quickActions.newSubmission') }}
           </button>
         </div>
         
         <!-- 我的投稿 -->
         <div class="my-submissions">
-          <h3 class="section-title">我的投稿</h3>
+          <h3 class="section-title">{{ $t('author.mySubmissions.title') }}</h3>
           
           <div v-if="userJournals.length > 0" class="submission-list">
             <div 
@@ -106,7 +116,7 @@ const viewJournalDetail = (id) => {
             >
               <div class="submission-info">
                 <h4 class="submission-title" @click="viewJournalDetail(journal.id)">{{ journal.title }}</h4>
-                <p class="submission-meta">投稿日期：{{ journal.date }} | 模块：{{ journal.module }}</p>
+                <p class="submission-meta">{{ $t('author.mySubmissions.date') }}：{{ journal.date }} | {{ $t('author.mySubmissions.module') }}：{{ journal.module }}</p>
                 <p class="submission-abstract" v-html="truncateHtml(journal.abstract)"></p>
               </div>
               <div class="submission-status" :class="journal.status.toLowerCase()">
@@ -116,7 +126,7 @@ const viewJournalDetail = (id) => {
           </div>
           
           <div v-else class="no-submissions">
-            <p>您还没有投稿记录</p>
+            <p>{{ $t('author.mySubmissions.empty') }}</p>
           </div>
         </div>
       </div>
@@ -125,7 +135,7 @@ const viewJournalDetail = (id) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-        <p>&copy; 2026 期刊投稿平台. All rights reserved.</p>
+        <p>&copy; 2026 {{ $t('common.platformName') }}. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -393,6 +403,7 @@ const viewJournalDetail = (id) => {
 .btn-primary:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
+  opacity: 0.7;
   opacity: 0.7;
 }
 

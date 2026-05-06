@@ -1,16 +1,16 @@
 export const announcements = [
-  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear authors, the 2026 Journal Submission Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
+  { id: 1, title: 'Call for Papers: 2026 Submission Open', content: 'Dear authors, the 2026 Peerex Peer Platform is now open for submissions. We welcome your contributions.', date: '2026-01-01' },
   { id: 2, title: 'System Update: New Review Reminder Feature Added', content: 'To better serve you, we have added a new review reminder feature. Please check your dashboard for details.', date: '2026-01-10' },
   { id: 3, title: 'Notice: Review Cycle Adjustment', content: 'Starting from Feb 1, 2026, the review cycle for general manuscripts will be shortened to 1-2 weeks.', date: '2026-01-12' }
 ]
 
 export const basicConfig = {
-  platformName: 'Journal Submission Platform',
+  platformName: 'Peerex Peer',
   platformLogo: '',
   submissionRules: '1. Content must comply with academic standards\n2. Plagiarism is strictly prohibited\n3. All submissions undergo strict review\n4. Review cycle is typically 1-2 weeks\n5. Platform reserves all rights',
   contactEmail: 'contact@example.com',
   contactPhone: '13800138000',
-  copyrightInfo: '© 2026 Journal Submission Platform. All rights reserved.'
+  copyrightInfo: '© 2026 Peerex Peer. All rights reserved.'
 }
 
 export const reviewStages = ['Initial Review', 'Peer Review', 'Final Decision']
@@ -31,10 +31,49 @@ const STATUS = {
   UNDER_PEER_REVIEW: 'under_peer_review',
   PUBLISHED: 'published',
   ACCEPTED: 'accepted',
+<<<<<<< HEAD
   REJECTED: 'rejected'
 }
 
 export const journals = [
+=======
+  REJECTED: 'rejected',
+  TRANSFER_SUGGESTED: 'transfer_suggested'
+}
+
+export const journals = [
+  // Test data for Transfer functionality
+  {
+    id: 'MS2026-TRANSFER-01',
+    title: 'Genomic Profiling of Rare Tumors',
+    author: 'Dr. Alan Turing',
+    module: 'Oncology',
+    status: STATUS.TRANSFER_SUGGESTED,
+    submissionDate: '2026-03-01',
+    date: '2026-03-01',
+    abstract: 'This paper discusses genomic profiling...',
+    keywords: ['Genomics', 'Tumors'],
+    fileUrl: '/vite.svg',
+    reviews: [],
+    transferTo: 'lancet-oncology',
+    transferReason: 'While your manuscript is of high quality, it is highly specialized in oncology and would be a better fit for our sister journal, The Lancet Oncology.'
+  },
+  {
+    id: 'MS2026-TRANSFER-IN-02',
+    title: 'New approach to neurological disorder',
+    author: 'Dr. Grace Hopper',
+    module: 'Neurology',
+    status: STATUS.PENDING_INITIAL_REVIEW,
+    submissionDate: '2026-03-05',
+    date: '2026-03-05',
+    abstract: 'This paper was transferred from another journal.',
+    keywords: ['Neurology'],
+    fileUrl: '/vite.svg',
+    reviews: [],
+    transferredFrom: 'lancet',
+    transferredDate: '2026-03-05'
+  },
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   // Test data for Publication module
   {
     id: 1001,
@@ -124,6 +163,59 @@ export const journals = [
     fileUrl: '/vite.svg',
     reviews: []
   },
+<<<<<<< HEAD
+=======
+  {
+    id: 'MS2024-0001',
+    title: 'Novel Biomarkers for Early Detection of Lung Cancer: A Prospective Cohort Study',
+    articleType: 'original',
+    author: 'Dr. John Smith',
+    module: 'Clinical Research',
+    status: STATUS.UNDER_PEER_REVIEW,
+    submissionDate: '2026-01-15',
+    date: '2026-01-15',
+    abstract: 'Background: Lung cancer remains the leading cause of cancer-related mortality. Methods: We conducted a prospective cohort study involving 5,000 high-risk individuals. Findings: We identified a panel of three circulating microRNAs that demonstrated high sensitivity and specificity. Interpretation: These biomarkers could significantly improve early detection rates and patient survival.',
+    wordCount: 3250,
+    referenceCount: 32,
+    keywords: ['lung cancer', 'biomarkers', 'early detection'],
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 'MS2024-0002',
+    title: 'Efficacy and Safety of a Novel Monoclonal Antibody in Rheumatoid Arthritis',
+    articleType: 'clinical',
+    author: 'Dr. Emily Chen',
+    module: 'Clinical Research',
+    status: STATUS.PENDING_INITIAL_REVIEW,
+    submissionDate: '2026-02-20',
+    date: '2026-02-20',
+    abstract: 'This phase III, double-blind, randomized controlled trial evaluated the efficacy and safety of mAb-X in patients with moderate-to-severe rheumatoid arthritis who had an inadequate response to methotrexate.',
+    wordCount: 4100,
+    referenceCount: 45,
+    keywords: ['rheumatoid arthritis', 'monoclonal antibody', 'clinical trial'],
+    fileUrl: '/vite.svg',
+    reviews: []
+  },
+  {
+    id: 'MS2024-0003',
+    title: 'Global Burden of Antimicrobial Resistance in 2025: A Systematic Analysis',
+    articleType: 'review',
+    author: 'Dr. Sarah Johnson',
+    module: 'Public Health',
+    status: STATUS.ACCEPTED,
+    submissionDate: '2025-11-05',
+    date: '2025-11-05',
+    abstract: 'We present comprehensive estimates of the global burden of antimicrobial resistance (AMR) for 2025, analyzing data from 204 countries and territories. Our findings highlight the urgent need for coordinated international action.',
+    wordCount: 6500,
+    referenceCount: 120,
+    keywords: ['antimicrobial resistance', 'global health', 'systematic analysis'],
+    fileUrl: '/vite.svg',
+    reviews: [
+      { reviewer: 'reviewer1', status: 'Reviewed', comment: 'Excellent comprehensive analysis.', rating: 5 }
+    ]
+  },
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   {
     id: 1,
     title: 'Development Trends in Medical Imaging Technology',

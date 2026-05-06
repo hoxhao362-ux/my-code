@@ -279,7 +279,11 @@ const downloadReceipt = () => {
               </div>
               <div class="checkbox-item">
                 <input type="checkbox" id="dec5" v-model="declarations.dataSharing">
+<<<<<<< HEAD
                 <label for="dec5">The manuscript complies with the Journal Submission Platform's data sharing policy.</label>
+=======
+                <label for="dec5">The manuscript complies with the Peerex Peer's data sharing policy.</label>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
               </div>
             </div>
           </div>
@@ -346,7 +350,11 @@ const downloadReceipt = () => {
         <h3 class="text-success">Submission Successful</h3>
       </div>
       <div class="modal-content">
+<<<<<<< HEAD
         <p>Your revision has been submitted to The Journal Submission Platform editorial team.</p>
+=======
+        <p>Your revision has been submitted to The Peerex Peer editorial team.</p>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         <p><strong>Manuscript ID:</strong> {{ metadata.id }}</p>
         <p>A confirmation email has been sent to the corresponding author ({{ metadata.author }}).</p>
         <p>Your manuscript is now in the Revision Handling queue for editorial review.</p>

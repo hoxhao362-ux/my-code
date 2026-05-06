@@ -12,7 +12,10 @@ from database.orm.models.manuscript import (Manuscript, ManuscriptFile,
                                             ManuscriptParticipant,
                                             ManuscriptVersion)
 from database.orm.models.manuscript_info import ManuscriptInfo
+<<<<<<< HEAD
 from database.orm.models.notification import Notification
+=======
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from database.orm.models.payment_order import PaymentOrder
 from database.orm.models.review_opinion import ReviewOpinion
 from database.orm.models.user import User
@@ -28,8 +31,11 @@ __all__ = [
     "ManuscriptParticipant",
     "ManuscriptFile",
     "ManuscriptInfo",
+<<<<<<< HEAD
     # 通知
     "Notification",
+=======
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     # 审稿与决策
     "ReviewOpinion",
     "DecisionRecord",

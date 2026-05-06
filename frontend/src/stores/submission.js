@@ -57,6 +57,12 @@ export const useSubmissionStore = defineStore('submission', () => {
     // Step 6
     title: '',
     abstract: '',
+    structuredAbstract: {
+      background: '',
+      methods: '',
+      findings: '',
+      interpretation: ''
+    },
     keywords: '',
     authors: [], // { id, name, institution, email, isCorresponding, isFirst }
     funding: [], // { id, body, number }

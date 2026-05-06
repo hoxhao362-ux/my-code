@@ -19,45 +19,59 @@
         </a>
       </nav>
       <button class="download-btn" @click="handleDownload">
-        Download Full Guide PDF
+        {{ $t('guide.downloadPdf') }}
       </button>
     </div>
 
     <div class="content-area">
       <div id="preparation" class="section">
-        <h1>Preparation</h1>
-        <p>Before submitting your manuscript, please ensure you have read the following guidelines carefully. Adherence to these guidelines will ensure a smooth review process.</p>
+        <h1>{{ $t('guide.preparation.title') }}</h1>
+        <p>{{ $t('guide.preparation.desc') }}</p>
         <div class="highlight-box">
-          <h2>Ethics & Disclosure</h2>
-          <p>All authors must disclose any financial and personal relationships with other people or organizations that could inappropriately influence (bias) their work.</p>
+          <h2>{{ $t('guide.preparation.ethicsTitle') }}</h2>
+          <p>{{ $t('guide.preparation.ethicsDesc') }}</p>
+        </div>
+      </div>
+      
+      <!-- 动态文章类型指南 -->
+      <div id="article-types" class="section">
+        <h1>Article Types & Requirements</h1>
+        <div v-for="type in articleGuides" :key="type.type" class="article-type-box">
+          <h2>{{ type.title }}</h2>
+          <ul>
+            <li><strong>Structure:</strong> {{ type.sections.find(s => s.id === 'structure').content }}</li>
+            <li><strong>Abstract:</strong> {{ type.sections.find(s => s.id === 'abstract').content }}</li>
+            <li><strong>Figures/Tables:</strong> {{ type.sections.find(s => s.id === 'figures').content }}</li>
+            <li><strong>Ethics:</strong> {{ type.sections.find(s => s.id === 'ethics').content }}</li>
+          </ul>
         </div>
       </div>
 
       <div id="formatting" class="section">
-        <h1>Formatting</h1>
-        <h2>Text Formatting</h2>
-        <p>Manuscripts should be submitted in Word format. Use a standard font (e.g., Times New Roman, Arial) at 12 pt size. Double-space the entire manuscript.</p>
-        <h2>Figures & Tables</h2>
-        <p>Figures should be high-resolution (min 300 dpi). Tables should be editable text, not images.</p>
+        <h1>{{ $t('guide.formatting.title') }}</h1>
+        <h2>{{ $t('guide.formatting.textTitle') }}</h2>
+        <p>{{ $t('guide.formatting.textDesc') }}</p>
+        <h2>{{ $t('guide.formatting.figuresTitle') }}</h2>
+        <p>{{ $t('guide.formatting.figuresDesc') }}</p>
       </div>
 
       <div id="process" class="section">
-        <h1>Review Process</h1>
-        <p>Our journal follows a double-blind peer review process. All manuscripts are initially screened by the editor. Manuscripts that meet the journal's standards are sent to at least two independent reviewers.</p>
+        <h1>{{ $t('guide.process.title') }}</h1>
+        <p>{{ $t('guide.process.desc') }}</p>
       </div>
 
       <div id="policies" class="section">
-        <h1>Policies</h1>
-        <h2>Open Access</h2>
-        <p>We offer authors the option to make their article open access. A publication fee applies.</p>
-        <h2>Copyright</h2>
-        <p>Authors retain copyright of their work under a Creative Commons Attribution License.</p>
+        <h1>{{ $t('guide.policies.title') }}</h1>
+        <h2>{{ $t('guide.policies.openAccessTitle') }}</h2>
+        <p>{{ $t('guide.policies.openAccessDesc') }}</p>
+        <h2>{{ $t('guide.policies.copyrightTitle') }}</h2>
+        <p>{{ $t('guide.policies.copyrightDesc') }}</p>
       </div>
 
       <div id="faq" class="section">
-        <h1>FAQ</h1>
+        <h1>{{ $t('guide.faq.title') }}</h1>
         <div class="search-box">
-          <input type="text" v-model="searchQuery" placeholder="Search FAQs..." />
+          <input type="text" v-model="searchQuery" :placeholder="$t('guide.faq.searchPlaceholder')" />
         </div>
         <div class="faq-list">
           <div v-for="faq in filteredFaqs" :key="faq.question" class="faq-item">
@@ -69,7 +83,7 @@
     </div>
 
     <div v-if="showToast" class="toast">
-      PDF download started...
+      {{ $t('guide.toast') }}
     </div>
   </div>
 </template>
@@ -78,26 +92,68 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import Navigation from '../../../components/Navigation.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
-const navItems = [
-  { id: 'preparation', label: 'Preparation' },
-  { id: 'formatting', label: 'Formatting' },
-  { id: 'process', label: 'Review Process' },
-  { id: 'policies', label: 'Policies' },
-  { id: 'faq', label: 'FAQ' }
-]
+const navItems = computed(() => [
+  { id: 'preparation', label: t('guide.preparation.title') },
+  { id: 'article-types', label: 'Article Types' },
+  { id: 'formatting', label: t('guide.formatting.title') },
+  { id: 'process', label: t('guide.process.title') },
+  { id: 'policies', label: t('guide.policies.title') },
+  { id: 'faq', label: t('guide.faq.title') }
+])
+
+const articleGuides = computed(() => [
+  {
+    type: 'original',
+    title: t('guide.articleTypes.original.title'),
+    sections: [
+      { id: 'structure', content: t('guide.articleTypes.original.structure') },
+      { id: 'abstract', content: t('guide.articleTypes.original.abstract') },
+      { id: 'figures', content: t('guide.articleTypes.original.figures') },
+      { id: 'ethics', content: t('guide.articleTypes.original.ethics') }
+    ]
+  },
+  {
+    type: 'review',
+    title: t('guide.articleTypes.review.title'),
+    sections: [
+      { id: 'structure', content: t('guide.articleTypes.review.structure') },
+      { id: 'abstract', content: t('guide.articleTypes.review.abstract') },
+      { id: 'figures', content: t('guide.articleTypes.review.figures') },
+      { id: 'ethics', content: t('guide.articleTypes.review.ethics') }
+    ]
+  },
+  {
+    type: 'caseReport',
+    title: t('guide.articleTypes.caseReport.title'),
+    sections: [
+      { id: 'structure', content: t('guide.articleTypes.caseReport.structure') },
+      { id: 'abstract', content: t('guide.articleTypes.caseReport.abstract') },
+      { id: 'figures', content: t('guide.articleTypes.caseReport.figures') },
+      { id: 'ethics', content: t('guide.articleTypes.caseReport.ethics') }
+    ]
+  }
+])
 
 const activeSection = ref('preparation')
 const searchQuery = ref('')
 const showToast = ref(false)
 
 const faqs = [
-  { question: 'What is the word limit?', answer: 'Original Research articles should not exceed 3,500 words.' },
-  { question: 'Do you charge a submission fee?', answer: 'No, there are no submission fees.' },
-  { question: 'How long does the review take?', answer: 'The average time to first decision is 4 weeks.' }
+  { question: 'What is the word limit for Original Research?', answer: 'Original Research articles should not exceed 3,500 words in the main text, excluding abstract, references, and tables.' },
+  { question: 'What is the structure required for Abstract?', answer: 'All Original Research articles require a structured abstract with four sections: Background, Methods, Findings, and Interpretation.' },
+  { question: 'Do you require ethical approval?', answer: 'Yes. All manuscripts reporting human or animal data must include a statement confirming ethical approval by an institutional review board.' },
+  { question: 'How long does the review process take?', answer: 'The average time to first decision is 4-6 weeks. Initial screening is typically completed within 1-3 working days.' },
+  { question: 'What file formats are accepted?', answer: 'We accept Word (.docx), PDF, and LaTeX formats. Figures should be submitted as separate high-resolution images (minimum 300 dpi).' },
+  { question: 'Is there a submission fee?', answer: 'No, there are no submission fees. Optional Open Access publication fees apply after acceptance.' },
+  { question: 'How should references be formatted?', answer: 'References should follow the Vancouver style. Number them in the order they appear in the text.' },
+  { question: 'What is your acceptance rate?', answer: 'Our journal has an acceptance rate of approximately 8-10% after peer review.' },
+  { question: 'Do you offer open access?', answer: 'Yes, we offer both subscription and open access options. Contact the editorial office for details.' }
 ]
 
 const filteredFaqs = computed(() => {
@@ -275,6 +331,29 @@ p {
   font-weight: bold;
   color: #333;
   margin-bottom: 8px;
+}
+
+.article-type-box {
+  background-color: #F8F9FA;
+  border-left: 4px solid #C93737;
+  padding: 20px;
+  margin-bottom: 24px;
+  border-radius: 0 4px 4px 0;
+}
+
+.article-type-box h2 {
+  margin-top: 0;
+  color: #C93737;
+}
+
+.article-type-box ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.article-type-box li {
+  margin-bottom: 8px;
+  line-height: 1.5;
 }
 
 .toast {

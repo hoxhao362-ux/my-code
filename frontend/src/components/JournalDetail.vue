@@ -44,7 +44,11 @@ const handleLogout = () => {
     <nav class="navbar">
       <div class="navbar-container">
         <div class="navbar-logo">
+<<<<<<< HEAD
           <h1>Journal Platform</h1>
+=======
+          <h1>Peerex Peer</h1>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         </div>
         <ul class="navbar-menu">
           <li class="nav-item"><a href="#" class="nav-link" @click.prevent="navigateTo('home')">Home</a></li>
@@ -142,7 +146,11 @@ const handleLogout = () => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
+<<<<<<< HEAD
         <p>&copy; 2026 Journal Platform. All rights reserved.</p>
+=======
+        <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       </div>
     </footer>
   </div>

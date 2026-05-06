@@ -74,7 +74,11 @@ const toasts = computed(() => store.toasts)
 }
 
 .toast-error {
+<<<<<<< HEAD
   border-left-color: var(--color-primary); /* Lancet Red for errors */
+=======
+  border-left-color: var(--color-primary); /* Peerex Peer Red for errors */
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 .toast-error .toast-icon {
   color: var(--color-primary);

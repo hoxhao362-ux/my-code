@@ -30,13 +30,35 @@ const selectedTypeLabel = computed(() => {
   return type ? type.label : ''
 })
 
+const typeWordLimits = {
+  original: { minWords: 3000, maxWords: 3500, minRefs: 25 },
+  review: { minWords: 4000, maxWords: 5000, minRefs: 50 },
+  case_report: { minWords: 1000, maxWords: 1500, minRefs: 15 },
+  correspondence: { maxWords: 500, maxRefs: 10 },
+  clinical: { minWords: 1500, maxWords: 2000, minRefs: 20 }
+}
+
 // Submission guidelines mapping
 const guidelines = computed(() => {
   if (!store.formData.articleType) return null
+  
+  const limits = typeWordLimits[store.formData.articleType]
+  let wordCountText = 'Not specified'
+  let referencesText = 'Not specified'
+  
+  if (limits) {
+    if (limits.minWords && limits.maxWords) wordCountText = `${limits.minWords} - ${limits.maxWords} words`
+    else if (limits.maxWords) wordCountText = `Max ${limits.maxWords} words`
+    
+    if (limits.minRefs && limits.maxRefs) referencesText = `${limits.minRefs} - ${limits.maxRefs} references`
+    else if (limits.minRefs) referencesText = `Min ${limits.minRefs} references`
+    else if (limits.maxRefs) referencesText = `Max ${limits.maxRefs} references`
+  }
+  
   return {
-    text: t('articleTypeSelection.guidelines.general'), // In real app, this should be dynamic per type
-    wordCount: '3000 - 5000 words',
-    references: 'Max 50 references'
+    text: t('articleTypeSelection.guidelines.general'),
+    wordCount: wordCountText,
+    references: referencesText
   }
 })
 </script>

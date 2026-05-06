@@ -61,7 +61,7 @@ const goToRegister = () => {
     <div class="login-bg"></div>
     <div class="login-form-wrapper">
       <div class="login-form">
-        <h2 class="login-title">期刊投稿平台</h2>
+        <h2 class="login-title">Peerex Peer</h2>
         <div class="form-group">
           <label for="username">用户名</label>
           <input 

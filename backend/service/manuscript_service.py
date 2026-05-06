@@ -299,6 +299,7 @@ class ManuscriptWorkflowService:
             # 检查是否存在从当前状态出发的转换
             for (status, act, _), _ in TRANSITION_MAP.items():
                 if status == current_status and act == action_value:
+<<<<<<< HEAD
                     # 审稿人须使用 /reviews/me/tasks 提交意见，禁止 workflow.review 绕过入库
                     if (
                         action_value == WorkflowAction.REVIEW.value
@@ -317,6 +318,11 @@ class ManuscriptWorkflowService:
         ):
             allowed_actions.append(assign_act)
 
+=======
+                    allowed_actions.append(action_value)
+                    break
+
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         return allowed_actions
 
     @staticmethod

@@ -167,7 +167,11 @@ const submitEic = () => {
     <!-- EiC Interface (Decision) -->
     <div v-if="isEIC" class="role-view eic-view">
       <header class="page-header">
+<<<<<<< HEAD
         <h2>Final Decision (Journal Platform Compliance)</h2>
+=======
+        <h2>Final Decision (Peerex Peer Compliance)</h2>
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         <div class="meta">
           <span>ID: {{ manuscript.id }}</span>
           <span>EiC: {{ currentUser.name }}</span>

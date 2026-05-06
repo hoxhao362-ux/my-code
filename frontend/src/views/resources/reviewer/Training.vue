@@ -133,7 +133,11 @@ const questions = [
     explanation: "Any potential bias compromises the integrity of the review."
   },
   // Adding placeholders for 3-10 to meet the "10 questions" requirement
+<<<<<<< HEAD
   { id: 3, text: "Is the reviewer's identity revealed to the author?", options: [{value:'a', text:'Yes'}, {value:'b', text:'No (Double-blind)'}], correct: 'b', explanation: "Journal Platform uses double-blind peer review." },
+=======
+  { id: 3, text: "Is the reviewer's identity revealed to the author?", options: [{value:'a', text:'Yes'}, {value:'b', text:'No (Double-blind)'}], correct: 'b', explanation: "Peerex Peer uses double-blind peer review." },
+>>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   { id: 4, text: "What should be the tone of the report?", options: [{value:'a', text:'Aggressive'}, {value:'b', text:'Constructive and professional'}], correct: 'b', explanation: "Comments should be helpful, not hostile." },
   { id: 5, text: "Can you share the manuscript with a colleague?", options: [{value:'a', text:'Yes, for help'}, {value:'b', text:'No, it is confidential'}], correct: 'b', explanation: "Manuscripts are confidential documents." },
   { id: 6, text: "Which section explains the study design?", options: [{value:'a', text:'Methods'}, {value:'b', text:'Discussion'}], correct: 'a', explanation: "Methods section details how the study was conducted." },
