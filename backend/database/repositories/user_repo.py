@@ -10,11 +10,7 @@ from typing import Any, Dict, Optional
 
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
-<<<<<<< HEAD
 from sqlalchemy import func, or_, select
-=======
-from sqlalchemy import func, select
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -170,7 +166,6 @@ class UserRepository(BaseRepository[User]):
         )
         return [dict(r) for r in rows]
 
-<<<<<<< HEAD
     async def list_reviewers_page(
         self,
         page: int,
@@ -209,8 +204,6 @@ class UserRepository(BaseRepository[User]):
         """未删除用户总数。"""
         return await super().count(User.is_deleted == False)  # noqa: E712
 
-=======
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     async def role_breakdown(self) -> list[Dict[str, Any]]:
         """按角色分组统计"""
         rows = (

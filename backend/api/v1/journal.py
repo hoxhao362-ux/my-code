@@ -9,25 +9,17 @@
 废弃日期：2026-03-26
 保留原因：向后兼容
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
-from typing import List, Optional
-from datetime import datetime
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, Depends
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api import dependencies as deps
 from database.dependencies import get_db_session
-from database.orm.models.journal import Journal
 from database.repositories.journal_repo import JournalRepository
 
 from model.journal import (
-    JournalUploadRequest, 
-    JournalUploadResponse, 
     JournalInfo, 
-    JournalListResponse,
-    JournalStatusUpdateRequest
+    JournalListResponse
 )
 
 journal_router = APIRouter(

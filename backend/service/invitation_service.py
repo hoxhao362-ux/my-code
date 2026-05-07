@@ -237,11 +237,6 @@ class InvitationService:
         Returns:
             Dict[str, Any]: 邀请码列表和总数
         """
-<<<<<<< HEAD
-=======
-        offset = (page - 1) * page_size
-
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         async with self._ensure_session(session) as s:
             repo = InvitationRepository(s)
             total = await repo.count(status=status, role=role)

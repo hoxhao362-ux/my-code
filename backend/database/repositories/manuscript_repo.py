@@ -10,11 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from core.enums import ManuscriptStatus
-<<<<<<< HEAD
 from database.orm.models.manuscript import Manuscript, ManuscriptFile, ManuscriptVersion
-=======
-from database.orm.models.manuscript import Manuscript
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from database.orm.models.user import User
 from database.repositories.base_repo import BaseRepository
 from sqlalchemy import func, or_, select
@@ -329,7 +325,6 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
     async def count_deleted(self) -> int:
         """统计已删除稿件数量"""
         return await self.count(Manuscript.is_deleted == True)  # noqa: E712
-<<<<<<< HEAD
 
     async def list_manuscript_files(self, manuscript_id: int) -> List[ManuscriptFile]:
         """某稿件全部附件，按上传时间倒序。"""
@@ -361,5 +356,3 @@ class ManuscriptRepository(BaseRepository[Manuscript]):
             .limit(1)
         )
         return await self.session.scalar(stmt)
-=======
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea

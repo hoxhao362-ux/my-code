@@ -16,9 +16,7 @@
   安装: pip install wechatpayv3
 """
 import abc
-import logging
 import json
-import urllib.parse
 from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Any, Optional

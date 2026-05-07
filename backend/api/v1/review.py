@@ -9,24 +9,19 @@
 废弃日期：2026-03-26
 保留原因：向后兼容
 """
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.jwt import jwt_util
-from service.redis_service import redis_service
 from model.journal import JournalInfo
-from model.user import LoginRequest, LoginResponse
 from api import dependencies as deps
 from database.dependencies import get_db_session
 from database.orm.models.journal import Journal, ReviewRecord
-from database.orm.models.user import User
 from database.repositories.journal_repo import JournalRepository
 from database.repositories.review_repo import ReviewRepository
-from database.repositories.user_repo import UserRepository
 from database.uow import transactional
 
 review_router = APIRouter(

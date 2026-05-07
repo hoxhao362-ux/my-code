@@ -27,7 +27,6 @@ class ApiResponse(BaseModel):
 
     @classmethod
     def paginated(
-<<<<<<< HEAD
         cls,
         items: list,
         total: int,
@@ -39,13 +38,3 @@ class ApiResponse(BaseModel):
         if extra_meta:
             meta = {**meta, **extra_meta}
         return cls(code=200, message="success", data=items, meta=meta)
-=======
-        cls, items: list, total: int, page: int = 1, page_size: int = 20
-    ) -> "ApiResponse":
-        return cls(
-            code=200,
-            message="success",
-            data=items,
-            meta={"total": total, "page": page, "page_size": page_size},
-        )
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea

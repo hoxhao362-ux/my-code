@@ -13,7 +13,7 @@ Kafka 服务工具类 - 统一管理 Kafka 服务的生命周期与消息生产
 import asyncio
 import json
 import traceback
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, NoBrokersAvailable

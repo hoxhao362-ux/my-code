@@ -16,9 +16,8 @@
 废弃日期：2026-03-26
 保留原因：向后兼容（部分旧代码可能仍在引用）
 """
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 from utils.log import global_logger

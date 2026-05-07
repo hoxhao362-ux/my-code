@@ -5,14 +5,9 @@
 """
 
 from api import dependencies as deps
-<<<<<<< HEAD
 from core.enums import NotificationType, UserRole
 from database.dependencies import get_db_session
 from database.repositories.notification_repo import NotificationRepository
-=======
-from core.enums import UserRole
-from database.dependencies import get_db_session
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 from database.repositories.user_repo import UserRepository
 from database.uow import transactional
 from fastapi import APIRouter, Depends, HTTPException
@@ -125,7 +120,6 @@ async def update_current_user_info(
 async def get_my_notifications(
     page: int = 1,
     page_size: int = 10,
-<<<<<<< HEAD
     is_read: bool | None = None,
     notification_type: str | None = None,
     current_user: dict = Depends(deps.get_current_active_user),
@@ -164,87 +158,11 @@ async def get_my_notifications(
         extra_meta={"unread_count": unread},
     )
 
-=======
-    current_user: dict = Depends(deps.get_current_active_user),
-):
-    """
-    获取当前用户的消息通知列表
-
-    TODO: 实现消息通知系统 - 获取当前用户消息列表
-
-    建议实现流程：
-    1. 创建 Notification ORM 模型（目前尚不存在，需新建表），包含字段：
-       - notification_id (Integer, PK)
-       - user_uid (Integer, FK→users.uid) — 通知接收者
-       - title (Text) — 通知标题
-       - content (Text) — 通知内容
-       - notification_type (Text) — 通知类型，对应 NotificationType 枚举（system/review_invitation/decision/revision/acceptance/payment）
-       - is_read (Boolean, default=False) — 是否已读
-       - related_manuscript_id (BigInteger, nullable) — 关联稿件 ID（可选）
-       - related_url (Text, nullable) — 关联链接（可选）
-       - create_time (Text) — 创建时间
-    2. 根据 current_user['uid'] 查询该用户的所有通知
-    3. 支持按 notification_type 和 is_read 筛选（建议增加查询参数）
-    4. 按 create_time 倒序排列，分页返回
-    5. 额外返回未读消息总数（方便前端展示红点/角标）
-
-    所需 ORM 模型：
-    - Notification (需新建 database/orm/models/notification.py) — 通知消息表
-    - NotificationType (core/enums.py) — 已定义的通知类型枚举，包含 system/review_invitation/decision/revision/acceptance/payment
-
-    建议 Repository 方法：
-    - NotificationRepository.list_by_user(user_uid, page, page_size, notification_type=None, is_read=None) — 分页查询用户通知
-    - NotificationRepository.count_by_user(user_uid, is_read=None) — 统计通知数
-    - NotificationRepository.count_unread(user_uid) — 统计未读数
-
-    建议 Service 调用链：
-    API → NotificationRepository.list_by_user(uid) → 格式化返回
-
-    权限要求：
-    - 当前使用 get_current_active_user（已登录用户均可访问）
-    - 仅能查看自己的通知，uid 从 JWT token 获取，安全性足够
-
-    返回数据格式建议：
-    {
-        "items": [
-            {
-                "notification_id": 1,
-                "title": "审稿邀请",
-                "content": "您被邀请审稿：基于深度学习的图像识别研究",
-                "notification_type": "review_invitation",
-                "is_read": false,
-                "related_manuscript_id": 10001,
-                "create_time": "2026-04-18T10:00:00"
-            }
-        ],
-        "total": 5,
-        "page": 1,
-        "page_size": 10,
-        "unread_count": 3  // 额外返回未读总数
-    }
-
-    注意事项：
-    - 通知表需在 models/__init__.py 中注册，以便 DatabaseManager 自动建表
-    - 通知创建应在各个业务流程中触发（如分配审稿人时发 review_invitation 通知）
-    - 建议增加 notification_type 和 is_read 可选查询参数
-    - 高频场景下可考虑将未读数缓存到 Redis，减少数据库查询
-    - 长期考虑：通知可结合 WebSocket 实现实时推送
-    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
-    """
-    global_logger.debug(
-        "Users",
-        f"获取用户消息 - uid: {current_user['uid']}, page: {page}, size: {page_size}",
-    )
-
-    return ApiResponse.paginated(items=[], total=0, page=page, page_size=page_size)
-
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 @router.put("/me/notifications/{notification_id}", summary="标记消息为已读")
 async def mark_notification_as_read(
     notification_id: int,
     current_user: dict = Depends(deps.get_current_active_user),
-<<<<<<< HEAD
     session: AsyncSession = Depends(get_db_session),
 ):
     """将通知标为已读；须属于当前用户；重复调用幂等。"""
@@ -258,63 +176,14 @@ async def mark_notification_as_read(
             )
             raise HTTPException(status_code=404, detail="通知不存在")
 
-=======
-):
-    """
-    标记指定消息为已读状态
-
-    TODO: 实现消息通知系统 - 标记指定消息为已读
-
-    建议实现流程：
-    1. 根据 notification_id 查询 Notification 记录
-    2. 验证该通知属于当前用户（user_uid 匹配），防止越权操作
-    3. 若通知不存在，返回 404
-    4. 若已是已读状态，直接返回成功（幂等操作）
-    5. 更新 is_read = True
-    6. 更新 Redis 中缓存的未读数（如已实现缓存）
-
-    所需 ORM 模型：
-    - Notification (需新建 database/orm/models/notification.py) — 通知消息表
-
-    建议 Repository 方法：
-    - NotificationRepository.get_by_id(notification_id) — 查询通知详情
-    - NotificationRepository.mark_as_read(notification_id) — 标记已读
-
-    建议 Service 调用链：
-    API → NotificationRepository.get_by_id() → 验证归属 → NotificationRepository.mark_as_read()
-        → 更新 Redis 未读数缓存 → 返回成功
-
-    权限要求：
-    - 当前使用 get_current_active_user（已登录用户均可访问）
-    - 必须验证通知归属，防止用户标记他人通知
-
-    返回数据格式建议：
-    {
-        "notification_id": 1,
-        "is_read": true
-    }
-
-    注意事项：
-    - 必须校验 user_uid 一致性，防止越权
-    - 需增加数据库 session 依赖（当前函数缺少 session 参数）
-    - 标记已读为幂等操作，重复调用不应报错
-    - 可考虑增加批量标记已读接口（如 PUT /me/notifications/read-all）
-    - 建议同时提供全部标记已读的功能
-    """
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     global_logger.info(
         "Users",
         f"标记消息已读 - uid: {current_user['uid']}, notification_id: {notification_id}",
     )
-<<<<<<< HEAD
     return ApiResponse.success(
         data={"notification_id": notification_id, "is_read": True},
         message="消息已标记为已读",
     )
-=======
-
-    return ApiResponse.success(message="消息已标记为已读")
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 
 @router.get("/", summary="获取用户列表（管理员）")
