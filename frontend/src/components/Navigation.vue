@@ -792,7 +792,7 @@ const handleLogout = () => {
         </template>
         
         <!-- Unified Editor Navigation (Shared for all editor roles) -->
-        <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
+        <template v-else-if="['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user?.role)">
           <div class="hamburger-menu mobile-only" @click="showMobileMenu = true">☰</div>
           <ul class="navbar-menu desktop-only">
           <!-- Core Navigation -->
@@ -865,7 +865,7 @@ const handleLogout = () => {
           </li>
 
           <!-- Board Management (Editor Only) -->
-          <li class="nav-item" v-if="['editor', 'admin'].includes(user?.role)">
+          <li class="nav-item" v-if="['editor', 'admin', 'associate_editor'].includes(user?.role)">
             <a 
               href="#" 
               class="nav-link"
@@ -1257,7 +1257,7 @@ const handleLogout = () => {
         </template>
 
         <!-- 2. Editor / Admin Navigation -->
-        <template v-else-if="['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(user?.role)">
+        <template v-else-if="['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user?.role)">
           <li class="sidebar-item">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-dashboard', '/editor/dashboard'); showMobileMenu = false">{{ t('nav.dashboard') }}</a>
           </li>
@@ -1287,7 +1287,7 @@ const handleLogout = () => {
           </li>
           
            <!-- Board Management (Sidebar) -->
-           <li class="sidebar-item" v-if="['editor', 'admin'].includes(user?.role)">
+           <li class="sidebar-item" v-if="['editor', 'admin', 'associate_editor'].includes(user?.role)">
              <a href="#" class="sidebar-link" @click.prevent="handleNav('editor-board', '/editor/board'); showMobileMenu = false">Board Management</a>
           </li>
           

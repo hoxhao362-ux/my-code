@@ -2,7 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useMessageStore } from '../../stores/messages'
 import { useToastStore } from '../../stores/toast'
+import { useReviewStore } from '../../stores/review'
+import { manuscriptApi } from '../../utils/api'
+
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
@@ -12,17 +16,38 @@ const router = useRouter()
 const userStore = useUserStore()
 const messageStore = useMessageStore()
 const toastStore = useToastStore()
+const reviewStore = useReviewStore()
+
 const user = computed(() => userStore.user)
-
 const journalId = route.params.id
-const journal = computed(() => userStore.journals.find(j => String(j.id) === String(journalId)))
 
-// Helper to calculate due date (simulated for now, 14 days from submission)
+// 改造 1：使用 ref 存储真实拉取的数据，而不是纯靠 Computed 本地查找
+const journal = ref(null)
+const isLoading = ref(true)
+
+// 在组件挂载时，向后端拉取真实的稿件详情
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    // 调用 API 获取稿件详情（前提是后端 /manuscripts/{id} 接口可用）
+    const response = await manuscriptApi.getManuscriptDetail(journalId)
+    // 适配后端的 ApiResponse 格式 (response.data)
+    journal.value = response.data || response
+  } catch (error) {
+    console.warn('API 拉取失败，回退到本地 Mock 数据:', error)
+    // 如果还没连上后端，Fallback 到之前的 mock 逻辑保证页面不崩溃
+    journal.value = userStore.journals.find(j => String(j.id) === String(journalId))
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// === 日期与状态计算 ===
 const getDueDate = (date) => {
   if (!date) return ''
   const d = new Date(date)
   if (isNaN(d.getTime())) return ''
-  d.setDate(d.getDate() + 14)
+  d.setDate(d.getDate() + 14) // 默认给 14 天审稿期
   return d.toISOString().split('T')[0]
 }
 
@@ -31,52 +56,41 @@ const isOverdue = computed(() => {
   const dueDateStr = getDueDate(journal.value.date)
   if (!dueDateStr) return false
   const dueDate = new Date(dueDateStr)
-  if (isNaN(dueDate.getTime())) return false
   const today = new Date()
   return today > dueDate
 })
 
 const daysOverdue = computed(() => {
-  if (!journal.value) return 0
+  if (!journal.value || !isOverdue.value) return 0
   const dueDateStr = getDueDate(journal.value.date)
-  if (!dueDateStr) return 0
   const dueDate = new Date(dueDateStr)
-  if (isNaN(dueDate.getTime())) return 0
-  const today = new Date()
-  const diffTime = Math.abs(today - dueDate)
+  const diffTime = Math.abs(new Date() - dueDate)
   return Math.floor(diffTime / (1000 * 60 * 60 * 24))
 })
 
+// Check if this is a revision (Re-review)
+const isRevision = computed(() => journal.value && (journal.value.reviewStage === '复审' || journal.value.reviewStage === 'Re-review'))
+
 const isReadonly = computed(() => {
   if (!journal.value || !journal.value.reviewHistory) return false
-  // For re-review, only check if user has reviewed in current Re-review stage
-  // For normal review, check if user has any review
   if (isRevision.value) {
-    return journal.value.reviewHistory.some(r => 
-      r.reviewer === user.value.username && 
+    return journal.value.reviewHistory.some(r =>
+      r.reviewer === user.value.username &&
       (r.stage === 'Re-review' || r.stage === '复审')
     )
   }
   return journal.value.reviewHistory.some(r => r.reviewer === user.value.username)
 })
 
-const isCompletedView = computed(() => {
-  return route.query.view === 'details'
-})
+const isCompletedView = computed(() => route.query.view === 'details')
 
 const completedReviewData = computed(() => {
   if (!journal.value || !journal.value.reviewHistory) return []
   return journal.value.reviewHistory.filter(r => r.reviewer === user.value.username)
 })
 
-const completedStatus = computed(() => {
-  // If user has any completed review, show completed status
-  return completedReviewData.value.length > 0 ? 'Completed' : 'Pending'
-})
-
 const completedDate = computed(() => {
   if (completedReviewData.value.length === 0) return ''
-  // Get the latest completion date
   const sorted = [...completedReviewData.value].sort((a, b) => new Date(b.date) - new Date(a.date))
   return sorted[0].date
 })
@@ -86,26 +100,23 @@ const initialReviewData = computed(() => {
   return journal.value.reviewHistory.find(r => r.reviewer === user.value.username && r.type !== 'Re-review')
 })
 
-// Check if this is a revision (Re-review)
-const isRevision = computed(() => journal.value && (journal.value.reviewStage === '复审' || journal.value.reviewStage === 'Re-review'))
-
-// Blind Review Logic
-const isBlindReview = ref(true)
+// === 盲审与内容处理 ===
+const isBlindReview = ref(true) // 柳叶刀模式：通常是单盲/双盲
 
 const displayContent = computed(() => {
   if (!journal.value || !journal.value.content) return ''
   let content = journal.value.content
   if (isBlindReview.value) {
-    // Simple mock anonymization
+    // 基础打码逻辑
     content = content.replace(/Author Name/g, '[Anonymized]')
     content = content.replace(/University of X/g, '[Anonymized Institution]')
   }
   return content
 })
 
+// === Tabs 逻辑 ===
 const activeTab = ref(route.query.tab || 'overview')
 
-// Update active tab if query param changes
 watch(() => route.query.tab, (newTab) => {
   if (newTab && tabs.value.some(t => t.id === newTab)) {
     activeTab.value = newTab
@@ -116,7 +127,6 @@ const tabs = computed(() => {
   const baseTabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'manuscript', label: 'Manuscript' },
-    // Add Revision Details tab if it is a revision
     ...(isRevision.value ? [{ id: 'revision-details', label: 'Revision Details' }] : []),
     { id: 'review-form', label: 'Review Form' },
     { id: 'coi', label: 'Conflict of Interest' },
@@ -126,26 +136,112 @@ const tabs = computed(() => {
   return baseTabs
 })
 
-// COI State
-const coiState = ref({
-  hasConflict: 'no',
-  declaration: ''
-})
+// === 接受/拒绝审稿邀请逻辑 (预留) ===
+const handleInvitation = async (action) => {
+  try {
+    // TODO: 等待后端添加 POST /reviews/me/tasks/{id}/invitation 接口
+    // 目前先在前端 Mock 成功状态
+    toastStore.add({
+      message: action === 'accept' ? '已接受审稿邀请，请尽快完成审稿。' : '已婉拒该审稿邀请。',
+      type: action === 'accept' ? 'success' : 'info'
+    })
+    if (action === 'reject') {
+      router.push('/reviewer/assignments')
+    } else {
+      journal.value.status = 'Under Review' // Mock 状态更新
+    }
+  } catch (error) {
+    toastStore.add({ message: '操作失败', type: 'error' })
+  }
+}
 
-// Messages State
+// === 提交审稿意见逻辑 (核心对接点) ===
+const showSubmitModal = ref(false)
+const pendingReviewData = ref(null)
+
+const handleReviewSubmit = (data) => {
+  pendingReviewData.value = data
+  showSubmitModal.value = true
+}
+
+const confirmSubmit = async () => {
+  if (!journal.value || !pendingReviewData.value) return
+  
+  const { ratings, comments, confidentialComments, decision } = pendingReviewData.value
+  
+  // 1. 将维度的字符串评价映射为后端的 1-5 整数分 (score)
+  let score = 5
+  if (ratings) {
+    const scoreMap = { 'Excellent': 5, 'Good': 4, 'Fair': 3, 'Poor': 2, 'Very Poor': 1 }
+    const ratingValues = Object.values(ratings).map(r => scoreMap[r] || 3)
+    if (ratingValues.length > 0) {
+      score = Math.round(ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length)
+    }
+  }
+
+  // 2. 构造符合 backend/api/v1/reviews.py submit_review_opinion 的 Payload
+  const payload = {
+    score: score,
+    comments: comments || '无补充意见',                     // To Author
+    recommendations: confidentialComments || '无机密建议',  // To Editor
+    decision: decision || 'revision'
+  }
+
+  try {
+    // 3. 调用 API 提交到后端
+    await reviewStore.submitReview(journalId, payload)
+    
+    // 4. 清理本地草稿和状态
+    toastStore.add({ message: '评审意见提交成功！感谢您的付出。', type: 'success' })
+    showSubmitModal.value = false
+    localStorage.removeItem(`review_draft_${journalId}`)
+    
+    // 返回已完成列表
+    router.push('/reviewer/assignments?filter=completed')
+  } catch (error) {
+    toastStore.add({ message: `提交失败：${error.message || '未知错误'}`, type: 'error' })
+  }
+}
+
+// === 其它功能模块 ===
+const coiState = ref({ hasConflict: 'no', declaration: '' })
+const submitCOI = () => { toastStore.add({ message: 'Conflict of Interest declaration submitted.', type: 'success' }) }
+
+const downloadFile = (file) => {
+  const link = document.createElement('a')
+  link.href = file.url || '#'
+  link.download = file.name
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+// Messages
 const newMessage = ref('')
-
-// Find or create a thread for this manuscript
-const currentThread = computed(() => {
-  // Find a thread where manuscriptId matches
-  // In a real app, we might need a more robust way to find the "Editor-Reviewer" thread for this specific manuscript
-  return messageStore.myThreads.find(t => String(t.manuscriptId) === String(journalId))
-})
-
+const currentThread = computed(() => messageStore.myThreads.find(t => String(t.manuscriptId) === String(journalId)))
 const messages = computed(() => {
   if (!currentThread.value) return []
   return messageStore.messages.filter(m => m.threadId === currentThread.value.id).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
 })
+
+const sendMessage = async () => {
+  if (!newMessage.value.trim()) return
+  try {
+    // 发送消息逻辑...
+    newMessage.value = ''
+  } catch (e) {
+    toastStore.add({ message: 'Failed to send message', type: 'error' })
+  }
+}
+
+// Mock Author Response for Revision
+const authorResponse = ref(`
+Thank you for your valuable comments. We have revised the manuscript accordingly.
+1. Addressed the concern about sample size by adding 50 more participants.
+2. Clarified the methodology section as requested.
+3. Updated Figure 3 to show higher resolution data.
+`)
+</script>
 
 const sendMessage = async () => {
   if (!newMessage.value.trim()) return

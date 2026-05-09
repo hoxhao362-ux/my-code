@@ -26,13 +26,9 @@ export const MANUSCRIPT_STATUS = {
   PENDING_PROOF: 'pending_proof', // 待校样确认
   PENDING_PUBLICATION: 'pending_publication', // 待出版
   PUBLISHED: 'published', // 已出版
-<<<<<<< HEAD
-  WITHDRAWN: 'withdrawn' // 已撤稿
-=======
   WITHDRAWN: 'withdrawn', // 已撤稿
   TRANSFER_SUGGESTED: 'transfer_suggested', // 建议转投
   TRANSFERRED: 'transferred' // 已转投
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 };
 
 export const STATUS_LABELS = {
@@ -55,13 +51,9 @@ export const STATUS_LABELS = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: 'Pending Proof',
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: 'Pending Publication',
   [MANUSCRIPT_STATUS.PUBLISHED]: 'Published',
-<<<<<<< HEAD
-  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn'
-=======
   [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn',
   [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: 'Transfer Suggested',
   [MANUSCRIPT_STATUS.TRANSFERRED]: 'Transferred'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 };
 
 export const AUTHOR_STATUS_MAP = {
@@ -84,13 +76,9 @@ export const AUTHOR_STATUS_MAP = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: 'Pending Proof',
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: 'Pending Publication',
   [MANUSCRIPT_STATUS.PUBLISHED]: 'Published',
-<<<<<<< HEAD
-  [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn'
-=======
   [MANUSCRIPT_STATUS.WITHDRAWN]: 'Withdrawn',
   [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: 'Transfer Suggested',
   [MANUSCRIPT_STATUS.TRANSFERRED]: 'Transferred'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 };
 
 export const STATUS_COLORS = {
@@ -113,11 +101,45 @@ export const STATUS_COLORS = {
   [MANUSCRIPT_STATUS.PENDING_PROOF]: '#999999', // Light Gray
   [MANUSCRIPT_STATUS.PENDING_PUBLICATION]: '#999999', // Light Gray
   [MANUSCRIPT_STATUS.PUBLISHED]: '#1B5E20', // Dark Green
-<<<<<<< HEAD
-  [MANUSCRIPT_STATUS.WITHDRAWN]: '#333333' // Dark Gray
-=======
   [MANUSCRIPT_STATUS.WITHDRAWN]: '#333333', // Dark Gray
   [MANUSCRIPT_STATUS.TRANSFER_SUGGESTED]: '#8E44AD', // Purple
   [MANUSCRIPT_STATUS.TRANSFERRED]: '#8E44AD' // Purple
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
+};
+
+/**
+ * 评审阶段（与后端 ReviewStage 枚举一致）
+ * @see backend/core/enums.py - ReviewStage
+ */
+export const REVIEW_STAGE = {
+  INITIAL_REVIEW: 'initial_review',
+  PEER_REVIEW: 'peer_review',
+  FINAL_DECISION: 'final_decision'
+};
+
+/**
+ * 工作流动作（与后端 WorkflowAction 枚举一致）
+ * @see backend/core/enums.py - WorkflowAction
+ */
+export const WORKFLOW_ACTION = {
+  SAVE: 'save',
+  SUBMIT: 'submit',
+  WITHDRAW: 'withdraw',
+  SCREEN: 'screen',
+  ASSIGN: 'assign',
+  REVIEW: 'review',
+  DECIDE: 'decide',
+  REVISE: 'revise',
+  APPROVE: 'approve',
+  PUBLISH: 'publish'
+};
+
+/**
+ * 决策类型（与后端 DecisionType 枚举一致）
+ * @see backend/core/enums.py - DecisionType
+ */
+export const DECISION_TYPE = {
+  ACCEPT: 'accept',
+  REJECT: 'reject',
+  REVISION: 'revision',
+  TRANSFER: 'transfer'
 };

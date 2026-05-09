@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useUserStore } from './user'
+import { manuscriptApi } from '../utils/api'
 
 export const useSubmissionStore = defineStore('submission', () => {
   // 当前步骤 (1-6)
@@ -19,7 +20,8 @@ export const useSubmissionStore = defineStore('submission', () => {
   // 表单数据
   const formData = ref({
     // Step 1
-    articleType: '',
+    article_type: '',
+    section_category: '',
     
     // Step 2
     files: [], // { id, name, type, description, fileObj (raw), url }
@@ -29,8 +31,8 @@ export const useSubmissionStore = defineStore('submission', () => {
     },
     
     // Step 3
-    region: '',
-    classifications: [],
+    subject: '',
+    keywords: '',
     
     // Step 4
     additionalInfo: {
@@ -52,7 +54,8 @@ export const useSubmissionStore = defineStore('submission', () => {
     },
     
     // Step 5
-    coverLetter: '',
+    cover_letter: '',
+    comments: '',
     
     // Step 6
     title: '',
@@ -63,8 +66,7 @@ export const useSubmissionStore = defineStore('submission', () => {
       findings: '',
       interpretation: ''
     },
-    keywords: '',
-    authors: [], // { id, name, institution, email, isCorresponding, isFirst }
+    authors: [], // { id, name, institution, email, orcid, is_corresponding, is_first }
     funding: [], // { id, body, number }
     noFunding: false,
     publishingOption: '' // Subscription / Open Access
@@ -114,7 +116,7 @@ export const useSubmissionStore = defineStore('submission', () => {
 
     switch (step) {
       case 1:
-        isValid = !!formData.value.articleType
+        isValid = !!formData.value.article_type
         break
       case 2:
         isValid = formData.value.files.length > 0
@@ -134,7 +136,7 @@ export const useSubmissionStore = defineStore('submission', () => {
         }
         break
       case 3:
-        isValid = !!formData.value.region && formData.value.classifications.length > 0
+        isValid = !!formData.value.subject && !!formData.value.keywords
         break
       case 4:
         const { q1, q2, q3, q4, q5, q6, recommendedReviewers, avoidedReviewers } = formData.value.additionalInfo
@@ -181,12 +183,12 @@ export const useSubmissionStore = defineStore('submission', () => {
         }
         break
       case 5:
-        isValid = !!formData.value.coverLetter
+        isValid = !!formData.value.cover_letter
         break
       case 6:
         const hasAuthor = formData.value.authors.length > 0
-        const hasCorresponding = formData.value.authors.some(a => a.isCorresponding)
-        const hasFirst = formData.value.authors.some(a => a.isFirst)
+        const hasCorresponding = formData.value.authors.some(a => a.is_corresponding)
+        const hasFirst = formData.value.authors.some(a => a.is_first)
         const hasFunding = formData.value.noFunding || formData.value.funding.length > 0
         
         const cleanTitle = formData.value.title.replace(/<[^>]*>/g, '').trim()
@@ -281,136 +283,92 @@ export const useSubmissionStore = defineStore('submission', () => {
     window.scrollTo(0, 0)
   }
 
-  // 提交
+  // 提取重置表单状态的辅助函数
+  const resetForm = () => {
+    currentStep.value = 1
+    steps.value.forEach(s => s.status = s.id === 1 ? 'current' : 'pending')
+    formData.value = {
+      article_type: '',
+      section_category: '',
+      files: [],
+      referenceAnonymization: { file: null, confirmed: false },
+      subject: '',
+      keywords: '',
+      additionalInfo: {
+        q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
+        ssrn: false, socialMedia: '', conference: 'No',
+        recommendedReviewers: [],
+        avoidedReviewers: [],
+        blindReview: { enabled: true, confirmed: false }
+      },
+      cover_letter: '', comments: '', title: '', abstract: '',
+      structuredAbstract: { background: '', methods: '', findings: '', interpretation: '' },
+      authors: [],
+      funding: [],
+      noFunding: false,
+      publishingOption: ''
+    }
+  }
+
+  // 真实的提交逻辑
   const submitManuscript = async () => {
-    // 模拟提交
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const userStore = useUserStore()
-        
-        // 1. Generate Mock Manuscript ID
-        const manuscriptId = 20260000 + Math.floor(Math.random() * 10000)
-        
-        // 2. Get Author Info
-        const authorId = userStore.submissionUser?.id || userStore.user?.id || 999
-        const authorName = userStore.submissionUser?.username || userStore.user?.username || (formData.value.authors[0]?.name || 'Unknown Author')
-        const title = formData.value.title ? formData.value.title.replace(/<[^>]*>/g, '').trim() : 'Untitled Manuscript'
+    try {
+      const fd = new FormData()
+      
+      // 1. 附加基础文本字段
+      fd.append('title', formData.value.title.replace(/<[^>]*>/g, '').trim())
+      fd.append('abstract', formData.value.abstract.replace(/<[^>]*>/g, '').trim())
+      fd.append('article_type', formData.value.article_type)
+      fd.append('section_category', formData.value.section_category)
+      fd.append('subject', formData.value.subject)
+      fd.append('keywords', formData.value.keywords)
+      
+      // 2. 第一作者 & 通讯作者（后端必需字段）
+      const firstAuthor = formData.value.authors.find(a => a.is_first)
+      const correspondingAuthor = formData.value.authors.find(a => a.is_corresponding)
+      fd.append('first_author', firstAuthor ? firstAuthor.name : '')
+      fd.append('corresponding_author', correspondingAuthor ? correspondingAuthor.name : '')
+      fd.append('order_of_authors', JSON.stringify(formData.value.authors.map((a, i) => ({ id: a.id, name: a.name, order: i + 1 }))))
+      
+      fd.append('cover_letter', formData.value.cover_letter)
+      fd.append('comments', formData.value.comments)
+      fd.append('publishing_option', formData.value.publishingOption)
+      
+      // 3. 附加复杂对象（对于 FastAPI 的 Form(...)，复杂结构需要转为 JSON 字符串）
+      fd.append('authors', JSON.stringify(formData.value.authors))
+      fd.append('funding', JSON.stringify(formData.value.funding))
+      fd.append('additional_info', JSON.stringify(formData.value.additionalInfo))
+      
+      if (formData.value.structuredAbstract) {
+        fd.append('structured_abstract', JSON.stringify(formData.value.structuredAbstract))
+      }
 
-        // 2.5 Create and Save Journal Entry (Fix: Ensure manuscript is added to main list)
-        const newJournal = {
-            id: manuscriptId,
-            title: title,
-            author: authorName,
-            module: formData.value.classifications?.[0] || 'Others',
-            status: 'pending_initial_review',
-            submissionDate: new Date().toISOString().split('T')[0],
-            abstract: formData.value.abstract ? formData.value.abstract.replace(/<[^>]*>/g, '').trim() : '',
-            keywords: formData.value.keywords || '',
-            fileUrl: '/vite.svg',
-            reviews: []
-        }
-        userStore.addJournal(newJournal)
-
-        // 3. Process Recommended Reviewers
-        const recommended = formData.value.additionalInfo.recommendedReviewers || []
-        if (recommended.length > 0) {
-            // Ensure recommendedReviewers array exists in store (it should based on init)
-            if (!userStore.recommendedReviewers) userStore.recommendedReviewers = []
-            
-            recommended.forEach((reviewer, index) => {
-                const newRec = {
-                    id: Date.now() + index,
-                    manuscriptId: manuscriptId,
-                    manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
-                    reviewerName: reviewer.name,
-                    reviewerEmail: reviewer.email,
-                    reviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A', 
-                    reviewerExpertise: ['Unknown'], 
-                    recommendationReason: reviewer.reason,
-                    status: 'pending',
-                    recommendedAt: new Date().toISOString(),
-                    reviewedAt: null,
-                    reviewedBy: null,
-                    submissionCount: 1, 
-                    avgScore: 0,
-                    riskLevel: 'low', 
-                    evalStatus: 'pending'
-                }
-                userStore.recommendedReviewers.unshift(newRec)
-            })
-            // Persist to localStorage
-            localStorage.setItem('recommendedReviewers', JSON.stringify(userStore.recommendedReviewers))
-        }
-
-        // 4. Process Opposed Reviewers
-        const opposed = formData.value.additionalInfo.avoidedReviewers || []
-        if (opposed.length > 0) {
-            if (!userStore.opposedReviewers) userStore.opposedReviewers = []
-
-            opposed.forEach((reviewer, index) => {
-                const newOpp = {
-                    id: Date.now() + index + 100,
-                    manuscriptId: manuscriptId,
-                    manuscriptTitle: title,
-                    authorId: authorId,
-                    authorName: authorName,
-                    opposedReviewerName: reviewer.name,
-                    opposedReviewerAffiliation: reviewer.institution || reviewer.affiliation || 'N/A',
-                    reasonType: reviewer.reasonType || 'Other',
-                    opposedReason: reviewer.reason,
-                    status: 'pending',
-                    requestedAt: new Date().toISOString(),
-                    handledAt: null,
-                    handledBy: null
-                }
-                 userStore.opposedReviewers.unshift(newOpp)
-            })
-            localStorage.setItem('opposedReviewers', JSON.stringify(userStore.opposedReviewers))
-        }
-        
-        // 5. Add System Log
-        userStore.addSystemLog({
-            type: 'operation',
-            user: authorName,
-            action: 'Submit Manuscript',
-            target: `Manuscript ID: ${manuscriptId}`,
-            ip: '127.0.0.1'
+      // 3. 附加文件对象
+      if (formData.value.files && formData.value.files.length > 0) {
+        formData.value.files.forEach(f => {
+          if (f.fileObj) {
+            fd.append('files', f.fileObj)
+          }
         })
+        // 传递文件元数据（如文件类型是 manuscript 还是 conflict），以便后端一一对应
+        const fileMeta = formData.value.files.map(f => ({ name: f.name, type: f.type, description: f.description }))
+        fd.append('files_meta', JSON.stringify(fileMeta))
+      }
 
-        // 清除草稿 (Journal Platform Standard Cleanup)
-        localStorage.removeItem('submission_draft')
-        
-        // Reset Store State (Pure Frontend Cleanup)
-        currentStep.value = 1
-        steps.value.forEach(s => s.status = s.id === 1 ? 'current' : 'pending')
-        formData.value = {
-            articleType: '',
-            files: [],
-            referenceAnonymization: { file: null, confirmed: false },
-            region: '',
-            classifications: [],
-            additionalInfo: {
-                q1: '', q2: '', q3: '', q4: '', q5: '', q6: '',
-                ssrn: false, socialMedia: '', conference: 'No',
-                recommendedReviewers: [],
-                avoidedReviewers: [],
-                blindReview: { enabled: true, confirmed: false }
-            },
-            coverLetter: '',
-            title: '',
-            abstract: '',
-            keywords: '',
-            authors: [],
-            funding: [],
-            noFunding: false,
-            publishingOption: ''
-        }
-        
-        resolve(manuscriptId)
-      }, 1500)
-    })
+      // 4. 发起真实请求
+      const response = await manuscriptApi.upload(fd)
+      
+      // 5. 提交成功后清理本地草稿和状态
+      localStorage.removeItem('submission_draft')
+      resetForm()
+      
+      // 返回后端真实的稿件 ID
+      return response.id || response.manuscript_id
+      
+    } catch (error) {
+      console.error('Submission failed:', error)
+      throw error
+    }
   }
 
   return {

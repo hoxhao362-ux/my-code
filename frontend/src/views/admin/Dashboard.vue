@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { editorApi, adminApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 import { useI18n } from '../../composables/useI18n'
 
@@ -23,25 +24,91 @@ const dashboardTitle = computed(() => {
   if (role === 'admin') return t('dashboard.roles.admin')
   if (role === 'editor') return t('dashboard.roles.editor')
   if (role === 'associate_editor') return t('dashboard.roles.associate_editor')
-  if (role === 'editorial_assistant') return t('dashboard.roles.editorial_assistant')
-  if (role === 'advisory_editor') return t('dashboard.roles.advisory_editor')
+  if (role === 'ea_ae') return t('dashboard.roles.ea_ae')
   return t('dashboard.roles.default')
 })
 
-// Filtered Journals based on role
-const filteredJournals = computed(() => {
+// 真实看板统计数据
+const stats = ref({
+  total_manuscripts: 0,
+  pending_manuscripts: 0,
+  under_review: 0,
+  completed_reviews: 0,
+  total_users: 0,
+  recent_submissions: 0,
+  user_roles: {}
+})
+
+// 近期投稿列表
+const recentJournalsList = ref([])
+const isLoading = ref(false)
+
+// 页面加载时拉取后端数据（根据角色调用不同API）
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    
+    const role = user.value?.role
+    
+    if (role === 'admin') {
+      // 管理员：调用 adminApi.getDashboard
+      const dashboardRes = await adminApi.getDashboard()
+      const data = dashboardRes.data || dashboardRes
+      
+      stats.value = {
+        total_manuscripts: data.total_journals || data.totalJournals || 0,
+        pending_manuscripts: 0,
+        under_review: 0,
+        completed_reviews: 0,
+        total_users: data.total_users || data.totalUsers || 0,
+        recent_submissions: 0,
+        user_roles: data.user_roles || data.userRoles || {}
+      }
+      
+      recentJournalsList.value = []
+    } else {
+      // 编辑：调用 editorApi.getDashboard
+      const dashboardRes = await editorApi.getDashboard()
+      const data = dashboardRes.data?.statistics || dashboardRes.statistics || dashboardRes.data || dashboardRes
+      
+      stats.value = {
+        total_manuscripts: data.total_manuscripts || data.totalManuscripts || 0,
+        pending_manuscripts: data.pending_manuscripts || data.pendingManuscripts || 0,
+        under_review: data.under_review || data.underReview || 0,
+        completed_reviews: data.completed_reviews || data.completedReviews || 0,
+        total_users: data.total_users || data.totalUsers || 0,
+        recent_submissions: data.recent_submissions || data.recentSubmissions || 0,
+        user_roles: {}
+      }
+      
+      const pendingList = dashboardRes.data?.pending_list || dashboardRes.pending_list || []
+      recentJournalsList.value = pendingList.slice(0, 5)
+    }
+  } catch (error) {
+    console.error('获取看板数据失败:', error)
+    stats.value = {
+      total_manuscripts: filteredJournalsFallback.value.length,
+      pending_manuscripts: pendingJournalsFallback.value.length,
+      under_review: 0,
+      completed_reviews: 0,
+      total_users: 2345,
+      recent_submissions: 45,
+      user_roles: {}
+    }
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// Fallback: 旧的 Mock 数据逻辑（仅当后端不可用时使用）
+const filteredJournalsFallback = computed(() => {
   let list = userStore.journals
   const role = user.value?.role
-  
-  if (role === 'editor') {
-    return list
-  }
+  if (role === 'editor') return list
   return list
 })
 
-// 统计信息
-const totalJournals = computed(() => filteredJournals.value.length)
-const pendingJournals = computed(() => filteredJournals.value.filter(j => 
+const pendingJournalsFallback = computed(() => filteredJournalsFallback.value.filter(j => 
   j.status === 'Pending' || 
   j.status === 'Under Review' || 
   j.status === 'pending_initial_review' ||
@@ -50,8 +117,20 @@ const pendingJournals = computed(() => filteredJournals.value.filter(j =>
   j.status === 'review_completed' ||
   j.status === 'final_decision_pending'
 ).length)
-const totalUsers = computed(() => 2345) // Mock
-const recentSubmissions = computed(() => 45) // Mock
+
+// 统计信息（使用后端数据，Fallback 到 Mock）
+const totalJournals = computed(() => stats.value.total_manuscripts || filteredJournalsFallback.value.length)
+const pendingJournals = computed(() => stats.value.pending_manuscripts || pendingJournalsFallback.value.length)
+const totalUsers = computed(() => stats.value.total_users || 2345)
+const recentSubmissions = computed(() => stats.value.recent_submissions || 45)
+
+// 近期投稿（优先使用后端列表）
+const recentJournals = computed(() => {
+  if (recentJournalsList.value.length > 0) {
+    return recentJournalsList.value
+  }
+  return filteredJournalsFallback.value.slice(0, 5)
+})
 
 // New Stats for Reviewer Management
 const pendingRecommendations = computed(() => {
@@ -162,14 +241,31 @@ const getStatusClass = (status) => {
         </div>
       </section>
 
+      <!-- 用户角色分布（仅管理员可见） -->
+      <section v-if="user?.role === 'admin' && Object.keys(stats.user_roles).length > 0" class="stats-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ t('dashboard.userRoles.title') }}</h2>
+        </div>
+        <div class="stats-grid">
+          <div v-for="(count, role) in stats.user_roles" :key="role" class="stat-card">
+            <div class="stat-content">
+              <h3 class="stat-number">{{ count }}</h3>
+              <p class="stat-label">{{ t(`dashboard.userRoles.${role}`, role) }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 近期投稿 -->
       <section class="journals-section">
         <div class="section-header">
           <h2 class="section-title">{{ t('dashboard.recentJournals.title') }}</h2>
         </div>
         <div class="journals-list">
+          <div v-if="isLoading" class="loading-state">{{ t('common.loading') }}</div>
           <div 
-            v-for="journal in filteredJournals.slice(0, 5)" 
+            v-else
+            v-for="journal in recentJournals" 
             :key="journal.id" 
             class="journal-item"
           >

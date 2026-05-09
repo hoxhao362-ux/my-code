@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { adminApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 import SensitiveOperationVerification from '../../components/SensitiveOperationVerification.vue'
 
@@ -15,6 +16,40 @@ const props = defineProps({
     default: false
   }
 })
+
+// 真实用户列表
+const usersList = ref([])
+const isLoading = ref(false)
+const pagination = ref({
+  page: 1,
+  page_size: 20,
+  total: 0
+})
+
+// 页面加载时获取用户列表
+onMounted(async () => {
+  await fetchUsers()
+})
+
+const fetchUsers = async (params = {}) => {
+  isLoading.value = true
+  try {
+    const queryParams = {
+      page: pagination.value.page,
+      page_size: pagination.value.page_size,
+      ...params
+    }
+    const res = await adminApi.getUsers(queryParams)
+    const data = res.data || res
+    usersList.value = data.items || []
+    pagination.value.total = data.total || 0
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    usersList.value = userStore.users || []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // 邮箱加密函数
 const encryptEmail = (email) => {
@@ -60,18 +95,19 @@ const statusFilter = ref('all')
 
 // 计算过滤后的用户列表
 const filteredUsers = computed(() => {
-  return userStore.users.filter(user => {
+  const list = usersList.value.length > 0 ? usersList.value : userStore.users
+  return list.filter(u => {
     // 关键词搜索
     const matchesKeyword = !searchKeyword.value || 
-      user.username.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      user.phone.includes(searchKeyword.value)
+      u.username?.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+      u.phone?.includes(searchKeyword.value)
     
     // 角色过滤
-    const matchesRole = roleFilter.value === 'all' || user.role === roleFilter.value
+    const matchesRole = roleFilter.value === 'all' || u.role === roleFilter.value
     
     // 状态过滤
-    const matchesStatus = statusFilter.value === 'all' || user.status === statusFilter.value
+    const matchesStatus = statusFilter.value === 'all' || u.status === statusFilter.value
     
     return matchesKeyword && matchesRole && matchesStatus
   })
@@ -80,11 +116,10 @@ const filteredUsers = computed(() => {
 // 角色选项
 const roleOptions = [
   { value: 'all', label: 'All Roles' },
-  { value: 'admin', label: 'Admin (EIC)' },
-  { value: 'editor', label: 'Editor' },
+  { value: 'admin', label: 'Administrator' },
+  { value: 'editor', label: 'Editor-in-Chief' },
   { value: 'associate_editor', label: 'Associate Editor' },
-  { value: 'editorial_assistant', label: 'Editorial Assistant' },
-  { value: 'advisory_editor', label: 'Advisory Editor' },
+  { value: 'ea_ae', label: 'Editorial Assistant & Advisory Editor' },
   { value: 'reviewer', label: 'Reviewer' },
   { value: 'author', label: 'Author' },
   { value: 'user', label: 'User' }
@@ -213,7 +248,7 @@ const handleVerificationSuccess = () => {
 }
 
 // 执行编辑操作
-const executeEdit = () => {
+const executeEdit = async () => {
   // Check if role is changing from User to Admin - Warning
   let warning = 'Are you sure you want to update this user?'
   let isSensitive = false
@@ -223,17 +258,24 @@ const executeEdit = () => {
      isSensitive = true
   }
 
-  const action = () => {
+  const action = async () => {
     if (editForm.value.resetPassword) {
       toastStore.add({ message: `Password reset for user ${currentUser.value.username} to: 123456`, type: 'success' })
     }
     if (editForm.value.role !== currentUser.value.role) {
-      userStore.updateUserRole(currentUser.value.id, editForm.value.role)
-      currentUser.value.role = editForm.value.role
-      const roleName = editForm.value.role === 'editor' ? 'Editor' : 
-                       editForm.value.role === 'reviewer' ? 'Reviewer' : 
-                       editForm.value.role === 'author' ? 'Author' : 'User'
-      toastStore.add({ message: `User ${currentUser.value.username} role updated to ${roleName}`, type: 'success' })
+      try {
+        const isVerified = currentUser.value.is_verified !== undefined ? currentUser.value.is_verified : true
+        await adminApi.updateUserRole(currentUser.value.id, editForm.value.role, isVerified)
+        currentUser.value.role = editForm.value.role
+        const roleName = editForm.value.role === 'editor' ? 'Editor' : 
+                         editForm.value.role === 'reviewer' ? 'Reviewer' : 
+                         editForm.value.role === 'author' ? 'Author' : 'User'
+        toastStore.add({ message: `User ${currentUser.value.username} role updated to ${roleName}`, type: 'success' })
+        await fetchUsers()
+      } catch (error) {
+        const detail = error.response?.data?.detail || error.message || '更新失败'
+        toastStore.add({ message: detail, type: 'error' })
+      }
     }
     showEditModal.value = false
   }
@@ -251,6 +293,7 @@ const executeEdit = () => {
 }
 
 const executeDisable = () => {
+  // TODO: 后端暂未实现禁用/启用用户接口，当前使用本地逻辑
   const action = () => {
     userStore.updateUserStatus(currentUser.value.id, 'inactive')
     currentUser.value.status = 'inactive'
@@ -265,10 +308,16 @@ const executeDisable = () => {
   showVerification.value = true
 }
 
-const executeDelete = () => {
-  const action = () => {
-    userStore.deleteUser(currentUser.value.id)
-    toastStore.add({ message: `User ${currentUser.value.username} deleted`, type: 'error' })
+const executeDelete = async () => {
+  const action = async () => {
+    try {
+      await adminApi.deleteUser(currentUser.value.id)
+      toastStore.add({ message: `User ${currentUser.value.username} deleted`, type: 'error' })
+      await fetchUsers()
+    } catch (error) {
+      const detail = error.response?.data?.detail || error.message || '删除失败'
+      toastStore.add({ message: detail, type: 'error' })
+    }
     showDeleteModal.value = false
   }
   
@@ -279,11 +328,10 @@ const executeDelete = () => {
 }
 
 // 启用用户
+// TODO: 后端暂未实现禁用/启用用户接口，当前使用本地逻辑
 const enableUser = (user) => {
   openConfirmModal(() => {
-    // 启用用户逻辑 - 使用userStore更新状态，确保持久化
     userStore.updateUserStatus(user.id, 'active')
-    // 更新当前用户对象，确保界面显示正确
     user.status = 'active'
     toastStore.add({ message: `User ${user.username} enabled`, type: 'success' })
   }, 'Are you sure you want to enable this user?')
@@ -366,20 +414,20 @@ const enableUser = (user) => {
       <section class="stats-section">
         <div class="stats-container">
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.length }}</div>
-            <div class="stat-label">Total Normals</div>
+            <div class="stat-number">{{ usersList.length || pagination.total }}</div>
+            <div class="stat-label">Total Users</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.filter(u => u.status === 'active').length }}</div>
-            <div class="stat-label">Active Normals</div>
+            <div class="stat-number">{{ usersList.filter(u => u.status === 'active').length }}</div>
+            <div class="stat-label">Active Users</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'reviewer').length }}</div>
+            <div class="stat-number">{{ usersList.filter(u => u.role === 'reviewer').length }}</div>
             <div class="stat-label">Reviewers</div>
           </div>
           <div class="stat-card">
-            <div class="stat-number">{{ userStore.users.filter(u => u.role === 'author').length }}</div>
-              <div class="stat-label">Authors</div>
+            <div class="stat-number">{{ usersList.filter(u => u.role === 'author').length }}</div>
+            <div class="stat-label">Authors</div>
           </div>
         </div>
       </section>
@@ -405,11 +453,10 @@ const enableUser = (user) => {
                 <td class="user-username">{{ user.username }}</td>
                 <td>
                   <span class="role-badge" :class="user.role">
-                    {{ user.role === 'admin' ? 'Admin' : 
-                       user.role === 'editor' ? 'Editor' :
+                    {{ user.role === 'admin' ? 'Administrator' : 
+                       user.role === 'editor' ? 'Editor-in-Chief' :
                        user.role === 'associate_editor' ? 'Associate Editor' :
-                       user.role === 'editorial_assistant' ? 'Editorial Assistant' :
-                       user.role === 'advisory_editor' ? 'Advisory Editor' :
+                       user.role === 'ea_ae' ? 'EA/AE' :
                        user.role === 'reviewer' ? 'Reviewer' : 
                        user.role === 'author' ? 'Author' : 'User' }}
                   </span>
@@ -555,8 +602,7 @@ const enableUser = (user) => {
                 <option value="admin">Admin</option>
                 <option value="editor">Editor</option>
                 <option value="associate_editor">Associate Editor</option>
-                <option value="editorial_assistant">Editorial Assistant</option>
-                <option value="advisory_editor">Advisory Editor</option>
+                <option value="ea_ae">EA/AE</option>
                 <option value="reviewer">Reviewer</option>
                 <option value="author">Author</option>
                 <option value="user">User</option>

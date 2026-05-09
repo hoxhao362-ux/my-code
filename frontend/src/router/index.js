@@ -57,14 +57,14 @@ const adminRoutes = [
   { path: '/submission', name: 'submission-index', component: () => import('../views/submission/Index.vue') },
   { path: '/submission/about', name: 'submission-about', component: () => import('../views/submission/About.vue') },
   { path: '/submission/help', name: 'submission-help', component: () => import('../views/submission/Help.vue') },
-  { path: '/submission/help/feedback', name: 'submission-help-feedback', component: () => import('../views/submission/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
-  { path: '/submission/system-status', name: 'submission-system-status', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/submission/help/feedback', name: 'submission-help-feedback', component: () => import('../views/submission/Feedback.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
+  { path: '/submission/system-status', name: 'submission-system-status', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
   
   // 投稿专属路由 (Submission Process) - 独立于 Dashboard
   { path: '/submission/author/submit', name: 'submission-process', component: () => import('../views/submission/SubmissionProcess.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'editor', 'admin'] } },
 
   // 编辑系统路由 (Unified Editorial System) - Replaces Admin Dashboard
-  { path: '/editor/dashboard', name: 'editor-dashboard', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/editor/dashboard', name: 'editor-dashboard', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } },
   { path: '/admin/dashboard', redirect: '/editor/dashboard' }, // Redirect legacy admin dashboard
   
   { path: '/editor/associate/dashboard', redirect: '/editor/dashboard' },
@@ -82,9 +82,9 @@ const adminRoutes = [
   { path: '/editor/audit/my-tasks', name: 'audit-my-tasks', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor'] } },
   
   // Editorial Management Routes (Unified)
-  { path: '/editor/manuscripts', name: 'editor-manuscripts', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
-  { path: '/editor/reviewers', name: 'editor-reviewers', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
-  { path: '/editor/decisions', name: 'editor-decisions', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/editor/manuscripts', name: 'editor-manuscripts', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } },
+  { path: '/editor/reviewers', name: 'editor-reviewers', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } },
+  { path: '/editor/decisions', name: 'editor-decisions', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } },
   
   { path: '/editor/users', name: 'editor-users', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin'] } },
   { path: '/admin/users', redirect: '/editor/users' },
@@ -154,13 +154,13 @@ const adminRoutes = [
     path: '/editor/publication', 
     name: 'editor-publication-management', 
     component: () => import('../views/editor/EditorPortal.vue'), 
-    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } 
   },
   { 
     path: '/editor/publication/:id', 
     name: 'editor-publication-process', 
     component: () => import('../views/admin/manuscript/PublicationProcess.vue'), 
-    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } 
   },
   // 作者端 - 出版状态查看 (New)
   { 
@@ -175,7 +175,7 @@ const adminRoutes = [
   { path: '/admin/manuscript/history', name: 'admin-manuscript-history', component: () => import('../views/admin/manuscript/ManuscriptHistory.vue'), meta: { requiresAuth: true, roles: ['author', 'reviewer', 'admin', 'editor', 'associate_editor', 'ea_ae'] } },
   
   // 个人中心子路由
-  { path: '/editor/settings', name: 'editor-settings', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'] } },
+  { path: '/editor/settings', name: 'editor-settings', component: () => import('../views/editor/EditorPortal.vue'), meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } },
   { path: '/admin/profile-security', redirect: '/editor/settings?tab=security' },
   { path: '/admin/profile-logs', redirect: '/editor/settings?tab=security' },
   { path: '/admin/notifications', redirect: '/editor/messages' },
@@ -197,7 +197,7 @@ const adminRoutes = [
     path: '/editor/messages', 
     name: 'editor-messages', 
     component: () => import('../views/editor/EditorPortal.vue'), 
-    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'editorial_assistant'] } 
+    meta: { requiresAuth: true, roles: ['admin', 'editor', 'associate_editor', 'ea_ae'] } 
   },
   { 
     path: '/author/messages', 
@@ -269,7 +269,7 @@ router.beforeEach((to, from, next) => {
         
         if (submissionUser.role === 'author') next({ name: 'admin-author-dashboard' })
         else if (submissionUser.role === 'reviewer') next({ name: 'reviewer-dashboard' })
-        else if (['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(submissionUser.role)) next({ name: 'editor-dashboard' })
+        else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(submissionUser.role)) next({ name: 'editor-dashboard' })
         else next()
       } else {
         next()
@@ -313,7 +313,7 @@ router.beforeEach((to, from, next) => {
         // Permission denied fallback
         if (currentRole === 'author') next({ name: 'admin-author-dashboard' })
         else if (currentRole === 'reviewer') next({ name: 'reviewer-dashboard' })
-        else if (['admin', 'editor', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(currentRole)) next({ name: 'editor-dashboard' })
+        else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(currentRole)) next({ name: 'editor-dashboard' })
         else next({ name: 'submission-login' })
       }
     } else {

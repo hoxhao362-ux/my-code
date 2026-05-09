@@ -17,9 +17,9 @@ const router = useRouter()
 const user = computed(() => userStore.user)
 
 // Permissions
-const canInitialReview = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
-const canAssignReviewers = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
-const canReject = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
+const canInitialReview = computed(() => userStore.hasRolePermission('associate_editor'))
+const canAssignReviewers = computed(() => userStore.hasRolePermission('associate_editor'))
+const canReject = computed(() => userStore.hasRolePermission('associate_editor'))
 
 // State
 const showAssignModal = ref(false)

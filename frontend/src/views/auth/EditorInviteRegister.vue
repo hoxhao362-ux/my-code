@@ -54,8 +54,8 @@ const getRoleName = (role) => {
   const map = {
     'editor': 'Editorial Board Member (Editor)',
     'associate_editor': 'Associate Editor',
-    'assistant': 'Editorial Assistant',
-    'advisory': 'Advisory Editor'
+    'assistant': 'EA/AE',
+    'advisory': 'EA/AE'
   }
   return map[role] || role
 }
@@ -101,8 +101,8 @@ const getRoleName = (role) => {
           </div>
         </div>
 
-        <!-- Section 2: Professional (For Editors/AE) -->
-        <div class="form-section" v-if="['editor', 'associate_editor'].includes(roleType)">
+        <!-- Section 2: Professional (For Editors/AE/EA) -->
+        <div class="form-section" v-if="['editor', 'associate_editor', 'ea_ae'].includes(roleType)">
           <h3>2. Academic Profile</h3>
           <div class="form-group">
             <label>Research Fields (Keywords)</label>

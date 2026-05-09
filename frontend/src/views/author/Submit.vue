@@ -2,16 +2,20 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
+import { useI18n } from 'vue-i18n'
+import { manuscriptApi } from '../../utils/api'
+import { useManuscriptStore } from '../../stores/manuscript'
 import Navigation from '../../components/Navigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import { useI18n } from '../../composables/useI18n'
-import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 
 const { t } = useI18n()
-const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
+const toastStore = useToastStore()
+const manuscriptStore = useManuscriptStore()
 
 // 表单数据
 const formData = ref({
@@ -49,7 +53,7 @@ const handleFileUpload = (event) => {
     }
     
     // 检查文件类型
-    const allowedTypes = ['.doc', '.docx', '.pdf', '.txt']
+    const allowedTypes = ['.doc', '.docx', '.pdf']
     const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`
     if (!allowedTypes.includes(fileExtension)) {
       error.value = t('submit.validation.fileType')
@@ -451,11 +455,9 @@ const formatFileSize = (bytes) => {
 const modules = computed(() => userStore.modules)
 
 const handleSubmit = async () => {
-  // 表单验证 - 处理Delta对象和HTML标签
-  const hasTitle = !!formData.value.title
-  const hasAuthor = !!formData.value.author
+  let hasTitle = !!formData.value.title
+  let hasAuthor = !!formData.value.author
   
-  // 处理摘要 - 可能是Delta对象或HTML字符串
   let hasAbstract = false
   if (typeof formData.value.abstract === 'string') {
     hasAbstract = !!formData.value.abstract && formData.value.abstract.replace(/<[^>]*>/g, '').trim() !== ''
@@ -463,19 +465,10 @@ const handleSubmit = async () => {
     hasAbstract = formData.value.abstract.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
   }
   
-  // 处理正文 - 可能是Delta对象或HTML字符串
-  let hasContent = false
-  if (typeof formData.value.content === 'string') {
-    hasContent = !!formData.value.content && formData.value.content.replace(/<[^>]*>/g, '').trim() !== ''
-  } else if (formData.value.content && formData.value.content.ops) {
-    hasContent = formData.value.content.ops.some(op => op.insert && typeof op.insert === 'string' && op.insert.trim() !== '')
-  }
-  
-  // 检查是否有附件
   const hasAttachments = formData.value.attachments && formData.value.attachments.length > 0
   
-  if (!hasTitle || !hasAuthor || !hasAbstract || (!hasContent && !hasAttachments)) {
-    error.value = t('submit.validation.required')
+  if (!hasTitle || !hasAuthor || !hasAbstract || !hasAttachments) {
+    error.value = t('submit.errors.incomplete') || 'Please fill in Title, Author, Abstract, and attach manuscript files.'
     return
   }
   
@@ -484,44 +477,43 @@ const handleSubmit = async () => {
   success.value = ''
   
   try {
-    // 编辑器已配置contentType="html"，直接返回HTML字符串
     const convertToHTML = (content) => {
-      if (typeof content === 'string') {
-        return content
-      }
+      if (typeof content === 'string') return content
       return ''
     }
     
-    // 创建新期刊对象
-    const newJournal = {
-      id: Date.now().toString(),
-      title: formData.value.title,
-      author: formData.value.author,
-      abstract: convertToHTML(formData.value.abstract),
-      keywords: formData.value.keywords.split(',').map(k => k.trim()).filter(Boolean),
-      content: convertToHTML(formData.value.content),
-      module: formData.value.modules.length > 0 && formData.value.modules.includes('all') ? 'Others' : formData.value.modules.filter(m => m !== 'all'),
-      status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-      reviewStage: 'Initial Review',
-      date: new Date().toISOString().split('T')[0],
-      submissionDate: new Date().toISOString().split('T')[0],
-      viewCount: 0,
-      attachments: formData.value.attachments.map(att => ({
-        id: att.id,
-        name: att.name,
-        type: att.type,
-        size: att.size,
-        url: att.url
-      }))
+    const fd = new FormData()
+    
+    fd.append('title', formData.value.title)
+    fd.append('article_type', 'Original Research')
+    
+    const authorArray = [{
+      name: formData.value.author,
+      is_first: true,
+      is_corresponding: true,
+      email: userStore.userInfo?.email || ''
+    }]
+    fd.append('authors', JSON.stringify(authorArray))
+    
+    fd.append('abstract', convertToHTML(formData.value.abstract))
+    fd.append('keywords', formData.value.keywords)
+    
+    const moduleValue = formData.value.modules.includes('all') ? 'Others' : formData.value.modules.join(',')
+    fd.append('subject', moduleValue)
+    
+    if (formData.value.attachments && formData.value.attachments.length > 0) {
+      formData.value.attachments.forEach(att => {
+        fd.append('file', att.file)
+      })
     }
     
-    // 调用userStore提供的addJournal方法
-    userStore.addJournal(newJournal)
+    const response = await manuscriptStore.submitManuscript(fd)
     
-    // 显示成功消息
-    success.value = t('submit.success')
+    console.log(`Successfully created manuscript ID: ${response.manuscript_id}, Status: ${response.status}`)
     
-    // 清空表单并跳转
+    success.value = t('submit.successMessage') || 'Manuscript submitted successfully! Waiting for initial review.'
+    toastStore.add({ message: success.value, type: 'success' })
+    
     setTimeout(() => {
       formData.value = {
         title: '',
@@ -529,20 +521,22 @@ const handleSubmit = async () => {
         abstract: '',
         keywords: '',
         content: '',
-        modules: ['all']
+        modules: ['all'],
+        attachments: []
       }
       success.value = ''
-      router.push('/admin/author-dashboard')
+      router.push('/author/dashboard')
     }, 2000)
   } catch (err) {
-    error.value = t('submit.error')
+    console.error('Submission Error:', err)
+    error.value = err.response?.data?.detail || err.message || 'Submission failed. Please try again later.'
   } finally {
     submitting.value = false
   }
 }
 
 const goBack = () => {
-  router.push('/admin/author-dashboard')
+  router.push('/author/dashboard')
 }
 </script>
 
@@ -738,7 +732,7 @@ const goBack = () => {
                     id="attachment-upload" 
                     class="file-input" 
                     @change="handleFileUpload" 
-                    accept=".doc,.docx,.pdf,.txt"
+                    accept=".doc,.docx,.pdf"
                   />
                   <div class="upload-trigger" @click="triggerFileUpload">
                     <div class="upload-icon">📁</div>

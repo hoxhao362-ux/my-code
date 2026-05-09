@@ -24,7 +24,7 @@ const checkLoginAndRedirect = () => {
       router.push('/submission/author/submit')
     } else if (role === 'reviewer') {
       router.push('/reviewer/dashboard')
-    } else if (['editor', 'admin', 'associate_editor', 'editorial_assistant', 'advisory_editor'].includes(role)) {
+    } else if (['editor', 'admin', 'associate_editor', 'ea_ae'].includes(role)) {
       router.push('/editor/dashboard')
     }
   }

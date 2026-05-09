@@ -54,53 +54,41 @@ const chartOptions = computed(() => ({
 const loadData = async () => {
   loading.value = true
   try {
-    const [trend, modules, status] = await Promise.all([
-      adminApi.getSubmissionTrend(),
-      adminApi.getModuleDistribution(),
-      adminApi.getJournalStatusStats()
-    ])
-
-    // Process Trend Data
+    const stats = await adminApi.getSystemStatistics()
+    const data = stats.data || stats
+    
+    // Process Trend Data (submission trend over time)
+    const trendList = data.submission_trend || data.submissionTrend || []
     trendData.value = {
-      labels: trend.map(item => item.date),
+      labels: trendList.map(item => item.date),
       datasets: [{
         label: t('dashboard.stats.recentSubmissions'),
         backgroundColor: '#3498db',
         borderColor: '#3498db',
-        data: trend.map(item => item.count),
+        data: trendList.map(item => item.count),
         fill: false,
         tension: 0.1
       }]
     }
 
-    // Process Module Data
+    // Process Module Data (journal status distribution)
+    const journalStatus = data.journal_status || data.journalStatus || {}
     moduleData.value = {
-      labels: modules.map(item => item.name),
+      labels: Object.keys(journalStatus),
       datasets: [{
         backgroundColor: ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c'],
-        data: modules.map(item => item.value)
+        data: Object.values(journalStatus)
       }]
     }
 
-    // Process Status Data
+    // Process Status Data (user roles breakdown)
+    const userRoles = data.user_roles || data.userRoles || {}
     statusData.value = {
-      labels: [
-        t('status.pending_initial_review'), 
-        t('status.under_review'), 
-        t('status.accepted'), 
-        t('status.rejected'), 
-        t('status.published')
-      ],
+      labels: Object.keys(userRoles),
       datasets: [{
-        label: t('common.status'),
-        backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#e74c3c', '#9b59b6'],
-        data: [
-          status.pending,
-          status.underReview,
-          status.accepted,
-          status.rejected,
-          status.published
-        ]
+        label: 'User Roles',
+        backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#1abc9c'],
+        data: Object.values(userRoles)
       }]
     }
 

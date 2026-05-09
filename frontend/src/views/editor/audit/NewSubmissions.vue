@@ -1,28 +1,62 @@
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
-<<<<<<< HEAD
-=======
 import { usePlatformStore } from '../../../stores/platform'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
+import { editorApi, manuscriptApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 import { stripHtmlTags, truncateText } from '../../../utils/helpers.js'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
-import { useI18n } from '../../../composables/useI18n'
 
-const { t } = useI18n()
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// Filter for New Submissions
+// 拉取真实看板数据与待处理列表
+const pendingList = ref([])
+const stats = ref({})
+const isLoading = ref(true)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const statusFilter = ref('pending_initial_review')
+
+// 页面加载时拉取后端数据
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    const [dashboardRes, manuscriptsRes] = await Promise.all([
+      editorApi.getDashboard(),
+      manuscriptApi.getMyManuscripts({
+        status: statusFilter.value,
+        page: currentPage.value,
+        page_size: pageSize.value
+      })
+    ])
+    pendingList.value = dashboardRes.data?.pending_list || dashboardRes.pending_list || []
+    stats.value = dashboardRes.data?.statistics || dashboardRes.statistics || {}
+    
+    // 如果后端返回了稿件列表，合并到 pendingList
+    const manuscripts = manuscriptsRes.data?.items || manuscriptsRes.items || []
+    if (manuscripts.length > 0) {
+      pendingList.value = [...pendingList.value, ...manuscripts]
+    }
+  } catch (error) {
+    console.error('拉取看板数据失败', error)
+    toastStore.add({ message: '拉取数据失败，请检查网络', type: 'error' })
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// 兼容旧的 Mock 数据逻辑（Fallback）
 const pendingJournals = computed(() => {
+  if (pendingList.value.length > 0) {
+    return pendingList.value
+  }
   return userStore.journals.filter(journal => 
     journal.status === MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW || 
-    // Legacy support
     journal.status === 'Submitted' || 
     journal.status === 'Pending Screening'
   )
@@ -123,6 +157,47 @@ const refreshAttachmentList = () => {
   setTimeout(() => {
     isRefreshingList.value = false
   }, 1500)
+}
+
+// === 柳叶刀核心机制：初筛与直接拒稿 (Desk Reject) ===
+/**
+ * 处理稿件初筛决策
+ * @param {Number} manuscriptId 稿件 ID
+ * @param {String} decision 决策类型 ('reject' 为直接拒稿，'pass' 为通过进入同行评审)
+ */
+const handleTriage = async (manuscriptId, decision) => {
+  try {
+    const payload = {
+      action: 'screen',
+      decision_type: decision,
+      comment: decision === 'reject'
+        ? '编辑部初审：不符合本刊主题范围或创新性不足，作退稿处理 (Desk Reject)。'
+        : '初筛通过，准备分配外部审稿人。'
+    }
+
+    await manuscriptApi.updateWorkflow(manuscriptId, payload)
+    
+    toastStore.add({
+      message: decision === 'reject' ? '已直接拒稿 (Desk Reject)' : '初筛通过',
+      type: decision === 'reject' ? 'success' : 'info'
+    })
+    
+    // 刷新列表
+    const [dashboardRes, manuscriptsRes] = await Promise.all([
+      editorApi.getDashboard(),
+      manuscriptApi.getMyManuscripts({ status: statusFilter.value, page: currentPage.value, page_size: pageSize.value })
+    ])
+    pendingList.value = dashboardRes.data?.pending_list || dashboardRes.pending_list || []
+    stats.value = dashboardRes.data?.statistics || dashboardRes.statistics || {}
+    
+    const manuscripts = manuscriptsRes.data?.items || manuscriptsRes.items || []
+    if (manuscripts.length > 0) {
+      pendingList.value = [...pendingList.value, ...manuscripts]
+    }
+  } catch (error) {
+    const detail = error.response?.data?.detail || error.message || '未知错误'
+    toastStore.add({ message: `操作失败：${detail}`, type: 'error' })
+  }
 }
 
 // --- Ethics Statement State ---
@@ -333,25 +408,6 @@ const confirmScreen = async () => {
 }
 
 // --- Suggest Transfer Logic ---
-<<<<<<< HEAD
-const transferForm = reactive({
-  reason: '',
-  targetJournal: 'Journal of Medical Science',
-  letter: ''
-})
-
-const transferJournals = ['Journal of Medical Science', 'Journal of Medical Imaging', 'Global Health Journal']
-
-const openTransferModal = (journal) => {
-  currentJournal.value = journal
-  Object.assign(transferForm, {
-    reason: '',
-    targetJournal: 'Journal of Medical Science',
-    letter: t('editor.audit.newSubmissions.modals.transfer.letterTemplate', {
-      author: journal.author,
-      title: journal.title,
-      targetJournal: 'Journal of Medical Science',
-=======
 const platformStore = usePlatformStore()
 onMounted(() => {
   if (platformStore.journals.length === 0) {
@@ -384,7 +440,6 @@ const openTransferModal = (journal) => {
       author: journal.author,
       title: journal.title,
       targetJournal: defaultTarget,
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       journalName: t('common.journalName')
     })
   })
@@ -399,10 +454,6 @@ const sendTransfer = () => {
 
   const updatedJournal = { ...currentJournal.value }
   updatedJournal.status = 'transfer_suggested'
-<<<<<<< HEAD
-  userStore.updateJournal(updatedJournal)
-
-=======
   
   // Find target journal ID based on name
   const targetJournalObj = platformStore.journals.find(j => j.name === transferForm.targetJournal)
@@ -433,7 +484,6 @@ const sendTransfer = () => {
   userStore.notifications.unshift(newNotification)
   localStorage.setItem('notifications', JSON.stringify(userStore.notifications))
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   showTransferModal.value = false
   toastStore.add({ message: t('editor.audit.newSubmissions.alerts.transferSent'), type: 'success' })
 }
@@ -479,14 +529,11 @@ const confirmReject = () => {
   toastStore.add({ message: t('editor.audit.newSubmissions.alerts.rejectConfirmed'), type: 'success' })
 }
 
-<<<<<<< HEAD
-=======
 const getJournalName = (id) => {
   const journal = platformStore.journals.find(j => j.id === id)
   return journal ? journal.name : id
 }
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 const viewDetail = (id) => {
   router.push(`/admin/journal/${id}`)
 }
@@ -510,10 +557,7 @@ const viewDetail = (id) => {
               <span><strong>{{ t('editor.audit.newSubmissions.columns.author') }}:</strong> {{ journal.author }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.date') }}:</strong> {{ journal.date }}</span>
               <span><strong>{{ t('editor.audit.newSubmissions.columns.module') }}:</strong> {{ journal.module }}</span>
-<<<<<<< HEAD
-=======
               <span v-if="journal.transferredFrom" class="transfer-badge">Transferred from: {{ getJournalName(journal.transferredFrom) }}</span>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             </div>
             <p class="journal-abstract">{{ truncateText(stripHtmlTags(journal.abstract), 200) }}</p>
             <div class="materials-links">
@@ -640,11 +684,7 @@ const viewDetail = (id) => {
           <div class="modal-section">
             <label class="input-label">{{ t('editor.audit.newSubmissions.modals.transfer.journalLabel') }}</label>
             <select v-model="transferForm.targetJournal" class="jp-select">
-<<<<<<< HEAD
-              <option v-for="j in transferJournals" :key="j" :value="j">{{ j }}</option>
-=======
               <option v-for="j in transferJournals" :key="j.id" :value="j.name">{{ j.name }}</option>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             </select>
           </div>
 

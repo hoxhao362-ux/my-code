@@ -34,7 +34,7 @@ const articles = [
   // Manuals (Content filtered by role)
   { id: 901, category: 'manual', role: 'editor', title: 'Full Editor Manual', content: 'Complete guide for Editors...' },
   { id: 902, category: 'manual', role: 'associate_editor', title: 'Associate Editor Workflow', content: 'Guide for AEs...' },
-  { id: 903, category: 'manual', role: 'editorial_assistant', title: 'EA Basics', content: 'Guide for EAs...' },
+  { id: 903, category: 'manual', role: 'ea_ae', title: 'EA Basics', content: 'Guide for EAs...' },
 ]
 
 const faqs = ref([
@@ -53,7 +53,7 @@ const filteredArticles = computed(() => {
     } else if (role === 'associate_editor') {
       return articles.filter(a => a.category === 'manual' && a.role === 'associate_editor')
     } else {
-      return articles.filter(a => a.category === 'manual' && a.role === 'editorial_assistant')
+      return articles.filter(a => a.category === 'manual' && a.role === 'ea_ae')
     }
   }
   

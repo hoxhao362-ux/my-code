@@ -41,11 +41,7 @@ const letters = computed(() => {
       date: myReview?.invitedDate || journal.submittedDate || new Date().toISOString(), // Mock date
       content: `Dear ${user.value.username},
 
-<<<<<<< HEAD
-You have been invited to review the manuscript "${journal.title}" for Journal Platform.
-=======
 You have been invited to review the manuscript "${journal.title}" for Peerex Peer.
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 Abstract:
 ${journal.abstract || 'No abstract available.'}

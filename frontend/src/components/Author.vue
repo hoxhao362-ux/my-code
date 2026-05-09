@@ -2,23 +2,15 @@
 import { ref, computed } from 'vue'
 import { truncateHtml } from '../utils/helpers.js'
 import { useToastStore } from '../stores/toast'
-<<<<<<< HEAD
-
-=======
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 const toastStore = useToastStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
 if (props.user?.role !== 'author' && props.user?.role !== 'admin') {
-<<<<<<< HEAD
-  toastStore.add({ message: '您没有权限访问作者后台', type: 'warning' })
-=======
   toastStore.add({ message: t('author.permissionDenied'), type: 'warning' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   props.navigateTo('home')
 }
 

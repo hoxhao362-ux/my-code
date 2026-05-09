@@ -211,8 +211,9 @@ export default {
     dashboard: '后台主页',
     roleSwitch: '角色切换',
     roles: {
-      admin: '编辑工作台',
-      associate_editor: '副编辑工作台',
+      admin: '系统管理员工作台',
+      editor: '主编工作台',
+      associate_editor: '副主编工作台',
       ea_ae: '助理/顾问编辑工作台',
       reviewer: '审核员工作台',
       author: '投稿人工作台'
@@ -414,20 +415,31 @@ export default {
       passwordPlaceholder: '请输入密码',
       confirmPasswordLabel: '确认密码',
       confirmPasswordPlaceholder: '请再次输入密码',
-      error: {
+      invitationCodeLabel: '邀请码（选填）',
+      invitationCodePlaceholder: '输入邀请码以获取特殊角色',
+      invitation: {
+        valid: "邀请码有效。分配角色: {role}",
+        invalid: "邀请码无效或已过期。",
+        verifying: "正在验证邀请码...",
+        error: "邀请码验证失败。"
+      },
+      errors: {
         emailFormat: '邮箱格式不正确',
         passwordLength: '密码长度至少为 6 位',
-        passwordMatch: '两次输入的密码不一致'
+        passwordMatch: '两次输入的密码不一致。',
+        frequencyLimit: '请求过于频繁，请稍后再试。',
+        invalidInviteCode: '请提供有效的邀请码。',
+        registrationFailed: '注册失败，请检查您的信息。',
+        internalError: '服务器内部错误。'
       }
     }
   },
   dashboard: {
     roles: {
-      admin: '编辑工作台',
-      editor: '编辑工作台',
-      associate_editor: '副编辑工作台',
-      editorial_assistant: '编辑助理工作台',
-      advisory_editor: '顾问编辑工作台',
+      admin: '系统管理员工作台',
+      editor: '主编工作台',
+      associate_editor: '副主编工作台',
+      ea_ae: '助理/顾问编辑工作台',
       default: '工作台'
     },
     welcome: '欢迎，{name}',
@@ -558,8 +570,6 @@ export default {
       page: '第 {current} / {total} 页',
       prev: '上一页',
       next: '下一页'
-<<<<<<< HEAD
-=======
     }
   },
   notification: {
@@ -866,7 +876,6 @@ export default {
       submitNow: '立即提交',
       pastIssues: '往期特刊',
       ended: '已结束 {date}'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     }
   }
 }

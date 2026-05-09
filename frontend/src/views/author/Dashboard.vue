@@ -1,43 +1,43 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { manuscriptApi } from '../../utils/api'
 import SubmissionNavigation from '../submission/components/SubmissionNavigation.vue'
 import FlowCheckPanel from './FlowCheckPanel.vue'
 import ViewSubmissionModal from './ViewSubmissionModal.vue'
 import HistoryModal from './HistoryModal.vue'
 import ReviewerStatusModal from './ReviewerStatusModal.vue'
 import SubmitRevisionModal from './SubmitRevisionModal.vue'
-<<<<<<< HEAD
-=======
 import TransferDetailsModal from './TransferDetailsModal.vue'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 import { MANUSCRIPT_STATUS, AUTHOR_STATUS_MAP } from '../../constants/manuscriptStatus'
 
 const router = useRouter()
 const toastStore = useToastStore()
 const flowCheckPanelRef = ref(null)
-
-const handleRunCheck = () => {
-  if (flowCheckPanelRef.value) {
-    flowCheckPanelRef.value.runCheck(userJournals.value)
-  }
-}
 const userStore = useUserStore()
 const user = computed(() => userStore.submissionUser)
 
-// Author submission data
-const userJournals = computed(() => {
-  // Use submissionUser if available (Author Dashboard Context), fallback to user
-  const currentUser = userStore.submissionUser || userStore.user
-  if (!currentUser) return []
-  return userStore.journals.filter(j => {
-    // Robust matching for author field (handle case sensitivity and potential format differences)
-    if (!j.author) return false
-    return j.author === currentUser.username || 
-           j.author.toLowerCase() === currentUser.username.toLowerCase()
-  })
+// Author submission data - Real API
+const userJournals = ref([])
+const loading = ref(false)
+
+const fetchMyManuscripts = async () => {
+  loading.value = true
+  try {
+    const res = await manuscriptApi.getMyManuscripts({})
+    userJournals.value = res.items || res.journals || res || []
+  } catch (error) {
+    console.error('获取稿件列表失败:', error)
+    toastStore.add({ message: '获取稿件列表失败', type: 'error' })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchMyManuscripts()
 })
 
 // Helper to check status groups
@@ -88,8 +88,6 @@ const isInProduction = (status) => [
 const isWithdrawn = (status) => [
   MANUSCRIPT_STATUS.WITHDRAWN
 ].includes(status)
-<<<<<<< HEAD
-=======
 
 const isTransferSuggested = (status) => [
   MANUSCRIPT_STATUS.TRANSFER_SUGGESTED
@@ -98,7 +96,6 @@ const isTransferSuggested = (status) => [
 const isTransferred = (status) => [
   MANUSCRIPT_STATUS.TRANSFERRED
 ].includes(status)
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 // Menu Groups Configuration
 const menuGroups = computed(() => {
@@ -112,8 +109,6 @@ const menuGroups = computed(() => {
         { label: 'Submissions Being Processed', count: count(j => isProcessing(j.status)), key: 'processing' },
         { label: 'Submissions Waiting for Author\'s Approval', count: count(j => isWaitingApproval(j.status)), key: 'waiting_approval' },
         { label: 'Under Review', count: count(j => isUnderReview(j.status)), key: 'under_review' }
-<<<<<<< HEAD
-=======
       ]
     },
     {
@@ -121,7 +116,6 @@ const menuGroups = computed(() => {
       items: [
         { label: 'Transfer Suggested', count: count(j => isTransferSuggested(j.status)), key: 'transfer_suggested' },
         { label: 'Transferred Manuscripts', count: count(j => isTransferred(j.status)), key: 'transferred' }
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       ]
     },
     {
@@ -174,11 +168,8 @@ const selectedManuscripts = computed(() => {
     case 'processing': return userJournals.value.filter(j => isProcessing(j.status))
     case 'waiting_approval': return userJournals.value.filter(j => isWaitingApproval(j.status))
     case 'under_review': return userJournals.value.filter(j => isUnderReview(j.status))
-<<<<<<< HEAD
-=======
     case 'transfer_suggested': return userJournals.value.filter(j => isTransferSuggested(j.status))
     case 'transferred': return userJournals.value.filter(j => isTransferred(j.status))
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     case 'needing_revision': return userJournals.value.filter(j => isNeedingRevision(j.status))
     case 'revision_processing': return userJournals.value.filter(j => isRevisionProcessing(j.status))
     case 'decision_made': return userJournals.value.filter(j => isDecisionMade(j.status))
@@ -212,11 +203,6 @@ const showViewSubmissionModal = ref(false)
 const showHistoryModal = ref(false)
 const showReviewerStatusModal = ref(false)
 const showSubmitRevisionModal = ref(false)
-<<<<<<< HEAD
-const selectedManuscriptForModal = ref(null)
-
-// Action Handlers
-=======
 const showTransferDetailsModal = ref(false)
 const selectedManuscriptForModal = ref(null)
 
@@ -226,7 +212,6 @@ const handleReviewTransfer = (manuscript) => {
   showTransferDetailsModal.value = true
 }
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 const handleSubmitRevision = (manuscript) => {
   selectedManuscriptForModal.value = manuscript
   showSubmitRevisionModal.value = true
@@ -369,8 +354,6 @@ const handleWithdrawRecommendation = (reviewer) => {
                      >
                        Submit Revision
                      </button>
-<<<<<<< HEAD
-=======
                      
                      <!-- Transfer Action Button -->
                      <button 
@@ -380,7 +363,6 @@ const handleWithdrawRecommendation = (reviewer) => {
                      >
                        Review Transfer
                      </button>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
                      <!-- Legacy Recommend Reviewers (if needed, otherwise hide or rename) -->
                      <!-- <button class="action-btn" @click="openReviewerModal(manuscript)">Recommend Reviewers</button> -->
                    </div>
@@ -419,15 +401,12 @@ const handleWithdrawRecommendation = (reviewer) => {
       @submitted="showSubmitRevisionModal = false"
     />
 
-<<<<<<< HEAD
-=======
     <TransferDetailsModal
       :visible="showTransferDetailsModal"
       :manuscript="selectedManuscriptForModal"
       @close="showTransferDetailsModal = false"
     />
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     <!-- Reviewer Management Modal (Legacy/Recommend) -->
     <div v-if="showReviewerModal" class="modal-overlay">
       <div class="modal-box">
@@ -466,11 +445,7 @@ const handleWithdrawRecommendation = (reviewer) => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-<<<<<<< HEAD
-        <p>&copy; 2026 Journal Submission Platform. All rights reserved.</p>
-=======
         <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       </div>
     </footer>
   </div>
@@ -678,8 +653,6 @@ const handleWithdrawRecommendation = (reviewer) => {
   background: #2980b9;
 }
 
-<<<<<<< HEAD
-=======
 .action-btn.btn-warning {
   background: #f39c12;
   color: white;
@@ -690,7 +663,6 @@ const handleWithdrawRecommendation = (reviewer) => {
   background: #e67e22;
 }
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 .action-btn:hover:not(.disabled) {
   background: #ddd;
 }

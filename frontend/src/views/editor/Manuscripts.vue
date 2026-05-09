@@ -219,7 +219,7 @@ const filteredManuscripts = computed(() => {
      if (activeTab.value === 'assigned') {
         list = list.filter(m => m.assignedTo === user.value.username)
      }
-  } else if (user.value?.role === 'editorial_assistant') {
+  } else if (user.value?.role === 'ea_ae') {
      if (activeTab.value === 'assigned') {
         list = list.filter(m => m.assignedTo === user.value.username)
      }
@@ -291,12 +291,12 @@ const filteredManuscripts = computed(() => {
 })
 
 // Permissions
-const canInitialReview = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
-const canAssignReviewer = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
-const canMakeDecision = computed(() => userStore.hasRolePermission(user.value?.role, 'associate_editor') || userStore.hasRolePermission(user.value?.role, 'editor')) 
-const canDraftDecision = computed(() => userStore.hasRolePermission(user.value?.role, 'editor'))
-const canFormatCheck = computed(() => userStore.hasRolePermission(user.value?.role, 'editorial_assistant'))
-const isReadOnly = computed(() => user.value?.role === 'advisory_editor')
+const canInitialReview = computed(() => userStore.hasRolePermission('associate_editor'))
+const canAssignReviewer = computed(() => userStore.hasRolePermission('associate_editor'))
+const canMakeDecision = computed(() => userStore.hasRolePermission('associate_editor')) 
+const canDraftDecision = computed(() => userStore.hasRolePermission('associate_editor'))
+const canFormatCheck = computed(() => userStore.hasRolePermission('ea_ae'))
+const isReadOnly = computed(() => user.value?.role === 'ea_ae')
 
 // Helper
 const getStatusLabel = (s) => t(`status.${s}`) || s
@@ -752,7 +752,7 @@ const handleStartPublication = (id) => {
               <!-- 6. Under Final Decision (EiC Reviewing) -->
               <template v-if="ms.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION">
                  <div class="action-row left">
-                   <button v-if="user.role === 'editor_in_chief' || user.role === 'associate_editor'" class="action-btn red" @click="handleFinalDecision(ms.id)">Make Final Decision</button>
+                   <button v-if="user.role === 'editor' || user.role === 'associate_editor'" class="action-btn red" @click="handleFinalDecision(ms.id)">Make Final Decision</button>
                    <button v-else class="action-btn gray">View Decision Progress</button>
                  </div>
               </template>

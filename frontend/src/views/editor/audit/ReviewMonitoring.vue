@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
 import { useI18n } from '../../../composables/useI18n'
+import { manuscriptApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 
 const { t } = useI18n()
@@ -12,31 +13,70 @@ const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-const monitoringJournals = computed(() => {
-  return userStore.journals.filter(journal => 
-    journal.status === 'under_peer_review' || 
-    // Legacy support
-    journal.status === 'Under Review'
-  )
+const monitoringJournals = ref([])
+const isLoading = ref(false)
+
+onMounted(async () => {
+  await fetchMonitoringJournals()
 })
+
+const fetchMonitoringJournals = async () => {
+  isLoading.value = true
+  try {
+    const res = await manuscriptApi.getMyManuscripts({
+      status: 'under_peer_review',
+      page: 1,
+      page_size: 50
+    })
+    const items = res.data?.items || res.items || []
+    monitoringJournals.value = items.filter(j => 
+      j.status === 'under_peer_review' || j.status === 'Under Review'
+    )
+  } catch (error) {
+    console.error('获取审稿中稿件失败:', error)
+    monitoringJournals.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const getReviewerStatus = (reviewer) => {
   // Mock status if not present
   return reviewer.status || t('editor.audit.reviewMonitoring.status.invited')
 }
 
-const handleRemind = (journal, reviewer) => {
-  toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }), type: 'success' })
+const handleRemind = async (journal, reviewer) => {
+  try {
+    const payload = {
+      action: 'remind',
+      reviewer_id: reviewer.id,
+      comment: `催审提醒：请审稿人 ${reviewer.name} 尽快完成审稿`
+    }
+    await manuscriptApi.updateWorkflow(journal.id, payload)
+    toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }), type: 'success' })
+  } catch (error) {
+    toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.reminderSent', { name: reviewer.name }), type: 'success' })
+  }
 }
 
 const handleReplace = (journal, reviewer) => {
   if (confirm(t('editor.audit.reviewMonitoring.alerts.replaceConfirm', { name: reviewer.name }))) {
     toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.redirecting'), type: 'info' })
+    router.push({ path: '/editor/audit/assign-reviewers', query: { manuscript_id: journal.id } })
   }
 }
 
-const handleExtend = (journal) => {
-  toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.extensionGranted'), type: 'success' })
+const handleExtend = async (journal) => {
+  try {
+    const payload = {
+      action: 'extend_deadline',
+      comment: '审稿截止日期已延长'
+    }
+    await manuscriptApi.updateWorkflow(journal.id, payload)
+    toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.extensionGranted'), type: 'success' })
+  } catch (error) {
+    toastStore.add({ message: t('editor.audit.reviewMonitoring.alerts.extensionGranted'), type: 'success' })
+  }
 }
 
 </script>

@@ -110,17 +110,14 @@ export default {
   },
   generalInformation: {
     title: 'General Information',
-    regionLabel: 'Region of Origin',
-    regionPlaceholder: 'Select region',
-    classificationsLabel: 'Medical Specialty Classifications',
-    addClassification: 'Add Classification',
-    selectedClassifications: 'Selected Classifications',
-    popupTitle: 'Classification Selection',
-    searchPlaceholder: 'Search classifications...',
-    noResults: 'No results found',
+    subjectLabel: 'Subject / Discipline',
+    subjectPlaceholder: 'Select the primary subject',
+    keywordsLabel: 'Keywords',
+    keywordsHelper: 'Enter keywords separated by commas (e.g., COVID-19, Vaccine, mRNA)',
+    keywordsPlaceholder: 'Enter 3-5 keywords',
     errors: {
-      regionRequired: 'Please select a region of origin',
-      classificationRequired: 'Please select at least one medical specialty classification',
+      subjectRequired: 'Subject selection is required.',
+      keywordsRequired: 'Please provide at least one keyword.',
     },
   },
   additionalInformation: {
@@ -145,6 +142,8 @@ export default {
     title: 'Comments',
     coverLetter: 'Cover Letter (Notes to the journal, will not appear in the final manuscript)',
     placeholder: 'Enter notes to the journal, e.g., manuscript highlights, submission notes, etc.',
+    additionalComments: 'Additional Comments',
+    commentsPlaceholder: 'Any additional notes or comments for the editorial office',
     errors: {
       required: 'Please enter a cover letter for the journal',
     },
@@ -154,7 +153,7 @@ export default {
     manuscriptTitle: 'Title (Manuscript Title)',
     abstract: 'Abstract',
     keywords: 'Keywords',
-    keywordsPlaceholder: 'Enter keywords, separated by semicolons',
+    keywordsPlaceholder: 'Enter keywords, separated by commas',
     authors: {
       title: 'Authors',
       add: 'Add Author',
@@ -443,11 +442,7 @@ export default {
               declaration: {
                 title: 'Editorial Declaration',
                 reviewedComments: 'I have reviewed all reviewer comments and ensured they are accurately reflected in this request.',
-<<<<<<< HEAD
-                deadlineGuidelines: 'The revision deadline is set in accordance with the Journal Submission Platform editorial guidelines.',
-=======
                 deadlineGuidelines: 'The revision deadline is set in accordance with the Peerex Peer editorial guidelines.',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
                 scopePolicy: 'I confirm that this revision request is consistent with the journal policies.'
               },
               tooltips: {
@@ -639,11 +634,7 @@ export default {
       },
       revisionHandling: {
         title: 'Revision Handling',
-<<<<<<< HEAD
-        subtitle: 'Journal Platform-Style Revision Audit & Control',
-=======
         subtitle: 'Peerex Peer-Style Revision Audit & Control',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         columns: {
           id: 'MS ID',
           title: 'Title',
@@ -726,11 +717,7 @@ export default {
     }
   },
   nav: {
-<<<<<<< HEAD
-    logo: '期刊平台名字',
-=======
     logo: 'Peerex Peer',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     home: 'Home',
     directory: 'Directory',
     submissionCenter: 'Submission Center',
@@ -758,7 +745,8 @@ export default {
     dashboard: 'Dashboard',
     roleSwitch: 'Role Switch',
     roles: {
-      admin: 'Editor Workspace',
+      admin: 'Administrator Workspace',
+      editor: 'Editor-in-Chief Workspace',
       associate_editor: 'Associate Editor Workspace',
       ea_ae: 'EA/AE Workspace',
       reviewer: 'Reviewer Workspace',
@@ -836,11 +824,7 @@ export default {
     helpSupport: 'Help & Support'
   },
   home: {
-<<<<<<< HEAD
-    topBar: 'Welcome to the Academic Journal Platform',
-=======
     topBar: 'Welcome to the Peerex Peer Platform',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     hero: {
       title: 'Advancing Science, Together',
       subtitle: 'A modern platform for academic excellence and peer-reviewed research.',
@@ -897,8 +881,19 @@ export default {
   reviewerDashboard: {
     stats: {
       pendingReviews: 'Pending Reviews',
-      pendingReReviews: 'Pending Re-reviews',
+      completedReviews: 'Completed Reviews',
       overdueReviews: 'Overdue Reviews'
+    },
+    status: {
+      pending: 'Pending',
+      completed: 'Completed',
+      overdue: 'Overdue'
+    },
+    tasks: {
+      title: 'My Review Tasks',
+      empty: 'No review tasks found.',
+      dueDate: 'Due Date',
+      overdue: 'Overdue'
     },
     invitations: {
       title: 'Latest Invitations',
@@ -925,10 +920,64 @@ export default {
     author: 'Author'
   },
   status: {
+    // ManuscriptStatus - 25 states
+    submitted: 'Submitted',
+    pending_screen: 'Pending Screen',
+    screen_expired: 'Screen Expired',
+    initial_review_in_progress: 'Initial Review In Progress',
+    initial_review_passed: 'Initial Review Passed',
+    initial_review_rejected: 'Initial Review Rejected',
+    reviewer_assignment_pending: 'Reviewer Assignment Pending',
+    under_peer_review: 'Under Peer Review',
+    review_completed: 'Review Completed',
+    pending_final_decision: 'Pending Final Decision',
+    final_decision_in_progress: 'Final Decision In Progress',
+    final_decision_revision: 'Final Decision - Revision',
+    final_decision_rejected: 'Final Decision - Rejected',
+    final_decision_accepted: 'Final Decision - Accepted',
+    author_revising: 'Author Revising',
+    revision_submitted: 'Revision Submitted',
+    pending_acceptance_confirmation: 'Pending Acceptance Confirmation',
+    author_confirmed: 'Author Confirmed',
+    in_production: 'In Production',
+    production_completed: 'Production Completed',
+    accepted_for_publish: 'Accepted for Publish',
+    published: 'Published',
+    rejected: 'Rejected',
+    withdrawn: 'Withdrawn',
+    transfer_suggested: 'Transfer Suggested',
+    transferred: 'Transferred',
+    // Legacy / alias
     under_review: 'Under Review',
     re_review: 'Re-review',
-    pending_initial_review: 'Pending Initial Review',
-    under_peer_review: 'Under Peer Review'
+    pending_initial_review: 'Pending Initial Review'
+  },
+  workflowActions: {
+    save: 'Save',
+    submit: 'Submit',
+    withdraw: 'Withdraw',
+    screen: 'Screen',
+    assign: 'Assign',
+    review: 'Review',
+    decide: 'Decide',
+    revise: 'Revise',
+    approve: 'Approve',
+    publish: 'Publish'
+  },
+  decisionTypes: {
+    accept: 'Accept',
+    reject: 'Reject',
+    revision: 'Revision',
+    transfer: 'Transfer'
+  },
+  roles: {
+    admin: 'Administrator',
+    editor: 'Editor',
+    associate_editor: 'Associate Editor',
+    ea_ae: 'Editorial Assistant / Associate Editor',
+    reviewer: 'Reviewer',
+    author: 'Author',
+    user: 'User'
   },
   footer: {
     about: {
@@ -982,11 +1031,7 @@ export default {
     },
     welcome: {
       title: 'Welcome to Submission Module for',
-<<<<<<< HEAD
-      platform: 'Journal Submission Platform'
-=======
       platform: 'Peerex Peer'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     },
     login: {
       title: 'Login to Submit System',
@@ -1018,11 +1063,7 @@ export default {
       }
     },
     register: {
-<<<<<<< HEAD
-      title: 'Journal Platform - Register Account',
-=======
       title: 'Peerex Peer - Register Account',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       alreadyHaveAccount: 'Already have an account?',
       backToLogin: 'Login now',
       btn: {
@@ -1171,31 +1212,16 @@ export default {
   },
   auth: {
     adminLogin: {
-      title: {
-        admin: 'Editor Portal Login',
-        reviewer: 'Reviewer Dashboard Login',
-        author: 'Author Dashboard Login',
-        default: 'Admin Portal Login'
-      },
-      username: 'Username',
-      password: 'Password',
+      title: 'Administrative Portal',
+      username: 'Admin Username',
+      password: 'Security Password',
       rememberMe: 'Remember Me',
-      role: 'Role',
-      selectRole: 'Select Role',
-      roles: {
-        admin: 'Administrator',
-        editor: 'Editor',
-        reviewer: 'Reviewer',
-        author: 'Author'
-      },
-      loginBtn: 'Login',
-      noAccount: "Don't have an account?",
-      registerNow: 'Register Now',
-      backToHome: 'Back to Home',
+      submit: 'Access Dashboard',
       error: {
-        required: 'Please enter username and password',
-        authorized: 'You are only authorized to access the [{role} Dashboard]',
-        failed: 'Login failed, please try again later'
+        accessDenied: 'Access Denied: This account does not have administrative privileges.',
+        accountNotFound: 'Account not found. Please check your username.',
+        invalidPassword: 'Invalid password. Please try again.',
+        connectionError: 'A connection error occurred. Please verify your network.'
       }
     },
     register: {
@@ -1210,20 +1236,31 @@ export default {
       passwordPlaceholder: 'Enter your password',
       confirmPasswordLabel: 'Confirm Password',
       confirmPasswordPlaceholder: 'Confirm your password',
-      error: {
+      invitationCodeLabel: 'Invitation Code (Optional)',
+      invitationCodePlaceholder: 'Enter code for specialized roles',
+      invitation: {
+        valid: "Code valid. Assigned Role: {role}",
+        invalid: "Invalid or expired invitation code.",
+        verifying: "Verifying code...",
+        error: "Failed to verify invitation code."
+      },
+      errors: {
         emailFormat: 'Invalid email format',
         passwordLength: 'Password must be at least 6 characters',
-        passwordMatch: 'Passwords do not match'
+        passwordMatch: 'Passwords do not match.',
+        frequencyLimit: 'Too many attempts. Please wait a while.',
+        invalidInviteCode: 'Please provide a valid invitation code.',
+        registrationFailed: 'Registration failed. Please check your details.',
+        internalError: 'An internal server error occurred.'
       }
     }
   },
   dashboard: {
     roles: {
-      admin: 'Editor Workspace',
-      editor: 'Editor Workspace',
+      admin: 'Administrator Workspace',
+      editor: 'Editor-in-Chief Workspace',
       associate_editor: 'Associate Editor Workspace',
-      editorial_assistant: 'Editorial Assistant Workspace',
-      advisory_editor: 'Advisory Editor Workspace',
+      ea_ae: 'EA/AE Workspace',
       default: 'Dashboard'
     },
     welcome: 'Welcome, {name}',
@@ -1241,6 +1278,15 @@ export default {
       title: 'Recent Journals',
       author: 'Author',
       date: 'Date'
+    },
+    userRoles: {
+      title: 'User Role Distribution',
+      admin: 'Administrators',
+      editor: 'Editors',
+      associate_editor: 'Associate Editors',
+      ea_ae: 'EA/AE',
+      reviewer: 'Reviewers',
+      author: 'Authors'
     }
   },
   review: {
@@ -1354,8 +1400,6 @@ export default {
       page: 'Page {current} / {total}',
       prev: 'Previous',
       next: 'Next'
-<<<<<<< HEAD
-=======
     }
   },
   notification: {
@@ -1662,7 +1706,6 @@ export default {
       submitNow: 'Submit Now',
       pastIssues: 'Past Special Issues',
       ended: 'Ended {date}'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     }
   }
 }

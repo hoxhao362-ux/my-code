@@ -116,37 +116,22 @@ const loadManuscript = () => {
 Re: Manuscript ID ${found.id}
 Title: ${found.title}
 
-<<<<<<< HEAD
-We are pleased to confirm that your manuscript has been accepted for publication in Journal Submission Platform.
-=======
 We are pleased to confirm that your manuscript has been accepted for publication in Peerex Peer.
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 The next steps in the publication process are as follows:
 1. Copyright Agreement: You will receive a copyright transfer agreement which must be signed by the corresponding author.
 2. Proofs: Our production team will prepare the proofs of your article. You will receive a PDF for review.
 3. Publication: Once proofs are approved, your article will be scheduled for publication.
 
-<<<<<<< HEAD
-Thank you for choosing Journal Submission Platform for your work.
-=======
 Thank you for choosing Peerex Peer for your work.
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 Sincerely,
 
 The Editors
-<<<<<<< HEAD
-Journal Submission Platform`
-
-      forms.value.copyright.notes = `Please review the attached Copyright Transfer Agreement. 
-By signing this agreement, you transfer the copyright of the accepted manuscript to Journal Submission Platform.
-=======
 Peerex Peer`
 
       forms.value.copyright.notes = `Please review the attached Copyright Transfer Agreement. 
 By signing this agreement, you transfer the copyright of the accepted manuscript to Peerex Peer.
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 For Open Access (OA) publishing, please contact the editorial office for separate arrangements.`
     }
     

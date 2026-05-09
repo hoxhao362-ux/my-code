@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlatformStore } from '../stores/platform'
-import { useUserStore } from '../stores/user' // Still needed for some shared data or mock
-import Navigation from '../components/Navigation.vue' // We might need to make this dynamic
+import { useUserStore } from '../stores/user'
+import { platformJournalApi } from '../utils/api'
+import Navigation from '../components/Navigation.vue'
 import { useI18n } from '../composables/useI18n'
 
 const route = useRoute()
@@ -16,39 +17,50 @@ const journalId = computed(() => route.params.id)
 const currentJournal = computed(() => platformStore.currentJournal)
 const loading = computed(() => platformStore.loading)
 
+// 最新文章列表（从后端获取）
+const recentArticles = ref([])
+const articlesLoading = ref(false)
+
 onMounted(async () => {
   if (journalId.value) {
     await platformStore.setJournal(journalId.value)
+    await fetchArticles()
   }
 })
 
 watch(() => route.params.id, async (newId) => {
   if (newId) {
     await platformStore.setJournal(newId)
+    await fetchArticles()
   }
 })
 
-// Mock data filtered by journal context
-// In a real app, we would fetch articles for this specific journal
-const recentArticles = computed(() => {
-  // Just for demo, shuffle or filter based on ID to make it look different
-  let articles = [...userStore.journals]
-  if (journalId.value === 'lancet-oncology') {
-    return articles.filter(a => a.module === 'Oncology' || a.title.toLowerCase().includes('cancer'))
+const fetchArticles = async () => {
+  articlesLoading.value = true
+  try {
+    const res = await platformJournalApi.getArticles({
+      journal_id: journalId.value,
+      page: 1,
+      page_size: 4
+    })
+    const data = res.data || res
+    recentArticles.value = data.items || data || []
+  } catch (error) {
+    console.error('获取文章列表失败:', error)
+    recentArticles.value = []
+  } finally {
+    articlesLoading.value = false
   }
-  return articles.slice(0, 4)
-})
+}
 
 const goToSubmit = () => {
   router.push('/submission')
 }
 
 const goToFullText = (id) => {
-  // In the future, this might stay within the journal context
   router.push(`/journal/${id}`)
 }
 
-// Dynamic styles based on journal color
 const journalColor = computed(() => currentJournal.value?.color || '#003366')
 </script>
 
@@ -100,16 +112,17 @@ const journalColor = computed(() => currentJournal.value?.color || '#003366')
       <!-- Latest Articles -->
       <section class="latest-articles-section">
         <h2 class="section-title" :style="{ borderColor: journalColor }">Latest Articles</h2>
-        <div class="articles-grid">
+        <div v-if="articlesLoading" class="articles-loading">Loading articles...</div>
+        <div v-else class="articles-grid">
           <div 
             v-for="article in recentArticles" 
-            :key="article.id" 
+            :key="article.id || article.jid || article.article_id" 
             class="article-card"
           >
-            <div class="article-category" :style="{ color: journalColor }">{{ article.module || 'Research' }}</div>
-            <h3 class="article-title clickable" @click="goToFullText(article.id)">{{ article.title }}</h3>
-            <p class="article-meta">{{ article.date || '2025-01-01' }}</p>
-            <p class="article-author">{{ article.author }}</p>
+            <div class="article-category" :style="{ color: journalColor }">{{ article.module || article.subject || 'Research' }}</div>
+            <h3 class="article-title clickable" @click="goToFullText(article.id || article.jid || article.article_id)">{{ article.title }}</h3>
+            <p class="article-meta">{{ article.date || article.publish_date || article.create_time || 'N/A' }}</p>
+            <p class="article-author">{{ article.author || article.authors || 'N/A' }}</p>
           </div>
         </div>
       </section>

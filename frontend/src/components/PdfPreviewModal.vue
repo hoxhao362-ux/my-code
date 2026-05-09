@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, onMounted, watch } from 'vue'
+import { defineProps, defineEmits, ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import * as pdfjsLib from 'pdfjs-dist'
 
 // Set worker source
@@ -151,6 +151,14 @@ const downloadFile = () => {
   link.click()
   document.body.removeChild(link)
 }
+
+// 内存清理：组件销毁时销毁 PDF 文档
+onBeforeUnmount(() => {
+  if (pdfDoc.value) {
+    pdfDoc.value.destroy()
+    pdfDoc.value = null
+  }
+})
 </script>
 
 <style scoped>

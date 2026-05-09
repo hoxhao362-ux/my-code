@@ -1,7 +1,8 @@
 <script setup>
-import { defineProps, defineEmits, ref } from 'vue'
+import { defineProps, defineEmits, ref, watch } from 'vue'
 import AttachmentsModal from './AttachmentsModal.vue'
 import PdfPreviewModal from '../../components/PdfPreviewModal.vue'
+import { manuscriptApi } from '../../utils/api'
 
 const props = defineProps({
   visible: Boolean,
@@ -16,34 +17,61 @@ const showAttachmentsModal = ref(false)
 const showPdfPreview = ref(false)
 const pdfUrl = ref('')
 
-const generatePdfBlob = () => {
-  const content = `
-      Manuscript ID: ${props.manuscript.id}
-      Title: ${props.manuscript.title}
-      Author: ${props.manuscript.author}
-      Submission Date: ${props.manuscript.submittedDate}
-      
-      Abstract:
-      ${props.manuscript.abstract || 'No abstract'}
-      
-      [Main Content Placeholder]
-      This is a generated PDF simulation for the manuscript.
-      
-      (In a real application, this would be a real PDF file fetched from the server)
-    `
-  return new Blob([content], { type: 'text/plain' })
+const realManuscriptDetail = ref(null)
+const detailLoading = ref(false)
+
+watch(
+  () => props.visible,
+  async (newVal) => {
+    if (newVal && props.manuscript && props.manuscript.id) {
+      await fetchRealDetail(props.manuscript.id)
+    } else {
+      realManuscriptDetail.value = null
+    }
+  }
+)
+
+const fetchRealDetail = async (id) => {
+  detailLoading.value = true
+  try {
+    const res = await manuscriptApi.getManuscriptDetail(id)
+    realManuscriptDetail.value = res
+  } catch (error) {
+    console.error('获取稿件真实详情失败:', error)
+  } finally {
+    detailLoading.value = false
+  }
 }
 
-const handlePreview = () => {
-  if (!props.manuscript) return
+const handlePreview = async () => {
+  if (!realManuscriptDetail.value) return
   isGeneratingPdf.value = true
   
-  setTimeout(() => {
+  try {
     const blob = generatePdfBlob()
     pdfUrl.value = window.URL.createObjectURL(blob)
     showPdfPreview.value = true
+  } catch (error) {
+    console.error('PDF 预览失败:', error)
+  } finally {
     isGeneratingPdf.value = false
-  }, 1000)
+  }
+}
+
+const generatePdfBlob = () => {
+  const data = realManuscriptDetail.value || props.manuscript
+  const content = `
+      Manuscript ID: ${data.id}
+      Title: ${data.title}
+      Author: ${data.author || data.authors}
+      
+      Abstract:
+      ${data.abstract || 'No abstract'}
+      
+      [Main Content Placeholder]
+      This is a generated PDF simulation for the manuscript.
+    `
+  return new Blob([content], { type: 'text/plain' })
 }
 
 const handleDownload = () => {
@@ -51,15 +79,13 @@ const handleDownload = () => {
   
   isGeneratingPdf.value = true
   
-  // Simulate PDF generation delay (1.5s)
   setTimeout(() => {
     const blob = generatePdfBlob()
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    // Naming rule: Manuscript_[ManuscriptID]_[SubmissionDate].pdf
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
-    link.download = `Manuscript_${props.manuscript.id}_${dateStr}.txt` // Changed to txt for simulation accuracy
+    link.download = `Manuscript_${props.manuscript.id}_${dateStr}.txt`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -67,7 +93,6 @@ const handleDownload = () => {
     
     isGeneratingPdf.value = false
     
-    // Show success message
     showSuccessMessage.value = true
     setTimeout(() => {
       showSuccessMessage.value = false
@@ -80,7 +105,6 @@ const handleViewAttachments = () => {
   showAttachmentsModal.value = true
 }
 
-// Mock Ethics Statement
 const ethicsStatement = "This study was conducted in accordance with the Declaration of Helsinki. Informed consent was obtained from all participants."
 </script>
 

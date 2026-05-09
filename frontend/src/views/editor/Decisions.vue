@@ -13,10 +13,10 @@ const user = computed(() => userStore.submissionUser || userStore.user)
 
 // Permissions
 const canEditDecision = computed(() => ['admin', 'editor', 'associate_editor'].includes(user.value?.role))
-const canSendDecision = computed(() => ['admin', 'associate_editor'].includes(user.value?.role))
+const canSendDecision = computed(() => ['admin', 'editor', 'associate_editor'].includes(user.value?.role))
 const canManageTemplates = computed(() => ['admin', 'editor'].includes(user.value?.role))
 const canApprove = computed(() => ['admin', 'editor'].includes(user.value?.role))
-const isReadOnly = computed(() => user.value?.role === 'advisory_editor' || user.value?.role === 'editorial_assistant')
+const isReadOnly = computed(() => user.value?.role === 'ea_ae')
 
 // Data
 const decisionTemplates = ref([
@@ -370,7 +370,7 @@ const closeCompareView = () => {
 }
 
 const handleExportComparison = () => {
-  if (user.value?.role === 'editorial_assistant' || user.value?.role === 'advisory_editor') return; // EA/AE hidden logic
+  if (user.value?.role === 'ea_ae') return; // EA/AE hidden logic
   toastStore.add({ message: t('editor.decisions.alerts.exportComparison', { filename: `${selectedManuscriptId.value}-${compareSourceVersion.value.version}-${compareTargetVersion.value.version}.pdf` }), type: 'success' });
 }
 

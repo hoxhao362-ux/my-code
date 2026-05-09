@@ -354,11 +354,7 @@ onMounted(() => {
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-content">
-<<<<<<< HEAD
-        <p>&copy; 2026 Journal Platform. All rights reserved.</p>
-=======
         <p>&copy; 2026 Peerex Peer. All rights reserved.</p>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       </div>
     </footer>
   </div>

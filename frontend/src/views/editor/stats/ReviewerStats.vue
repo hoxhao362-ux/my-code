@@ -1,57 +1,97 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '../../../stores/user'
+import { reviewApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
-// Mock Data Generators
-const generateStats = () => {
-  return {
-    totalReviewers: 142,
-    activeReviewers: 38,
-    avgTurnaroundDays: 14.2,
-    acceptanceRate: 68, // % of invitations accepted
-    avgRating: 4.5, // out of 5
-    
-    // For Adoption Rate Chart
-    adoption: {
-      recommended: { total: 45, adopted: 32 },
-      opposed: { total: 12, respected: 12 } // 100% respected
-    },
+const stats = ref({
+  totalReviewers: 0,
+  activeReviewers: 0,
+  avgTurnaroundDays: 0,
+  acceptanceRate: 0,
+  avgRating: 0,
+  adoption: {
+    recommended: { total: 0, adopted: 0 },
+    opposed: { total: 0, respected: 0 }
+  },
+  turnaroundDist: [
+    { label: '< 7 Days', value: 0, color: '#4CAF50' },
+    { label: '7-14 Days', value: 0, color: '#2196F3' },
+    { label: '15-21 Days', value: 0, color: '#FFC107' },
+    { label: '> 21 Days', value: 0, color: '#F44336' }
+  ]
+})
 
-    // For Turnaround Time Distribution
-    turnaroundDist: [
-      { label: '< 7 Days', value: 15, color: '#4CAF50' },
-      { label: '7-14 Days', value: 45, color: '#2196F3' },
-      { label: '15-21 Days', value: 25, color: '#FFC107' },
-      { label: '> 21 Days', value: 15, color: '#F44336' }
+const reviewersList = ref([])
+const dateRange = ref('last_year')
+const loading = ref(false)
+
+const fetchStats = async () => {
+  loading.value = true
+  try {
+    const response = await reviewApi.getReviewersList({ period: dateRange.value })
+    const reviewers = response.items || response.data || []
+    reviewersList.value = reviewers
+
+    const totalReviewers = reviewers.length
+    const activeReviewers = reviewers.filter(r => r.is_active || r.status === 'active').length
+    
+    const completedReviews = reviewers.filter(r => r.completed_reviews > 0)
+    const avgTurnaroundDays = completedReviews.length > 0
+      ? (completedReviews.reduce((sum, r) => sum + (r.avg_turnaround || r.avg_days || 0), 0) / completedReviews.length).toFixed(1)
+      : 0
+    
+    const acceptedInvitations = reviewers.filter(r => r.accepted_invitations > 0).length
+    const acceptanceRate = totalReviewers > 0 ? Math.round((acceptedInvitations / totalReviewers) * 100) : 0
+
+    const totalRecommended = reviewers.reduce((sum, r) => sum + (r.recommended_count || 0), 0)
+    const adoptedRecommended = reviewers.reduce((sum, r) => sum + (r.adopted_count || 0), 0)
+    const totalOpposed = reviewers.reduce((sum, r) => sum + (r.opposed_count || 0), 0)
+    const respectedOpposed = reviewers.reduce((sum, r) => sum + (r.respected_count || 0), 0)
+
+    const turnaroundDist = [
+      { label: '< 7 Days', value: Math.round((reviewers.filter(r => (r.avg_turnaround || r.avg_days || 0) < 7).length / Math.max(totalReviewers, 1)) * 100), color: '#4CAF50' },
+      { label: '7-14 Days', value: Math.round((reviewers.filter(r => { const d = r.avg_turnaround || r.avg_days || 0; return d >= 7 && d <= 14 }).length / Math.max(totalReviewers, 1)) * 100), color: '#2196F3' },
+      { label: '15-21 Days', value: Math.round((reviewers.filter(r => { const d = r.avg_turnaround || r.avg_days || 0; return d >= 15 && d <= 21 }).length / Math.max(totalReviewers, 1)) * 100), color: '#FFC107' },
+      { label: '> 21 Days', value: Math.round((reviewers.filter(r => (r.avg_turnaround || r.avg_days || 0) > 21).length / Math.max(totalReviewers, 1)) * 100), color: '#F44336' }
     ]
+
+    stats.value = {
+      totalReviewers,
+      activeReviewers,
+      avgTurnaroundDays,
+      acceptanceRate,
+      avgRating: 4.5,
+      adoption: {
+        recommended: { total: totalRecommended, adopted: adoptedRecommended },
+        opposed: { total: totalOpposed, respected: respectedOpposed }
+      },
+      turnaroundDist
+    }
+  } catch (error) {
+    console.error('Failed to fetch reviewer stats:', error)
+  } finally {
+    loading.value = false
   }
 }
 
-const stats = ref(generateStats())
-const dateRange = ref('last_year')
-
 const refreshStats = () => {
-  // Simulate data fetch based on date range
-  stats.value = generateStats()
-  // Add some random variation
-  stats.value.totalReviewers += Math.floor(Math.random() * 10)
+  fetchStats()
 }
 
-// Helper for CSV Export
 const exportReport = () => {
-  const headers = ['Metric', 'Value']
-  const rows = [
-    ['Total Reviewers', stats.value.totalReviewers],
-    ['Active Reviewers', stats.value.activeReviewers],
-    ['Avg Turnaround (Days)', stats.value.avgTurnaroundDays],
-    ['Invitation Acceptance Rate', stats.value.acceptanceRate + '%'],
-    ['Recommended Adoption Rate', Math.round((stats.value.adoption.recommended.adopted / stats.value.adoption.recommended.total) * 100) + '%'],
-    ['Opposed Respected Rate', Math.round((stats.value.adoption.opposed.respected / stats.value.adoption.opposed.total) * 100) + '%']
-  ]
+  const headers = ['Reviewer Name', 'Affiliation', 'Reviews Completed', 'Avg Days', 'Rating', 'Status']
+  const rows = reviewersList.value.map(r => [
+    r.name || r.reviewer_name,
+    r.institution || r.affiliation || '-',
+    r.completed_reviews || r.total_reviews || 0,
+    r.avg_turnaround || r.avg_days || '-',
+    r.rating || '-',
+    r.status || r.is_active ? 'Active' : 'Inactive'
+  ])
 
   let csvContent = "data:text/csv;charset=utf-8," 
     + headers.join(",") + "\n" 
@@ -65,6 +105,10 @@ const exportReport = () => {
   link.click()
   document.body.removeChild(link)
 }
+
+onMounted(() => {
+  fetchStats()
+})
 
 </script>
 
@@ -180,33 +224,15 @@ const exportReport = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Dr. Sarah Jenkins</td>
-              <td>University of Oxford</td>
-              <td>12</td>
-              <td>8.5</td>
-              <td>★★★★★</td>
+            <tr v-for="reviewer in reviewersList" :key="reviewer.id || reviewer.name">
+              <td>{{ reviewer.name || reviewer.reviewer_name || '-' }}</td>
+              <td>{{ reviewer.institution || reviewer.affiliation || '-' }}</td>
+              <td>{{ reviewer.completed_reviews || reviewer.total_reviews || 0 }}</td>
+              <td>{{ reviewer.avg_turnaround || reviewer.avg_days || '-' }}</td>
+              <td>{{ '★'.repeat(Math.round(reviewer.rating || 0)) }}{{ '☆'.repeat(5 - Math.round(reviewer.rating || 0)) }}</td>
             </tr>
-             <tr>
-              <td>Prof. Michael Chang</td>
-              <td>Stanford Medicine</td>
-              <td>9</td>
-              <td>11.2</td>
-              <td>★★★★☆</td>
-            </tr>
-             <tr>
-              <td>Dr. Emily White</td>
-              <td>Johns Hopkins</td>
-              <td>7</td>
-              <td>14.0</td>
-              <td>★★★★☆</td>
-            </tr>
-             <tr>
-              <td>Dr. Robert Chen</td>
-              <td>Tsinghua University</td>
-              <td>15</td>
-              <td>6.8</td>
-              <td>★★★★★</td>
+            <tr v-if="reviewersList.length === 0">
+              <td colspan="5" class="empty-row">No reviewer data available</td>
             </tr>
           </tbody>
         </table>
@@ -435,6 +461,12 @@ const exportReport = () => {
   font-size: 12px;
   color: #666;
   text-align: center;
+}
+
+.empty-row {
+  text-align: center;
+  color: #999;
+  padding: 20px;
 }
 
 /* Table Section */

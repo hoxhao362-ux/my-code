@@ -80,15 +80,9 @@ const events = computed(() => [
 
 const handleAction = (event) => {
   if (event.type === 'upcoming') {
-<<<<<<< HEAD
-    toastStore.add({ message: `Registration for "${event.title}" opened.`, type: 'success' })
-  } else {
-    toastStore.add({ message: `Opening replay for "${event.title}"...`, type: 'info' })
-=======
     toastStore.add({ message: t('news.events.toastRegister', { title: event.title }), type: 'success' })
   } else {
     toastStore.add({ message: t('news.events.toastReplay', { title: event.title }), type: 'info' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   }
 }
 
@@ -96,15 +90,9 @@ const addToCalendar = (event) => {
   // Simple ICS generation
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-<<<<<<< HEAD
-PRODID:-//Journal Platform//Events//EN
-BEGIN:VEVENT
-UID:${event.id}@journalplatform.com
-=======
 PRODID:-//Peerex Peer//Events//EN
 BEGIN:VEVENT
 UID:${event.id}@peerexpeer.com
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
 DTSTART:${event.year}03${event.day}T090000Z
 SUMMARY:${event.title}

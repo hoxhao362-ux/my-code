@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
 import { useI18n } from '../../../composables/useI18n'
+import { manuscriptApi, reviewApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 import IntelligentReviewerRecommendation from '../../../components/audit/IntelligentReviewerRecommendation.vue'
 
@@ -13,20 +14,50 @@ const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// Filter for manuscripts waiting for assignment
-const assignmentJournals = computed(() => {
-  return userStore.journals.filter(journal => 
-    // Public Pool
-    journal.status === 'reviewer_assignment_pending' || 
-    journal.status === 'initial_review_passed' || 
-    // Assigned specifically to current user (or Admin sees all)
-    (journal.status === 'assigned_to_editor' && (journal.assignedEditor === user.value?.username || user.value?.role === 'admin')) ||
-    // Legacy support
-    journal.status === 'Pending Assignment'
-  )
+// 真实稿件列表
+const assignmentJournals = ref([])
+const isLoadingJournals = ref(false)
+
+// 审稿人列表（从后端获取）
+const availableReviewers = ref([])
+
+onMounted(async () => {
+  await fetchAssignmentJournals()
+  await fetchReviewers()
 })
 
-const availableReviewers = computed(() => userStore.users.filter(u => u.role === 'reviewer'))
+const fetchAssignmentJournals = async () => {
+  isLoadingJournals.value = true
+  try {
+    const res = await manuscriptApi.getMyManuscripts({
+      status: 'reviewer_assignment_pending',
+      page: 1,
+      page_size: 50
+    })
+    const items = res.data?.items || res.items || []
+    assignmentJournals.value = items.filter(j => 
+      j.status === 'reviewer_assignment_pending' || 
+      j.status === 'initial_review_passed' ||
+      j.status === 'pending_assignment'
+    )
+  } catch (error) {
+    console.error('获取待分配稿件失败:', error)
+    assignmentJournals.value = []
+  } finally {
+    isLoadingJournals.value = false
+  }
+}
+
+const fetchReviewers = async () => {
+  try {
+    const res = await reviewApi.getReviewersList({ page: 1, page_size: 100 })
+    const items = res.data?.items || res.items || []
+    availableReviewers.value = items
+  } catch (error) {
+    console.error('获取审稿人列表失败:', error)
+    availableReviewers.value = []
+  }
+}
 
 // Selection Logic
 const showModal = ref(false)
@@ -85,48 +116,29 @@ const handleSelectRecommended = (reviewer) => {
   }
 }
 
-const confirmAssignment = () => {
+const confirmAssignment = async () => {
   if (selectedReviewerIds.value.length < 1) {
     toastStore.add({ message: t('editor.audit.assignReviewers.alerts.selectAtLeastOne'), type: 'warning' })
     return
   }
   
-  const journal = { ...currentJournal.value }
-  journal.status = 'under_peer_review'
-  
-  // Mix of Real Users (Manual/Smart) and Recommended Reviewers
-  const newReviewers = selectedReviewerIds.value.map(id => {
-    // Check if it's a real user first
-    const realUser = availableReviewers.value.find(u => u.id === id)
-    if (realUser) {
-      return {
-        id: realUser.id,
-        name: realUser.username,
-        status: 'Pending', // Journal Platform Standard
-        invitedAt: new Date().toISOString()
-      }
+  try {
+    const payload = {
+      action: 'assign',
+      reviewer_ids: JSON.stringify(selectedReviewerIds.value),
+      comment: `已分配 ${selectedReviewerIds.value.length} 位审稿人`
     }
     
-    // Check if it's a recommended reviewer
-    const recReviewer = userStore.recommendedReviewers.find(r => r.id === id)
-    if (recReviewer) {
-       return {
-         id: 'rec-' + recReviewer.id, // Temporary ID
-         name: recReviewer.reviewerName,
-         email: recReviewer.reviewerEmail,
-         status: 'Pending', // Journal Platform Standard
-         invitedAt: new Date().toISOString(),
-         isExternal: true
-       }
-    }
-    return null
-  }).filter(Boolean)
-  
-  journal.reviewers = [...(journal.reviewers || []), ...newReviewers]
-  
-  userStore.updateJournal(journal)
-  showModal.value = false
-  toastStore.add({ message: t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: newReviewers.length }), type: 'success' })
+    await manuscriptApi.updateWorkflow(currentJournal.value.id, payload)
+    
+    toastStore.add({ message: t('editor.audit.assignReviewers.alerts.assignedSuccess', { count: selectedReviewerIds.value.length }), type: 'success' })
+    showModal.value = false
+    
+    await fetchAssignmentJournals()
+  } catch (error) {
+    const detail = error.response?.data?.detail || error.message || '分配失败'
+    toastStore.add({ message: detail, type: 'error' })
+  }
 }
 
 const handleReinvite = (journal) => {

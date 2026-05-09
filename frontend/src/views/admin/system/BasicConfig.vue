@@ -2,10 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
-<<<<<<< HEAD
-=======
 import { useI18n } from 'vue-i18n'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 import Navigation from '../../../components/Navigation.vue'
 
 const { t } = useI18n()
@@ -40,11 +37,7 @@ onMounted(() => {
 
 const saveConfig = () => {
   userStore.setBasicConfig(basicConfig.value)
-<<<<<<< HEAD
-  toastStore.add({ message: '基础配置已保存！', type: 'success' })
-=======
   toastStore.add({ message: t('notification.basicConfig.actions.saveSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 const resetConfig = () => {
@@ -60,11 +53,7 @@ const resetConfig = () => {
     ...defaultConfig
   }
   userStore.setBasicConfig(defaultConfig)
-<<<<<<< HEAD
-  toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
-=======
   toastStore.add({ message: t('notification.basicConfig.actions.resetSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 </script>
 

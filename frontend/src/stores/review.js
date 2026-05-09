@@ -3,72 +3,86 @@ import { ref, computed } from 'vue'
 import { reviewApi } from '../utils/api'
 
 export const useReviewStore = defineStore('review', () => {
-  const pendingReviews = ref([]) // 待我审核的稿件
-  const reviewHistory = ref([]) // 我的审稿历史
-  const loading = ref(false)
-  const error = ref(null)
+  const reviewTasks = ref([])
+  const currentReviewTask = ref(null)
+  const isLoading = ref(false)
+  const pagination = ref({
+    page: 1,
+    page_size: 10,
+    total: 0
+  })
 
-  // 获取待审稿件
-  const fetchPendingReviews = async () => {
-    loading.value = true
-    try {
-      const data = await reviewApi.getPendingJournals()
-      pendingReviews.value = data
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch pending reviews'
-    } finally {
-      loading.value = false
-    }
-  }
+  // 评审意见字段
+  const reviewForm = ref({
+    score: 5,
+    comments: '',
+    recommendations: '',
+    decision: 'minor_revision'
+  })
 
-  // 获取审稿历史
-  const fetchReviewHistory = async (reviewerName) => {
-    loading.value = true
+  // 获取我的审稿任务列表
+  const fetchMyTasks = async (params = {}) => {
+    isLoading.value = true
     try {
-      const data = await reviewApi.getReviewHistory(reviewerName)
-      reviewHistory.value = data
-    } catch (err) {
-      error.value = err.message || 'Failed to fetch review history'
+      const queryParams = {
+        page: pagination.value.page,
+        page_size: pagination.value.page_size,
+        ...params
+      }
+      const response = await reviewApi.getMyTasks(queryParams)
+      const data = response.data || response
+      reviewTasks.value = data.items || []
+      pagination.value.total = data.total || 0
+      pagination.value.page = data.page || 1
+      pagination.value.page_size = data.page_size || 10
+    } catch (error) {
+      console.error('获取审稿任务失败:', error)
+      reviewTasks.value = []
     } finally {
-      loading.value = false
+      isLoading.value = false
     }
   }
 
   // 提交审稿意见
-  const submitReview = async (journalId, reviewData) => {
-    loading.value = true
+  const submitReview = async (taskId, reviewData) => {
     try {
-      await reviewApi.reviewJournal(journalId, reviewData)
-      // 提交成功后，从待审列表中移除
-      pendingReviews.value = pendingReviews.value.filter(j => String(j.id) !== String(journalId))
-      // 刷新历史
-      if (reviewData.reviewer) {
-          await fetchReviewHistory(reviewData.reviewer)
-      }
-    } catch (err) {
-      error.value = err.message || 'Failed to submit review'
-      throw err
-    } finally {
-      loading.value = false
+      await reviewApi.submitReview(taskId, reviewData)
+      await fetchMyTasks()
+    } catch (error) {
+      console.error('提交审稿意见失败:', error)
+      throw error
+    }
+  }
+
+  // 获取审稿人列表（管理员）
+  const fetchReviewersList = async (params = {}) => {
+    try {
+      const response = await reviewApi.getReviewersList(params)
+      return response.data || response
+    } catch (error) {
+      console.error('获取审稿人列表失败:', error)
+      return []
     }
   }
 
   // 统计信息
   const reviewStats = computed(() => {
     return {
-      pendingCount: pendingReviews.value.length,
-      completedCount: reviewHistory.value.length
+      pendingCount: reviewTasks.value.filter(t => t.status === 'pending').length,
+      completedCount: reviewTasks.value.filter(t => t.status === 'completed').length,
+      overdueCount: reviewTasks.value.filter(t => t.status === 'overdue').length
     }
   })
 
   return {
-    pendingReviews,
-    reviewHistory,
-    loading,
-    error,
+    reviewTasks,
+    currentReviewTask,
+    isLoading,
+    pagination,
+    reviewForm,
     reviewStats,
-    fetchPendingReviews,
-    fetchReviewHistory,
-    submitReview
+    fetchMyTasks,
+    submitReview,
+    fetchReviewersList
   }
 })

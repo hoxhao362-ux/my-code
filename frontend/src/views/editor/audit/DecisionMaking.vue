@@ -3,10 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
-<<<<<<< HEAD
-=======
 import { usePlatformStore } from '../../../stores/platform'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
+import { manuscriptApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 import RichTextEditor from '../../../components/RichTextEditor.vue'
 import { MANUSCRIPT_STATUS } from '../../../constants/manuscriptStatus'
@@ -17,57 +15,76 @@ const userStore = useUserStore()
 const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
+const platformStore = usePlatformStore()
 
 // --- Tabs for Decision Central ---
 const activeTab = ref('consolidation') // consolidation | consensus | appeals
 
+// --- Real API Data ---
+const decisionJournalsList = ref([])
+const consensusJournalsList = ref([])
+const appealJournalsList = ref([])
+const isLoading = ref(false)
+
+onMounted(async () => {
+  await fetchDecisionJournals()
+  if (platformStore.journals.length === 0) {
+    platformStore.fetchJournals()
+  }
+})
+
+const fetchDecisionJournals = async () => {
+  isLoading.value = true
+  try {
+    const [decisionRes, pendingRes] = await Promise.all([
+      manuscriptApi.getMyManuscripts({ status: 'review_completed', page: 1, page_size: 50 }),
+      manuscriptApi.getMyManuscripts({ status: 'pending_final_decision', page: 1, page_size: 50 })
+    ])
+    
+    const decisionItems = decisionRes.data?.items || decisionRes.items || []
+    const pendingItems = pendingRes.data?.items || pendingRes.items || []
+    
+    decisionJournalsList.value = decisionItems.filter(j => 
+      j.status === 'review_completed' || j.status === 'Reviews Completed'
+    )
+    
+    pendingFinalDecisionJournals.value = pendingItems.filter(j => 
+      j.status === 'pending_final_decision' || j.status === 'Pending Final Decision'
+    )
+    
+    // 合并到 allDecisionJournals
+    allDecisionJournals.value = [...decisionJournalsList.value, ...pendingFinalDecisionJournals.value]
+    
+    // 共识会议队列
+    consensusJournalsList.value = decisionItems.filter(j => 
+      j.decisionStage === 'consensus_meeting' ||
+      (j.status === 'review_completed' && j.reviews && j.reviews.some(r => r.rating < 2) && j.reviews.some(r => r.rating > 4))
+    )
+    
+    // 申诉队列
+    const appealRes = await manuscriptApi.getMyManuscripts({ status: 'appeal_submitted', page: 1, page_size: 50 })
+    const appealItems = appealRes.data?.items || appealRes.items || []
+    appealJournalsList.value = appealItems.filter(j => 
+      j.status === 'appeal_submitted' || 
+      (j.status === 'rejected' && j.appealRequested)
+    )
+  } catch (error) {
+    console.error('获取决策稿件失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 // --- Filter Logic ---
-// 1. Consolidation Queue: Manuscripts ready for decision
-const decisionJournals = computed(() => {
-  if (!user.value) return []
-  return userStore.journals.filter(journal => {
-    const isStatusReady = journal.status === 'review_completed' || journal.status === 'Reviews Completed'
-    const isAssignedToMe = !journal.assignedEditor || journal.assignedEditor === user.value.username
-    // Exclude those already in meeting or appeal
-    const isInMeeting = journal.decisionStage === 'consensus_meeting'
-    const isAppeal = journal.isAppeal
-    return isStatusReady && isAssignedToMe && !isInMeeting && !isAppeal
-  })
-})
-
-// Filter for pending final decision journals (only accessible by editors)
-const pendingFinalDecisionJournals = computed(() => {
-  if (!user.value || !['editor', 'admin'].includes(user.value.role)) return []
-  return userStore.journals.filter(journal => {
-    const isPendingFinalDecision = journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
-    const isAssignedToMe = !journal.assignedEditor || journal.assignedEditor === user.value.username
-    return isPendingFinalDecision && isAssignedToMe
-  })
-})
-
-// Combined list for display
-const allDecisionJournals = computed(() => {
-  return [...decisionJournals.value, ...pendingFinalDecisionJournals.value]
-})
+const decisionJournals = computed(() => decisionJournalsList.value)
+const pendingFinalDecisionJournals = ref([])
+const allDecisionJournals = ref([])
 
 // 2. Consensus Meeting Queue: Manuscripts requiring discussion
-const consensusJournals = computed(() => {
-  if (!user.value) return []
-  // Mock: Filter by a custom property or simulate based on ID
-  return userStore.journals.filter(journal => 
-    journal.decisionStage === 'consensus_meeting' || 
-    (journal.status === 'review_completed' && journal.reviews && journal.reviews.some(r => r.rating < 2) && journal.reviews.some(r => r.rating > 4)) // High variance triggers meeting
-  )
-})
+const consensusJournals = computed(() => consensusJournalsList.value)
 
 // 3. Appeals Queue: Rejected manuscripts appealing
-const appealJournals = computed(() => {
-  if (!user.value) return []
-  return userStore.journals.filter(journal => 
-    journal.status === 'appeal_submitted' || 
-    (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED && journal.appealRequested)
-  )
-})
+const appealJournals = computed(() => appealJournalsList.value)
 
 // --- Modal State ---
 const showModal = ref(false)
@@ -108,25 +125,9 @@ const meetingAgenda = ref({
   notes: ''
 })
 
-// Structured Decision Rationale
-const decisionRationale = ref({
-  scientificRigor: '',
-  novelty: '',
-  methodology: '',
-  dataIntegrity: '',
-  ethicalCompliance: ''
-})
-
-// Consensus Meeting Data
-const meetingAgenda = ref({
-  date: new Date().toISOString().slice(0, 16),
-  attendees: ['Editor-in-Chief', 'Senior Editor', 'Statistician'],
-  notes: ''
-})
-
 const openDecisionModal = (journal) => {
-  // Permission check: only editor or admin can handle pending final decision manuscripts
-  if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION && !['editor', 'admin'].includes(user.value?.role)) {
+  // Permission check: only editor, admin, or associate_editor can handle pending final decision manuscripts
+  if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION && !['editor', 'admin', 'associate_editor'].includes(user.value?.role)) {
     toastStore.add({ message: t('editor.audit.decisionMaking.alerts.onlyEditors'), type: 'error' })
     return
   }
@@ -153,33 +154,61 @@ const autoConsolidateReviews = (journal) => {
   return summary
 }
 
-const submitDecision = () => {
-<<<<<<< HEAD
-  if (!decisionComments.value) {
-=======
+const submitDecision = async () => {
   // Validate comments unless it's a transfer or consensus meeting
   if (!decisionComments.value && decisionType.value !== 'Transfer' && decisionType.value !== 'Consensus Meeting') {
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     toastStore.add({ message: t('editor.audit.decisionMaking.alerts.enterComments'), type: 'warning' })
     return
   }
   
   const journal = { ...currentJournal.value }
+  
+  // 调用真实工作流接口
+  try {
+    const actionMap = {
+      'Accept': 'decide',
+      'Minor Revision': 'decide',
+      'Major Revision': 'decide',
+      'Reject': 'decide',
+      'Return to Reviewer': 'decide',
+      'Transfer': 'decide',
+      'Consensus Meeting': 'decide'
+    }
+    
+    const decisionTypeMap = {
+      'Accept': 'accept',
+      'Minor Revision': 'revision',
+      'Major Revision': 'revision',
+      'Reject': 'reject',
+      'Return to Reviewer': 'revision',
+      'Transfer': 'transfer',
+      'Consensus Meeting': 'revision'
+    }
+    
+    const payload = {
+      action: actionMap[decisionType.value] || 'decide',
+      decision_type: decisionTypeMap[decisionType.value] || 'revision',
+      comment: decisionComments.value
+    }
+    
+    await manuscriptApi.updateWorkflow(journal.id, payload)
+  } catch (error) {
+    console.error('提交决策失败:', error)
+    toastStore.add({ message: `操作失败：${error.response?.data?.detail || error.message || '未知错误'}`, type: 'error' })
+    return
+  }
+  
+  // 前端状态更新（FALLBACK 逻辑，保持 UI 一致）
   let newStatus = ''
   
-  // Standard Decision Types
   if (decisionType.value === 'Accept') {
-    // Check current status for special handling
     if (journal.status === 'review_completed' || journal.status === 'Reviews Completed') {
-      // If in completed status, move to pending final decision for editor-in-chief
       newStatus = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
       journal.reviewStage = 'Pending Final Decision'
     } else if (journal.status === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION || journal.status === MANUSCRIPT_STATUS.UNDER_FINAL_DECISION) {
-      // If already in final decision stage, move to production process
       newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
       journal.reviewStage = 'In Production'
     } else {
-      // Default case: move to production process
       newStatus = MANUSCRIPT_STATUS.PENDING_ACCEPTANCE_CONFIRMATION
       journal.reviewStage = 'In Production'
     }
@@ -188,24 +217,18 @@ const submitDecision = () => {
   } else if (decisionType.value === 'Minor Revision' || decisionType.value === 'Major Revision') {
     newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
   } else if (decisionType.value === 'Return to Reviewer') {
-    // New Option: Return to Reviewer (Directly restart review process)
-    newStatus = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW // or 'under_peer_review'
+    newStatus = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
   } else if (decisionType.value === 'Transfer') {
-<<<<<<< HEAD
-    newStatus = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
-=======
     if (!transferJournal.value || !transferReason.value) {
       toastStore.add({ message: 'Please select a target journal and provide a reason for transfer.', type: 'warning' })
       return
     }
     newStatus = MANUSCRIPT_STATUS.TRANSFER_SUGGESTED || 'transfer_suggested'
     
-    // Add transfer metadata
     const targetJournalObj = platformStore.journals.find(j => j.name === transferJournal.value)
     journal.transferTo = targetJournalObj ? targetJournalObj.id : 'unknown'
     journal.transferReason = transferReason.value
     
-    // Notify author
     if (!userStore.notifications) userStore.notifications = []
     const newNotification = {
       id: Date.now(),
@@ -219,9 +242,7 @@ const submitDecision = () => {
     }
     userStore.notifications.unshift(newNotification)
     localStorage.setItem('notifications', JSON.stringify(userStore.notifications))
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   } else if (decisionType.value === 'Consensus Meeting') {
-    // Move to Meeting Queue
     journal.decisionStage = 'consensus_meeting'
     userStore.updateJournal(journal)
     showModal.value = false
@@ -231,7 +252,6 @@ const submitDecision = () => {
   
   journal.status = newStatus
   
-  // Save Structured Decision
   journal.decision = {
     type: decisionType.value,
     comments: decisionComments.value,
@@ -241,7 +261,6 @@ const submitDecision = () => {
   
   userStore.updateJournal(journal)
   
-  // Save Draft
   const draft = {
     manuscriptId: journal.id,
     manuscriptTitle: journal.title,
@@ -249,13 +268,12 @@ const submitDecision = () => {
     templateType: decisionType.value,
     status: 'Draft',
     author: journal.author,
-    rationale: decisionRationale.value // Save structured rationale
+    rationale: decisionRationale.value
   }
   userStore.saveDecisionDraft(draft)
   
   showModal.value = false
   
-  // Show different messages based on status transition
   if (newStatus === MANUSCRIPT_STATUS.PENDING_FINAL_DECISION) {
     toastStore.add({ 
       message: t('editor.audit.decisionMaking.alerts.decisionRecorded', { type: decisionType.value }) + '\n' + t('editor.audit.decisionMaking.alerts.sentToEIC'), 
@@ -432,8 +450,6 @@ const assignIndependentReviewer = (journal) => {
               <div v-if="decisionType === 'Return to Reviewer'" class="alert-box warning">
                 <small><strong>Note:</strong> {{ t('editor.audit.decisionMaking.modals.decision.returnWarning') }}</small>
               </div>
-<<<<<<< HEAD
-=======
               <div v-if="decisionType === 'Transfer'" class="transfer-section" style="margin-top: 1rem;">
                 <div class="form-group" style="margin-bottom: 1rem;">
                   <label class="input-label required" style="display: block; font-weight: 600; color: #555; margin-bottom: 0.5rem; font-size: 0.9rem;">Select Target Journal</label>
@@ -447,7 +463,6 @@ const assignIndependentReviewer = (journal) => {
                   <textarea v-model="transferReason" class="form-control" rows="3" placeholder="Explain why this journal is a better fit..."></textarea>
                 </div>
               </div>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
             </div>
 
             <!-- Section 2: Structured Rationale -->

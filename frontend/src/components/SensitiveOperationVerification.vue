@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onUnmounted, watch } from 'vue'
+import { ref, computed, onUnmounted, watch, onMounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useToastStore } from '../stores/toast'
+import { captchaApi } from '../utils/api'
 
 const props = defineProps({
   visible: {
@@ -22,69 +23,72 @@ const emit = defineEmits(['close', 'verify-success'])
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
-<<<<<<< HEAD
-const platformName = computed(() => userStore.basicConfig?.platformName || 'Journal Platform')
-=======
 const platformName = computed(() => userStore.basicConfig?.platformName || 'Peerex Peer')
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 
 // State
-const step = ref(1) // 1: Send Code, 2: Verify
 const verificationCode = ref('')
-const countdown = ref(0)
+const captchaImage = ref('')
+const captchaReqId = ref('')
 const errorMsg = ref('')
 const isLoading = ref(false)
-const verificationMethod = ref('sms') // 'sms' or 'email'
 
-let timer = null
-
-// Reset state when visibility changes
-watch(() => props.visible, (newVal) => {
-  if (newVal) {
-    step.value = 1
+// 获取验证码图片
+const fetchCaptcha = async () => {
+  try {
+    const res = await captchaApi.getImage()
+    const data = res.data || res
+    captchaImage.value = data.image || ''
+    captchaReqId.value = data.req_id || ''
     verificationCode.value = ''
     errorMsg.value = ''
-    isLoading.value = false
-    // Don't auto-send, let user choose method
+  } catch (error) {
+    console.error('获取验证码失败:', error)
+    toastStore.add({ message: 'Failed to load captcha', type: 'error' })
+  }
+}
+
+onMounted(() => {
+  if (props.visible) {
+    fetchCaptcha()
   }
 })
 
-const startCountdown = () => {
-  countdown.value = 60
-  timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
-}
+watch(() => props.visible, (newVal) => {
+  if (newVal) {
+    fetchCaptcha()
+  }
+})
 
-const sendCode = () => {
-  isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
-    step.value = 2
-    startCountdown()
-    toastStore.add({ message: `Verification code sent for ${platformName.value}: 123456`, type: 'info' })
-  }, 1000)
-}
-
-const verifyCode = () => {
+const verifyCode = async () => {
   if (!verificationCode.value) {
     errorMsg.value = 'Please enter the verification code'
     return
   }
   
+  if (!captchaReqId.value) {
+    errorMsg.value = 'Captcha session expired. Please refresh.'
+    await fetchCaptcha()
+    return
+  }
+  
   isLoading.value = true
-  setTimeout(() => {
+  try {
+    await captchaApi.verify({
+      req_id: captchaReqId.value,
+      code: verificationCode.value
+    })
+    
+    // 验证成功
+    emit('verify-success')
+    emit('close')
+  } catch (error) {
+    const detail = error.response?.data?.detail || error.message || 'Invalid verification code'
+    errorMsg.value = detail
+    // 验证失败后刷新验证码（一次性消耗）
+    await fetchCaptcha()
+  } finally {
     isLoading.value = false
-    if (verificationCode.value === '123456') {
-      emit('verify-success')
-      emit('close')
-    } else {
-      errorMsg.value = 'Invalid verification code'
-    }
-  }, 800)
+  }
 }
 
 const close = () => {
@@ -92,7 +96,7 @@ const close = () => {
 }
 
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  // Cleanup if needed
 })
 </script>
 
@@ -119,50 +123,49 @@ onUnmounted(() => {
         </p>
         
         <p class="instruction">
-          For security, please complete the secondary verification.
+          For security, please complete the captcha verification.
         </p>
 
-        <div v-if="step === 1" class="step-container">
-          <div class="method-selector">
-            <label class="radio-label">
-              <input type="radio" v-model="verificationMethod" value="sms">
-              <span class="radio-custom"></span>
-              SMS Verification ({{ userStore.user?.phone?.slice(-4) ? '***' + userStore.user.phone.slice(-4) : 'Linked Phone' }})
-            </label>
-            <label class="radio-label">
-              <input type="radio" v-model="verificationMethod" value="email">
-              <span class="radio-custom"></span>
-              Email Verification ({{ userStore.user?.email ? userStore.user.email.split('@')[0].slice(0, 2) + '***@' + userStore.user.email.split('@')[1] : 'Linked Email' }})
-            </label>
+        <div class="step-container">
+          <!-- 验证码图片 -->
+          <div class="captcha-container">
+            <img 
+              v-if="captchaImage" 
+              :src="captchaImage" 
+              class="captcha-image"
+              alt="Captcha"
+              @click="fetchCaptcha"
+            />
+            <div v-else class="captcha-placeholder" @click="fetchCaptcha">
+              Click to load captcha
+            </div>
+            <button class="refresh-btn" @click="fetchCaptcha" :disabled="isLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </button>
           </div>
           
-          <button class="btn primary full-width" @click="sendCode" :disabled="isLoading">
-            {{ isLoading ? 'Sending...' : 'Send Verification Code' }}
-          </button>
-        </div>
-
-        <div v-if="step === 2" class="step-container">
-          <div class="code-input-container">
-            <input 
-              type="text" 
-              v-model="verificationCode" 
-              class="code-input" 
-              placeholder="Enter 6-digit code"
-              maxlength="6"
-              @keyup.enter="verifyCode"
-            >
-          </div>
+          <input 
+            type="text" 
+            v-model="verificationCode" 
+            class="code-input" 
+            placeholder="Enter captcha code"
+            maxlength="6"
+            @keyup.enter="verifyCode"
+          >
           
           <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
-          
-          <div class="resend-container">
-            <span v-if="countdown > 0" class="countdown">Resend in {{ countdown }}s</span>
-            <button v-else class="btn-link" @click="sendCode">Resend Code</button>
-          </div>
 
-          <button class="btn primary full-width" @click="verifyCode" :disabled="isLoading">
-            {{ isLoading ? 'Verifying...' : 'Verify & Proceed' }}
-          </button>
+          <div class="btn-group">
+            <button class="btn secondary" @click="close">
+              Cancel
+            </button>
+            <button class="btn primary" @click="verifyCode" :disabled="isLoading || !verificationCode">
+              {{ isLoading ? 'Verifying...' : 'Verify & Proceed' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -343,5 +346,78 @@ onUnmounted(() => {
 
 .countdown {
   color: #999;
+}
+
+/* Captcha Styles */
+.captcha-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.captcha-image {
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  max-width: 180px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.captcha-placeholder {
+  padding: 0.8rem 1.5rem;
+  background: #f5f5f5;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.refresh-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.btn.secondary {
+  background: #f5f5f5;
+  color: #666;
+  flex: 1;
+}
+
+.btn.secondary:hover {
+  background: #eee;
+}
+
+.btn.primary {
+  flex: 2;
+}
+
+.code-input {
+  margin-bottom: 0.5rem;
 }
 </style>

@@ -1,8 +1,7 @@
 <script setup>
 import { defineProps, defineEmits, ref, computed, reactive } from 'vue'
-import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
-import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
+import { manuscriptApi } from '../../utils/api'
 
 const props = defineProps({
   visible: Boolean,
@@ -10,7 +9,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submitted'])
-const userStore = useUserStore()
 const toastStore = useToastStore()
 
 // State
@@ -137,20 +135,20 @@ const submitRevision = async () => {
   submitting.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate upload
-
-    // Update Status
-    const updatedJournal = { ...props.manuscript }
-    updatedJournal.status = MANUSCRIPT_STATUS.REVISION_SUBMITTED
-    updatedJournal.revisionNote = response.value
-    updatedJournal.lastUpdated = new Date().toISOString()
-    // In real app, we would upload files and get URLs.
+    const formData = new FormData()
+    formData.append('action', 'revise')
+    formData.append('comment', response.value)
     
-    userStore.updateJournal(updatedJournal)
+    if (files.revisedManuscript) {
+      formData.append('file', files.revisedManuscript)
+    }
+    
+    await manuscriptApi.updateWorkflow(props.manuscript.id, formData)
 
     showSuccess.value = true
+    emit('submitted')
   } catch (e) {
-    error.value = 'Submission failed. Please try again.'
+    error.value = e.message || 'Submission failed. Please try again.'
   } finally {
     submitting.value = false
   }
@@ -279,11 +277,7 @@ const downloadReceipt = () => {
               </div>
               <div class="checkbox-item">
                 <input type="checkbox" id="dec5" v-model="declarations.dataSharing">
-<<<<<<< HEAD
-                <label for="dec5">The manuscript complies with the Journal Submission Platform's data sharing policy.</label>
-=======
                 <label for="dec5">The manuscript complies with the Peerex Peer's data sharing policy.</label>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
               </div>
             </div>
           </div>
@@ -350,11 +344,7 @@ const downloadReceipt = () => {
         <h3 class="text-success">Submission Successful</h3>
       </div>
       <div class="modal-content">
-<<<<<<< HEAD
-        <p>Your revision has been submitted to The Journal Submission Platform editorial team.</p>
-=======
         <p>Your revision has been submitted to The Peerex Peer editorial team.</p>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         <p><strong>Manuscript ID:</strong> {{ metadata.id }}</p>
         <p>A confirmation email has been sent to the corresponding author ({{ metadata.author }}).</p>
         <p>Your manuscript is now in the Revision Handling queue for editorial review.</p>

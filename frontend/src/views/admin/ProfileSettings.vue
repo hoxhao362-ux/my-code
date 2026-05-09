@@ -31,12 +31,12 @@ const tabs = computed(() => {
 })
 
 // Permissions
-const canEditBasicInfo = computed(() => ['editor', 'admin', 'associate_editor'].includes(user.value?.role))
-const canEditProfessionalInfo = computed(() => ['editor', 'admin'].includes(user.value?.role))
-const canUploadAvatar = computed(() => ['editor', 'admin', 'associate_editor'].includes(user.value?.role))
+const canEditBasicInfo = computed(() => ['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user.value?.role))
+const canEditProfessionalInfo = computed(() => ['editor', 'admin', 'associate_editor'].includes(user.value?.role))
+const canUploadAvatar = computed(() => ['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user.value?.role))
 const canManageSecurity = computed(() => ['editor', 'admin'].includes(user.value?.role)) // Full access
-const canChangePassword = computed(() => ['editor', 'admin', 'associate_editor'].includes(user.value?.role))
-const canConfigureAllNotifications = computed(() => ['editor', 'admin'].includes(user.value?.role))
+const canChangePassword = computed(() => ['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user.value?.role))
+const canConfigureAllNotifications = computed(() => ['editor', 'admin', 'associate_editor'].includes(user.value?.role))
 
 // --- Tab 1: Profile Info ---
 const profileForm = ref({

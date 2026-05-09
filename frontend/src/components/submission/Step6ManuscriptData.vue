@@ -4,10 +4,10 @@ import { useRouter } from 'vue-router'
 import { useSubmissionStore } from '../../stores/submission'
 import { useI18n } from '../../composables/useI18n'
 import { useToastStore } from '../../stores/toast'
+import { manuscriptApi } from '../../utils/api'
 import StepNavigation from './StepNavigation.vue'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
-import html2pdf from 'html2pdf.js'
 import { useErrorScroll } from '../../composables/useErrorScroll'
 import { validateORCID, validateDOI, searchInstitutions } from '../../utils/validators'
 
@@ -17,7 +17,7 @@ const { t } = useI18n()
 const toastStore = useToastStore()
 const submitting = ref(false)
 const showPublishingModal = ref(false)
-const showSuccessToast = ref(false) // Journal Platform Standard Toast State
+const showSuccessToast = ref(false)
 const { scrollToError } = useErrorScroll()
 
 // Helper: Institution Search
@@ -82,6 +82,15 @@ onMounted(() => {
   }
 })
 
+// Computed: First Author & Corresponding Author
+const firstAuthor = computed(() => {
+  return store.formData.authors.find(a => a.is_first) || null
+})
+
+const correspondingAuthor = computed(() => {
+  return store.formData.authors.find(a => a.is_corresponding) || null
+})
+
 // Quill Options
 const quillOptions = {
   modules: {
@@ -102,8 +111,9 @@ const addAuthor = () => {
     name: '',
     institution: '',
     email: '',
-    isCorresponding: false,
-    isFirst: false
+    orcid: '',
+    is_corresponding: false,
+    is_first: false
   })
 }
 
@@ -113,20 +123,20 @@ const removeAuthor = (index) => {
 
 const updateAuthorRole = (index, role) => {
   if (role === 'corresponding') {
-    const willBeChecked = !store.formData.authors[index].isCorresponding
+    const willBeChecked = !store.formData.authors[index].is_corresponding
     
     if (willBeChecked) {
-      store.formData.authors.forEach((w, i) => w.isCorresponding = i === index)
+      store.formData.authors.forEach((w, i) => w.is_corresponding = i === index)
     } else {
-      store.formData.authors[index].isCorresponding = false
+      store.formData.authors[index].is_corresponding = false
     }
   } else if (role === 'first') {
-    const willBeChecked = !store.formData.authors[index].isFirst
+    const willBeChecked = !store.formData.authors[index].is_first
     
     if (willBeChecked) {
-      store.formData.authors.forEach((w, i) => w.isFirst = i === index)
+      store.formData.authors.forEach((w, i) => w.is_first = i === index)
     } else {
-      store.formData.authors[index].isFirst = false
+      store.formData.authors[index].is_first = false
     }
   }
 }
@@ -149,32 +159,32 @@ const removeFunding = (index) => {
   store.formData.funding.splice(index, 1)
 }
 
-// PDF Generation
-const generatePDF = () => {
-  const content = `
-    <div style="font-family: Arial; padding: 20px;">
-      <h1>${store.formData.title.replace(/<[^>]*>/g, '')}</h1>
-      <h3>${t('manuscriptData.pdf.abstract')}</h3>
-      <div>${store.formData.abstract}</div>
-      <h3>${t('manuscriptData.pdf.authors')}</h3>
-      <ul>
-        ${store.formData.authors.map(w => `<li>${w.name} (${w.institution})</li>`).join('')}
-      </ul>
-      <h3>${t('manuscriptData.pdf.funding')}</h3>
-      ${store.formData.noFunding ? t('manuscriptData.pdf.none') : `<ul>${store.formData.funding.map(f => `<li>${f.body} - ${f.number}</li>`).join('')}</ul>`}
-    </div>
-  `
-  const opt = {
-    margin: 1,
-    filename: 'manuscript_preview.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+// PDF Generation - Call Backend API
+const generatePDF = async () => {
+  try {
+    toastStore.add({ message: t('manuscriptData.pdf.generating') || 'Generating PDF...', type: 'info' })
+    
+    // 组装需要预览的核心元数据
+    const previewData = {
+      title: store.formData.title.replace(/<[^>]*>/g, '').trim(),
+      abstract: store.formData.abstract.replace(/<[^>]*>/g, '').trim(),
+      authors: store.formData.authors,
+      funding: store.formData.funding,
+      noFunding: store.formData.noFunding
+    }
+
+    // 调用后端的合成接口
+    const response = await manuscriptApi.previewPdf(previewData)
+    
+    // 创建本地访问 URL 并打开新标签页
+    const blob = new Blob([response], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    
+  } catch (error) {
+    toastStore.add({ message: 'Failed to generate PDF preview from server', type: 'error' })
+    console.error('PDF Preview Error:', error)
   }
-  
-  html2pdf().from(content).toPdf().get('pdf').then((pdf) => {
-    window.open(pdf.output('bloburl'), '_blank')
-  })
 }
 
 // Submit Flow
@@ -266,7 +276,7 @@ const confirmSubmit = async () => {
         />
       </div>
       
-      <div class="form-group" v-if="store.formData.articleType === 'original'">
+      <div class="form-group" v-if="store.formData.article_type === 'Original Research'">
         <label class="form-label">Structured Abstract <span class="required">*</span></label>
         <div class="structured-abstract">
           <div class="abstract-section">
@@ -379,7 +389,7 @@ const confirmSubmit = async () => {
                 <input 
                   type="checkbox" 
                   class="role-checkbox"
-                  :checked="author.isCorresponding"
+                  :checked="author.is_corresponding"
                   @change="updateAuthorRole(index, 'corresponding')"
                 > 
                 {{ t('manuscriptData.authors.corresponding') }}
@@ -388,7 +398,7 @@ const confirmSubmit = async () => {
                 <input 
                   type="checkbox" 
                   class="role-checkbox"
-                  :checked="author.isFirst"
+                  :checked="author.is_first"
                   @change="updateAuthorRole(index, 'first')"
                 > 
                 {{ t('manuscriptData.authors.first') }}
@@ -399,8 +409,8 @@ const confirmSubmit = async () => {
       </div>
       <div v-if="store.steps[5].status === 'error'" class="error-msg">
         <div v-if="store.formData.authors.length === 0">{{ t('manuscriptData.errors.noAuthor') }}</div>
-        <div v-if="!store.formData.authors.some(w => w.isCorresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
-        <div v-if="!store.formData.authors.some(w => w.isFirst)">{{ t('manuscriptData.errors.noFirst') }}</div>
+        <div v-if="!store.formData.authors.some(w => w.is_corresponding)">{{ t('manuscriptData.errors.noCorresponding') }}</div>
+        <div v-if="!store.formData.authors.some(w => w.is_first)">{{ t('manuscriptData.errors.noFirst') }}</div>
       </div>
     </div>
 
@@ -817,8 +827,6 @@ const confirmSubmit = async () => {
   align-items: center;
 }
 
-<<<<<<< HEAD
-=======
 /* Structured Abstract */
 .structured-abstract {
   display: flex;
@@ -853,7 +861,6 @@ const confirmSubmit = async () => {
   text-align: right;
 }
 
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 /* Checkbox style to look like radio */.role-checkbox {
   appearance: none;
   background-color: #fff;

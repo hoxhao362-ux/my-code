@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { adminApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
@@ -18,41 +19,61 @@ const generateForm = ref({
 
 const disciplines = ['Clinical', 'Public Health', 'Global Health', 'Oncology']
 
-// Mock Data - Codes
-const codes = ref([
-  { code: 'JP-2026-X8Y2', created_at: '2026-02-13 10:00', expires_at: '2026-03-15', discipline: 'Clinical', role: 'senior', status: 'unused', used_by: '-' },
-  { code: 'JP-2026-A1B2', created_at: '2026-02-10 09:30', expires_at: '2026-03-12', discipline: 'Public Health', role: 'senior', status: 'used', used_by: 'Dr. Smith (Harvard)' },
-  { code: 'JP-2026-K9L0', created_at: '2026-01-01 14:00', expires_at: '2026-01-08', discipline: 'Global Health', role: 'basic', status: 'expired', used_by: '-' },
-  { code: 'JP-2026-Q5W6', created_at: '2026-02-12 11:00', expires_at: '2026-03-14', discipline: 'Clinical', role: 'senior', status: 'invalidated', used_by: '-' }
-])
+// 真实邀请码列表
+const codes = ref([])
+const isLoading = ref(false)
 
-const generateCodes = () => {
+onMounted(async () => {
+  await fetchCodes()
+})
+
+const fetchCodes = async () => {
+  isLoading.value = true
+  try {
+    const res = await adminApi.getInvitationCodes()
+    const data = res.data || res
+    codes.value = data.items || data || []
+  } catch (error) {
+    console.error('获取邀请码列表失败:', error)
+    codes.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const generateCodes = async () => {
   if (generateForm.value.quantity < 1 || generateForm.value.quantity > 100) {
     toastStore.add({ message: 'Quantity must be between 1 and 100.', type: 'warning' })
     return
   }
   
-  const newCodes = []
-  for (let i = 0; i < generateForm.value.quantity; i++) {
-    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase()
-    newCodes.push({
-      code: `JP-2026-${randomStr}`,
-      created_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      expires_at: new Date(Date.now() + generateForm.value.validity * 86400000).toISOString().split('T')[0],
+  try {
+    const payload = {
+      quantity: generateForm.value.quantity,
+      validity_days: generateForm.value.validity,
       discipline: generateForm.value.discipline,
-      role: generateForm.value.role === 'senior_reviewer' ? 'senior' : 'basic',
-      status: 'unused',
-      used_by: '-'
-    })
+      role: generateForm.value.role
+    }
+    
+    await adminApi.createInvitationCodes(payload)
+    toastStore.add({ message: `${generateForm.value.quantity} invitation codes generated successfully.`, type: 'success' })
+    await fetchCodes()
+  } catch (error) {
+    const detail = error.response?.data?.detail || error.message || '生成失败'
+    toastStore.add({ message: detail, type: 'error' })
   }
-  
-  codes.value = [...newCodes, ...codes.value]
-  toastStore.add({ message: `${generateForm.value.quantity} invitation codes generated successfully.`, type: 'success' })
 }
 
-const invalidateCode = (item) => {
+const invalidateCode = async (item) => {
   if (confirm(`Are you sure you want to invalidate code ${item.code}?`)) {
-    item.status = 'invalidated'
+    try {
+      await adminApi.updateInvitationCodeStatus(item.code, 'invalidated')
+      toastStore.add({ message: `Code ${item.code} invalidated.`, type: 'success' })
+      await fetchCodes()
+    } catch (error) {
+      const detail = error.response?.data?.detail || error.message || '操作失败'
+      toastStore.add({ message: detail, type: 'error' })
+    }
   }
 }
 
@@ -60,6 +81,16 @@ const copyCode = (code) => {
   navigator.clipboard.writeText(code).then(() => {
     toastStore.add({ message: 'Code copied to clipboard!', type: 'success' })
   })
+}
+
+const validateCode = async (code) => {
+  try {
+    const res = await adminApi.validateInvitationCode(code)
+    const data = res.data || res
+    toastStore.add({ message: `Code is ${data.status || 'valid'}.`, type: 'info' })
+  } catch (error) {
+    toastStore.add({ message: `Code validation failed: ${error.response?.data?.detail || error.message}`, type: 'error' })
+  }
 }
 
 </script>

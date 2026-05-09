@@ -1,127 +1,66 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
-import { encryptPassword, decryptPassword } from '../../utils/encryption'
-import { useI18n } from '../../composables/useI18n'
+import { encryptPassword } from '../../utils/encryption'
 
-const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 
-const username = ref('')
-const password = ref('')
+const loginForm = ref({
+  username: '',
+  password: ''
+})
+const loading = ref(false)
 const rememberMe = ref(false)
-const showPassword = ref(false)
-const isLoading = ref(false)
 const usernameError = ref('')
 const passwordError = ref('')
 const loginError = ref('')
 
-// Background images
-const backgroundImages = [
-  '/images/24.jpg',
-  '/images/26.jpg',
-  '/images/wzmc_20140317155634.jpg',
-  '/images/wzmc_20140317160144.jpg'
-]
-const currentImageIndex = ref(0)
-const backgroundImage = ref(backgroundImages[0])
-let imageInterval = null
 
-// Load remembered user
-onMounted(() => {
-  const savedUser = localStorage.getItem('readOnlyUser')
-  if (savedUser) {
-    const userData = JSON.parse(savedUser)
-    username.value = userData.username || ''
-    if (userData.password) {
-      password.value = decryptPassword(userData.password)
-    }
-    rememberMe.value = true
-  }
-  
-  // Start background image rotation
-  startImageRotation()
-})
-
-onUnmounted(() => {
-  // Clear interval when component is unmounted
-  if (imageInterval) {
-    clearInterval(imageInterval)
-  }
-})
-
-// Start background image rotation
-const startImageRotation = () => {
-  imageInterval = setInterval(() => {
-    currentImageIndex.value = (currentImageIndex.value + 1) % backgroundImages.length
-    backgroundImage.value = backgroundImages[currentImageIndex.value]
-  }, 5000) // Change image every 5 seconds
-}
-
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
 
 const handleLogin = async () => {
-  // Reset errors
   usernameError.value = ''
   passwordError.value = ''
   loginError.value = ''
   
-  // Frontend Validation
-  let hasError = false
-  if (!username.value) {
-    usernameError.value = t('auth.login.usernameError')
-    hasError = true
-  }
-  if (!password.value) {
-    passwordError.value = t('auth.login.passwordError')
-    hasError = true
+  if (!loginForm.value.username || !loginForm.value.password) {
+    if (!loginForm.value.username) usernameError.value = '请输入用户名'
+    if (!loginForm.value.password) passwordError.value = '请输入密码'
+    return
   }
   
-  if (hasError) return
-
-  // Loading State
-  isLoading.value = true
+  loading.value = true
   
   try {
-    // Call store action with password verification
-    await userStore.login({
-      username: username.value,
-      password: password.value
-    })
-    
-    // To satisfy "Remember Me" requirement:
-    if (rememberMe.value) {
-      localStorage.setItem('readOnlyUser', JSON.stringify({ 
-        username: username.value,
-        password: encryptPassword(password.value)
-      }))
-    } else {
-      localStorage.removeItem('readOnlyUser')
+    const loginPayload = {
+      username: loginForm.value.username,
+      password: await encryptPassword(loginForm.value.password),
+      is_remember: rememberMe.value
     }
     
-    // Redirect
-    router.push('/home')
+    await userStore.login(loginPayload)
+    
+    const role = userStore.role
+    if (role === 'admin') {
+      router.push('/admin/dashboard')
+    } else if (role === 'editor') {
+      router.push('/editor/dashboard')
+    } else if (role === 'reviewer') {
+      router.push('/reviewer/dashboard')
+    } else {
+      router.push('/author/dashboard')
+    }
   } catch (error) {
-    loginError.value = error.message || t('auth.login.failed')
+    loginError.value = error.message || '用户名或密码错误'
+    console.error(error)
   } finally {
-    isLoading.value = false
+    loading.value = false
   }
 }
 
 const goToRegister = () => {
   router.push('/register')
-}
-
-const goToForgotPassword = () => {
-  // Static mock page or just alert as placeholder if no route exists yet, 
-  // but spec says "jump to frontend static forgot password page". 
-  // Assuming we might need to create one or just link to a placeholder.
-  // For now, I'll point to a query param to simulate.
-  router.push('/login?view=forgot-password') 
 }
 </script>
 
@@ -131,18 +70,13 @@ const goToForgotPassword = () => {
       <div class="login-card">
       <!-- Header Section -->
       <div class="login-header">
-        <!-- Success Message Toast (Pure Frontend) -->
-        <div v-if="successMessage" class="success-toast">
-          {{ successMessage }}
-        </div>
-
         <h1 class="platform-title">
-          {{ t('nav.logo') }}
+          Peerex Peer
         </h1>
-        <h2 class="login-subtitle">{{ t('auth.login.title') }}</h2>
+        <h2 class="login-subtitle">Login</h2>
         <p class="login-desc">
-          {{ t('auth.login.subtitle') }}<br>
-          {{ t('auth.login.desc') }}
+          Welcome back! Please login to continue.<br>
+          Access your research and submissions.
         </p>
       </div>
 
@@ -150,11 +84,11 @@ const goToForgotPassword = () => {
       <div class="login-form">
         <!-- Username -->
         <div class="form-group" :class="{ 'has-error': usernameError }">
-          <label>{{ t('auth.login.usernameLabel') }}</label>
+          <label>Username</label>
           <input 
             type="text" 
-            v-model="username" 
-            :placeholder="t('auth.login.usernamePlaceholder')"
+            v-model="loginForm.username" 
+            placeholder="Enter username"
             :class="{ 'error-border': usernameError }"
           />
           <p v-if="usernameError" class="error-text">{{ usernameError }}</p>
@@ -162,18 +96,13 @@ const goToForgotPassword = () => {
 
         <!-- Password -->
         <div class="form-group" :class="{ 'has-error': passwordError }">
-          <label>{{ t('auth.login.passwordLabel') }}</label>
-          <div class="password-input-wrapper">
-            <input 
-              :type="showPassword ? 'text' : 'password'" 
-              v-model="password" 
-              :placeholder="t('auth.login.passwordPlaceholder')"
-              :class="{ 'error-border': passwordError }"
-            />
-            <span class="eye-icon" @click="togglePasswordVisibility">
-              {{ showPassword ? '👁️' : '👁️‍🗨️' }}
-            </span>
-          </div>
+          <label>Password</label>
+          <input 
+            type="password" 
+            v-model="loginForm.password" 
+            placeholder="Enter password"
+            :class="{ 'error-border': passwordError }"
+          />
           <p v-if="passwordError" class="error-text">{{ passwordError }}</p>
         </div>
 
@@ -181,9 +110,9 @@ const goToForgotPassword = () => {
         <div class="form-actions">
           <label class="remember-me">
             <input type="checkbox" v-model="rememberMe">
-            <span>{{ t('auth.login.rememberMe') }}</span>
+            <span>Remember Me</span>
           </label>
-          <a href="#" class="forgot-password" @click.prevent="goToForgotPassword">{{ t('auth.login.forgotPassword') }}</a>
+          <a href="#" class="forgot-password" @click.prevent="goToForgotPassword">Forgot Password?</a>
         </div>
 
         <!-- Login Error -->
@@ -193,16 +122,16 @@ const goToForgotPassword = () => {
         <button 
           class="submit-btn" 
           @click="handleLogin" 
-          :disabled="isLoading"
-          :class="{ 'loading': isLoading }"
+          :disabled="loading"
+          :class="{ 'loading': loading }"
         >
-          {{ isLoading ? t('auth.login.submitting') : t('auth.login.submit') }}
+          {{ loading ? 'Logging in...' : 'Login' }}
         </button>
 
         <!-- Register Link (Read-Only) -->
         <div class="register-link-wrapper">
-          <span class="register-text-label">{{ t('auth.login.noAccount') }} </span>
-          <a href="#" class="register-link" @click.prevent="goToRegister">{{ t('auth.login.registerAction') }}</a>
+          <span class="register-text-label">Don't have an account? </span>
+          <a href="#" class="register-link" @click.prevent="goToRegister">Register</a>
         </div>
       </div>
 

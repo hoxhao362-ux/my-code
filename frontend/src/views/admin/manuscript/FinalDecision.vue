@@ -14,8 +14,8 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'save-draft', 'return-materials'])
 
 // State
-const isEIC = computed(() => props.currentUser?.role === 'associate_editor' || props.currentUser?.role === 'editor_in_chief') // Assuming AE/EiC has decision power
-const isEditor = computed(() => props.currentUser?.role === 'editor' || props.currentUser?.role === 'editorial_assistant')
+const isEIC = computed(() => props.currentUser?.role === 'associate_editor' || props.currentUser?.role === 'editor') // Assuming AE/EiC has decision power
+const isEditor = computed(() => props.currentUser?.role === 'editor' || props.currentUser?.role === 'ea_ae')
 
 // Editor Form Data
 const editorForm = reactive({
@@ -167,11 +167,7 @@ const submitEic = () => {
     <!-- EiC Interface (Decision) -->
     <div v-if="isEIC" class="role-view eic-view">
       <header class="page-header">
-<<<<<<< HEAD
-        <h2>Final Decision (Journal Platform Compliance)</h2>
-=======
         <h2>Final Decision (Peerex Peer Compliance)</h2>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
         <div class="meta">
           <span>ID: {{ manuscript.id }}</span>
           <span>EiC: {{ currentUser.name }}</span>

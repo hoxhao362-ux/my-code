@@ -46,9 +46,6 @@ const handleLogin = async (role) => {
 }
 
 const handleOrcidLogin = () => {
-<<<<<<< HEAD
-  toastStore.add({ message: 'ORCID Login Simulation: Authenticated successfully.', type: 'success' })
-=======
   // 模拟 ORCID 登录流程
   const orcidWindow = window.open('', 'ORCID Login', 'width=600,height=600')
   
@@ -84,7 +81,6 @@ const handleOrcidLogin = () => {
   } else {
     toastStore.add({ message: 'Popup blocked. Please allow popups for ORCID login.', type: 'error' })
   }
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 </script>
 

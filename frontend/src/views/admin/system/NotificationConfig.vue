@@ -2,10 +2,7 @@
 import { ref } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
-<<<<<<< HEAD
-=======
 import { useI18n } from 'vue-i18n'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 import Navigation from '../../../components/Navigation.vue'
 
 const { t } = useI18n()
@@ -27,17 +24,6 @@ const notificationConfig = ref({
     },
     statusUpdate: {
       subject: '稿件状态更新通知',
-<<<<<<< HEAD
-      content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\n期刊投稿平台'
-    },
-    reviewerInvitation: {
-      subject: 'Invitation to Review: {{title}}',
-      content: 'Dear Dr. {{reviewerName}},\n\nWe would like to invite you to review the manuscript entitled "{{title}}" (ID: {{submissionId}}) for our journal.\n\nAbstract:\n{{abstract}}\n\nPlease click the link below to accept or decline this invitation:\n{{link}}\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
-    },
-    recommendationResult: {
-      subject: 'Update on Recommended Reviewer for {{title}}',
-      content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nJournal Platform'
-=======
       content: '尊敬的{{username}}：\n\n您的投稿《{{title}}》状态已更新：\n\n当前状态：{{status}}\n更新时间：{{updateTime}}\n\n感谢您的投稿！\n\nPeerex Peer'
     },
     reviewerInvitation: {
@@ -47,7 +33,6 @@ const notificationConfig = ref({
     recommendationResult: {
       subject: 'Update on Recommended Reviewer for {{title}}',
       content: 'Dear {{authorName}},\n\nWe are writing to inform you about the status of the reviewer you recommended, {{reviewerName}}, for your manuscript "{{title}}" (ID: {{submissionId}}).\n\nResult: {{result}}\nReason: {{reason}}\n\nThank you for your support.\n\nSincerely,\n\nThe Editorial Office\nPeerex Peer'
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     }
   },
   
@@ -91,11 +76,7 @@ const isEditing = ref(false)
 // 添加公告
 const addAnnouncement = () => {
   if (!newAnnouncement.value.title || !newAnnouncement.value.content) {
-<<<<<<< HEAD
-    toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
-=======
     toastStore.add({ message: t('notification.actions.incomplete'), type: 'warning' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     return
   }
   
@@ -120,11 +101,7 @@ const addAnnouncement = () => {
   // 保存到userStore，以便在主页显示
   userStore.setAnnouncements(announcements.value)
   
-<<<<<<< HEAD
-  toastStore.add({ message: '公告添加成功！', type: 'success' })
-=======
   toastStore.add({ message: t('notification.actions.addSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 编辑公告
@@ -136,11 +113,7 @@ const editAnnouncement = (announcement) => {
 // 保存编辑的公告
 const saveEditAnnouncement = () => {
   if (!editingAnnouncement.value.title || !editingAnnouncement.value.content) {
-<<<<<<< HEAD
-    toastStore.add({ message: '请填写完整的公告信息', type: 'warning' })
-=======
     toastStore.add({ message: t('notification.actions.incomplete'), type: 'warning' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     return
   }
   
@@ -151,11 +124,7 @@ const saveEditAnnouncement = () => {
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
-<<<<<<< HEAD
-    toastStore.add({ message: '公告编辑成功！', type: 'success' })
-=======
     toastStore.add({ message: t('notification.actions.editSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
     cancelEditAnnouncement()
   }
 }
@@ -174,22 +143,14 @@ const deleteAnnouncement = (id) => {
     // 保存到userStore
     userStore.setAnnouncements(announcements.value)
     
-<<<<<<< HEAD
-    toastStore.add({ message: '公告删除成功！', type: 'success' })
-=======
     toastStore.add({ message: t('notification.actions.deleteSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
   }
 }
 
 // 保存配置
 const saveConfig = () => {
   // 这里应该保存配置到服务器，目前模拟保存
-<<<<<<< HEAD
-  toastStore.add({ message: '通知配置已保存！', type: 'success' })
-=======
   toastStore.add({ message: t('notification.actions.saveSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 重置配置
@@ -243,11 +204,7 @@ const resetConfig = () => {
       reviewInterval: 7 // 天
     }
   }
-<<<<<<< HEAD
-  toastStore.add({ message: '配置已重置为默认值！', type: 'success' })
-=======
   toastStore.add({ message: t('notification.actions.resetSuccess'), type: 'success' })
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
 }
 
 // 发送测试通知
@@ -485,56 +442,6 @@ const sendTestNotification = () => {
                   ></textarea>
                   <div class="template-tips">
                     <p>{{ $t('notification.emailTemplates.tips') }} {{authorName}}, {{reviewerName}}, {{title}}, {{submissionId}}, {{result}}, {{reason}}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="template-group">
-                <h4>评审邀请通知（Reviewer Invitation）</h4>
-                <div class="form-group">
-                  <label>邮件主题</label>
-                  <input 
-                    type="text" 
-                    v-model="notificationConfig.emailTemplates.reviewerInvitation.subject" 
-                    class="form-control"
-                    placeholder="请输入邮件主题"
-                  >
-                </div>
-                <div class="form-group">
-                  <label>邮件内容</label>
-                  <textarea 
-                    v-model="notificationConfig.emailTemplates.reviewerInvitation.content" 
-                    class="form-control textarea-large"
-                    rows="8"
-                    placeholder="请输入邮件内容"
-                  ></textarea>
-                  <div class="template-tips">
-                    <p>可用变量：{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{abstract}}（摘要）、{{link}}（接受链接）</p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="template-group">
-                <h4>作者推荐结果通知（Recommendation Result）</h4>
-                <div class="form-group">
-                  <label>邮件主题</label>
-                  <input 
-                    type="text" 
-                    v-model="notificationConfig.emailTemplates.recommendationResult.subject" 
-                    class="form-control"
-                    placeholder="请输入邮件主题"
-                  >
-                </div>
-                <div class="form-group">
-                  <label>邮件内容</label>
-                  <textarea 
-                    v-model="notificationConfig.emailTemplates.recommendationResult.content" 
-                    class="form-control textarea-large"
-                    rows="8"
-                    placeholder="请输入邮件内容"
-                  ></textarea>
-                  <div class="template-tips">
-                    <p>可用变量：{{authorName}}（作者姓名）、{{reviewerName}}（评审人姓名）、{{title}}（稿件标题）、{{submissionId}}（投稿编号）、{{result}}（结果）、{{reason}}（原因）</p>
                   </div>
                 </div>
               </div>

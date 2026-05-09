@@ -3,6 +3,15 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import Navigation from '../../components/Navigation.vue'
 
+// TODO: 后端暂未实现栏目/期号管理接口，当前使用本地 Mock 数据
+// 待后端实现后需替换为真实 API 调用：
+// - GET /admin/columns - 获取栏目列表
+// - POST /admin/columns - 创建栏目
+// - PUT /admin/columns/{id} - 更新栏目
+// - GET /admin/issues - 获取期号列表
+// - POST /admin/issues - 创建期号
+// - PUT /admin/issues/{id}/publish - 发布期号
+
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 

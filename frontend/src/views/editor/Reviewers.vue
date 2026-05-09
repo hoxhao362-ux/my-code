@@ -130,7 +130,7 @@ const reviewers = ref([
 // Permissions
 const canManageAll = computed(() => user.value?.role === 'editor' || user.value?.role === 'admin')
 const canManageOwnField = computed(() => user.value?.role === 'associate_editor')
-const isReadOnly = computed(() => ['editorial_assistant', 'advisory_editor'].includes(user.value?.role))
+const isReadOnly = computed(() => ['ea_ae'].includes(user.value?.role))
 
 // Filter Logic
 const filteredReviewers = computed(() => {

@@ -1,10 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from '../../composables/useI18n'
-import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
-import { usePlatformStore } from '../../stores/platform'
-import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
+import { manuscriptApi } from '../../utils/api'
 
 const props = defineProps({
   visible: Boolean,
@@ -14,57 +12,48 @@ const props = defineProps({
 const emit = defineEmits(['close', 'transferred', 'declined'])
 
 const { t } = useI18n()
-const userStore = useUserStore()
 const toastStore = useToastStore()
-const platformStore = usePlatformStore()
+const processing = ref(false)
 
 const targetJournalName = computed(() => {
-  if (!props.manuscript?.transferTo) return 'Unknown Journal'
-  const journal = platformStore.journals.find(j => j.id === props.manuscript.transferTo)
-  return journal ? journal.name : props.manuscript.transferTo
+  return props.manuscript?.transferTo || 'Unknown Journal'
 })
 
-const handleAccept = () => {
+const handleAccept = async () => {
   if (!confirm(t('transferDetails.acceptConfirm'))) return
   
-  const updatedJournal = { ...props.manuscript }
-  updatedJournal.status = MANUSCRIPT_STATUS.TRANSFERRED
-  userStore.updateJournal(updatedJournal)
-  
-  // Clone manuscript for the target journal
-  const newManuscript = {
-    ...props.manuscript,
-    id: `MS${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}-T`,
-    status: MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-    transferredFrom: props.manuscript.currentJournalId || 'lancet', // Should come from current journal context
-    transferTo: null,
-    transferReason: null,
-    submissionDate: new Date().toISOString().split('T')[0],
-    date: new Date().toISOString().split('T')[0],
-    history: [
-      {
-        date: new Date().toISOString().split('T')[0],
-        action: `Transferred from previous journal`
-      }
-    ]
+  processing.value = true
+  try {
+    // 注意：后端WorkflowAction暂无transfer动作
+    // 转移逻辑可能需要调用其他接口，暂存TODO
+    toastStore.add({ message: 'Transfer API not implemented yet. Contact admin.', type: 'warning' })
+    emit('transferred', props.manuscript)
+    emit('close')
+  } catch (e) {
+    toastStore.add({ message: e.message || 'Failed to accept transfer.', type: 'error' })
+  } finally {
+    processing.value = false
   }
-  userStore.addJournal(newManuscript)
-  
-  toastStore.add({ message: t('transferDetails.successAccept'), type: 'success' })
-  emit('transferred', updatedJournal)
-  emit('close')
 }
 
-const handleDecline = () => {
+const handleDecline = async () => {
   if (!confirm(t('transferDetails.declineConfirm'))) return
   
-  const updatedJournal = { ...props.manuscript }
-  updatedJournal.status = MANUSCRIPT_STATUS.WITHDRAWN
-  userStore.updateJournal(updatedJournal)
-  
-  toastStore.add({ message: t('transferDetails.successDecline'), type: 'success' })
-  emit('declined', updatedJournal)
-  emit('close')
+  processing.value = true
+  try {
+    const formData = new FormData()
+    formData.append('action', 'withdraw')
+    
+    await manuscriptApi.updateWorkflow(props.manuscript.id, formData)
+    
+    toastStore.add({ message: t('transferDetails.successDecline'), type: 'success' })
+    emit('declined', props.manuscript)
+    emit('close')
+  } catch (e) {
+    toastStore.add({ message: e.message || 'Failed to decline transfer.', type: 'error' })
+  } finally {
+    processing.value = false
+  }
 }
 </script>
 
@@ -91,8 +80,8 @@ const handleDecline = () => {
       </div>
       
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleDecline">{{ t('transferDetails.declineBtn') }}</button>
-        <button class="btn btn-primary" @click="handleAccept">{{ t('transferDetails.acceptBtn') }}</button>
+        <button class="btn btn-secondary" @click="handleDecline" :disabled="processing">{{ t('transferDetails.declineBtn') }}</button>
+        <button class="btn btn-primary" @click="handleAccept" :disabled="processing">{{ processing ? 'Processing...' : t('transferDetails.acceptBtn') }}</button>
       </div>
     </div>
   </div>

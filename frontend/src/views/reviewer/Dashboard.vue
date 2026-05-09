@@ -2,170 +2,106 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useReviewStore } from '../../stores/review'
 import Navigation from '../../components/Navigation.vue'
 import { useI18n } from '../../composables/useI18n'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const reviewStore = useReviewStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
 let pollingInterval = null
 
+// Status Filter
+const statusFilter = ref('pending')
+
+const filteredTasks = computed(() => {
+  if (statusFilter.value === 'all') return reviewStore.reviewTasks.value
+  return reviewStore.reviewTasks.value.filter(t => t.status === statusFilter.value)
+})
+
 // Status Helpers
 const getStatusLabel = (status) => {
   const map = {
-    'Under Review': 'under_review',
-    'Re-review': 're_review',
-    'Pending Initial Review': 'pending_initial_review',
-    'under_peer_review': 'under_peer_review',
-    'pending_initial_review': 'pending_initial_review'
+    'pending': 'reviewerDashboard.status.pending',
+    'completed': 'reviewerDashboard.status.completed',
+    'overdue': 'reviewerDashboard.status.overdue'
   }
-  const key = map[status] || status
-  return t(`status.${key}`)
+  return t(map[status] || status)
+}
+
+const getStatusClass = (status) => {
+  const map = {
+    'pending': 'status-pending',
+    'completed': 'status-completed',
+    'overdue': 'status-overdue'
+  }
+  return map[status] || ''
+}
+
+const isOverdue = (dueDate) => {
+  if (!dueDate) return false
+  const due = new Date(dueDate)
+  if (isNaN(due.getTime())) return false
+  return new Date() > due
 }
 
 // Access Control & Polling
-onMounted(() => {
+onMounted(async () => {
   if (user.value && user.value.status !== 'active') {
     router.push('/resources/reviewer/become')
     return
   }
 
   // Initial fetch
-  userStore.refreshJournals()
+  await reviewStore.fetchMyTasks({ status: statusFilter.value })
   
-  // Polling (30s)
+  // Polling (60s)
   pollingInterval = setInterval(() => {
-    userStore.refreshJournals()
-  }, 30000)
+    reviewStore.fetchMyTasks({ status: statusFilter.value })
+  }, 60000)
 })
 
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
 })
 
-// --- Logic Reuse (unchanged backend/data logic) ---
-
-// Helper for due date calculation (simulated 14 days)
-const getDueDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
-  d.setDate(d.getDate() + 14)
-  return d.toISOString().split('T')[0]
+// Navigation
+const navigateToReview = (taskId) => {
+  router.push({ name: 'ReviewerReviewForm', params: { taskId } })
 }
 
-const isOverdue = (date) => {
-  const dueDateStr = getDueDate(date)
-  if (!dueDateStr) return false
-  const dueDate = new Date(dueDateStr)
-  if (isNaN(dueDate.getTime())) return false
-  const today = new Date()
-  return today > dueDate
+const viewAllAssignments = (filter) => {
+  statusFilter.value = filter
+  reviewStore.fetchMyTasks({ status: filter === 'all' ? undefined : filter })
 }
 
-// Helper to check if user is assigned
-const isAssigned = (j) => {
-  return !j.assignedReviewers || j.assignedReviewers.length === 0 || 
-         j.assignedReviewers.some(r => {
-           if (typeof r === 'string') {
-             return r === user.value.username || r.includes(user.value.username)
-           } else if (typeof r === 'object' && r !== null) {
-             return r.name === user.value.username || 
-                    r.id === user.value.username ||
-                    String(r.id) === String(user.value.id)
-           }
-           return false
-         })
+const isAssigned = (task) => {
+  return !task.assigned_to || 
+         task.assigned_to === user.value?.username || 
+         String(task.assigned_to) === String(user.value?.id)
 }
 
-// Helper to check if user has reviewed
-const hasReviewed = (j, isRevisionStage) => {
-  const reviews = j.reviewHistory || j.reviews || []
-  if (isRevisionStage) {
-    // For re-review: check if there's a review in current Re-review stage
-    return reviews.some(r => 
-      r.reviewer === user.value.username && 
-      (r.stage === 'Re-review' || r.stage === '复审')
-    )
-  } else {
-    // For normal review: check any review by this user
-    return reviews.some(r => r.reviewer === user.value.username)
-  }
-}
-
-// Stats Logic
+// Stats
 const pendingReviews = computed(() => {
-  // Status 'under_peer_review' or 'Under Review', not Re-review, not overdue, assigned, not reviewed
-  return userStore.journals.filter(j => {
-    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
-    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
-           !isRevisionStage && 
-           !isOverdue(j.date) &&
-           isAssigned(j) &&
-           !hasReviewed(j, false)
-  })
+  return reviewStore.reviewTasks.value.filter(t => 
+    t.status === 'pending' && isAssigned(t)
+  )
 })
 
-const pendingReReviews = computed(() => {
-  // Status 'under_peer_review' or 'Under Review', Stage 'Re-review' or '复审', not overdue, assigned, not reviewed in current stage
-  return userStore.journals.filter(j => {
-    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
-    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
-           isRevisionStage && 
-           !isOverdue(j.date) &&
-           isAssigned(j) &&
-           !hasReviewed(j, true)
-  })
+const completedReviews = computed(() => {
+  return reviewStore.reviewTasks.value.filter(t => 
+    t.status === 'completed' && isAssigned(t)
+  )
 })
 
 const overdueReviews = computed(() => {
-  return userStore.journals.filter(j => {
-    const isRevisionStage = j.reviewStage === 'Re-review' || j.reviewStage === '复审'
-    return (j.status === 'under_peer_review' || j.status === 'Under Review') && 
-           isOverdue(j.date) &&
-           isAssigned(j) &&
-           !hasReviewed(j, isRevisionStage)
-  })
+  return reviewStore.reviewTasks.value.filter(t => 
+    t.status === 'overdue' && isAssigned(t)
+  )
 })
-
-// Mock Data for Invitations and Announcements
-const latestInvitations = computed(() => {
-  return userStore.invitations.filter(i => i.status === 'Invited')
-})
-
-// New invitation indicator (mock logic)
-const invitationSectionClicked = ref(false)
-const hasNewInvitations = computed(() => !invitationSectionClicked.value && latestInvitations.value.some(i => i.isNew))
-
-const clearDot = () => {
-  invitationSectionClicked.value = true
-}
-
-const announcements = [
-  { id: 1, title: 'System Maintenance Scheduled for Oct 25', date: '2023-10-20' },
-  { id: 2, title: 'New Reviewer Guidelines Published', date: '2023-10-15' },
-  { id: 3, title: 'Reviewer Recognition Program', date: '2023-09-30' }
-]
-
-// --- Navigation Actions ---
-
-const viewAllAssignments = (filter) => {
-  // Map to existing routes/logic
-  // Assuming '/reviewer/assignments' handles query params or filter
-  router.push({ path: '/reviewer/assignments', query: { filter } })
-}
-
-const viewInvitations = () => {
-  router.push({ path: '/reviewer/assignments', query: { filter: 'invitations' } })
-}
-
-const viewAnnouncement = (id) => {
-  // Mock modal or detail page
-  console.log('View announcement', id)
-  // router.push(`/announcements/${id}`)
-}
 
 </script>
 
@@ -183,9 +119,9 @@ const viewAnnouncement = (id) => {
           <div class="stat-label">{{ t('reviewerDashboard.stats.pendingReviews') }}</div>
         </div>
         
-        <div class="stat-card" @click="viewAllAssignments('re-reviews')">
-          <div class="stat-value">{{ pendingReReviews.length }}</div>
-          <div class="stat-label">{{ t('reviewerDashboard.stats.pendingReReviews') }}</div>
+        <div class="stat-card" @click="viewAllAssignments('completed')">
+          <div class="stat-value">{{ completedReviews.length }}</div>
+          <div class="stat-label">{{ t('reviewerDashboard.stats.completedReviews') }}</div>
         </div>
         
         <div class="stat-card overdue" @click="viewAllAssignments('overdue')">
@@ -194,48 +130,56 @@ const viewAnnouncement = (id) => {
         </div>
       </section>
 
-      <!-- Module 2 & 3: Invitations & Announcements -->
-      <section class="dashboard-columns">
-        
-        <!-- Module 2: Latest Invitations -->
-        <div class="column-module" @click="clearDot">
-          <div class="module-header">
-            <h2 class="module-title">
-              {{ t('reviewerDashboard.invitations.title') }} ({{ latestInvitations.length }})
-              <span v-if="hasNewInvitations" class="notification-dot"></span>
-            </h2>
-            <a href="#" class="view-all-link" @click.prevent="viewInvitations">{{ t('reviewerDashboard.invitations.viewAll') }}</a>
-          </div>
-          <div class="module-content">
-            <div v-if="latestInvitations.length === 0" class="empty-state">
-              {{ t('reviewerDashboard.invitations.empty') }}
-            </div>
-            <div v-else class="invitation-list">
-              <div v-for="inv in latestInvitations" :key="inv.id" class="invitation-item">
-                <!-- Content would go here -->
-                <div class="inv-title">{{ inv.title }}</div>
-                <div class="inv-meta">{{ inv.date }}</div>
-              </div>
-            </div>
+      <!-- Module 2: Review Task List -->
+      <section class="dashboard-section task-list-section">
+        <div class="section-header">
+          <h2 class="section-title">{{ t('reviewerDashboard.tasks.title') }}</h2>
+          <div class="filter-tabs">
+            <button 
+              v-for="filter in ['pending', 'completed', 'overdue']" 
+              :key="filter"
+              class="filter-tab"
+              :class="{ active: statusFilter === filter }"
+              @click="viewAllAssignments(filter)"
+            >
+              {{ getStatusLabel(filter) }}
+            </button>
           </div>
         </div>
 
-        <!-- Module 3: System Announcements -->
-        <div class="column-module">
-          <div class="module-header">
-            <h2 class="module-title">{{ t('reviewerDashboard.announcements.title') }}</h2>
-            <!-- No right action button as per spec -->
-          </div>
-          <div class="module-content">
-            <div class="announcement-list">
-              <div v-for="ann in announcements" :key="ann.id" class="announcement-item" @click="viewAnnouncement(ann.id)">
-                <div class="ann-title">{{ ann.title }}</div>
-                <div class="ann-date">{{ ann.date }}</div>
-              </div>
+        <div v-if="reviewStore.isLoading" class="loading-state">
+          {{ t('common.loading') }}
+        </div>
+
+        <div v-else-if="filteredTasks.length === 0" class="empty-state">
+          {{ t('reviewerDashboard.tasks.empty') }}
+        </div>
+
+        <div v-else class="task-list">
+          <div 
+            v-for="task in filteredTasks" 
+            :key="task.id"
+            class="task-card"
+            @click="navigateToReview(task.id)"
+          >
+            <div class="task-header">
+              <span class="task-id">#{{ task.manuscript_id }}</span>
+              <span class="task-status" :class="getStatusClass(task.status)">
+                {{ getStatusLabel(task.status) }}
+              </span>
+            </div>
+            <h3 class="task-title">{{ task.title }}</h3>
+            <div class="task-meta">
+              <span class="task-authors">{{ task.authors }}</span>
+              <span class="task-due">
+                {{ t('reviewerDashboard.tasks.dueDate') }}: {{ task.due_date }}
+                <span v-if="isOverdue(task.due_date)" class="overdue-badge">
+                  {{ t('reviewerDashboard.tasks.overdue') }}
+                </span>
+              </span>
             </div>
           </div>
         </div>
-
       </section>
 
     </main>

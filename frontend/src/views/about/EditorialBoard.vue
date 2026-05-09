@@ -20,9 +20,9 @@ const activeSection = ref('editor-in-chief')
 const selectedCategory = ref('all')
 
 const deputyEditors = [
-  { id: 1, name: "Dr. Jane Doe", position: "Deputy Editor", field: "Infectious Diseases" },
-  { id: 2, name: "Dr. John Smith", position: "Deputy Editor", field: "Cardiology" },
-  { id: 3, name: "Dr. Emily Chen", position: "Deputy Editor", field: "Oncology" }
+  { id: 1, name: "Dr. Jane Doe", position: "Associate Editor", field: "Infectious Diseases" },
+  { id: 2, name: "Dr. John Smith", position: "Associate Editor", field: "Cardiology" },
+  { id: 3, name: "Dr. Emily Chen", position: "Associate Editor", field: "Oncology" }
 ]
 
 const boardMembers = [
@@ -175,11 +175,7 @@ onUnmounted(() => {
       <div id="contact" class="section">
         <h1>{{ t('about.editorialBoard.contact') }}</h1>
         <div class="contact-info">
-<<<<<<< HEAD
-          <p><strong>{{ t('about.editorialBoard.email') }}:</strong> editorial@journalplatform.com</p>
-=======
           <p><strong>{{ t('about.editorialBoard.email') }}:</strong> editorial@peerexpeer.com</p>
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
           <p><strong>{{ t('about.editorialBoard.address') }}:</strong> {{ t('about.editorialBoard.addressValue') }}</p>
           <p><strong>{{ t('about.editorialBoard.officeHours') }}:</strong> {{ t('about.editorialBoard.officeHoursValue') }}</p>
         </div>

@@ -1,46 +1,56 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../../../stores/user'
 import { useToastStore } from '../../../stores/toast'
+import { editorApi } from '../../../utils/api'
 import Navigation from '../../../components/Navigation.vue'
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
 const user = computed(() => userStore.user)
 
-// Tabs
-const activeTab = ref('members') // members, team, invitations, permissions
+const activeTab = ref('members')
 
-// Mock Data - Board Members (Editors)
-const boardMembers = ref([
-  { id: 1, name: 'Prof. John Doe', institution: 'Harvard Medical School', role: 'Editor-in-Chief', status: 'Active', email: 'john.doe@harvard.edu' },
-  { id: 2, name: 'Dr. Jane Smith', institution: 'Oxford University', role: 'Senior Editor', status: 'Active', email: 'jane.smith@ox.ac.uk' }
-])
+const boardMembers = ref([])
+const teamMembers = ref([])
+const invitations = ref([])
+const loading = ref(false)
 
-// Mock Data - Editorial Team (AE, EA, Advisory)
-const teamMembers = ref([
-  { id: 101, name: 'Dr. Alan Turing', institution: 'Cambridge', role: 'Associate Editor', field: 'AI in Medicine', status: 'Active' },
-  { id: 102, name: 'Sarah Connor', institution: '-', role: 'Editorial Assistant', field: 'Administrative', status: 'Active' }
-])
-
-// Mock Data - Invitations
-const invitations = ref([
-  { id: 501, type: 'Editor Nomination', recipient: 'prof.lee@tokyo.u.jp', sent_by: 'Prof. John Doe', sent_at: '2026-02-14', status: 'Pending', expires: '2026-02-21' },
-  { id: 502, type: 'Associate Editor', recipient: 'dr.williams@yale.edu', sent_by: 'Dr. Jane Smith', sent_at: '2026-02-10', status: 'Accepted', expires: '2026-02-17' }
-])
-
-// Invitation Form
 const showInviteModal = ref(false)
 const inviteForm = ref({
-  role: 'associate_editor', // editor, associate_editor, assistant, advisory
+  role: 'associate_editor',
   name: '',
   email: '',
   institution: '',
   message: '',
-  nominator2: '' // For Editor role
+  nominator2: ''
 })
 
-// Actions
+const fetchBoardMembers = async () => {
+  loading.value = true
+  try {
+    const response = await editorApi.getBoardMembers()
+    const members = response.items || response.data || []
+    
+    boardMembers.value = members.filter(m => 
+      m.role === 'Editor-in-Chief' || 
+      m.role === 'Senior Editor' || 
+      m.role === 'Editor'
+    )
+    
+    teamMembers.value = members.filter(m => 
+      m.role === 'Associate Editor' || 
+      m.role === 'Assistant Editor' || 
+      m.role === 'EA/AE' ||
+      m.role === 'Advisory'
+    )
+  } catch (error) {
+    console.error('Failed to fetch board members:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 const handleTabChange = (tab) => {
   activeTab.value = tab
 }
@@ -50,39 +60,32 @@ const openInviteModal = () => {
   showInviteModal.value = true
 }
 
-const generateToken = () => {
-  return Math.random().toString(36).substr(2, 9).toUpperCase()
-}
-
-const sendInvitation = () => {
-  // Mock sending
-  const token = generateToken()
-  const inviteLink = `${window.location.origin}/invite/register?token=${token}&role=${inviteForm.value.role}`
-  
-  const newInvite = {
-    id: Date.now(),
-    type: formatRole(inviteForm.value.role),
-    recipient: inviteForm.value.email,
-    sent_by: user.value.username || 'Current Editor',
-    sent_at: new Date().toISOString().split('T')[0],
-    status: 'Pending',
-    expires: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0], // 7 days default
-    link: inviteLink,
-    token: token
+const sendInvitation = async () => {
+  try {
+    await editorApi.addBoardMember({
+      role: inviteForm.value.role,
+      name: inviteForm.value.name,
+      email: inviteForm.value.email,
+      institution: inviteForm.value.institution,
+      message: inviteForm.value.message,
+      nominator2: inviteForm.value.nominator2
+    })
+    
+    showInviteModal.value = false
+    toastStore.add({ message: 'Invitation sent successfully!', type: 'success' })
+    
+    await fetchBoardMembers()
+  } catch (e) {
+    toastStore.add({ message: e.message || 'Failed to send invitation.', type: 'error' })
   }
-  
-  invitations.value.unshift(newInvite)
-  showInviteModal.value = false
-  
-  toastStore.add({ message: `Invitation Generated! Role: ${formatRole(inviteForm.value.role)}. Link: ${inviteLink}`, type: 'success' })
 }
 
 const formatRole = (role) => {
   const map = {
     'editor': 'Editor (Board Nomination)',
     'associate_editor': 'Associate Editor',
-    'assistant': 'Editorial Assistant',
-    'advisory': 'Advisory Editor'
+    'assistant': 'EA/AE',
+    'advisory': 'EA/AE'
   }
   return map[role] || role
 }
@@ -93,17 +96,33 @@ const copyInviteLink = (link) => {
   })
 }
 
-const revokeInvite = (invite) => {
+const revokeInvite = async (invite) => {
   if (confirm('Are you sure you want to revoke this invitation?')) {
-    invite.status = 'Revoked'
+    try {
+      await editorApi.removeBoardMember(invite.id)
+      invite.status = 'Revoked'
+      toastStore.add({ message: 'Invitation revoked.', type: 'success' })
+    } catch (e) {
+      toastStore.add({ message: e.message || 'Failed to revoke invitation.', type: 'error' })
+    }
   }
 }
 
-const removeMember = (member) => {
+const removeMember = async (member) => {
   if (confirm(`Remove ${member.name} from the team? This requires Board consensus.`)) {
-    member.status = 'Removed'
+    try {
+      await editorApi.removeBoardMember(member.id)
+      member.status = 'Removed'
+      toastStore.add({ message: `${member.name} has been removed.`, type: 'success' })
+    } catch (e) {
+      toastStore.add({ message: e.message || 'Failed to remove member.', type: 'error' })
+    }
   }
 }
+
+onMounted(() => {
+  fetchBoardMembers()
+})
 
 </script>
 
@@ -292,8 +311,8 @@ const removeMember = (member) => {
           <select v-model="inviteForm.role">
             <option value="editor">Editor (Board Member Nomination)</option>
             <option value="associate_editor">Associate Editor</option>
-            <option value="assistant">Editorial Assistant</option>
-            <option value="advisory">Advisory Editor</option>
+            <option value="assistant">EA/AE</option>
+            <option value="advisory">EA/AE</option>
           </select>
         </div>
 

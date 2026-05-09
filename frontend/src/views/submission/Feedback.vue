@@ -46,7 +46,7 @@ const allFeedbacks = computed(() => {
   return feedbacks.value.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
-const isEditor = computed(() => ['editor', 'admin'].includes(user.value?.role))
+const isEditor = computed(() => ['editor', 'admin', 'associate_editor', 'ea_ae'].includes(user.value?.role))
 
 // --- Methods ---
 const handleFileUpload = (event) => {

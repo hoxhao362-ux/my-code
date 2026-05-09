@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useUserStore } from '../stores/user'
+import { platformJournalApi } from '../utils/api'
 import Navigation from '../components/Navigation.vue'
 
 const router = useRouter()
@@ -15,36 +16,62 @@ const searchStatus = ref('all')
 const searchModule = ref('all')
 const searchResults = ref([])
 const hasSearched = ref(false)
+const isSearching = ref(false)
 
-// Mock Data for demonstration (Ideally from Store)
-// Using userStore.journals if available, else fallback
-const journals = ref(userStore.journals || []) 
+// Search History (localStorage)
+const searchHistory = ref(JSON.parse(localStorage.getItem('searchHistory') || '[]'))
 
-// Filter Logic
-const filterJournals = () => {
+// Filter Logic - 调用后端搜索 API
+const filterJournals = async () => {
   if (!searchKeyword.value.trim()) {
     searchResults.value = []
     hasSearched.value = true
     return
   }
   
-  const keyword = searchKeyword.value.toLowerCase()
-  searchResults.value = journals.value.filter(journal => {
-    // Keyword Match
-    const matchesKeyword = 
-      (journal.title && journal.title.toLowerCase().includes(keyword)) ||
-      (journal.author && journal.author.toLowerCase().includes(keyword)) ||
-      (journal.id && journal.id.toString().includes(keyword))
-    
-    // Status Filter
-    const matchesStatus = searchStatus.value === 'all' || journal.status === searchStatus.value
-    
-    // Module Filter (if applicable)
-    // const matchesModule = searchModule.value === 'all' || journal.module === searchModule.value
-    
-    return matchesKeyword && matchesStatus
-  })
+  isSearching.value = true
   hasSearched.value = true
+  
+  try {
+    const params = {
+      query: searchKeyword.value,
+      page: 1,
+      page_size: 20
+    }
+    
+    if (searchStatus.value !== 'all') {
+      params.status = searchStatus.value
+    }
+    if (searchModule.value !== 'all') {
+      params.subject = searchModule.value
+    }
+    
+    const res = await platformJournalApi.searchArticles(params)
+    const data = res.data || res
+    searchResults.value = data.items || data || []
+    
+    // 保存搜索历史
+    saveSearchHistory(searchKeyword.value)
+  } catch (error) {
+    console.error('搜索失败:', error)
+    searchResults.value = []
+  } finally {
+    isSearching.value = false
+  }
+}
+
+const saveSearchHistory = (keyword) => {
+  let history = JSON.parse(localStorage.getItem('searchHistory') || '[]')
+  history = history.filter(k => k !== keyword)
+  history.unshift(keyword)
+  history = history.slice(0, 10)
+  localStorage.setItem('searchHistory', JSON.stringify(history))
+  searchHistory.value = history
+}
+
+const clearHistory = () => {
+  localStorage.removeItem('searchHistory')
+  searchHistory.value = []
 }
 
 // Helper: Truncate Text
@@ -104,22 +131,26 @@ const stripHtmlTags = (html) => {
           <h3>{{ t('search.results', { count: searchResults.length }) }}</h3>
         </div>
         
-        <div v-if="searchResults.length > 0" class="results-list">
+        <div v-if="isSearching" class="loading-results">
+          {{ t('common.loading') }}
+        </div>
+        
+        <div v-else-if="searchResults.length > 0" class="results-list">
           <div 
             v-for="journal in searchResults" 
-            :key="journal.id" 
+            :key="journal.id || journal.jid || journal.article_id" 
             class="result-item"
           >
             <div class="result-info">
               <h4 class="result-title">{{ journal.title }}</h4>
               <p class="result-meta">
-                {{ t('search.meta', { id: journal.id, author: journal.author, date: journal.date }) }}
+                {{ t('search.meta', { id: journal.id || journal.jid, author: journal.author || journal.authors, date: journal.date || journal.publish_date || journal.create_time }) }}
               </p>
               <p class="result-abstract">{{ truncateText(stripHtmlTags(journal.abstract)) }}</p>
             </div>
             <div class="result-actions">
-                <button class="action-btn" @click="router.push(`/journal/${journal.id}`)">{{ t('search.viewDetails') }}</button>
-              </div>
+              <button class="action-btn" @click="router.push(`/journal/${journal.id || journal.jid}`)">{{ t('search.viewDetails') }}</button>
+            </div>
           </div>
         </div>
         
@@ -235,6 +266,14 @@ const stripHtmlTags = (html) => {
   text-align: center;
   padding: 3rem;
   color: #999;
+  background: white;
+  border-radius: 8px;
+}
+
+.loading-results {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
   background: white;
   border-radius: 8px;
 }

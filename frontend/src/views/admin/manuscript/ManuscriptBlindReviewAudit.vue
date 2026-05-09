@@ -42,13 +42,8 @@ const refAudit = ref({
     },
     { 
       id: 2, 
-<<<<<<< HEAD
-      original: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.', 
-      anonymized: 'Brown K. 2023. Previous studies on heart failure. Journal Platform. 301:112.',
-=======
       original: 'Brown K. 2023. Previous studies on heart failure. Peerex Peer. 301:112.', 
       anonymized: 'Brown K. 2023. Previous studies on heart failure. Peerex Peer. 301:112.',
->>>>>>> e47b4028170e280d7071481fe2e065479b0866ea
       isSelfCite: false 
     },
     { 

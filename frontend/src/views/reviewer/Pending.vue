@@ -3,19 +3,24 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../../utils/helpers.js'
 import { useUserStore } from '../../stores/user'
+import { useReviewStore } from '../../stores/review'
 import { useToastStore } from '../../stores/toast'
 import { MANUSCRIPT_STATUS } from '../../constants/manuscriptStatus'
 import Navigation from '../../components/Navigation.vue'
 import ReviewForm from '../../components/ReviewForm.vue'
-import { useI18n } from '../../composables/useI18n'
+import { reviewApi } from '../../utils/api'
 
-const { t } = useI18n()
 const userStore = useUserStore()
+const reviewStore = useReviewStore()
 const toastStore = useToastStore()
 const router = useRouter()
 const user = computed(() => userStore.user)
 
-// Review Modal State
+// 页面挂载时拉取真实数据
+onMounted(() => {
+  reviewStore.fetchPendingTasks()
+})
+
 const showReviewModal = ref(false)
 const currentReviewJournal = ref(null)
 
@@ -24,137 +29,40 @@ const openReviewModal = (journal) => {
   showReviewModal.value = true
 }
 
-const handleReviewSubmit = ({ ratings, comments, confidentialComments, decision }) => {
+const handleReviewSubmit = async ({ ratings, comments, confidentialComments, decision }) => {
   if (!currentReviewJournal.value) return
 
-  const journal = { ...currentReviewJournal.value }
-  const today = new Date().toISOString().split('T')[0]
+  const journal = currentReviewJournal.value
   
-  // Format the detailed comment
-  const detailedComment = `
-[Decision]: ${decision}
-[Ratings]:
-- Novelty: ${ratings.novelty}
-- Scientific Merit: ${ratings.scientificMerit}
-- Relevance: ${ratings.relevance}
-- Clarity: ${ratings.clarity}
-- Rigour: ${ratings.rigour}
+  const reviewData = {
+    decision: decision,
+    ratings: ratings,
+    comments_to_author: comments,
+    confidential_comments: confidentialComments
+  }
 
-[Comments to Author]:
-${comments}
-
-[Confidential to Editor]:
-${confidentialComments}
-`.trim()
-
-  // Determine Action based on Decision
-  let action = ''
-  if (decision === 'Accept as is') action = 'approve'
-  else if (decision === 'Reject') action = 'reject'
-  else action = 'revise' // New action for R&R
-
-  processReview(journal, action, detailedComment)
-  
-  showReviewModal.value = false
-  currentReviewJournal.value = null
-}
-
-const processReview = (journal, action, comment) => {
-    let updateMessage = ''
-    const today = new Date().toISOString().split('T')[0]
+  try {
+    await reviewApi.reviewJournal(journal.id, reviewData)
     
-    // Ensure reviewHistory exists
-    if (!journal.reviewHistory) {
-      journal.reviewHistory = []
-    }
-
-    // Logic based on Stage and Action
-    if (journal.reviewStage === 'Initial Review' || journal.reviewStage === '初审') {
-      if (action === 'approve') {
-        journal.reviewStage = 'Peer Review'
-        journal.status = MANUSCRIPT_STATUS.UNDER_PEER_REVIEW
-        updateMessage = `Passed Editor Screening. Proceeding to Peer Review.`
-        journal.reviewHistory.push({
-          stage: 'Initial Review', status: 'Approved', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'reject') {
-        journal.status = MANUSCRIPT_STATUS.INITIAL_REVIEW_REJECTED
-        journal.reviewResult = 'Rejected'
-        updateMessage = `Rejected at Screening.`
-        journal.reviewHistory.push({
-          stage: 'Initial Review', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'revise') {
-         journal.status = MANUSCRIPT_STATUS.REVISION_REQUIRED
-         updateMessage = `Revision Requested (Screening).`
-         journal.reviewHistory.push({
-          stage: 'Initial Review', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      }
-    } else if (journal.reviewStage === 'Peer Review' || journal.reviewStage === '复审') {
-      if (action === 'approve') {
-        journal.reviewStage = 'Final Decision'
-        journal.status = MANUSCRIPT_STATUS.PENDING_FINAL_DECISION
-        updateMessage = `Passed Peer Review. Proceeding to Final Decision.`
-        journal.reviewHistory.push({
-          stage: 'Peer Review', status: 'Approved', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'reject') {
-        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
-        journal.reviewResult = 'Rejected'
-        updateMessage = `Rejected after Peer Review.`
-        journal.reviewHistory.push({
-          stage: 'Peer Review', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'revise') {
-        journal.status = MANUSCRIPT_STATUS.REVISION_REQUIRED
-        updateMessage = `Revision Requested (Peer Review). Waiting for Author.`
-        journal.reviewHistory.push({
-          stage: 'Peer Review', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      }
-    } else if (journal.reviewStage === 'Final Decision' || journal.reviewStage === '终审') {
-       if (action === 'approve') {
-        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED
-        journal.reviewResult = 'Accepted'
-        updateMessage = `Accepted! Manuscript will proceed to publication.`
-        journal.reviewHistory.push({
-          stage: 'Final Decision', status: 'Accepted', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'reject') {
-        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REJECTED
-        journal.reviewResult = 'Rejected'
-        updateMessage = `Rejected at Final Decision.`
-        journal.reviewHistory.push({
-          stage: 'Final Decision', status: 'Rejected', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      } else if (action === 'revise') {
-        journal.status = MANUSCRIPT_STATUS.FINAL_DECISION_REVISION
-        updateMessage = `Revision Requested (Final).`
-        journal.reviewHistory.push({
-          stage: 'Final Decision', status: 'Revision Required', reviewer: user.value.username, date: today, comment: comment, type: 'Confidential'
-        })
-      }
-    }
-
-    userStore.updateJournal(journal)
-    toastStore.add({ message: updateMessage, type: 'success' })
-
-    if (journal.status === MANUSCRIPT_STATUS.FINAL_DECISION_ACCEPTED) {
-       const authorIndex = userStore.users.findIndex(u => u.username === journal.author);
-       if (authorIndex !== -1) {
-         const authorUser = userStore.users[authorIndex];
-         if (authorUser.role === 'user') {
-           authorUser.role = 'author';
-           userStore.users[authorIndex] = authorUser;
-           localStorage.setItem('users', JSON.stringify(userStore.users));
-           if (userStore.user && userStore.user.username === journal.author) {
-             userStore.updateUser({ role: 'author' });
-           }
-         }
-       }
-    }
+    toastStore.add({ message: '审稿意见已提交', type: 'success' })
+    
+    showReviewModal.value = false
+    currentReviewJournal.value = null
+    
+    fetchPendingJournals()
+  } catch (error) {
+    toastStore.add({ message: '提交审稿失败：' + error.message, type: 'error' })
+    console.error('提交审稿失败:', error)
+  }
 }
+
+// 使用真实数据
+const fetchPendingJournals = async () => {
+  await reviewStore.fetchPendingTasks()
+}
+
+const pendingJournals = computed(() => reviewStore.pendingTasks)
+const isLoading = computed(() => reviewStore.isLoading)
 
 // 筛选相关状态
 const searchQuery = ref('') // 搜索关键词
@@ -172,28 +80,7 @@ const totalPages = computed(() => {
 
 // 过滤后的待审核稿件列表
 const pendingJournalsFiltered = computed(() => {
-  // 基础筛选：只显示待审核或审稿中且处于审核阶段的稿件
-  // 管理员看到初审和终审阶段的稿件，审核员只看到复审阶段的稿件
-  let journals = userStore.journals.filter(journal => {
-    const isAdmin = user.value?.role === 'admin';
-    const allowedStages = isAdmin 
-      ? ['Initial Review', 'Final Decision', '初审', '终审'] 
-      : ['Peer Review', '复审'];
-    // 包含所有待审核状态
-    const isPendingStatus = [
-      MANUSCRIPT_STATUS.PENDING_INITIAL_REVIEW,
-      MANUSCRIPT_STATUS.UNDER_PEER_REVIEW,
-      MANUSCRIPT_STATUS.PENDING_PEER_REVIEW,
-      MANUSCRIPT_STATUS.PENDING_FINAL_DECISION,
-      '待审核', '审稿中', '待初审', '待复审', '待终审'
-    ].includes(journal.status);
-    return isPendingStatus && allowedStages.some(stage => 
-      journal.reviewStage === stage || 
-      (stage === 'Initial Review' && journal.reviewStage === '初审') ||
-      (stage === 'Peer Review' && journal.reviewStage === '复审') ||
-      (stage === 'Final Decision' && journal.reviewStage === '终审')
-    );
-  })
+  let journals = pendingJournals.value
   
   // 模块筛选
   if (selectedModule.value !== 'all') {
@@ -210,7 +97,7 @@ const pendingJournalsFiltered = computed(() => {
       journal.title.toLowerCase().includes(query) ||
       journal.author.toLowerCase().includes(query) ||
       journal.abstract.toLowerCase().includes(query) ||
-      journal.keywords.some(keyword => keyword.toLowerCase().includes(query))
+      (journal.keywords && journal.keywords.some(keyword => keyword.toLowerCase().includes(query)))
     )
   }
   
