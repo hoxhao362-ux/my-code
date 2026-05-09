@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Run the dev server
-python main.py
+uv uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Run with custom env vars
 env=prod python main.py

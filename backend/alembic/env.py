@@ -11,10 +11,13 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from alembic import context
+from alembic import context   # type: ignore
 from sqlalchemy import pool
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.config import config as app_config
+from database.orm import Base
 
 # ============================================================================
 # 添加项目根目录到 Python 路径
@@ -25,12 +28,6 @@ current_dir = Path(__file__).parent
 backend_dir = current_dir.parent
 # 添加到 Python 路径
 sys.path.insert(0, str(backend_dir))
-
-# ============================================================================
-# 导入项目配置和 ORM Base
-# ============================================================================
-from core.config import config as app_config
-from database.orm import Base
 
 # ============================================================================
 # Alembic 配置对象
