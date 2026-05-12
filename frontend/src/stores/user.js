@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { userApi, adminApi } from '@/utils/api'
+import { usePlatformStore } from './platform'
+import { useMessageStore } from './messages'
 
 /**
  * 对齐后端的角色层级制度
@@ -118,6 +120,60 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
         localStorage.removeItem('user_role')
+      }
+    },
+
+    /**
+     * 刷新期刊数据
+     */
+    async refreshJournals() {
+      try {
+        const platformStore = usePlatformStore()
+        await platformStore.fetchJournals()
+      } catch (error) {
+        console.warn('刷新期刊数据失败:', error)
+      }
+    },
+
+    /**
+     * 加载反馈消息
+     */
+    async loadFeedbackMessages() {
+      try {
+        const messagesStore = useMessageStore()
+        await messagesStore.fetchMessages()
+      } catch (error) {
+        console.warn('加载反馈消息失败:', error)
+      }
+    },
+
+    /**
+     * 同步用户上下文
+     * @param {string} source - 'main' 或 'submission'
+     */
+    syncUserContext(source) {
+      if (source === 'main') {
+        const savedUser = sessionStorage.getItem('readonly_user')
+        if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
+          try {
+            const parsedUser = JSON.parse(savedUser)
+            this.userInfo = parsedUser
+            this.role = parsedUser.role || 'user'
+          } catch (e) {
+            console.warn('解析只读用户数据失败:', e)
+          }
+        }
+      } else if (source === 'submission') {
+        const submissionUser = localStorage.getItem('submit_user')
+        if (submissionUser) {
+          try {
+            const parsedUser = JSON.parse(submissionUser)
+            this.userInfo = parsedUser
+            this.role = parsedUser.role || 'user'
+          } catch (e) {
+            console.warn('解析提交用户数据失败:', e)
+          }
+        }
       }
     }
   }
