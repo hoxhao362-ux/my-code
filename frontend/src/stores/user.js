@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { userApi, adminApi } from '@/utils/api'
 import { usePlatformStore } from './platform'
 import { useMessageStore } from './messages'
+import { useToastStore } from './toast'
 
 /**
  * 对齐后端的角色层级制度
@@ -15,6 +16,13 @@ const ROLE_LEVELS = {
   'reviewer': 60,
   'author': 50,           // 移除原 writer
   'user': 10              // 移除原 normal
+}
+
+const getExpFromToken = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp * 1000
+  } catch (e) { return null }
 }
 
 export const useUserStore = defineStore('user', {
@@ -41,6 +49,43 @@ export const useUserStore = defineStore('user', {
   },
   
   actions: {
+    decodeToken(token) {
+      try {
+        const parts = token.split('.')
+        if (parts.length !== 3) return null
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+        return payload
+      } catch {
+        return null
+      }
+    },
+
+    setupTokenHeartbeat() {
+      if (!this.token) return
+
+      const exp = getExpFromToken(this.token)
+      if (!exp) return
+
+      const checkInterval = setInterval(() => {
+        const timeLeft = exp - Date.now()
+
+        if (timeLeft > 0 && timeLeft < 300000) {
+          const toastStore = useToastStore()
+          toastStore.add({
+            message: 'Your session will expire in 5 minutes. Please save your progress.',
+            type: 'warning'
+          })
+          clearInterval(checkInterval)
+          return
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(checkInterval)
+          this.logout()
+        }
+      }, 60000)
+    },
+
     /**
      * 普通用户登录
      */
@@ -55,6 +100,7 @@ export const useUserStore = defineStore('user', {
         this.token = token
         localStorage.setItem('token', token)
         await this.fetchUserInfo()
+        this.setupTokenHeartbeat()
         return true
       } catch (error) {
         console.error('登录流程异常:', error)
@@ -75,7 +121,9 @@ export const useUserStore = defineStore('user', {
         
         this.token = token
         localStorage.setItem('token', token)
+        localStorage.removeItem('submit_user')
         await this.fetchUserInfo()
+        this.setupTokenHeartbeat()
         return true
       } catch (error) {
         console.error('管理员登录流程异常:', error)

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useToastStore } from '../stores/toast'
 
 // 创建 axios 实例
 const http = axios.create({
@@ -57,11 +58,20 @@ http.interceptors.response.use(
       
       switch (status) {
         case 401:
+          const toastStore = useToastStore()
+          toastStore.add({
+            message: 'Session Expired: Please login again to continue.',
+            type: 'warning'
+          })
+          
           localStorage.removeItem('token')
           localStorage.removeItem('userInfo')
           localStorage.removeItem('user_role')
           localStorage.removeItem('submit_user')
-          window.location.href = '/login'
+          
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 1000)
           break
         case 403:
           console.error('权限不足:', detail)

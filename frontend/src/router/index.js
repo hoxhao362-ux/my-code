@@ -238,56 +238,38 @@ const protectedToast = (msg, type = 'warning') => {
   }
 }
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
-  
-  // 0. Handle Submit System Logout Cleanup (Cross-Site Logic)
+  const token = localStorage.getItem('token')
+
   if (to.query.clearSubmitState === 'true') {
-    // Force clear submit keys if present (Redundant safety check)
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('submit_')) {
         localStorage.removeItem(key)
       }
     })
-    // Remove the query param to clean up URL
     const query = { ...to.query }
     delete query.clearSubmitState
     next({ path: to.path, query: query, replace: true })
     return
   }
 
-  const token = localStorage.getItem('token')
-  
-  // 状态恢复增强
   if (token && !userStore.token) {
     userStore.token = token
   }
 
-  const publicPages = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/journal-hub', '/submission', '/submission/about', '/submission/help', '/submission/login', '/submission/register', '/admin/register']
-  const authRequired = !publicPages.some(path => to.path === path || to.path.startsWith(path + '/'))
+  const publicPages = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/journal-hub']
+  const isPublic = publicPages.some(path => to.path === path || to.path.startsWith(path + '/'))
+  const isSubmissionPath = to.path.startsWith('/submission')
 
-  if (authRequired && !token && !localStorage.getItem('submit_user')) {
-    const loginPath = to.path.startsWith('/admin') || to.path.startsWith('/editor') ? '/admin/login' : '/login'
-    return next(loginPath)
-  }
-
-  // 角色同步预判定
-  if ((token || localStorage.getItem('submit_user')) && userStore.role === 'user') {
-    userStore.fetchUserInfo().catch(() => {})
-  }
-
-  // 1. 投稿系统路由 (Submission Module) - STRICT ISOLATION
-  if (to.path.startsWith('/admin') || to.path.startsWith('/submission') || to.path.startsWith('/editor') || to.path.startsWith('/reviewer')) {
+  if (isSubmissionPath) {
+    const hasSubmitUser = localStorage.getItem('submit_user')
+    const isSubmissionPublic = ['/submission', '/submission/about', '/submission/help', '/submission/login', '/submission/register'].includes(to.path)
     
-    // Check submission system login status (submit_ prefix only)
-    const submissionUser = JSON.parse(localStorage.getItem('submit_user'))
-    
-    // 允许访问投稿登录页 (Index) 及 About/Help
-    if (to.path === '/submission' || to.path === '/submission/about' || to.path === '/submission/help' || to.path === '/admin/register' || to.path === '/submission/login' || to.path === '/submission/register') {
-      // 如果已登录投稿系统，且访问的是首页(/submission)，重定向到Dashboard
-      if (to.path === '/submission' && submissionUser) {
+    if (isSubmissionPublic) {
+      if (to.path === '/submission' && hasSubmitUser) {
         userStore.syncUserContext('submission')
-        
+        const submissionUser = JSON.parse(hasSubmitUser)
         if (submissionUser.role === 'author') next({ name: 'admin-author-dashboard' })
         else if (submissionUser.role === 'reviewer') next({ name: 'reviewer-dashboard' })
         else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(submissionUser.role)) next({ name: 'editor-dashboard' })
@@ -298,56 +280,49 @@ router.beforeEach((to, from, next) => {
       return
     }
 
-    if (!submissionUser) {
-      // Not logged in to submit system, redirect to submit login
-      // Even if logged in to Main Site (Read-Only), access is denied/redirected
-      next({ name: 'submission-login' })
+    if (!hasSubmitUser && to.path !== '/submission/login') {
+      return next('/submission/login')
+    }
+
+    if (hasSubmitUser) {
+      userStore.syncUserContext('submission')
+      const submissionUser = JSON.parse(hasSubmitUser)
+      if (to.meta.requiresAuth) {
+        const currentRole = submissionUser.role
+        if (currentRole === 'reviewer' && to.path.startsWith('/editor')) {
+          protectedToast(`Access denied: This page requires appropriate submit system privileges.`)
+          return next({ name: 'reviewer-dashboard' })
+        }
+        if (currentRole === 'author' && (to.path.startsWith('/editor') || to.path.startsWith('/reviewer'))) {
+          protectedToast(`Access denied: This page requires appropriate submit system privileges.`)
+          return next({ name: 'admin-author-dashboard' })
+        }
+        if (to.meta.roles && to.meta.roles.includes(currentRole)) {
+          next()
+        } else {
+          if (currentRole === 'author') next({ name: 'admin-author-dashboard' })
+          else if (currentRole === 'reviewer') next({ name: 'reviewer-dashboard' })
+          else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(currentRole)) next({ name: 'editor-dashboard' })
+          else next({ name: 'submission-login' })
+        }
+      } else {
+        next()
+      }
       return
     }
-
-    // Synced context for submit system
-    userStore.syncUserContext('submission')
-    
-    // Permission Check
-    if (to.meta.requiresAuth) {
-      const currentRole = submissionUser.role
-      
-      // Strict Dashboard Redirection Logic
-      // Only block /editor/ paths which are strictly for editorial staff. 
-      // /admin/ paths are mixed and should be handled by meta.roles check below.
-      if (currentRole === 'reviewer' && to.path.startsWith('/editor')) {
-         protectedToast(`Access denied: This page requires appropriate submit system privileges.`)
-         next({ name: 'reviewer-dashboard' })
-         return
-      }
-      
-      if (currentRole === 'author' && (to.path.startsWith('/editor') || to.path.startsWith('/reviewer'))) {
-         protectedToast(`Access denied: This page requires appropriate submit system privileges.`)
-         next({ name: 'admin-author-dashboard' })
-         return
-      }
-      
-      // Meta Role Check
-      if (to.meta.roles && to.meta.roles.includes(currentRole)) {
-        next()
-      } else {
-        // Permission denied fallback
-        if (currentRole === 'author') next({ name: 'admin-author-dashboard' })
-        else if (currentRole === 'reviewer') next({ name: 'reviewer-dashboard' })
-        else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(currentRole)) next({ name: 'editor-dashboard' })
-        else next({ name: 'submission-login' })
-      }
-    } else {
-      next()
-    }
-    return
   }
 
-  // 2. 主站路由 (Main Site) - READ-ONLY ISOLATION
-  // 允许访问主站登录/注册/忘记密码
+  if (!isPublic && !token) {
+    const loginTarget = to.path.startsWith('/admin') ? '/admin/login' : '/login'
+    return next(loginTarget)
+  }
+
+  if (token && userStore.role === 'user') {
+    userStore.fetchUserInfo().catch(() => {})
+  }
+
   if (to.path === '/login' || to.path === '/register' || to.path === '/forgot-password') {
     const savedUser = sessionStorage.getItem('readonly_user')
-    // Ensure user is valid JSON
     if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
       try {
         const parsedUser = JSON.parse(savedUser)
@@ -363,9 +338,7 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 同步主站用户上下文 (Read-Only)
   userStore.syncUserContext('main')
-
   next()
 })
 
