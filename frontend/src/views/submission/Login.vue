@@ -26,7 +26,8 @@ const handleLogin = async () => {
     
     const success = await userStore.login({
       username: username.value,
-      password: encryptedPassword
+      password: encryptedPassword,
+      is_remember: false
     })
 
     if (success) {

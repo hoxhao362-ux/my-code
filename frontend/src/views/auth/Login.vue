@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
@@ -16,6 +16,16 @@ const rememberMe = ref(false)
 const usernameError = ref('')
 const passwordError = ref('')
 const loginError = ref('')
+
+onMounted(() => {
+  const savedUsername = localStorage.getItem('rememberedUsername_auth')
+  const savedPassword = localStorage.getItem('rememberedPassword_auth')
+  if (savedUsername && savedPassword) {
+    loginForm.value.username = savedUsername
+    loginForm.value.password = savedPassword
+    rememberMe.value = true
+  }
+})
 
 
 
@@ -40,6 +50,18 @@ const handleLogin = async () => {
     }
     
     await userStore.login(loginPayload)
+    
+    if (rememberMe.value) {
+      localStorage.setItem('rememberedUsername_auth', loginForm.value.username)
+      localStorage.setItem('rememberedPassword_auth', loginForm.value.password)
+    } else {
+      localStorage.removeItem('rememberedUsername_auth')
+      localStorage.removeItem('rememberedPassword_auth')
+    }
+
+    if (!userStore.userInfo) {
+      throw new Error('权限同步失败，请检查网络或重新登录')
+    }
     
     const role = userStore.role
     if (role === 'admin') {

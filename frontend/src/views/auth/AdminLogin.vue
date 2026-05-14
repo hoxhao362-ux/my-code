@@ -40,7 +40,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
-import CryptoJS from 'crypto-js'
+import { encryptPassword } from '@/utils/encryption'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -59,10 +59,8 @@ const handleAdminLogin = async () => {
   error.value = ''
 
   try {
-    // 按要求执行前端加密
-    const hashedPassword = CryptoJS.SHA256(form.password).toString()
+    const hashedPassword = await encryptPassword(form.password)
     
-    // 调用在任务中定义的 adminLogin action
     await userStore.adminLogin({
       username: form.username,
       password: hashedPassword,
