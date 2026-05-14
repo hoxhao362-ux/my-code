@@ -56,7 +56,7 @@ import { useToastStore } from '@/stores/toast'
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
-const toast = useToastStore()
+const toastStore = useToastStore()
 
 const registerForm = reactive({
   username: '',
@@ -104,19 +104,19 @@ const handleRegister = async () => {
   try {
     const encryptedPassword = await encryptPassword(registerForm.password)
     
-    const res = await userApi.register({
+    await userApi.register({
       username: registerForm.username,
       email: registerForm.email,
       password: encryptedPassword,
       invite_code: registerForm.invite_code || undefined
     })
 
-    if (res.status === 'success') {
-      toastStore.success('Registration successful! Please login.')
-      router.push('/auth/login')
-    }
+    toastStore.success('Registration successful! Please login.')
+    router.push('/auth/login')
+    
   } catch (error) {
-    toastStore.error(error.response?.data?.detail || 'Registration failed')
+    const errMsg = error.response?.data?.detail || error.message || 'Registration failed'
+    toastStore.error(errMsg)
   } finally {
     loading.value = false
   }
