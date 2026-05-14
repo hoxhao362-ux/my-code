@@ -247,20 +247,31 @@ const handleVerificationSuccess = () => {
   }
 }
 
+const isResettingUserPassword = ref(false)
+
 // 执行编辑操作
 const executeEdit = async () => {
-  // Check if role is changing from User to Admin - Warning
   let warning = 'Are you sure you want to update this user?'
   let isSensitive = false
-  
+
   if (currentUser.value.role !== 'admin' && editForm.value.role === 'admin') {
-     warning = 'Are you sure to set this user as Administrator?'
-     isSensitive = true
+    warning = 'Are you sure to set this user as Administrator?'
+    isSensitive = true
   }
 
   const action = async () => {
     if (editForm.value.resetPassword) {
-      toastStore.add({ message: `Password reset for user ${currentUser.value.username} to: 123456`, type: 'success' })
+      if (isResettingUserPassword.value) return
+      isResettingUserPassword.value = true
+      try {
+        await adminApi.resetUserPassword(currentUser.value.id)
+        toastStore.add({ message: `Password reset for user ${currentUser.value.username} to default.`, type: 'success' })
+      } catch (error) {
+        const detail = error.response?.data?.detail || error.message || 'Password reset failed'
+        toastStore.add({ message: detail, type: 'error' })
+      } finally {
+        isResettingUserPassword.value = false
+      }
     }
     if (editForm.value.role !== currentUser.value.role) {
       try {

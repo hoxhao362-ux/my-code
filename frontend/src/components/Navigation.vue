@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from '../composables/useI18n'
 import { useToastStore } from '../stores/toast'
 import { useMessageStore } from '../stores/messages'
+import { useUserStore } from '../stores/user'
 import NotificationBadge from './NotificationBadge.vue'
 
 const router = useRouter()
@@ -11,6 +12,7 @@ const route = useRoute()
 const { t, currentLang, setLang } = useI18n()
 const toastStore = useToastStore()
 const messageStore = useMessageStore()
+const userStore = useUserStore()
 
 const props = defineProps({
   user: Object,
@@ -160,28 +162,21 @@ const toggleUserMenu = (event) => {
 // Handle My Reviews Click
 const handleMyReviewsClick = () => {
   if (props.user?.status === 'active') {
-    // Check if we need to bridge the session to submission system
-    import('../stores/user').then(({ useUserStore }) => {
-      const userStore = useUserStore()
-      // If not logged in to submission system, or logged in but context is different
-      if (!userStore.submissionUser && props.user.role === 'reviewer') {
-         // Silently login to submission system
-         userStore.loginSubmission({ 
-           username: props.user.username, 
-           role: 'reviewer' 
-         }).then(() => {
-           router.push('/reviewer/assignments')
-         }).catch(err => {
-           console.error('Auto-login failed', err)
-           router.push('/submission/login') // Fallback
-         })
-      } else {
+    if (!userStore.submissionUser && props.user.role === 'reviewer') {
+       userStore.loginSubmission({ 
+         username: props.user.username, 
+         role: 'reviewer' 
+       }).then(() => {
          router.push('/reviewer/assignments')
-      }
-    })
+       }).catch(err => {
+         console.error('Auto-login failed', err)
+         router.push('/submission/login')
+       })
+    } else {
+       router.push('/reviewer/assignments')
+    }
     closeAllMenus()
   }
-  // If not active, do nothing (tooltip handles message)
 }
 
 // 切换资源子菜单
@@ -381,20 +376,12 @@ const goToAuditHistory = () => {
 }
 
 const handleClearSubmit = () => {
-  // 1. Remove from LocalStorage
   Object.keys(localStorage).forEach(key => {
     if (key.startsWith('submit_')) {
       localStorage.removeItem(key)
     }
   })
-  
-  // 2. Also ensure store state is cleared via action
-  import('../stores/user').then(({ useUserStore }) => {
-    const userStore = useUserStore()
-    userStore.logoutSubmission()
-  })
-
-  // 3. Feedback
+  userStore.logoutSubmission()
   toastStore.success('Submit login status cleared successfully!')
 }
 
@@ -439,66 +426,25 @@ const goToMessages = () => {
   }
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   showLogoutModal.value = false
-  
-  // Check if we are in the submission/admin system context
-  if (isAdminRoute()) {
-    // If so, use submission logout logic
-    import('../stores/user').then(({ useUserStore }) => {
-      const userStore = useUserStore()
-      userStore.logoutSubmission()
-      
-      // Show Success Toast
-      const toast = document.createElement('div')
-      toast.className = 'logout-toast'
-      toast.textContent = 'Successfully logged out of submit system'
-      toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #4caf50;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 4px;
-        z-index: 9999;
-        font-weight: 500;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        animation: fadeIn 0.3s ease;
-      `
-      document.body.appendChild(toast)
-      
-      setTimeout(() => {
-        toast.style.opacity = '0'
-        setTimeout(() => document.body.removeChild(toast), 300)
-        
-        // Return to submission login page instead of main site
-        router.push('/submission')
-      }, 1500)
-    })
-  } else {
-    // Reviewer Logout Special Case (Logged in as submissionUser but in Main Site context - likely impossible now due to strict guards, but kept for safety)
-    if (props.user?.role === 'reviewer') {
-       // This branch might be dead code now if strict isolation works, but if they managed to get here:
-       import('../stores/user').then(({ useUserStore }) => {
-         const userStore = useUserStore()
-         userStore.logoutSubmission()
-         window.location.href = '/?clearSubmitState=true'
-       })
-       return
-    }
 
-    // Otherwise, standard main site logout (Read-Only)
-    if (props.logout) {
-      props.logout()
+  try {
+    await userStore.logout()
+
+    const currentPath = route.path
+    if (currentPath.startsWith('/submit') || currentPath.startsWith('/author')) {
+      router.push('/submit/login')
+    } else if (currentPath.startsWith('/reviewer')) {
+      router.push('/login')
+    } else if (currentPath.startsWith('/admin') || currentPath.startsWith('/editor')) {
+      router.push('/admin/login')
+    } else {
+      router.push('/login')
     }
-    // Also clear store manually just in case
-    import('../stores/user').then(({ useUserStore }) => {
-       const userStore = useUserStore()
-       userStore.logout()
-       router.push('/login')
-    })
+  } catch (error) {
+    console.error('Logout process encountered an error:', error)
+    router.push('/')
   }
 }
 </script>

@@ -1,16 +1,42 @@
 <script setup>
 import { ref } from 'vue'
-import Navigation from '../components/Navigation.vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import Navigation from '../components/Navigation.vue'
 import { useDirectoryStore } from '../stores/directory'
 
 const userStore = useUserStore()
 const directoryStore = useDirectoryStore()
 const user = ref(userStore.user)
+const router = useRouter()
 
 // 切换目录显示
 const toggleDirectory = () => {
   directoryStore.toggleDirectory()
+}
+
+/**
+ * 帮助中心快捷操作：跳转至对应安全设置页面
+ * @param {string} actionType - 操作类型，例如 'change_password'
+ */
+const handleFaqAction = (actionType) => {
+  if (actionType === 'change_password') {
+    if (!userStore.isLoggedIn) {
+      router.push('/login')
+      return
+    }
+
+    const role = userStore.role
+    if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(role)) {
+      router.push({ path: '/admin/settings', query: { tab: 'security' } })
+    } else if (role === 'reviewer') {
+      router.push({ path: '/reviewer/profile', query: { tab: 'security' } })
+    } else if (role === 'author') {
+      router.push({ path: '/author/profile', query: { tab: 'security' } })
+    } else {
+      router.push('/profile-security')
+    }
+  }
 }
 
 // 常见问题数据

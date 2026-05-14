@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { adminApi } from '../../utils/api'
 import Navigation from '../../components/Navigation.vue'
 
 const userStore = useUserStore()
@@ -33,9 +34,29 @@ const encryptPhone = (phone) => {
   return `${phone.slice(0, 3)}${'*'.repeat(4)}${phone.slice(7)}`
 }
 
-const resetPassword = (id) => {
-  if (confirm('确定要重置该用户的密码吗？')) {
-    toastStore.add({ message: '密码重置成功！新密码为：123456', type: 'success' })
+const isResettingUserPassword = ref(false)
+
+const resetPassword = async (userId) => {
+  if (isResettingUserPassword.value) return
+  if (!confirm('Are you sure you want to reset the password for this user? The new password will be set to the system default.')) {
+    return
+  }
+
+  isResettingUserPassword.value = true
+  try {
+    await adminApi.resetUserPassword(userId)
+    toastStore.add({
+      message: 'User password has been successfully reset to default.',
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('Admin reset user password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || 'Failed to reset user password.',
+      type: 'error'
+    })
+  } finally {
+    isResettingUserPassword.value = false
   }
 }
 

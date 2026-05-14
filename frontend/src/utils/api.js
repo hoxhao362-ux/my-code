@@ -22,8 +22,14 @@ export const userApi = {
   // Token 直接在 Header 携带即可 
   logout: () => http.post('/auth/logout'), 
   
-  changePassword: (data) => http.put('/auth/password', data), 
-  
+  changePassword: (data) => http.put('/auth/password', data),
+
+  // [新增] 请求发送密码重置验证码
+  sendResetCode: (data) => http.post('/auth/password/forgot', data),
+
+  // [新增] 使用验证码重置密码
+  resetPasswordWithCode: (data) => http.post('/auth/password/reset', data),
+
   // --- 用户体系 (对接 users.py) --- 
   getCurrentUser: () => http.get('/users/me'), 
   
@@ -146,8 +152,11 @@ export const adminApi = {
     params: { role, is_verified } 
   }), 
   
-  deleteUser: (uid) => http.delete(`/admin/users/${uid}`), 
+  deleteUser: (uid) => http.delete(`/admin/users/${uid}`),
   
+  // [新增] 管理员强制重置用户密码
+  resetUserPassword: (uid) => http.post(`/admin/users/${uid}/reset-password`),
+
   // 稿件管理 (全局) 
   getAllJournals: (params) => http.get('/admin/journals/all', { params }), 
   deleteJournal: (jid) => http.delete(`/admin/journals/${jid}`), 

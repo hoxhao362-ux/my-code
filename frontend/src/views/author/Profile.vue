@@ -2,8 +2,9 @@
 import { ref, computed, reactive } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
-import Navigation from '../../components/Navigation.vue'
+import { useRouter } from 'vue-router'
 import { validateEmail, validatePhone, encryptPassword } from '../../utils/encryption'
+import { userApi } from '../../utils/api'
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
@@ -98,9 +99,10 @@ const showAvatarModal = ref(false)
 const showAvatarActions = ref(false)
 const fileInput = ref(null)
 const formData = ref({})
-const verificationData = ref({
-  verifyPassword: '',
-  isVerified: false
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
 })
 
 // 查看信息状态
@@ -169,19 +171,45 @@ const handleAvatarUpload = (event) => {
   }
 }
 
-const verifyPassword = () => {
-  if (!verificationData.value.verifyPassword) {
-    toastStore.add({ message: 'Please enter current password', type: 'warning' })
+const isChangingPassword = ref(false)
+
+const changePassword = async () => {
+  if (isChangingPassword.value) return
+
+  if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+    toastStore.add({ message: 'Please fill in all password fields.', type: 'warning' })
     return
   }
-  
-  const encryptedPassword = encryptPassword(verificationData.value.verifyPassword)
-  
-  if (encryptedPassword === userStore.user?.password) {
-    verificationData.value.isVerified = true
-  } else {
-    toastStore.add({ message: 'Current password incorrect', type: 'error' })
-    verificationData.value.isVerified = false
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    toastStore.add({ message: 'New passwords do not match.', type: 'error' })
+    return
+  }
+
+  isChangingPassword.value = true
+  try {
+    const encryptedOld = await encryptPassword(passwordForm.oldPassword)
+    const encryptedNew = await encryptPassword(passwordForm.newPassword)
+
+    await userApi.changePassword({
+      old_password: encryptedOld,
+      new_password: encryptedNew
+    })
+
+    toastStore.add({ message: 'Password changed successfully. Please log in again.', type: 'success' })
+
+    await userStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('Author change password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || 'Failed to change password. Please check your old password.',
+      type: 'error'
+    })
+  } finally {
+    isChangingPassword.value = false
+    passwordForm.oldPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.confirmPassword = ''
   }
 }
 
