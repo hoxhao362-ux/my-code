@@ -57,6 +57,7 @@ const handleLogin = async () => {
     } else {
       localStorage.removeItem('rememberedUsername_auth')
       localStorage.removeItem('rememberedPassword_auth')
+      loginForm.value.password = ''
     }
 
     if (!userStore.userInfo) {
@@ -83,6 +84,10 @@ const handleLogin = async () => {
 
 const goToRegister = () => {
   router.push('/register')
+}
+
+const goToForgotPassword = () => {
+  router.push('/forgot-password')
 }
 </script>
 

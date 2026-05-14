@@ -42,7 +42,8 @@ const mainRoutes = [
 
   // 主站登录注册路由
   { path: '/login', name: 'main-login', component: () => import('../views/auth/Login.vue') },
-  { path: '/register', name: 'main-register', component: () => import('../views/auth/Register.vue') }
+  { path: '/register', name: 'main-register', component: () => import('../views/auth/Register.vue') },
+  { path: '/forgot-password', name: 'main-forgot-password', component: () => import('../views/auth/ForgotPassword.vue') }
 ]
 
 // 后台主页路由 - 需登录验证，所有请求仅调用后台主页数据库对应的接口
@@ -255,6 +256,26 @@ router.beforeEach((to, from, next) => {
     return
   }
 
+  const token = localStorage.getItem('token')
+  
+  // 状态恢复增强
+  if (token && !userStore.token) {
+    userStore.token = token
+  }
+
+  const publicPages = ['/', '/login', '/register', '/admin/login', '/forgot-password', '/journal-hub', '/submission', '/submission/about', '/submission/help', '/submission/login', '/submission/register', '/admin/register']
+  const authRequired = !publicPages.some(path => to.path === path || to.path.startsWith(path + '/'))
+
+  if (authRequired && !token && !localStorage.getItem('submit_user')) {
+    const loginPath = to.path.startsWith('/admin') || to.path.startsWith('/editor') ? '/admin/login' : '/login'
+    return next(loginPath)
+  }
+
+  // 角色同步预判定
+  if ((token || localStorage.getItem('submit_user')) && userStore.role === 'user') {
+    userStore.fetchUserInfo().catch(() => {})
+  }
+
   // 1. 投稿系统路由 (Submission Module) - STRICT ISOLATION
   if (to.path.startsWith('/admin') || to.path.startsWith('/submission') || to.path.startsWith('/editor') || to.path.startsWith('/reviewer')) {
     
@@ -323,8 +344,8 @@ router.beforeEach((to, from, next) => {
   }
 
   // 2. 主站路由 (Main Site) - READ-ONLY ISOLATION
-  // 允许访问主站登录/注册
-  if (to.path === '/login' || to.path === '/register') {
+  // 允许访问主站登录/注册/忘记密码
+  if (to.path === '/login' || to.path === '/register' || to.path === '/forgot-password') {
     const savedUser = sessionStorage.getItem('readonly_user')
     // Ensure user is valid JSON
     if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
@@ -342,39 +363,8 @@ router.beforeEach((to, from, next) => {
     return
   }
 
-  // 主站路由 - 清理残留的 Submit 状态 (Safety Measure)
-  // If we are on main site, we should theoretically ignore submit_ keys.
-  // But per requirements: "若检测到残留的submit_状态数据，前端自动静默清除（仅主站加载时执行...）"
-  // NOTE: The requirement says "Main Site Load". Doing it on every route change might be aggressive if user has two tabs open?
-  // "主站首页 / 所有页面加载时... 若检测到残留的submit_状态数据... 自动静默清除"
-  // Assuming "Main Site" means avoiding /submission routes.
-  // However, if we clear submit_ keys here, it will kill the session in another tab if the user is using both systems simultaneously.
-  // Requirement says "Strictly distinguish... ensure states are independent".
-  // "Wait, 'submit logout' clears submit keys. 'Main site load' reads only readonly_".
-  // "If detected residual submit_ keys, silently clear". This implies we treat main site as the 'primary' that cleans up?
-  // But wait, if I have Tab A (Main) and Tab B (Submit), and I refresh Tab A, should it kill Tab B's session?
-  // "submit 登录 logout 后跳转主站... 避免状态残留".
-  // "主站加载时仍读取到残留的 Reviewer 登录状态" -> This was the bug.
-  // Now we use different keys. So reading `readonly_` will NOT read `submit_`.
-  // So the bug is fixed by key isolation.
-  // The "Silently clear" requirement might be to ensure hygiene, but if keys are different, it's less critical.
-  // However, to follow instructions strictly: "主站首页 / 所有页面加载时... 前端自动静默清除".
-  // I will implement this ONLY if it doesn't break the "simultaneous usage" if that was intended.
-  // But the prompt says "Reviewer login after logout issue".
-  // Let's assume the user wants to ensure no submit state leaks.
-  // I'll stick to: Main Site ONLY reads `readonly_`.
-  // I will NOT aggressively clear `submit_` on every main site route change because that prevents multi-tab usage (Read-only tab + Submit tab).
-  // I will only clear if `clearSubmitState=true` is passed (handled above).
-  // AND, I will make sure Main Site logic NEVER looks at `submit_` keys.
-  
   // 同步主站用户上下文 (Read-Only)
   userStore.syncUserContext('main')
-  
-  // 根路径不重定向，展示Hub
-  // if (to.path === '/') {
-  //   next({ name: 'main-home' })
-  //   return
-  // }
 
   next()
 })
