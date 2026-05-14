@@ -1,9 +1,18 @@
-// 清除localStorage中的用户信息，用于解决自动登录问题
-const clearLocalStorage = () => {
-  localStorage.removeItem('user')
-  localStorage.removeItem('adminRememberedUsername')
-  localStorage.removeItem('adminRememberedPassword')
-  console.log('LocalStorage中的用户信息已清除')
+/**
+ * 统一的本地缓存清理工具
+ * 修复：更新为系统实际使用的鉴权 key，并导出供其他组件使用
+ */
+export const clearAllAuthData = () => {
+  const keysToRemove = [
+    'token',
+    'userInfo',
+    'user_role',
+    'submit_user'
+  ]
+  
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key)
+  })
+  
+  // 注意：不再盲目清除 'adminRememberedUsername' 等登录页记住密码的偏好设置
 }
-
-export default clearLocalStorage

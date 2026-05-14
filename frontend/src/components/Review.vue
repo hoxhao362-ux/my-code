@@ -3,8 +3,10 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { stripHtmlTags, truncateText } from '../utils/helpers.js'
 import { useToastStore } from '../stores/toast'
+import { useUserStore } from '../stores/user'
 
 const toastStore = useToastStore()
+const userStore = useUserStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'modules', 'updateJournals', 'toggleDirectory', 'logout'])
 
@@ -178,6 +180,11 @@ const handleReview = (id, action) => {
 const viewJournalDetail = (id) => {
   // 跳转到稿件详情页
   router.push(`/journal/${id}`)
+}
+
+const handleLogout = async () => {
+  await userStore.logout()
+  props.navigateTo('login')
 }
 
 // 过滤后的历史记录

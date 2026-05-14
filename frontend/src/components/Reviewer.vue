@@ -3,9 +3,11 @@ import { ref, computed } from 'vue'
 import { truncateHtml } from '../utils/helpers.js'
 import { useToastStore } from '../stores/toast'
 import { useI18n } from 'vue-i18n'
+import { useUserStore } from '../stores/user'
 
 const { t } = useI18n()
 const toastStore = useToastStore()
+const userStore = useUserStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
@@ -42,7 +44,8 @@ const pendingJournals = computed(() => {
 })
 
 // 退出登录
-const handleLogout = () => {
+const handleLogout = async () => {
+  await userStore.logout()
   props.navigateTo('login')
 }
 

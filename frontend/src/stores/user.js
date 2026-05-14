@@ -101,6 +101,12 @@ export const useUserStore = defineStore('user', {
         localStorage.setItem('token', token)
         await this.fetchUserInfo()
         this.setupTokenHeartbeat()
+        
+        // 修复轻微问题：登录成功后，立即在内存中物理销毁密码数据
+        if (loginForm && loginForm.password !== undefined) {
+          loginForm.password = ''
+        }
+        
         return true
       } catch (error) {
         console.error('登录流程异常:', error)
@@ -124,6 +130,12 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('submit_user')
         await this.fetchUserInfo()
         this.setupTokenHeartbeat()
+        
+        // 修复轻微问题：管理员登录成功后，立即在内存中物理销毁密码数据
+        if (loginForm && loginForm.password !== undefined) {
+          loginForm.password = ''
+        }
+        
         return true
       } catch (error) {
         console.error('管理员登录流程异常:', error)
@@ -154,6 +166,7 @@ export const useUserStore = defineStore('user', {
      * 登出并清理本地所有认证状态
      */
     async logout() {
+      const toastStore = useToastStore()
       try {
         if (this.token) {
           await userApi.logout()
@@ -167,13 +180,15 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
         localStorage.removeItem('user_role')
+        toastStore.add({ message: 'Logged out successfully', type: 'success' })
       }
     },
 
     /**
-     * 投稿系统专用登出，清理 submission 模块特有的缓存
+     * 投稿系统专用登出
      */
     async logoutSubmission() {
+      const toastStore = useToastStore()
       try {
         if (this.token) {
           await userApi.logout()
@@ -188,6 +203,7 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('submit_user')
         localStorage.removeItem('userInfo')
         localStorage.removeItem('user_role')
+        toastStore.add({ message: 'Submission session ended safely', type: 'success' })
       }
     },
 

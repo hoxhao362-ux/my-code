@@ -3,6 +3,7 @@
  * 处理 Token 的持久化与读取
  * 与 http.js 中的 localStorage.getItem('token') 保持一致
  */
+import { clearAllAuthData } from './clearLocalStorage'
 
 const TOKEN_KEY = 'token'
 
@@ -30,9 +31,9 @@ export const removeToken = () => {
 }
 
 /**
- * 登出处理 - 清除 Token 和用户信息
+ * 登出处理 - 清除 Token 和所有用户信息缓存
  */
 export const logout = () => {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem('user')
+  // 修复：调用统一的清理工具，彻底消除该工具未被引用的问题
+  clearAllAuthData()
 }

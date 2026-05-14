@@ -1,5 +1,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
+import { useUserStore } from '../stores/user'
+
+const userStore = useUserStore()
 
 const props = defineProps({
   user: Object,
@@ -116,7 +119,15 @@ const viewJournalDetail = (id) => {
   props.navigateTo('journal', id)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // 修复轻微问题：主动清空当前组件内存中的密码表单数据
+  adminCodeForm.value = {
+    currentCode: '',
+    newCode: '',
+    confirmCode: ''
+  }
+  
+  await userStore.logout()
   props.navigateTo('login')
 }
 

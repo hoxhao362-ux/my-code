@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useToastStore } from '../stores/toast'
+import { useUserStore } from '../stores/user'
 
 const toastStore = useToastStore()
+const userStore = useUserStore()
 
 const props = defineProps(['user', 'navigateTo', 'journals', 'updateJournals'])
 
@@ -22,7 +24,8 @@ const stats = computed(() => {
 })
 
 // 退出登录
-const handleLogout = () => {
+const handleLogout = async () => {
+  await userStore.logout()
   props.navigateTo('login')
 }
 
