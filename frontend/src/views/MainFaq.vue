@@ -104,6 +104,11 @@ const faqs = ref([
       {
         question: 'How to upgrade account role?',
         answer: 'Contact the platform administrator, provide relevant qualification certificates, and the role can be upgraded after approval.'
+      },
+      {
+        question: 'How to change my password?',
+        answer: 'You can manage your password in the account security settings.',
+        action: 'change_password'
       }
     ]
   }
@@ -158,6 +163,14 @@ const toggleQuestion = (id) => {
                   </div>
                   <div class="faq-answer" v-if="expandedQuestion === `${faqCategory.id}-${index}`">
                     <p>{{ question.answer }}</p>
+                    <a
+                      v-if="question.action"
+                      href="#"
+                      class="faq-action-link"
+                      @click.prevent="handleFaqAction(question.action)"
+                    >
+                      Click here to go to Security Settings ➔
+                    </a>
                   </div>
                 </div>
               </div>
@@ -303,6 +316,21 @@ const toggleQuestion = (id) => {
   padding: 1.5rem;
   background-color: white;
   border-top: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faq-action-link {
+  color: #004d71;
+  text-decoration: underline;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.faq-action-link:hover {
+  color: #003b57;
 }
 
 .faq-answer p {
