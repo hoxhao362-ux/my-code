@@ -2,12 +2,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastStore } from '../stores/toast'
+import { useUserStore } from '../stores/user'
 import { encryptPassword } from '../utils/encryption'
-import userApi from '../utils/api'
 
 const props = defineProps(['user', 'login', 'navigateTo'])
 const toastStore = useToastStore()
 const router = useRouter()
+const userStore = useUserStore()
 
 const username = ref('')
 const password = ref('')
@@ -38,19 +39,31 @@ const handleLogin = async () => {
   try {
     const encryptedPassword = await encryptPassword(password.value)
     
-    const res = await userApi.login({
+    const success = await userStore.login({
       username: username.value,
-      password: encryptedPassword
+      password: encryptedPassword,
+      is_remember: rememberMe.value
     })
 
-    if (res.access_token) {
+    if (success) {
+      if (rememberMe.value) {
+        localStorage.setItem('rememberedUsername', username.value)
+        localStorage.setItem('rememberedPassword', password.value)
+      } else {
+        localStorage.removeItem('rememberedUsername')
+        localStorage.removeItem('rememberedPassword')
+      }
+
       if (props.login) {
-        props.login(res)
+        props.login({
+          access_token: userStore.token,
+          ...userStore.userInfo
+        })
       }
       toastStore.add({ message: '登录成功', type: 'success' })
     }
   } catch (err) {
-    error.value = err.response?.data?.detail || '用户名或密码错误'
+    error.value = err.response?.data?.detail || err.message || '用户名或密码错误'
   } finally {
     loading.value = false
   }

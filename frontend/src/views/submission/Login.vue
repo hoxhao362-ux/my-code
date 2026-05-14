@@ -5,7 +5,6 @@ import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
 import { encryptPassword } from '@/utils/encryption'
-import { userApi } from '@/utils/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -25,13 +24,18 @@ const handleLogin = async () => {
   try {
     const encryptedPassword = await encryptPassword(password.value)
     
-    const res = await userApi.login({
+    const success = await userStore.login({
       username: username.value,
       password: encryptedPassword
     })
 
-    if (res.access_token) {
-      localStorage.setItem('submit_user', JSON.stringify(res))
+    if (success) {
+      const submitData = {
+        access_token: userStore.token,
+        ...userStore.userInfo
+      }
+      localStorage.setItem('submit_user', JSON.stringify(submitData))
+      
       router.push('/submission/index')
     }
   } catch (error) {

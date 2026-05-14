@@ -47,9 +47,8 @@ export const useUserStore = defineStore('user', {
     async login(loginForm) {
       try {
         const res = await userApi.login(loginForm)
-        // 健壮的数据拆解逻辑
         const loginData = res.data?.data || res.data || res
-        const token = loginData.token
+        const token = loginData.token || loginData.access_token
         
         if (!token) throw new Error('未获取到有效鉴权凭证(Token)')
         
@@ -70,7 +69,7 @@ export const useUserStore = defineStore('user', {
       try {
         const res = await adminApi.adminLogin(loginForm)
         const loginData = res.data?.data || res.data || res
-        const token = loginData.token
+        const token = loginData.token || loginData.access_token
         
         if (!token) throw new Error('未获取到管理员鉴权凭证(Token)')
         
@@ -118,6 +117,27 @@ export const useUserStore = defineStore('user', {
         this.userInfo = null
         this.role = 'user'
         localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        localStorage.removeItem('user_role')
+      }
+    },
+
+    /**
+     * 投稿系统专用登出，清理 submission 模块特有的缓存
+     */
+    async logoutSubmission() {
+      try {
+        if (this.token) {
+          await userApi.logout()
+        }
+      } catch (error) {
+        console.warn('后端注销接口调用失败，继续清理本地缓存')
+      } finally {
+        this.token = ''
+        this.userInfo = null
+        this.role = 'user'
+        localStorage.removeItem('token')
+        localStorage.removeItem('submit_user')
         localStorage.removeItem('userInfo')
         localStorage.removeItem('user_role')
       }

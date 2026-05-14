@@ -58,7 +58,9 @@ http.interceptors.response.use(
       switch (status) {
         case 401:
           localStorage.removeItem('token')
-          localStorage.removeItem('user')
+          localStorage.removeItem('userInfo')
+          localStorage.removeItem('user_role')
+          localStorage.removeItem('submit_user')
           window.location.href = '/login'
           break
         case 403:
