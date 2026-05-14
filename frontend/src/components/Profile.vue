@@ -120,13 +120,7 @@ const viewJournalDetail = (id) => {
 }
 
 const handleLogout = async () => {
-  // 修复轻微问题：主动清空当前组件内存中的密码表单数据
-  adminCodeForm.value = {
-    currentCode: '',
-    newCode: '',
-    confirmCode: ''
-  }
-  
+  // 【核心修复 中等7】：依赖全局 userStore 统一登出，不在此处手动清空表单变量
   await userStore.logout()
   props.navigateTo('login')
 }

@@ -21,7 +21,15 @@ export default {
     success: '成功',
     error: '错误',
     warning: '警告',
-    switchLang: 'Switch to English'
+    switchLang: 'Switch to English',
+    oldPassword: '旧密码',
+    newPassword: '新密码',
+    confirmPassword: '确认新密码',
+    changePasswordSuccess: '密码修改成功，请重新登录。',
+    passwordMismatch: '两次输入的新密码不一致。',
+    passwordLengthError: '密码长度至少需要 6 个字符。',
+    resetToDefault: '重置为默认密码',
+    resetSuccess: '密码已重置为默认值。'
   },
   progress: {
     step1: '文章类型',

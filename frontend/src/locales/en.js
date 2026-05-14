@@ -38,7 +38,15 @@ export default {
     success: 'Success',
     error: 'Error',
     warning: 'Warning',
-    switchLang: 'Switch to Chinese'
+    switchLang: 'Switch to Chinese',
+    oldPassword: 'Old Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    changePasswordSuccess: 'Password changed successfully. Please log in again.',
+    passwordMismatch: 'New passwords do not match.',
+    passwordLengthError: 'Password must be at least 6 characters long.',
+    resetToDefault: 'Reset to Default',
+    resetSuccess: 'Password has been reset to default.'
   },
   progress: {
     step1: 'Article Type',

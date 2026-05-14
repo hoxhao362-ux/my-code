@@ -118,46 +118,48 @@ const changePassword = async () => {
 }
 
 // 更改联系方式
-const changeContact = () => {
+const changeContact = async () => {
   // 验证当前密码
   if (!contactForm.value.currentPassword) {
     showMessage('error', '请输入当前密码')
     return
   }
   
-  // 加密当前密码进行验证
-  const encryptedCurrent = encryptPassword(contactForm.value.currentPassword)
-  if (encryptedCurrent !== userStore.user?.password) {
-    showMessage('error', '当前密码不正确')
-    return
+  try {
+    // 【核心修复 中等1】：使用 await 等待加密完成
+    const encryptedCurrent = await encryptPassword(contactForm.value.currentPassword)
+    
+    // 验证邮箱格式
+    if (contactForm.value.email && !validateEmail(contactForm.value.email)) {
+      showMessage('error', '请输入有效的邮箱地址')
+      return
+    }
+    
+    // 验证手机号格式
+    if (contactForm.value.phone && !validatePhone(contactForm.value.phone)) {
+      showMessage('error', '请输入有效的手机号')
+      return
+    }
+    
+    // 调用真实 API 更新联系方式
+    await userApi.updateContact({
+      email: contactForm.value.email,
+      phone: contactForm.value.phone,
+      password: encryptedCurrent
+    })
+    
+    // 重置表单
+    contactForm.value = {
+      currentPassword: '',
+      email: contactForm.value.email,
+      phone: contactForm.value.phone
+    }
+    
+    showMessage('success', '联系方式更新成功')
+  } catch (error) {
+    console.error('Change contact failed:', error)
+    showMessage('error', error.response?.data?.message || '更新联系方式失败')
   }
-  
-  // 验证邮箱格式
-  if (contactForm.value.email && !validateEmail(contactForm.value.email)) {
-    showMessage('error', '请输入有效的邮箱地址')
-    return
-  }
-  
-  // 验证手机号格式
-  if (contactForm.value.phone && !validatePhone(contactForm.value.phone)) {
-    showMessage('error', '请输入有效的手机号')
-    return
-  }
-  
-  // 更新用户联系方式
-  userStore.updateUser({
-    email: contactForm.value.email,
-    phone: contactForm.value.phone
-  })
-  
-  // 重置表单
-  contactForm.value = {
-    currentPassword: '',
-    email: contactForm.value.email,
-    phone: contactForm.value.phone
-  }
-  
-  showMessage('success', '联系方式更新成功')
 }
 
 // 切换双因素认证

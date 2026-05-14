@@ -77,6 +77,23 @@ const toggleContactInfo = () => {
   showFullContactInfo.value = !showFullContactInfo.value
 }
 
+const navigateToSecurity = () => {
+  const role = userStore.role
+  
+  // 【核心修复 轻微3】：严格依据当前角色身份路由到对应的安全设置页
+  if (!role || role === 'user') {
+    router.push('/profile-security')
+  } else if (['admin', 'editor', 'associate_editor', 'ea_ae'].includes(role)) {
+    router.push({ path: '/admin/settings', query: { tab: 'security' } })
+  } else if (role === 'reviewer') {
+    router.push({ path: '/reviewer/profile', query: { tab: 'security' } })
+  } else if (role === 'author') {
+    router.push({ path: '/author/profile', query: { tab: 'security' } })
+  } else {
+    router.push('/profile-security')
+  }
+}
+
 // Show avatar action menu
 const showAvatarMenu = (event) => {
   event.stopPropagation()
