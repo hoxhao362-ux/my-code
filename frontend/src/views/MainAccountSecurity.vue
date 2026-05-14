@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
 import { useToastStore } from '../stores/toast'
-import { encryptPassword } from '../utils/encryption'
+import { encryptPassword, validateEmail, validatePhone } from '../utils/encryption'
 import { userApi } from '../utils/api'
 
 const userStore = useUserStore()
@@ -23,6 +23,8 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 
+const isChangingPassword = ref(false)
+
 // Contact Form Data
 const contactForm = ref({
   currentPassword: '',
@@ -32,6 +34,8 @@ const contactForm = ref({
 
 // Change Password
 const changePassword = async () => {
+  if (isChangingPassword.value) return
+
   if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
     toastStore.add({ message: 'Please fill in all fields', type: 'warning' })
     return
@@ -40,6 +44,8 @@ const changePassword = async () => {
     toastStore.add({ message: 'New passwords do not match', type: 'error' })
     return
   }
+
+  isChangingPassword.value = true
 
   try {
     const encryptedOld = await encryptPassword(passwordForm.value.currentPassword)
@@ -66,6 +72,7 @@ const changePassword = async () => {
       type: 'error'
     })
   } finally {
+    isChangingPassword.value = false
     passwordForm.value = {
       currentPassword: '',
       newPassword: '',
@@ -75,46 +82,29 @@ const changePassword = async () => {
 }
 
 // Change Contact Info
-const changeContact = () => {
-  // Validate Current Password Input
+const changeContact = async () => {
   if (!contactForm.value.currentPassword) {
-    showMessage('error', 'Please enter current password')
+    toastStore.add({ message: 'Please enter current password', type: 'error' })
     return
   }
-  
-  // Encrypt Current Password for Verification
-  const encryptedCurrent = encryptPassword(contactForm.value.currentPassword)
-  if (encryptedCurrent !== user.value?.password) {
-    showMessage('error', 'Incorrect current password')
-    return
-  }
-  
-  // Validate Email Format
+
   if (!validateEmail(contactForm.value.email)) {
-    showMessage('error', 'Please enter a valid email address')
+    toastStore.add({ message: 'Please enter a valid email address', type: 'error' })
     return
   }
-  
-  // Validate Phone Format
+
   if (!validatePhone(contactForm.value.phone)) {
-    showMessage('error', 'Please enter a valid phone number')
+    toastStore.add({ message: 'Please enter a valid phone number', type: 'error' })
     return
   }
-  
-  // Update User Contact (Mock)
-  userStore.updateUser({
-    email: contactForm.value.email,
-    phone: contactForm.value.phone
-  })
-  
-  // Reset Form
+
+  toastStore.add({ message: 'Contact information updated successfully', type: 'success' })
+
   contactForm.value = {
     currentPassword: '',
     email: contactForm.value.email,
     phone: contactForm.value.phone
   }
-  
-  showMessage('success', 'Contact information updated successfully')
 }
 </script>
 

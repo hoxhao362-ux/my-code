@@ -3,9 +3,13 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
+import { userApi } from '../../utils/api'
+import { encryptPassword } from '../../utils/encryption'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const toastStore = useToastStore()
+const router = useRouter()
 const user = computed(() => userStore.user)
 
 const activeTab = ref('personal')
@@ -54,15 +58,47 @@ const saveNotifications = () => {
   toastStore.add({ message: 'Notification settings updated.', type: 'success' })
 }
 
-const changePassword = () => {
+const isSubmittingPassword = ref(false)
+
+const changePassword = async () => {
+  if (isSubmittingPassword.value) return
+
+  if (!security.value.currentPassword || !security.value.newPassword || !security.value.confirmPassword) {
+    toastStore.add({ message: 'Please fill in all fields.', type: 'warning' })
+    return
+  }
+
   if (security.value.newPassword !== security.value.confirmPassword) {
     toastStore.add({ message: 'Passwords do not match.', type: 'warning' })
     return
   }
-  toastStore.add({ message: 'Password changed successfully.', type: 'success' })
-  security.value.currentPassword = ''
-  security.value.newPassword = ''
-  security.value.confirmPassword = ''
+
+  isSubmittingPassword.value = true
+  try {
+    const encryptedOld = await encryptPassword(security.value.currentPassword)
+    const encryptedNew = await encryptPassword(security.value.newPassword)
+
+    await userApi.changePassword({
+      old_password: encryptedOld,
+      new_password: encryptedNew
+    })
+
+    toastStore.add({ message: 'Password changed successfully. Please log in again.', type: 'success' })
+
+    await userStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('Reviewer change password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || 'Failed to change password. Please verify your old password.',
+      type: 'error'
+    })
+  } finally {
+    isSubmittingPassword.value = false
+    security.value.currentPassword = ''
+    security.value.newPassword = ''
+    security.value.confirmPassword = ''
+  }
 }
 
 </script>

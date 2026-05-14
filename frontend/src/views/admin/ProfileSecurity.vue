@@ -26,6 +26,8 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 
+const isChangingPassword = ref(false)
+
 // 联系方式更改数据
 const contactForm = ref({
   currentPassword: '',
@@ -67,6 +69,8 @@ const validatePhone = (phone) => {
 
 // 更改密码
 const changePassword = async () => {
+  if (isChangingPassword.value) return
+
   if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
     toastStore.add({ message: '请输入所有字段', type: 'warning' })
     return
@@ -76,6 +80,8 @@ const changePassword = async () => {
     toastStore.add({ message: '两次输入的新密码不一致', type: 'error' })
     return
   }
+
+  isChangingPassword.value = true
 
   try {
     const encryptedOld = await encryptPassword(passwordForm.value.currentPassword)
@@ -102,6 +108,7 @@ const changePassword = async () => {
       type: 'error'
     })
   } finally {
+    isChangingPassword.value = false
     passwordForm.value = {
       currentPassword: '',
       newPassword: '',

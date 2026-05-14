@@ -4,6 +4,7 @@ import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import { encryptPassword } from '../../utils/encryption'
+import { userApi } from '../../utils/api'
 import { useRoute } from 'vue-router'
 import { validateORCID } from '../../utils/validators'
 
@@ -151,7 +152,11 @@ const logs = ref([
   { id: 2, action: 'Update Profile', time: '2026-02-06 14:20:00', ip: '192.168.1.1' }
 ])
 
-const changePassword = () => {
+const isChangingPassword = ref(false)
+
+const changePassword = async () => {
+  if (isChangingPassword.value) return
+
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
   if (!regex.test(passwordForm.value.new)) {
     toastStore.add({ message: 'Password must contain uppercase, lowercase, number, special char and be at least 8 chars.', type: 'warning' })
@@ -161,8 +166,34 @@ const changePassword = () => {
     toastStore.add({ message: 'Passwords do not match.', type: 'warning' })
     return
   }
-  toastStore.add({ message: 'Password changed. Please re-login.', type: 'success' })
-  userStore.logout()
+
+  isChangingPassword.value = true
+  try {
+    const encryptedOld = await encryptPassword(passwordForm.value.current)
+    const encryptedNew = await encryptPassword(passwordForm.value.new)
+
+    const payload = {
+      old_password: encryptedOld,
+      new_password: encryptedNew
+    }
+    await userApi.changePassword(payload)
+
+    toastStore.add({ message: 'Password changed successfully. Please log in again.', type: 'success' })
+
+    await userStore.logout()
+    route.push('/login')
+  } catch (error) {
+    console.error('Change password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || 'Failed to change password.',
+      type: 'error'
+    })
+  } finally {
+    isChangingPassword.value = false
+    passwordForm.value.current = ''
+    passwordForm.value.new = ''
+    passwordForm.value.confirm = ''
+  }
 }
 
 const toggle2FA = () => {
