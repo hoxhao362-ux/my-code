@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
 import { useI18n } from '../../composables/useI18n'
+import { encryptPassword } from '@/utils/encryption'
+import { userApi } from '@/utils/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -14,39 +16,32 @@ const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 
-const handleLogin = async (role) => {
-  if (!username.value || !password.value) {
-    errorMessage.value = t('submission.login.error.required')
-    return
-  }
+const loading = ref(false)
 
+const handleLogin = async () => {
+  if (!username.value || !password.value) return
+
+  loading.value = true
   try {
-    // Attempt login with specific role for Submission Module
-    await userStore.loginSubmission({
-      username: username.value,
-      password: password.value,
-      role: role
-    })
+    const encryptedPassword = await encryptPassword(password.value)
     
-    // 登录成功后根据角色跳转到对应仪表盘
-    if (role === 'author') {
-      // Author logs in to submit, go to submission process directly
-      router.push('/submission/author/submit')
-    } else if (role === 'reviewer') {
-      router.push('/admin/audit-dashboard')
-    } else if (role === 'editor' || role === 'admin') {
-      router.push('/editor/dashboard')
-    } else {
-      router.push('/submission')
+    const res = await userApi.login({
+      username: username.value,
+      password: encryptedPassword
+    })
+
+    if (res.access_token) {
+      localStorage.setItem('submit_user', JSON.stringify(res))
+      router.push('/submission/index')
     }
   } catch (error) {
-    // Show specific error from store (e.g. password mismatch, lockout)
-    errorMessage.value = error.message || t('submission.login.error.failed')
+    toastStore.error('Invalid credentials or system error')
+  } finally {
+    loading.value = false
   }
 }
 
 const handleOrcidLogin = () => {
-  // 模拟 ORCID 登录流程
   const orcidWindow = window.open('', 'ORCID Login', 'width=600,height=600')
   
   if (orcidWindow) {
@@ -65,17 +60,15 @@ const handleOrcidLogin = () => {
       if (!orcidWindow.closed) {
         orcidWindow.close()
         
-        // 模拟获取到用户信息
-        username.value = 'jane_smith' // 假设这是关联的账号
-        password.value = 'password'   // 自动填充密码
+        username.value = 'jane_smith'
+        password.value = 'password'
         
         toastStore.add({ 
           message: 'ORCID Authenticated! Welcome, Dr. Jane Smith (0000-0002-1825-0097)', 
           type: 'success' 
         })
         
-        // 自动登录
-        handleLogin('reviewer')
+        handleLogin()
       }
     }, 2000)
   } else {
@@ -102,13 +95,13 @@ const handleOrcidLogin = () => {
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
       <div class="role-buttons">
-        <button class="btn-role author" @click="handleLogin('author')">
+        <button class="btn-role author" @click="handleLogin">
           {{ t('submission.login.btn.author') }}
         </button>
-        <button class="btn-role reviewer" @click="handleLogin('reviewer')">
+        <button class="btn-role reviewer" @click="handleLogin">
           {{ t('submission.login.btn.reviewer') }}
         </button>
-        <button class="btn-role editor" @click="handleLogin('editor')">
+        <button class="btn-role editor" @click="handleLogin">
           {{ t('submission.login.btn.editor') }}
         </button>
       </div>

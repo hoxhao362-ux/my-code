@@ -50,10 +50,13 @@ import { useRouter } from 'vue-router'
 import { userApi, adminApi } from '@/utils/api'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
+import { encryptPassword } from '@/utils/encryption'
+import { useToastStore } from '@/stores/toast'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const toast = useToastStore()
 
 const registerForm = reactive({
   username: '',
@@ -92,56 +95,28 @@ const handleInviteCodeBlur = async () => {
 }
 
 const handleRegister = async () => {
-  if (registerForm.password !== registerForm.confirmPassword) {
-    errorMessage.value = 'Passwords do not match.'
-    return
-  }
-  if (!inviteCodeValid.value) {
-    errorMessage.value = 'Please provide a valid invitation code.'
+  if (!registerForm.username || !registerForm.email || !registerForm.password) {
+    toastStore.error('Please fill in all required fields')
     return
   }
 
   loading.value = true
-  errorMessage.value = ''
-
   try {
+    const encryptedPassword = await encryptPassword(registerForm.password)
+    
     const res = await userApi.register({
       username: registerForm.username,
       email: registerForm.email,
-      password: registerForm.password,
+      password: encryptedPassword,
       invite_code: registerForm.invite_code || undefined
     })
-    
-    const responseData = res.data || res
-    if (responseData.token) {
-      userStore.token = responseData.token
-      localStorage.setItem('token', responseData.token)
-      await userStore.fetchUserInfo()
-      
-      // ==== 统一分流逻辑 ====
-      const role = userStore.currentRole
-      if (role === 'admin') {
-        router.push('/admin/dashboard')
-      } else if (['editor', 'associate_editor', 'ea_ae'].includes(role)) {
-        router.push('/editor/dashboard')
-      } else if (role === 'reviewer') {
-        router.push('/reviewer/dashboard')
-      } else {
-        router.push('/author/dashboard')
-      }
-    } else {
-      router.push('/login')
+
+    if (res.status === 'success') {
+      toastStore.success('Registration successful! Please login.')
+      router.push('/auth/login')
     }
   } catch (error) {
-    const status = error.response?.status
-    const detail = error.response?.data?.detail
-    if (status === 400) {
-      errorMessage.value = detail || 'Registration failed. Please check your details.'
-    } else if (status === 429) {
-      errorMessage.value = 'Too many requests. Please try again later.'
-    } else {
-      errorMessage.value = 'An internal server error occurred.'
-    }
+    toastStore.error(error.response?.data?.detail || 'Registration failed')
   } finally {
     loading.value = false
   }

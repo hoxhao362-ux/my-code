@@ -1,13 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useToastStore } from '../stores/toast'
 import { encryptPassword } from '../utils/encryption'
+import userApi from '../utils/api'
 
-// 接收App.vue传递的上下文
 const props = defineProps(['user', 'login', 'navigateTo'])
+const toastStore = useToastStore()
+const router = useRouter()
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
+const loading = ref(false)
 const rememberMe = ref(false)
 
 // 从localStorage加载记住的密码
@@ -21,33 +26,34 @@ onMounted(() => {
   }
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!username.value || !password.value) {
-    error.value = '请输入用户名和密码'
+    error.value = '请填写账号和密码'
     return
   }
+
+  loading.value = true
+  error.value = ''
   
-  // 模拟登录逻辑
-  const userData = {
-    username: username.value,
-    password: encryptPassword(password.value), // 加密密码
-    role: username.value === 'admin' ? 'admin' : 'user',
-    email: '',
-    phone: '',
-    avatar: ''
+  try {
+    const encryptedPassword = await encryptPassword(password.value)
+    
+    const res = await userApi.login({
+      username: username.value,
+      password: encryptedPassword
+    })
+
+    if (res.access_token) {
+      if (props.login) {
+        props.login(res)
+      }
+      toastStore.add({ message: '登录成功', type: 'success' })
+    }
+  } catch (err) {
+    error.value = err.response?.data?.detail || '用户名或密码错误'
+  } finally {
+    loading.value = false
   }
-  
-  // 记住密码功能
-  if (rememberMe.value) {
-    localStorage.setItem('rememberedUsername', username.value)
-    localStorage.setItem('rememberedPassword', password.value)
-  } else {
-    localStorage.removeItem('rememberedUsername')
-    localStorage.removeItem('rememberedPassword')
-  }
-  
-  // 调用父组件传递的登录方法
-  props.login(userData)
 }
 
 const goToRegister = () => {
@@ -90,7 +96,9 @@ const goToRegister = () => {
           <label for="rememberMe">记住密码</label>
         </div>
         <p v-if="error" class="error-message">{{ error }}</p>
-        <button class="login-btn" @click="handleLogin">登录</button>
+        <button class="login-btn" @click="handleLogin" :disabled="loading">
+          {{ loading ? '登录中...' : '登录' }}
+        </button>
         <div class="register-link">
           <span>还没有账号？</span>
           <a href="#" @click.prevent="goToRegister">立即注册</a>

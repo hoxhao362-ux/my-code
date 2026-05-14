@@ -3,6 +3,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useToastStore } from '../../stores/toast'
+import { encryptPassword } from '../../utils/encryption'
+import userApi from '../../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +21,7 @@ const isExpired = ref(false)
 
 // Form Data
 const form = reactive({
+  password: '',
   name: '',
   title: '',
   affiliation: '',
@@ -69,57 +72,53 @@ const handleSubmit = async () => {
     toastStore.add({ message: 'Please provide details for the conflict of interest.', type: 'warning' })
     return
   }
-  
   if (!form.qualificationFile) {
     toastStore.add({ message: 'Please upload proof of qualification.', type: 'warning' })
+    return
+  }
+  if (!form.password || form.password.length < 6) {
+    toastStore.add({ message: 'Please enter a valid password (min 6 chars).', type: 'warning' })
     return
   }
 
   isLoading.value = true
   
-  // Register User
-  const newUser = {
-    username: form.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ''),
-    email: form.email,
-    name: `${form.title} ${form.name}`,
-    role: 'reviewer',
-    affiliation: form.affiliation,
-    field: form.field,
-    bio: form.bio,
-    status: 'active',
-    qualificationProof: form.qualificationFile ? 'file_uploaded' : null
-  }
-  
-  const registeredUser = userStore.addUser(newUser)
-  
-  // Update Recommendation Status
-  const recommendationId = route.query.recommendationId
-  if (recommendationId) {
-    const reviewer = userStore.recommendedReviewers.find(r => r.id == recommendationId)
-    if (reviewer) {
-       userStore.updateRecommendedReviewer({
-         ...reviewer,
-         status: 'accepted',
-         userId: registeredUser.id,
-         reviewerName: newUser.name, // Update name if they changed it
-         reviewedAt: new Date().toISOString(),
-         reviewedBy: 'system (registration)'
-       })
+  try {
+    const generatedUsername = form.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '')
+    
+    const encryptedPass = await encryptPassword(form.password)
+    
+    const res = await userApi.register({
+      username: generatedUsername,
+      email: form.email,
+      password: encryptedPass,
+      invite_code: route.query.token || undefined
+    })
+
+    const recommendationId = route.query.recommendationId
+    if (recommendationId) {
+      const reviewer = userStore.recommendedReviewers.find(r => r.id == recommendationId)
+      if (reviewer) {
+         userStore.updateRecommendedReviewer({
+           ...reviewer,
+           status: 'accepted',
+           reviewerName: `${form.title} ${form.name}`,
+           reviewedAt: new Date().toISOString()
+         })
+      }
     }
+    
+    isSubmitted.value = true
+    
+    setTimeout(() => {
+      router.push('/auth/login')
+    }, 3000)
+
+  } catch (error) {
+    toastStore.add({ message: error.response?.data?.detail || 'Registration failed.', type: 'error' })
+  } finally {
+    isLoading.value = false
   }
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  isLoading.value = false
-  isSubmitted.value = true
-  
-  // Auto redirect to mock review page after 3 seconds
-  setTimeout(() => {
-    // Log them in automatically for demo
-    userStore.loginSubmission({ username: newUser.username, role: 'reviewer' })
-    router.push('/reviewer/dashboard') 
-  }, 3000)
 }
 
 </script>
@@ -148,7 +147,7 @@ const handleSubmit = async () => {
         <div class="icon">✅</div>
         <h2>Registration Successful</h2>
         <p>You have successfully registered as a temporary reviewer.</p>
-        <p class="redirect-text">Redirecting to the review page...</p>
+        <p class="redirect-text">Redirecting to the login page...</p>
       </div>
 
       <!-- Registration Form -->
@@ -174,6 +173,11 @@ const handleSubmit = async () => {
           <label class="required">Email Address</label>
           <input v-model="form.email" type="email" class="input-text disabled" readonly required>
           <p class="hint">Email is pre-filled from the invitation and cannot be changed.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="required">Account Password</label>
+          <input v-model="form.password" type="password" class="input-text" placeholder="Set a password for future logins (Min 6 chars)" required>
         </div>
 
         <div class="form-group">

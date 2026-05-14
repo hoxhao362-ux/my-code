@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToastStore } from '../../stores/toast'
+import { encryptPassword } from '../../utils/encryption'
+import userApi from '../../utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,6 +17,8 @@ const isSubmitted = ref(false)
 
 // Form Data
 const form = ref({
+  username: '',
+  password: '',
   name: '',
   email: '', // Pre-filled from invite
   institution: '',
@@ -40,14 +44,31 @@ onMounted(() => {
   }
 })
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!form.value.conflictInterest || !form.value.confidentiality || !form.value.signature) {
     toastStore.add({ message: 'Please agree to all terms and sign the confidentiality agreement.', type: 'warning' })
     return
   }
   
-  console.log('Submitting registration:', form.value)
-  isSubmitted.value = true
+  if (!form.value.username || !form.value.password || form.value.password.length < 6) {
+    toastStore.add({ message: 'Please provide a valid username and a password (min 6 characters).', type: 'warning' })
+    return
+  }
+  
+  try {
+    const encryptedPass = await encryptPassword(form.value.password)
+    
+    const res = await userApi.register({
+      username: form.value.username,
+      email: form.value.email,
+      password: encryptedPass,
+      invite_code: inviteToken.value || undefined
+    })
+    
+    isSubmitted.value = true
+  } catch (error) {
+    toastStore.add({ message: error.response?.data?.detail || 'Registration failed.', type: 'error' })
+  }
 }
 
 const getRoleName = (role) => {
@@ -75,6 +96,16 @@ const getRoleName = (role) => {
         <!-- Section 1: Identity -->
         <div class="form-section">
           <h3>1. Identity Verification</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Username</label>
+              <input v-model="form.username" required placeholder="Choose a username">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input v-model="form.password" type="password" required placeholder="Minimum 6 characters">
+            </div>
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>Full Name</label>

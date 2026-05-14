@@ -4,10 +4,13 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { encryptPassword } from '../../utils/encryption'
 import { useI18n } from '../../composables/useI18n'
+import userApi from '../../utils/api'
+import { useToastStore } from '../../stores/toast'
 
 const userStore = useUserStore()
 const router = useRouter()
 const { t } = useI18n()
+const toastStore = useToastStore()
 
 // 多步骤注册状态
 const currentStep = ref(1)
@@ -44,6 +47,9 @@ const personalClassifications = ref([])
 const personalKeywords = ref([])
 
 const error = ref('')
+
+// 定义事件
+const emit = defineEmits(['go-to-login'])
 
 // 表单验证
 const isStep1Valid = computed(() => {
@@ -108,52 +114,26 @@ const handleRegister = async () => {
     return
   }
   
-  // 模拟注册逻辑
-  const userData = {
-    username: username.value,
-    password: password.value, // Pass plaintext password to loginSubmission
-    role: 'author', // 默认角色为作者
-    email: email.value,
-    firstName: firstName.value,
-    lastName: lastName.value,
-    title: title.value,
-    middleName: middleName.value,
-    degree: degree.value,
-    orcid: orcid.value,
-    position: position.value,
-    institution: institution.value,
-    department: department.value,
-    streetAddress: streetAddress.value,
-    city: city.value,
-    stateProvince: stateProvince.value,
-    zipCode: zipCode.value,
-    country: country.value,
-    personalClassifications: personalClassifications.value,
-    personalKeywords: personalKeywords.value,
-    avatar: ''
+  try {
+    const encryptedPass = await encryptPassword(password.value)
+    
+    const res = await userApi.register({
+      username: username.value,
+      email: email.value,
+      password: encryptedPass,
+    })
+    
+    toastStore.add({ message: 'Registration successful! Please login.', type: 'success' })
+    emit('go-to-login')
+    
+  } catch (err) {
+    error.value = err.response?.data?.detail || 'Registration failed. This username or email might already be registered.'
   }
-  
-  // 检查用户名是否已存在
-  const isUsernameExists = false
-  
-  if (isUsernameExists) {
-    error.value = 'This username is already registered'
-    return
-  }
-  
-  // 调用状态管理的登录方法（注册后自动登录）
-  userStore.loginSubmission(userData)
-  
-  // 跳转到对应的后台页面
-  router.push('/submission')
 }
 
 const goToLogin = () => {
   emit('go-to-login')
 }
-
-// 定义事件
-const emit = defineEmits(['go-to-login'])
 
 const useORCID = () => {
   // Mock ORCID sync
