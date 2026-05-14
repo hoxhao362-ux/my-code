@@ -1,10 +1,15 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
+import { useToastStore } from '../../stores/toast'
 import Navigation from '../../components/Navigation.vue'
 import { encryptPassword } from '../../utils/encryption'
+import { userApi } from '../../utils/api'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
+const router = useRouter()
 const user = ref(userStore.user)
 
 const props = defineProps({
@@ -13,12 +18,6 @@ const props = defineProps({
     default: false
   }
 })
-
-// 本地密码验证函数
-const validatePassword = (password) => {
-  // 验证密码长度和包含字母数字
-  return password.length >= 6 && /[a-zA-Z]/.test(password) && /\d/.test(password)
-}
 
 // 密码更改数据
 const passwordForm = ref({
@@ -67,50 +66,48 @@ const validatePhone = (phone) => {
 }
 
 // 更改密码
-const changePassword = () => {
-  // 验证当前密码
-  if (!passwordForm.value.currentPassword) {
-    showMessage('error', '请输入当前密码')
+const changePassword = async () => {
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    toastStore.add({ message: '请输入所有字段', type: 'warning' })
     return
   }
-  
-  // 加密当前密码进行验证
-  const encryptedCurrent = encryptPassword(passwordForm.value.currentPassword)
-  if (encryptedCurrent !== userStore.user?.password) {
-    showMessage('error', '当前密码不正确')
-    return
-  }
-  
-  // 验证新密码
-  if (!passwordForm.value.newPassword) {
-    showMessage('error', '请输入新密码')
-    return
-  }
-  
+
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    showMessage('error', '两次输入的新密码不一致')
+    toastStore.add({ message: '两次输入的新密码不一致', type: 'error' })
     return
   }
-  
-  if (!validatePassword(passwordForm.value.newPassword)) {
-    showMessage('error', '密码必须包含至少6个字符，包含字母和数字')
-    return
+
+  try {
+    const encryptedOld = await encryptPassword(passwordForm.value.currentPassword)
+    const encryptedNew = await encryptPassword(passwordForm.value.newPassword)
+
+    const payload = {
+      old_password: encryptedOld,
+      new_password: encryptedNew
+    }
+    await userApi.changePassword(payload)
+
+    toastStore.add({
+      message: '密码修改成功，请重新登录',
+      type: 'success'
+    })
+
+    await userStore.logout()
+    router.push('/login')
+
+  } catch (error) {
+    console.error('Change password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || '密码修改失败',
+      type: 'error'
+    })
+  } finally {
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
   }
-  
-  // 加密新密码
-  const encryptedNewPassword = encryptPassword(passwordForm.value.newPassword)
-  
-  // 更新用户密码
-  userStore.updateUser({ password: encryptedNewPassword })
-  
-  // 重置表单
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  }
-  
-  showMessage('success', '密码更改成功')
 }
 
 // 更改联系方式

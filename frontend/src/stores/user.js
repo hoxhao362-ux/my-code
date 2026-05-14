@@ -180,6 +180,7 @@ export const useUserStore = defineStore('user', {
         localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
         localStorage.removeItem('user_role')
+        localStorage.removeItem('submit_user')
         toastStore.add({ message: 'Logged out successfully', type: 'success' })
       }
     },

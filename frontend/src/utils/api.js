@@ -22,10 +22,7 @@ export const userApi = {
   // Token 直接在 Header 携带即可 
   logout: () => http.post('/auth/logout'), 
   
-  // QueryParam: ?old_password=xx&new_password=xx 
-  changePassword: (oldPassword, newPassword) => http.put('/auth/password', null, { 
-    params: { old_password: oldPassword, new_password: newPassword } 
-  }), 
+  changePassword: (data) => http.put('/auth/password', data), 
   
   // --- 用户体系 (对接 users.py) --- 
   getCurrentUser: () => http.get('/users/me'), 

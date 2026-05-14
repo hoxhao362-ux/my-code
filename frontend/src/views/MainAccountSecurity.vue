@@ -3,28 +3,17 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Navigation from '../components/Navigation.vue'
 import { useUserStore } from '../stores/user'
-import { validateEmail, validatePhone, encryptPassword } from '../utils/encryption'
+import { useToastStore } from '../stores/toast'
+import { encryptPassword } from '../utils/encryption'
+import { userApi } from '../utils/api'
 
 const userStore = useUserStore()
+const toastStore = useToastStore()
 const router = useRouter()
 
-// 检查用户是否登录
 const user = computed(() => userStore.user)
 if (!user.value) {
   router.push('/login')
-}
-
-// 消息提示
-const message = ref('')
-const messageType = ref('') // 'success' or 'error'
-
-// Show Message
-const showMessage = (type, msg) => {
-  messageType.value = type
-  message.value = msg
-  setTimeout(() => {
-    message.value = ''
-  }, 3000)
 }
 
 // Password Form Data
@@ -41,56 +30,48 @@ const contactForm = ref({
   phone: user.value?.phone || ''
 })
 
-// Validate Password Length & Complexity
-const validatePassword = (password) => {
-  return password.length >= 6 && /[a-zA-Z]/.test(password) && /\d/.test(password)
-}
-
 // Change Password
-const changePassword = () => {
-  // Validate Current Password Input
-  if (!passwordForm.value.currentPassword) {
-    showMessage('error', 'Please enter current password')
+const changePassword = async () => {
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    toastStore.add({ message: 'Please fill in all fields', type: 'warning' })
     return
   }
-  
-  // Encrypt Current Password for Verification
-  const encryptedCurrent = encryptPassword(passwordForm.value.currentPassword)
-  if (encryptedCurrent !== user.value?.password) {
-    showMessage('error', 'Incorrect current password')
-    return
-  }
-  
-  // Validate New Password
-  if (!passwordForm.value.newPassword) {
-    showMessage('error', 'Please enter new password')
-    return
-  }
-  
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    showMessage('error', 'New passwords do not match')
+    toastStore.add({ message: 'New passwords do not match', type: 'error' })
     return
   }
-  
-  if (!validatePassword(passwordForm.value.newPassword)) {
-    showMessage('error', 'Password must be at least 6 characters, containing letters and numbers')
-    return
+
+  try {
+    const encryptedOld = await encryptPassword(passwordForm.value.currentPassword)
+    const encryptedNew = await encryptPassword(passwordForm.value.newPassword)
+
+    const payload = {
+      old_password: encryptedOld,
+      new_password: encryptedNew
+    }
+    await userApi.changePassword(payload)
+
+    toastStore.add({
+      message: 'Password changed successfully. Please log in again.',
+      type: 'success'
+    })
+
+    await userStore.logout()
+    router.push('/login')
+
+  } catch (error) {
+    console.error('Change password failed:', error)
+    toastStore.add({
+      message: error.response?.data?.message || 'Failed to change password.',
+      type: 'error'
+    })
+  } finally {
+    passwordForm.value = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    }
   }
-  
-  // Encrypt New Password
-  const encryptedNewPassword = encryptPassword(passwordForm.value.newPassword)
-  
-  // Update User Password (Mock)
-  userStore.updateUser({ password: encryptedNewPassword })
-  
-  // Reset Form
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  }
-  
-  showMessage('success', 'Password changed successfully')
 }
 
 // Change Contact Info
@@ -154,10 +135,7 @@ const changeContact = () => {
         <p class="subtitle">Manage your account security settings</p>
       </div>
 
-      <!-- Message Alert -->
-      <div v-if="message" class="message" :class="messageType">
-        {{ message }}
-      </div>
+      <!-- Message Alert (hidden - using toastStore instead) -->
 
       <section class="security-section">
         <div class="security-card">
